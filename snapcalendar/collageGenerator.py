@@ -1,11 +1,7 @@
 import os
-import random
-
 from PIL import Image
-
 from calendarium import Calendarium
 from common.config import Config
-
 
 class CollageGenerator:
     def __init__(self, config=None):
@@ -18,11 +14,6 @@ class CollageGenerator:
     def crop_and_resize(self, image, target_width, target_height):
         """
         Schneidet ein Bild proportional zu und skaliert es dann auf die gewünschte Größe.
-
-        :param image: PIL.Image-Objekt
-        :param target_width: Zielbreite
-        :param target_height: Zielhöhe
-        :return: Proportionell beschnittenes und skaliertes Bild
         """
         img_width, img_height = image.size
         aspect_ratio_img = img_width / img_height
@@ -43,102 +34,167 @@ class CollageGenerator:
 
         return cropped.resize((target_width, target_height))
 
+    def analyze_images(self, images):
+        """
+        Analysiert, ob Bilder Hoch- oder Querformat haben.
+        """
+        analysis = []
+        for img in images:
+            width, height = img.size
+            if height > width:
+                analysis.append("portrait")
+            else:
+                analysis.append("landscape")
+        return analysis
+
     def generate_collage(self, image_files, week, output_path):
         """
         Erzeugt eine Collage mit Bildern und einem Calendarium.
-
-        :param image_files: Liste von Bilddateipfaden
-        :param week: Wochennummer
-        :param output_path: Pfad zur gespeicherten Collage
         """
-        # Canvas erstellen
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
-
-        # Calendarium generieren
         calendarium = Calendarium(self.config).generateCalendarium(week)
         collage.paste(calendarium, (0, self.height - self.calendarium_height))
 
-        # Platz für Bilder berechnen
         available_height = self.height - self.calendarium_height - self.spacing
         available_width = self.width
 
         if len(image_files) == 0:
-            print(f"Keine Bilder für Woche {week}.")
+            print(f"Keine Bilder gefunden.")
             return
 
         images = [Image.open(img) for img in image_files]
+        formats = self.analyze_images(images)
 
         # Anordnungslogik basierend auf Bildanzahl
         if len(images) == 1:
-            # Ein Bild -> Mitte der Fläche
-            img = self.crop_and_resize(images[0], available_width, available_height)
-            collage.paste(img, (0, 0))
-
+            self.arrange_one_image(collage, images[0], available_width, available_height)
         elif len(images) == 2:
-            # Zwei Bilder -> Links/Rechts gleich aufteilen
-            half_width = (available_width - self.spacing) // 2
-            img1 = self.crop_and_resize(images[0], half_width, available_height)
-            img2 = self.crop_and_resize(images[1], half_width, available_height)
-            collage.paste(img1, (0, 0))
-            collage.paste(img2, (half_width + self.spacing, 0))
-
+            self.arrange_two_images(collage, images, formats, available_width, available_height)
         elif len(images) == 3:
-            # Drei Bilder -> Ein großes Bild links/rechts, zwei kleinere übereinander
-            large_width = int(available_width * 0.6)
-            small_width = available_width - large_width - self.spacing
-            small_height = (available_height - self.spacing) // 2
-
-            img1 = self.crop_and_resize(images[0], large_width, available_height)
-            img2 = self.crop_and_resize(images[1], small_width, small_height)
-            img3 = self.crop_and_resize(images[2], small_width, small_height)
-
-            if random.choice([True, False]):
-                # Großes Bild links
-                collage.paste(img1, (0, 0))
-                collage.paste(img2, (large_width + self.spacing, 0))
-                collage.paste(img3, (large_width + self.spacing, small_height + self.spacing))
-            else:
-                # Großes Bild rechts
-                collage.paste(img1, (small_width + self.spacing, 0))
-                collage.paste(img2, (0, 0))
-                collage.paste(img3, (0, small_height + self.spacing))
-
+            self.arrange_three_images(collage, images, formats, available_width, available_height)
         elif len(images) == 4:
-            # Vier Bilder -> Goldener Schnitt mit zwei kleinen und zwei großen Bildern
-            small_width = int(available_width * 0.4)
-            large_width = available_width - small_width - self.spacing
-            small_height = int(available_height * 0.4)
-            large_height = available_height - small_height - self.spacing
-
-            img1 = self.crop_and_resize(images[0], small_width, small_height)
-            img2 = self.crop_and_resize(images[1], large_width, large_height)
-            img3 = self.crop_and_resize(images[2], large_width, small_height)
-            img4 = self.crop_and_resize(images[3], small_width, large_height)
-
-            collage.paste(img1, (0, 0))
-            collage.paste(img2, (small_width + self.spacing, 0))
-            collage.paste(img3, (small_width + self.spacing, large_height + self.spacing))
-            collage.paste(img4, (0, small_height + self.spacing))
-
+            self.arrange_four_images(collage, images, formats, available_width, available_height)
         else:
-            # Mehr als vier Bilder -> Raster basierend auf Anzahl
-            cols = int(len(images) ** 0.5)
-            rows = (len(images) + cols - 1) // cols
-            cell_width = (available_width - (cols - 1) * self.spacing) // cols
-            cell_height = (available_height - (rows - 1) * self.spacing) // rows
+            self.arrange_multiple_images(collage, images, available_width, available_height)
 
-            for i, img in enumerate(images):
-                row = i // cols
-                col = i % cols
-                resized_img = self.crop_and_resize(img, cell_width, cell_height)
-                x_offset = col * (cell_width + self.spacing)
-                y_offset = row * (cell_height + self.spacing)
-                collage.paste(resized_img, (x_offset, y_offset))
-
-        # Collage speichern
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
 
+    def arrange_one_image(self, collage, image, width, height):
+        """
+        Layout für ein einzelnes Bild.
+        """
+        img = self.crop_and_resize(image, width, height)
+        collage.paste(img, (0, 0))
+
+    def arrange_two_images(self, collage, images, formats, width, height):
+        """
+        Layout für zwei Bilder.
+        """
+        if "portrait" in formats:
+            portrait_idx = formats.index("portrait")
+            landscape_idx = 1 - portrait_idx
+            # Goldener Schnitt Layout
+            portrait_width = int(width * 0.4)
+            landscape_width = width - portrait_width - self.spacing
+            img1 = self.crop_and_resize(images[portrait_idx], portrait_width, height)
+            img2 = self.crop_and_resize(images[landscape_idx], landscape_width, height)
+            collage.paste(img1, (0, 0))
+            collage.paste(img2, (portrait_width + self.spacing, 0))
+        else:
+            # Beide Querformat -> nebeneinander
+            img_width = (width - self.spacing) // 2
+            img1 = self.crop_and_resize(images[0], img_width, height)
+            img2 = self.crop_and_resize(images[1], img_width, height)
+            collage.paste(img1, (0, 0))
+            collage.paste(img2, (img_width + self.spacing, 0))
+
+    def arrange_three_images(self, collage, images, formats, width, height):
+        """
+        Layouts für drei Bilder.
+        """
+        layouts = [
+            # Großes Hochformat links, zwei Querformat rechts übereinander
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(width * 0.4), height), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.6), int(height * 0.5)), (int(width * 0.4) + self.spacing, 0)),
+                (self.crop_and_resize(imgs[2], int(width * 0.6), int(height * 0.5)), (int(width * 0.4) + self.spacing, int(height * 0.5) + self.spacing)),
+            ],
+            # Ein großes Bild oben, zwei kleinere unten nebeneinander
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], width, int(height * 0.6)), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.4)), (0, int(height * 0.6) + self.spacing)),
+                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.4)), (int(width * 0.5) + self.spacing, int(height * 0.6) + self.spacing)),
+            ],
+            # Drei gleich große Bilder nebeneinander
+            lambda imgs: [
+                (self.crop_and_resize(img, int(width / 3) - self.spacing, height), (i * (int(width / 3)), 0))
+                for i, img in enumerate(imgs)
+            ],
+        ]
+
+        layout = layouts[0] if formats.count("portrait") > 0 else layouts[0]
+        for img, pos in layout(images):
+            collage.paste(img, pos)
+
+    def arrange_four_images(self, collage, images, formats, width, height):
+        """
+        Layouts für vier Bilder.
+        """
+        layouts = [
+            # Großes Bild links, drei kleine rechts
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(width * 0.6), height), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.4), int(height * 0.33)), (int(width * 0.6) + self.spacing, 0)),
+                (self.crop_and_resize(imgs[2], int(width * 0.4), int(height * 0.33)), (int(width * 0.6) + self.spacing, int(height * 0.33) + self.spacing)),
+                (self.crop_and_resize(imgs[3], int(width * 0.4), int(height * 0.33)-self.spacing), (int(width * 0.6) + self.spacing, int(height * 0.66) + self.spacing*2)),
+            ],
+            # Zwei große Bilder oben, zwei kleine unten
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(width * 0.45), int(height * 0.55)), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.55), int(height * 0.55)), (int(width * 0.45) + self.spacing, 0)),
+                (self.crop_and_resize(imgs[2], int(width * 0.55), int(height * 0.45)), (0, int(height * 0.55) + self.spacing)),
+                (self.crop_and_resize(imgs[3], int(width * 0.45), int(height * 0.45)), (int(width * 0.55) + self.spacing, int(height * 0.55) + self.spacing)),
+            ],
+            # Vier gleich große Bilder
+            lambda imgs: [
+                (self.crop_and_resize(img, int(width * 0.5), int(height * 0.5) - self.spacing), (x, y))
+                for img, (x, y) in zip(
+                    imgs,
+                    [
+                        (0, 0),
+                        (int(width * 0.5) + self.spacing, 0),
+                        (0, int(height * 0.5)),
+                        (int(width * 0.5) + self.spacing, int(height * 0.5)),
+                    ],
+                )
+            ],
+        ]
+
+        layout = layouts[0] if formats.count("portrait") >= 1 else layouts[2]
+        for img, pos in layout(images):
+            collage.paste(img, pos)
+
+    def arrange_multiple_images(self, collage, images, width, height):
+        """
+        Raster-Layout für mehr als vier Bilder, mit Größenvariation.
+        """
+        cols = 3
+        rows = (len(images) + cols - 1) // cols
+        cell_width = (width - (cols - 1) * self.spacing) // cols
+        cell_height = (height - (rows - 1) * self.spacing) // rows
+
+        for i, img in enumerate(images):
+            row = i // cols
+            col = i % cols
+            w_variation = 1.0 + (0.1 * (-1 if i % 2 == 0 else 1))
+            h_variation = 1.0 + (0.1 * (-1 if i % 3 == 0 else 1))
+            target_width = int(cell_width * w_variation)
+            target_height = int(cell_height * h_variation)
+            resized_img = self.crop_and_resize(img, target_width, target_height)
+            x_offset = col * (cell_width + self.spacing)
+            y_offset = row * (cell_height + self.spacing)
+            collage.paste(resized_img, (x_offset, y_offset))
 
 def main():
     """
@@ -166,6 +222,6 @@ def main():
             output_path = os.path.join(output_dir, f"collage_week_{week_number}.jpg")
             CollageGenerator().generate_collage(image_files, week_number, output_path)
 
-
 if __name__ == "__main__":
     main()
+
