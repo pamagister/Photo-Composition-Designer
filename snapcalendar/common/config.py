@@ -8,6 +8,7 @@ class Config:
         # General settings
         self.width = self.config.getint("GENERAL", "width")
         self.height = self.config.getint("GENERAL", "height")
+        self.calendarHeight = self.config.getint("GENERAL", "calendarHeight")
         self.year = self.config.getint("GENERAL", "year")
         self.backgroundColor = tuple(map(int, self.config.get("GENERAL", "backgroundColor").split(",")))
         self.textColor1 = tuple(map(int, self.config.get("GENERAL", "textColor1").split(",")))
@@ -16,8 +17,8 @@ class Config:
         self.language = self.config.get("GENERAL", "language")
 
         # Layout settings
-        self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.height
-        self.fontSizeSmall = self.config.getfloat("LAYOUT", "fontSizeSmall") * self.height
+        self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.calendarHeight
+        self.fontSizeSmall = self.config.getfloat("LAYOUT", "fontSizeSmall") * self.calendarHeight
         self.marginBottom = self.config.getint("LAYOUT", "marginBottom")
         self.marginSides = self.config.getint("LAYOUT", "marginSides")
         self.spacing = self.config.getint("LAYOUT", "spacing")

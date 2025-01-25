@@ -1,9 +1,12 @@
-import os
 import calendar
-from datetime import datetime, timedelta
-from PIL import Image, ImageDraw, ImageFont
-from common.config import Config  # Importiere die Config-Klasse
 import locale
+import os
+from datetime import datetime, timedelta
+
+from PIL import Image, ImageDraw, ImageFont
+
+from common.config import Config  # Importiere die Config-Klasse
+
 
 class Calendarium:
     def __init__(self, config=None):
@@ -13,7 +16,7 @@ class Calendarium:
     def generateCalendarium(self, week):
         # Nutze Parameter aus der Config
         width = self.config.width
-        height = self.config.height
+        calendarHeight = self.config.calendarHeight
         marginBottom = self.config.marginBottom
         marginSides = self.config.marginSides
         fontSizeLarge = self.config.fontSizeLarge
@@ -24,7 +27,7 @@ class Calendarium:
         dates = [first_day + timedelta(days=i) for i in range(7)]
 
         # Erstelle das Bild
-        img = Image.new("RGB", (width, height), self.config.backgroundColor)
+        img = Image.new("RGB", (width, calendarHeight), self.config.backgroundColor)
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
@@ -44,7 +47,7 @@ class Calendarium:
 
         header_text = f"{month_name} {str(self.config.year)[-2:]}"
         col_width = (width - 2 * marginSides) // (7 + cols_month - 0.5)
-        base_y = height - marginBottom - fontSizeLarge
+        base_y = calendarHeight - marginBottom - fontSizeLarge
 
         draw.text((marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
 
