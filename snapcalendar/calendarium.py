@@ -42,9 +42,9 @@ class Calendarium:
 
         # Lade die Schriftarten
         try:
-            font_large = ImageFont.truetype("arial.ttf", int(fontSizeLarge))
-            font_small = ImageFont.truetype("arial.ttf", int(fontSizeSmall))
-            font_holiday = ImageFont.truetype("arial.ttf", int(fontSizeHoliday))
+            font_large = ImageFont.truetype("DejaVuSans.ttf", int(fontSizeLarge))
+            font_small = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeSmall))
+            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeHoliday))
         except:
             font_large = font_small = ImageFont.load_default()
 
@@ -71,26 +71,28 @@ class Calendarium:
             holiday_name = localHolidays.get(date)  # Name des Feiertags ermitteln
 
             # Feiertage und Wochenende hervorheben
-            if day_date.weekday() >= 5 or day_date in localHolidays:
-                day_color = self.config.holidayColor
+            if day_date.weekday() >= 6 or day_date in localHolidays:
+                name_color = self.config.textColor2
+                number_color = self.config.holidayColor
             else:
-                day_color = self.config.textColor1
+                name_color = self.config.textColor2
+                number_color = self.config.textColor1
 
             # Wochentag und Tag
             day_name = self.get_day_name(day_no, language)
-            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=self.config.textColor2,
+            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=name_color,
                       anchor="md")
-            draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=day_color, anchor="ma")
+            draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
             # Feiertage
             if holiday_name:
-                draw.text((x_pos, base_y + fontSizeLarge + spacing_date), holiday_name, font=font_holiday,
+                draw.text((x_pos, base_y+fontSizeLarge+fontSizeHoliday+spacing_date), holiday_name, font=font_holiday,
                           fill=self.config.holidayColor, anchor="md")
 
             # Geburtstage/Todestage
-            if date_key in self.birthdays.birthday_dict:
-                birthday_label = self.birthdays.birthday_dict[date_key]
-                draw.text((x_pos, base_y + fontSizeLarge + fontSizeHoliday + spacing_date * 2), birthday_label,
+            elif date_key in self.birthdays:
+                birthday_label = self.birthdays[date_key]
+                draw.text((x_pos, base_y+fontSizeLarge+fontSizeHoliday+spacing_date), birthday_label,
                           font=font_holiday, fill=self.config.textColor1, anchor="md")
 
         return img
