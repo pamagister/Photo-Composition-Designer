@@ -50,6 +50,13 @@ class CollageGenerator:
                 analysis.append("landscape")
         return analysis
 
+    def sort_by_aspect_ratio(self, images):
+        """
+        Sortiert Bilder basierend auf ihrem Seitenverhältnis (Breite / Höhe).
+        Schmalste ("portrait") zuerst, breiteste ("landscape") zuletzt.
+        """
+        return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
+
     def generate_collage(self, image_files, week, output_path):
         """
         Erzeugt eine Collage mit Bildern und einem Calendarium.
@@ -66,6 +73,8 @@ class CollageGenerator:
             return
 
         images = [Image.open(img) for img in image_files]
+        # Bilder nach Seitenverhältnis sortieren
+        images = self.sort_by_aspect_ratio(images)
         formats = self.analyze_images(images)
 
         # Anordnungslogik basierend auf Bildanzahl
@@ -117,26 +126,33 @@ class CollageGenerator:
         Layouts für drei Bilder.
         """
         layouts = [
+            # Ein großes Bild oben, zwei kleinere unten nebeneinander
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], width, int(height * 0.6) - self.spacing), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.4)), (0, int(height * 0.6))),
+                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.4)),
+                 (int(width * 0.5) + self.spacing, int(height * 0.6))),
+            ],
             # Großes Hochformat links, zwei Querformat rechts übereinander
             lambda imgs: [
                 (self.crop_and_resize(imgs[0], int(width * 0.4), height), (0, 0)),
                 (self.crop_and_resize(imgs[1], int(width * 0.6), int(height * 0.5)), (int(width * 0.4) + self.spacing, 0)),
                 (self.crop_and_resize(imgs[2], int(width * 0.6), int(height * 0.5)-self.spacing), (int(width * 0.4) + self.spacing, int(height * 0.5) + self.spacing)),
             ],
-            # Ein großes Bild oben, zwei kleinere unten nebeneinander
-            lambda imgs: [
-                (self.crop_and_resize(imgs[0], width, int(height * 0.6)-self.spacing), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.4)), (0, int(height * 0.6))),
-                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.4)), (int(width * 0.5) + self.spacing, int(height * 0.6))),
-            ],
-            # Drei gleich große Bilder nebeneinander
+            # Drei gleich große Bilder im Hochformat nebeneinander
             lambda imgs: [
                 (self.crop_and_resize(img, int(width / 3) - self.spacing, height), (i * (int(width / 3)), 0))
                 for i, img in enumerate(imgs)
             ],
         ]
 
-        layout = layouts[0] if formats.count("portrait") > 0 else layouts[1]
+        if formats.count("portrait") == 0:
+            layout = layouts[0]
+        elif formats.count("portrait") == 1:
+            layout = layouts[1]
+        elif formats.count("portrait") >= 2:
+            layout = layouts[2]
+
         for img, pos in layout(images):
             collage.paste(img, pos)
 
@@ -302,6 +318,6 @@ def generateDifferentLayouts():
 
 
 if __name__ == "__main__":
-    generateWeekCollages()
+    #generateWeekCollages()
     generateDifferentLayouts()
 
