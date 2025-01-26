@@ -86,6 +86,8 @@ class CollageGenerator:
             self.arrange_three_images(collage, images, formats, available_width, available_height)
         elif len(images) == 4:
             self.arrange_four_images(collage, images, formats, available_width, available_height)
+        elif len(images) == 5:
+            self.arrange_five_images(collage, images, formats, available_width, available_height)
         else:
             self.arrange_multiple_images(collage, images, available_width, available_height)
 
@@ -121,27 +123,28 @@ class CollageGenerator:
             collage.paste(img1, (0, 0))
             collage.paste(img2, (img_width + self.spacing, 0))
 
-    def arrange_three_images(self, collage, images, formats, width, height):
+    def arrange_three_images(self, collage, images, formats, w, h):
         """
         Layouts für drei Bilder.
         """
+        s = self.spacing
         layouts = [
             # Ein großes Bild oben, zwei kleinere unten nebeneinander
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], width, int(height * 0.6) - self.spacing), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.4)), (0, int(height * 0.6))),
-                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.4)),
-                 (int(width * 0.5) + self.spacing, int(height * 0.6))),
+                (self.crop_and_resize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(w * 0.5), int(h * 0.4)), (0, int(h * 0.6))),
+                (self.crop_and_resize(imgs[2], int(w * 0.5), int(h * 0.4)),
+                 (int(w * 0.5) + s, int(h * 0.6))),
             ],
             # Großes Hochformat links, zwei Querformat rechts übereinander
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], int(width * 0.4), height), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.6), int(height * 0.5)), (int(width * 0.4) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.6), int(height * 0.5)-self.spacing), (int(width * 0.4) + self.spacing, int(height * 0.5) + self.spacing)),
+                (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(w * 0.6), int(h * 0.5)), (int(w * 0.4) + s, 0)),
+                (self.crop_and_resize(imgs[2], int(w * 0.6), int(h * 0.5) - s), (int(w * 0.4) + s, int(h * 0.5) + s)),
             ],
             # Drei gleich große Bilder im Hochformat nebeneinander
             lambda imgs: [
-                (self.crop_and_resize(img, int(width / 3) - self.spacing, height), (i * (int(width / 3)), 0))
+                (self.crop_and_resize(img, int(w / 3) - s, h), (i * (int(w / 3)), 0))
                 for i, img in enumerate(imgs)
             ],
         ]
@@ -156,40 +159,145 @@ class CollageGenerator:
         for img, pos in layout(images):
             collage.paste(img, pos)
 
-    def arrange_four_images(self, collage, images, formats, width, height):
+    def arrange_four_images(self, collage, images, formats, w, h):
         """
         Layouts für vier Bilder.
         """
+        s = self.spacing
         layouts = [
-            # Großes Bild links, drei kleine rechts
+            # Zwei große Bilder oben, zwei kleine unten (LLLL)
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], int(width * 0.6), height), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.4), int(height / 3)), (int(width * 0.6) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.4), int(height / 3)-self.spacing), (int(width * 0.6) + self.spacing, int(height / 3) + self.spacing)),
-                (self.crop_and_resize(imgs[3], int(width * 0.4), int(height / 3)-1*self.spacing), (int(width * 0.6) + self.spacing, int(height * 2 / 3) + self.spacing*1)),
+                (self.crop_and_resize(imgs[0], int(w * 0.45), int(h * 0.55) - s), (0, 0)),
+                (self.crop_and_resize(imgs[3], int(w * 0.55), int(h * 0.55) - s), (int(w * 0.45) + s, 0)),
+                (self.crop_and_resize(imgs[2], int(w * 0.55), int(h * 0.45)), (0, int(h * 0.55))),
+                (self.crop_and_resize(imgs[1], int(w * 0.45), int(h * 0.45)), (int(w * 0.55) + s, int(h * 0.55))),
             ],
-            # Zwei große Bilder oben, zwei kleine unten
+            # Großes portrait-Bild links, drei kleine landscape rechts
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], int(width * 0.45), int(height * 0.55)-self.spacing), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.55), int(height * 0.55)-self.spacing), (int(width * 0.45) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.55), int(height * 0.45)), (0, int(height * 0.55))),
-                (self.crop_and_resize(imgs[3], int(width * 0.45), int(height * 0.45)), (int(width * 0.55) + self.spacing, int(height * 0.55))),
+                (self.crop_and_resize(imgs[0], int(w * 0.6), h), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[1], int(w * 0.4), int(h / 3)), (int(w * 0.6) + s, 0)),
+                (self.crop_and_resize(imgs[2], int(w * 0.4), int(h / 3) - s), (int(w * 0.6) + s, int(h / 3) + s)),
+                (self.crop_and_resize(imgs[3], int(w * 0.4), int(h / 3) - 1 * s), (int(w * 0.6) + s, int(h * 2 / 3) + s * 1)),
             ],
-            # Vier gleich große Bilder
+            # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleine landscape nebeneinander
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (int(width * 0.5) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (0, int(height * 0.5)+int(self.spacing/2))),
-                (self.crop_and_resize(imgs[3], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (int(width * 0.5) + self.spacing, int(height * 0.5)+int(self.spacing/2))),
+                (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[1], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
+                (self.crop_and_resize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.4) + s, int(h * 3 / 5) + s)),  # portrait, index 1
+                (self.crop_and_resize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.7) + s, int(h * 3 / 5) + s)),
+            ],
+
+            # Großes portrait-Bild links, rechts oben landscape, darunter kleines portrait und landscape nebeneinander
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[2], int(w * 0.6), int(h*3/5)), (int(w * 0.4) + s, 0)),
+                (self.crop_and_resize(imgs[1], int(w * 0.2), int(h*2/5) - s), (int(w * 0.4) + s, int(h*3/5) + s)),  # portrait, index 1
+                (self.crop_and_resize(imgs[3], int(w * 0.4-2*s), int(h*2/5) - s), (int(w * 0.6) + 2*s, int(h*3/5) + s)),
+            ],
+            # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleines portrait nebeneinander
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[3], int(w * 0.6), int(h * 2 / 5)), (int(w * 0.4) + s, 0)),
+                (self.crop_and_resize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s), (int(w * 0.4) + s, int(h * 2 / 5) + s)),  # portrait, index 1
+                (self.crop_and_resize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s), (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s)),  # portrait, index 2
             ],
 
         ]
 
-        layout = layouts[0] if formats.count("portrait") >= 1 else layouts[2]
+        if formats.count("portrait") == 0:  # LLLL = 4x landscape
+            layout = layouts[0]
+        elif formats.count("portrait") == 1:  # PLLL
+            layout = layouts[2]
+        elif formats.count("portrait") == 2:  # PPLL
+            layout = layouts[3]
+        elif formats.count("portrait") >= 3:  # PPPL
+            layout = layouts[4]
+
+        for img, pos in layout(images):
+            collage.paste(img, pos)
+
+    def arrange_five_images(self, collage, images, formats, w, h):
+        """
+        Layouts für fünf Bilder.
+        """
+        s = self.spacing
+        layouts = [
+            # Zwei große Bilder oben, drei etwas kleinere unten (LLLLL)
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(w * 0.5), int(h * 0.6) - s), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[1], int(w * 0.5), int(h * 0.6) - s), (int(w * 0.5) + s, 0)),
+                (self.crop_and_resize(imgs[2], int(w / 3), int(h * 0.4)), (int(w * 0 / 3) + 0 * s, int(h * 0.6))),
+                (self.crop_and_resize(imgs[3], int(w / 3), int(h * 0.4)), (int(w * 1 / 3) + 1 * s, int(h * 0.6))),
+                (self.crop_and_resize(imgs[4], int(w / 3), int(h * 0.4)), (int(w * 2 / 3) + 2 * s, int(h * 0.6))),
+            ],# großes Portrait links oben, großes landscape rechts oben, unten drei kleine landscape (PLLLL)
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(w * 0.3), int(h * 2 / 3) - s), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[1], int(w * 0.7), int(h * 2 / 3) - s), (int(w * 0.3) + s, 0)),
+                (self.crop_and_resize(imgs[4], int(w / 3), int(h / 3)), (int(w * 0 / 3) + 0*s, int(h * 2/3))),
+                (self.crop_and_resize(imgs[3], int(w / 3), int(h / 3)), (int(w * 1 / 3) + 1*s, int(h * 2/3))),
+                (self.crop_and_resize(imgs[2], int(w / 3), int(h / 3)), (int(w * 2 / 3) + 2*s, int(h * 2/3))),
+            ],
+            # zwei großes Portrais oben,  unten drei kleine landscape  (PPLLL)
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(w * 0.5), int(h * 2 / 3) - s), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[1], int(w * 0.5), int(h * 2 / 3) - s), (int(w * 0.5) + s, 0)),
+                (self.crop_and_resize(imgs[4], int(w / 3), int(h / 3)), (int(w * 0 / 3) + 0 * s, int(h * 2 / 3))),
+                (self.crop_and_resize(imgs[3], int(w / 3), int(h / 3)), (int(w * 1 / 3) + 1 * s, int(h * 2 / 3))),
+                (self.crop_and_resize(imgs[2], int(w / 3), int(h / 3)), (int(w * 2 / 3) + 2 * s, int(h * 2 / 3))),
+            ],
+            # Links ein großes Portrait, rechts daneben im goldenen Schnitt vier kleinere Bilder kleine unten (PPPLL)
+            lambda imgs: [
+                (self.crop_and_resize(imgs[0], int(w * 0.35-s), int(h)), (0, 0)),  # portrait, index 0
+                (self.crop_and_resize(imgs[1], int(w * 0.25), int(h * 0.55) - s), (int(w * 0.35), 0)),
+                (self.crop_and_resize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s), (int(w * 0.6) + s, 0)),
+                (self.crop_and_resize(imgs[3], int(w * 0.40), int(h * 0.45)), (int(w * 0.35), int(h * 0.55))),
+                (self.crop_and_resize(imgs[4], int(w * 0.25) - s, int(h * 0.45)), (int(w * 0.75) + s, int(h * 0.55))),
+            ],
+
+        ]
+
+        if formats.count("portrait") == 0:  # LLLLL = 5x landscape
+            layout = layouts[0]
+        elif formats.count("portrait") == 1:  # PLLLL
+            layout = layouts[1]
+        elif formats.count("portrait") == 2:  # PPLLL
+            layout = layouts[2]
+        elif formats.count("portrait") >= 3:  # PPPLL
+            layout = layouts[3]
+
         for img, pos in layout(images):
             collage.paste(img, pos)
 
     def arrange_multiple_images(self, collage, images, width, height):
+        """
+        Raster-Layout für mehr als vier Bilder, mit gleichmäßiger Verteilung.
+        Passt automatisch die Anzahl der Zeilen und Spalten an.
+        """
+        # Bestimme die Anzahl der Spalten und Zeilen basierend auf der Anzahl der Bilder
+        rows = int(len(images) ** 0.5)  # Quadratwurzel für möglichst gleichmäßige Aufteilung
+        cols = (len(images) + rows - 1) // rows  # Rundung nach oben
+
+        # Berechnung der Zellgrößen basierend auf der Collage-Größe und Abstände
+        cell_width = (width - (cols - 1) * self.spacing) // cols
+        cell_height = (height - (rows - 1) * self.spacing) // rows
+
+        # Bilder in das Raster einfügen
+        for i, img in enumerate(images):
+            # Bestimme Zeile und Spalte des aktuellen Bildes
+            row = i // cols
+            col = i % cols
+
+            # Passe die Bildgröße an die Rasterzelle an
+            resized_img = self.crop_and_resize(img, cell_width, cell_height)
+
+            # Berechne die Position des Bildes in der Collage
+            x_offset = col * (cell_width + self.spacing)
+            y_offset = row * (cell_height + self.spacing)
+
+            # Füge das Bild in die Collage ein
+            collage.paste(resized_img, (x_offset, y_offset))
+
+    def arrange_multiple_images2(self, collage, images, width, height):
         """
         Raster-Layout für mehr als vier Bilder, mit Größenvariation.
         """
@@ -285,6 +393,9 @@ def generateDifferentLayouts():
         (4, ["landscape", "landscape", "landscape", "portrait"]),   # 4 Bilder: 3x landscape, 1x portrait
         (4, ["landscape", "landscape", "portrait", "portrait"]),    # 4 Bilder: 2x landscape, 2x portrait
         (4, ["landscape", "portrait", "portrait", "portrait"]),     # 4 Bilder: 1x landscape, 3x portrait
+        (5, ["landscape", "landscape", "landscape", "landscape", "landscape"]),  # 5 Bilder: 5x landscape
+        (5, ["landscape", "landscape", "landscape", "landscape", "portrait"]),  # Beispiele für 5 Bilder
+        (5, ["landscape", "landscape", "landscape", "portrait", "portrait"]),  # Beispiele für 5 Bilder
         (5, ["landscape", "landscape", "portrait", "portrait", "portrait"]),  # Beispiele für 5 Bilder
         (6, ["landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),  # Beispiele für 6 Bilder
     ]
