@@ -7,6 +7,8 @@ from common.config import Config
 
 import exifread
 
+from snapcalendar.geo.geoPlotter import GeoMapPlotter
+
 
 class CollageGenerator:
     def __init__(self, config=None):
@@ -86,8 +88,6 @@ class CollageGenerator:
             if coords:
                 gps_coords.append(coords)
 
-
-
         # Anordnungslogik basierend auf Bildanzahl
         if len(images) == 1:
             self.arrange_one_image(collage, images[0], available_width, available_height)
@@ -102,10 +102,40 @@ class CollageGenerator:
         else:
             self.arrange_multiple_images(collage, images, available_width, available_height)
 
-        # TODO: Karte generieren mit GPS-Punkten aus EXIF-Daten
+        # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
+        if gps_coords:
+            map_image = self.generate_map(gps_coords)
+            map_image_resized = map_image.resize((self.calendarium_height, self.calendarium_height))
+            collage.paste(map_image_resized, (0, self.height - self.calendarium_height))
 
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
+
+    def generate_map(self, gps_coords):
+        """
+        Generiert eine Karte als Bild mit den GPS-Koordinaten.
+        :param gps_coords: Liste von (Breitengrad, Längengrad)-Tupeln.
+        :return: PIL.Image-Objekt mit der Karte.
+        """
+        from io import BytesIO
+        import geopandas as gpd
+        import matplotlib.pyplot as plt
+
+        # Plotter initialisieren
+        plotter = GeoMapPlotter(buffer_deg=2, resolution=(self.calendarium_height, self.calendarium_height))
+
+        # GeoDataFrame aus Koordinaten erstellen
+        plt = plotter.render_map(gps_coords)
+
+        # In einen BytesIO-Puffer speichern
+        buf = BytesIO()
+        plt.savefig(buf, format='PNG', bbox_inches='tight', dpi=100)  # Optional: Anpassung des DPI-Werts
+        plt.close()  # Speicher freigeben
+        buf.seek(0)
+
+        # Puffer als PIL.Image öffnen und zurückgeben
+        return Image.open(buf)
+
 
     def extract_gps_coordinates(self, img_path):
         """
