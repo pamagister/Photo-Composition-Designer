@@ -7,13 +7,13 @@ import holidays
 from PIL import Image, ImageDraw, ImageFont
 
 from common.config import Config  # Importiere die Config-Klasse
-from common.birthdays import Birthdays  # Importiere die Config-Klasse
+from common.anniversaries import Anniversaries  # Importiere die Config-Klasse
 
 
 class Calendarium:
-    def __init__(self, config=None, birthdays=None):
+    def __init__(self, config=None, anniversaries=None):
         self.config = config or Config()
-        self.birthdays = birthdays or Birthdays()
+        self.anniversaries = anniversaries or Anniversaries()
 
     def generateCalendarium(self, week):
         # Nutze Parameter aus der Config
@@ -90,8 +90,8 @@ class Calendarium:
                           fill=self.config.holidayColor, anchor="md")
 
             # Geburtstage/Todestage
-            elif date_key in self.birthdays:
-                birthday_label = self.birthdays[date_key]
+            elif date_key in self.anniversaries:
+                birthday_label = self.anniversaries[date_key]
                 draw.text((x_pos, base_y+fontSizeLarge+fontSizeHoliday+spacing_date), birthday_label,
                           font=font_holiday, fill=self.config.textColor1, anchor="md")
 
