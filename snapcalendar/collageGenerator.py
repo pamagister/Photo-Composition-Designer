@@ -5,6 +5,8 @@ from PIL import Image
 from calendarium import Calendarium
 from common.config import Config
 
+import exifread
+
 
 class CollageGenerator:
     def __init__(self, config=None):
@@ -59,7 +61,7 @@ class CollageGenerator:
 
     def generate_collage(self, image_files, week, output_path):
         """
-        Erzeugt eine Collage mit Bildern und einem Calendarium.
+        Erzeugt eine Collage mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
         calendarium = Calendarium(self.config).generateCalendarium(week)
@@ -77,6 +79,15 @@ class CollageGenerator:
         images = self.sort_by_aspect_ratio(images)
         formats = self.analyze_images(images)
 
+        # EXIF-Daten auslesen und GPS-Koordinaten extrahieren
+        gps_coords = []
+        for img_path in image_files:
+            coords = self.extract_gps_coordinates(img_path)
+            if coords:
+                gps_coords.append(coords)
+
+
+
         # Anordnungslogik basierend auf Bildanzahl
         if len(images) == 1:
             self.arrange_one_image(collage, images[0], available_width, available_height)
@@ -91,8 +102,32 @@ class CollageGenerator:
         else:
             self.arrange_multiple_images(collage, images, available_width, available_height)
 
+        # TODO: Karte generieren mit GPS-Punkten aus EXIF-Daten
+
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
+
+    def extract_gps_coordinates(self, img_path):
+        """
+        Liest die GPS-Koordinaten aus den EXIF-Daten eines Bildes.
+        """
+        with open(img_path, 'rb') as img_file:
+            tags = exifread.process_file(img_file, details=False)
+            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
+                lat = self.convert_to_decimal(tags['GPS GPSLatitude'].values)
+                lon = self.convert_to_decimal(tags['GPS GPSLongitude'].values)
+                if tags.get('GPS GPSLatitudeRef') == 'S':
+                    lat = -lat
+                if tags.get('GPS GPSLongitudeRef') == 'W':
+                    lon = -lon
+                return lat, lon
+        return None
+
+    def convert_to_decimal(self, dms):
+        """
+        Konvertiert Grad, Minuten und Sekunden in Dezimalgrad.
+        """
+        return dms[0] + dms[1] / 60 + dms[2] / 3600
 
     def arrange_one_image(self, collage, image, width, height):
         """
@@ -429,6 +464,6 @@ def generateDifferentLayouts():
 
 
 if __name__ == "__main__":
-    #generateWeekCollages()
-    generateDifferentLayouts()
+    generateWeekCollages()
+    #generateDifferentLayouts()
 
