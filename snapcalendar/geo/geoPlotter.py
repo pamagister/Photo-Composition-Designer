@@ -68,7 +68,7 @@ class GeoMapPlotter:
         gdf = gpd.read_file(shapefile_path)
         self.layers[name] = {"gdf": gdf, "color": color, "edgecolor": edgecolor, "alpha": alpha}
 
-    def plot_map(self, coords):
+    def render_map(self, coords):
         """
         Plottet den Kartenausschnitt.
         :param coords: Liste von (Breitengrad, Längengrad)-Tupeln.
@@ -105,15 +105,15 @@ class GeoMapPlotter:
         ax.set_xlim(bounds[0], bounds[2])
         ax.set_ylim(bounds[1], bounds[3])
 
-        plt.show()
+        return plt
+
 
 
 # Beispielaufruf
 if __name__ == "__main__":
-
     # Plotter initialisieren
+    # TODO: Background color
     plotter = GeoMapPlotter(buffer_km=400, resolution=(400, 300))
-
 
     # Koordinaten: Dresden, Leipzig, Chemnitz
     gps_coords = [
@@ -123,4 +123,5 @@ if __name__ == "__main__":
     ]
 
     # Karte plotten
-    plotter.plot_map(gps_coords)
+    plt = plotter.render_map(gps_coords)
+    plt.show()
