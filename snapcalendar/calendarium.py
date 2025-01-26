@@ -57,7 +57,7 @@ class Calendarium:
             day_color = self.config.weekendColor if day_no >= 5 else self.config.textColor1
             day_name = self.get_day_name(day_no, self.config.language)
 
-            draw.text((x_pos, base_y - self.config.spacing), day_name, font=font_small, fill=self.config.textColor2, anchor="md")
+            draw.text((x_pos, base_y - int(fontSizeSmall*0.4)), day_name, font=font_small, fill=self.config.textColor2, anchor="md")
             draw.text((x_pos, base_y), str(dates[day_no].day), font=font_large, fill=day_color, anchor="ma")
 
         return img

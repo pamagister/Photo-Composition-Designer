@@ -55,7 +55,7 @@ class CollageGenerator:
         calendarium = Calendarium(self.config).generateCalendarium(week)
         collage.paste(calendarium, (0, self.height - self.calendarium_height))
 
-        available_height = self.height - self.calendarium_height - self.spacing
+        available_height = self.height - self.calendarium_height
         available_width = self.width
 
         if len(image_files) == 0:
@@ -118,13 +118,13 @@ class CollageGenerator:
             lambda imgs: [
                 (self.crop_and_resize(imgs[0], int(width * 0.4), height), (0, 0)),
                 (self.crop_and_resize(imgs[1], int(width * 0.6), int(height * 0.5)), (int(width * 0.4) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.6), int(height * 0.5)), (int(width * 0.4) + self.spacing, int(height * 0.5) + self.spacing)),
+                (self.crop_and_resize(imgs[2], int(width * 0.6), int(height * 0.5)-self.spacing), (int(width * 0.4) + self.spacing, int(height * 0.5) + self.spacing)),
             ],
             # Ein großes Bild oben, zwei kleinere unten nebeneinander
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], width, int(height * 0.6)), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.4)), (0, int(height * 0.6) + self.spacing)),
-                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.4)), (int(width * 0.5) + self.spacing, int(height * 0.6) + self.spacing)),
+                (self.crop_and_resize(imgs[0], width, int(height * 0.6)-self.spacing), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.4)), (0, int(height * 0.6))),
+                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.4)), (int(width * 0.5) + self.spacing, int(height * 0.6))),
             ],
             # Drei gleich große Bilder nebeneinander
             lambda imgs: [
@@ -133,7 +133,7 @@ class CollageGenerator:
             ],
         ]
 
-        layout = layouts[0] if formats.count("portrait") > 0 else layouts[0]
+        layout = layouts[0] if formats.count("portrait") > 0 else layouts[1]
         for img, pos in layout(images):
             collage.paste(img, pos)
 
@@ -145,30 +145,25 @@ class CollageGenerator:
             # Großes Bild links, drei kleine rechts
             lambda imgs: [
                 (self.crop_and_resize(imgs[0], int(width * 0.6), height), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.4), int(height * 0.33)), (int(width * 0.6) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.4), int(height * 0.33)), (int(width * 0.6) + self.spacing, int(height * 0.33) + self.spacing)),
-                (self.crop_and_resize(imgs[3], int(width * 0.4), int(height * 0.33)-self.spacing), (int(width * 0.6) + self.spacing, int(height * 0.66) + self.spacing*2)),
+                (self.crop_and_resize(imgs[1], int(width * 0.4), int(height / 3)), (int(width * 0.6) + self.spacing, 0)),
+                (self.crop_and_resize(imgs[2], int(width * 0.4), int(height / 3)-self.spacing), (int(width * 0.6) + self.spacing, int(height / 3) + self.spacing)),
+                (self.crop_and_resize(imgs[3], int(width * 0.4), int(height / 3)-1*self.spacing), (int(width * 0.6) + self.spacing, int(height * 2 / 3) + self.spacing*1)),
             ],
             # Zwei große Bilder oben, zwei kleine unten
             lambda imgs: [
-                (self.crop_and_resize(imgs[0], int(width * 0.45), int(height * 0.55)), (0, 0)),
-                (self.crop_and_resize(imgs[1], int(width * 0.55), int(height * 0.55)), (int(width * 0.45) + self.spacing, 0)),
-                (self.crop_and_resize(imgs[2], int(width * 0.55), int(height * 0.45)), (0, int(height * 0.55) + self.spacing)),
-                (self.crop_and_resize(imgs[3], int(width * 0.45), int(height * 0.45)), (int(width * 0.55) + self.spacing, int(height * 0.55) + self.spacing)),
+                (self.crop_and_resize(imgs[0], int(width * 0.45), int(height * 0.55)-self.spacing), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.55), int(height * 0.55)-self.spacing), (int(width * 0.45) + self.spacing, 0)),
+                (self.crop_and_resize(imgs[2], int(width * 0.55), int(height * 0.45)), (0, int(height * 0.55))),
+                (self.crop_and_resize(imgs[3], int(width * 0.45), int(height * 0.45)), (int(width * 0.55) + self.spacing, int(height * 0.55))),
             ],
             # Vier gleich große Bilder
             lambda imgs: [
-                (self.crop_and_resize(img, int(width * 0.5), int(height * 0.5) - self.spacing), (x, y))
-                for img, (x, y) in zip(
-                    imgs,
-                    [
-                        (0, 0),
-                        (int(width * 0.5) + self.spacing, 0),
-                        (0, int(height * 0.5)),
-                        (int(width * 0.5) + self.spacing, int(height * 0.5)),
-                    ],
-                )
+                (self.crop_and_resize(imgs[0], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (0, 0)),
+                (self.crop_and_resize(imgs[1], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (int(width * 0.5) + self.spacing, 0)),
+                (self.crop_and_resize(imgs[2], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (0, int(height * 0.5)+int(self.spacing/2))),
+                (self.crop_and_resize(imgs[3], int(width * 0.5), int(height * 0.5-int(self.spacing/2))), (int(width * 0.5) + self.spacing, int(height * 0.5)+int(self.spacing/2))),
             ],
+
         ]
 
         layout = layouts[0] if formats.count("portrait") >= 1 else layouts[2]
