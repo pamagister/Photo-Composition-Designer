@@ -28,6 +28,7 @@ class Config:
         self.shortDayNames = self.config.getboolean("LAYOUT", "shortDayNames")
         self.shortMonthNames = self.config.getboolean("LAYOUT", "shortMonthNames")
         self.photoLocationMaps = self.config.getboolean("LAYOUT", "photoLocationMaps")
+        self.photoLocationRange = self.config.getfloat("LAYOUT", "photoLocationRange")
 
     def __repr__(self):
         return f"Config({self.__dict__})"

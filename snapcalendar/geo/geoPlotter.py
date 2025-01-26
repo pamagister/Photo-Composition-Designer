@@ -3,6 +3,7 @@ from pathlib import Path
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
+import math
 
 
 class GeoMapPlotter:
@@ -73,11 +74,24 @@ class GeoMapPlotter:
         :return: Begrenzungen als (minx, miny, maxx, maxy).
         """
         bounds = geo_df.total_bounds  # (minx, miny, maxx, maxy)
+
+        # Berechne die Höhe des Ausschnitts basierend auf dem Puffer
+        height_deg = self.buffer_deg  # Höhe bleibt durch den Puffer definiert
+
+        # Berechne die mittlere Breite (durchschnittliche Breite der Punkte im GeoDataFrame)
+        mid_lat = (bounds[1] + bounds[3]) / 2  # Mittelwert der miny und maxy Koordinaten (Breitengrad)
+        mid_lon = (bounds[0] + bounds[2]) / 2  # Mittelwert der minx und maxx Koordinaten (Längengrad)
+
+        # Berechne die Breite des Ausschnitts unter Berücksichtigung der geographischen Breite
+        lon_dis_per_deg = 111.32 * math.cos(math.radians(mid_lat))  # Längengrad-Distanz in km
+        # Berechne die Breite basierend auf der Auflösung und der tatsächlichen Längengrad-Distanz
+        width_deg = 0.5*111.32 * (height_deg + height_deg + bounds[3] - bounds[1]) * self.resolution[0] / self.resolution[1] / lon_dis_per_deg
+
         return (
-            bounds[0] - self.buffer_deg*1,  # minx - Puffer
-            bounds[1] - self.buffer_deg,  # miny - Puffer
-            bounds[2] + self.buffer_deg*1,  # maxx + Puffer
-            bounds[3] + self.buffer_deg,  # maxy + Puffer
+            mid_lon - width_deg,  # minx - berechnete Breite (links)
+            bounds[1] - height_deg,  # miny - Puffer (unten)
+            mid_lon + width_deg,  # maxx + berechnete Breite (rechts)
+            bounds[3] + height_deg,  # maxy + Puffer (oben)
         )
 
     def add_layer(self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5):
@@ -113,7 +127,7 @@ class GeoMapPlotter:
         ax.set_facecolor(self.background_color)
 
         # Ländergrenzen plotten
-        world.plot(ax=ax, color=self.background_color, edgecolor=self.border_color, linewidth=self.line_width*1.5)
+        world.plot(ax=ax, color=self.background_color, edgecolor=self.border_color, linewidth=self.line_width*1.0)
 
         # Zusätzliche Layer plotten
         for layer_name, layer_data in self.layers.items():
@@ -143,13 +157,15 @@ class GeoMapPlotter:
 # Beispielaufruf
 if __name__ == "__main__":
     # Plotter initialisieren
-    plotter = GeoMapPlotter(buffer_deg=2, resolution=(400, 300), background_color="lightgray", line_width=0.8)
+    plotter = GeoMapPlotter(buffer_deg=4, resolution=(300, 300), background_color="white", line_width=1.0)
 
     # Koordinaten: Dresden, Leipzig, Chemnitz
     gps_coords = [
         (51.0504, 13.7373),  # Dresden
         (51.3397, 12.3731),  # Leipzig
         (50.8278, 12.9214),  # Chemnitz
+        (51.1079, 17.0441),  # Breslau
+        (52.5200, 13.5156),  # Berlin
     ]
 
     # Karte erstellen und anzeigen

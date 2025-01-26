@@ -124,7 +124,7 @@ class CollageGenerator:
 
         # Plotter initialisieren
         plotter = GeoMapPlotter(
-            buffer_deg=2,
+            buffer_deg=self.config.photoLocationRange,
             resolution=(self.calendarium_height, self.calendarium_height),
             background_color=self.config.backgroundColor,
             border_color=self.config.textColor1)
@@ -134,7 +134,7 @@ class CollageGenerator:
 
         # In einen BytesIO-Puffer speichern
         buf = BytesIO()
-        plt.savefig(buf, format='PNG', bbox_inches='tight', dpi=100)  # Optional: Anpassung des DPI-Werts
+        plt.savefig(buf, format='PNG', bbox_inches='tight', dpi=300)  # Optional: Anpassung des DPI-Werts
         plt.close()  # Speicher freigeben
         buf.seek(0)
 
