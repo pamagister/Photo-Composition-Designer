@@ -66,8 +66,9 @@ class CollageGenerator:
         Erzeugt eine Collage mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
-        calendarium = Calendarium(self.config).generateCalendarium(week)
-        collage.paste(calendarium, (0, self.height - self.calendarium_height))
+        calendarObj = Calendarium(self.config)
+        calendarImage = calendarObj.generateCalendarium(week)
+        collage.paste(calendarImage, (0, self.height - self.calendarium_height))
 
         available_height = self.height - self.calendarium_height
         available_width = self.width
@@ -103,10 +104,10 @@ class CollageGenerator:
             self.arrange_multiple_images(collage, images, available_width, available_height)
 
         # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
-        if gps_coords:
+        if gps_coords and self.config.photoLocationMaps:
             map_image = self.generate_map(gps_coords)
             map_image_resized = map_image.resize((self.calendarium_height, self.calendarium_height))
-            collage.paste(map_image_resized, (0, self.height - self.calendarium_height))
+            collage.paste(map_image_resized, (self.width-self.calendarium_height, self.height - self.calendarium_height))
 
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
@@ -122,7 +123,11 @@ class CollageGenerator:
         import matplotlib.pyplot as plt
 
         # Plotter initialisieren
-        plotter = GeoMapPlotter(buffer_deg=2, resolution=(self.calendarium_height, self.calendarium_height))
+        plotter = GeoMapPlotter(
+            buffer_deg=2,
+            resolution=(self.calendarium_height, self.calendarium_height),
+            background_color=self.config.backgroundColor,
+            border_color=self.config.textColor1)
 
         # GeoDataFrame aus Koordinaten erstellen
         plt = plotter.render_map(gps_coords)

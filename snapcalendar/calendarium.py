@@ -14,11 +14,13 @@ class Calendarium:
     def __init__(self, config=None, anniversaries=None):
         self.config = config or Config()
         self.anniversaries = anniversaries or Anniversaries()
-
+        self.width = self.config.width
+        self.calendarHeight = self.config.calendarHeight
+        if self.config.photoLocationMaps:
+            self.width -= self.calendarHeight - 2 * self.config.marginSides
     def generateCalendarium(self, week):
         # Nutze Parameter aus der Config
-        width = self.config.width
-        calendarHeight = self.config.calendarHeight
+
         marginBottom = self.config.marginBottom
         marginSides = self.config.marginSides
         fontSizeLarge = self.config.fontSizeLarge
@@ -37,7 +39,7 @@ class Calendarium:
         localHolidays = self.get_combined_holidays(year, country_code, self.config.holidayCountries)
 
         # Erstelle das Bild
-        img = Image.new("RGB", (width, calendarHeight), self.config.backgroundColor)
+        img = Image.new("RGB", (self.width, self.calendarHeight), self.config.backgroundColor)
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
@@ -52,19 +54,17 @@ class Calendarium:
         month_name = self.get_month_name(dates[0].month, language)
         if self.config.shortMonthNames:
             month_name = month_name[:3]
-            cols_month = 2.5
-        else:
-            cols_month = 4.5
+
+        cols_count, col_width = self.get_cols_property()
 
         header_text = f"{month_name} {str(year)[-2:]}"
-        col_width = (width - 2 * marginSides) // (7 + cols_month - 0.5)
-        base_y = calendarHeight - marginBottom - fontSizeLarge - fontSizeHoliday
+        base_y = self.calendarHeight - marginBottom - fontSizeLarge - fontSizeHoliday
 
         draw.text((marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
         spacing_date =  int(fontSizeSmall * 0.4)
         # Zeichne Wochentage und Zahlen
         for day_no in range(7):
-            x_pos = marginSides + (day_no + cols_month) * col_width
+            x_pos = marginSides + (day_no + cols_count) * col_width
             day_date = dates[day_no]
             date_key = (day_date.day, day_date.month)  # (Tag, Monat)
             date = dates[day_no]
@@ -96,6 +96,13 @@ class Calendarium:
                           font=font_holiday, fill=self.config.textColor1, anchor="md")
 
         return img
+    def get_cols_property(self):
+        if self.config.shortMonthNames:
+            cols = 2.5
+        else:
+            cols = 4.5
+        col_width = (self.width - 2 * self.config.marginSides) // (7 + cols - 0.5)
+        return cols, col_width
 
     @staticmethod
     def get_month_name(month_no, locale_name="en_US.UTF-8"):

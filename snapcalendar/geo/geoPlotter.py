@@ -10,7 +10,12 @@ class GeoMapPlotter:
     Klasse zum Plotten eines Kartenausschnitts mit optionalen Layern wie Bundesländer oder Gewässer.
     """
 
-    def __init__(self, buffer_deg=2, resolution=(400, 300), background_color="white", line_width=0.5):
+    def __init__(self,
+                 buffer_deg=2,
+                 resolution=(400, 300),
+                 background_color="white",
+                 border_color="black",
+                 line_width=1.0):
         """
         Initialisiert den GeoMapPlotter.
         :param buffer_deg: Zusätzliche Ausdehnung in Grad für die Kartengrenzen.
@@ -28,13 +33,26 @@ class GeoMapPlotter:
         self.shapefile_path = countries_path
         self.buffer_deg = buffer_deg
         self.resolution = resolution
-        self.background_color = background_color
+        self.background_color = self._normalize_color(background_color)
+        self.border_color = self._normalize_color(border_color)
         self.line_width = line_width
         self.layers = {}
 
         # Zusätzliche Layer hinzufügen
         lakes_path = Path(lakes_path).resolve()
-        self.add_layer("lakes", lakes_path, color="blue", edgecolor="blue", alpha=0.5)
+        self.add_layer("lakes", lakes_path, color="blue", edgecolor="blue", alpha=1.0)
+
+    @staticmethod
+    def _normalize_color(color):
+        """
+        Normalisiert die Hintergrundfarbe in den Bereich 0-1, falls nötig.
+        :param color: Farbe als Name, Hex-Wert oder (R, G, B)-Tupel im Bereich 0-255.
+        :return: Farbe im Matplotlib-kompatiblen Format.
+        """
+        if isinstance(color, tuple) and len(color) == 3:
+            # Skaliere RGB-Werte von 0-255 auf 0-1
+            return tuple(c / 255 for c in color)
+        return color
 
     @staticmethod
     def _create_geodataframe(coords):
@@ -56,9 +74,9 @@ class GeoMapPlotter:
         """
         bounds = geo_df.total_bounds  # (minx, miny, maxx, maxy)
         return (
-            bounds[0] - self.buffer_deg*2,  # minx - Puffer
+            bounds[0] - self.buffer_deg*1,  # minx - Puffer
             bounds[1] - self.buffer_deg,  # miny - Puffer
-            bounds[2] + self.buffer_deg*2,  # maxx + Puffer
+            bounds[2] + self.buffer_deg*1,  # maxx + Puffer
             bounds[3] + self.buffer_deg,  # maxy + Puffer
         )
 
@@ -95,7 +113,7 @@ class GeoMapPlotter:
         ax.set_facecolor(self.background_color)
 
         # Ländergrenzen plotten
-        world.plot(ax=ax, color="white", edgecolor="black", linewidth=self.line_width*2)
+        world.plot(ax=ax, color=self.background_color, edgecolor=self.border_color, linewidth=self.line_width*1.5)
 
         # Zusätzliche Layer plotten
         for layer_name, layer_data in self.layers.items():
