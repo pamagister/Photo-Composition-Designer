@@ -7,11 +7,13 @@ import holidays
 from PIL import Image, ImageDraw, ImageFont
 
 from common.config import Config  # Importiere die Config-Klasse
+from common.birthdays import Birthdays  # Importiere die Config-Klasse
 
 
 class Calendarium:
-    def __init__(self, config=None):
+    def __init__(self, config=None, birthdays=None):
         self.config = config or Config()
+        self.birthdays = birthdays or Birthdays()
 
     def generateCalendarium(self, week):
         # Nutze Parameter aus der Config
@@ -64,6 +66,7 @@ class Calendarium:
         for day_no in range(7):
             x_pos = marginSides + (day_no + cols_month) * col_width
             day_date = dates[day_no]
+            date_key = (day_date.day, day_date.month)  # (Tag, Monat)
             date = dates[day_no]
             holiday_name = localHolidays.get(date)  # Name des Feiertags ermitteln
 
@@ -75,10 +78,20 @@ class Calendarium:
 
             # Wochentag und Tag
             day_name = self.get_day_name(day_no, language)
-            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=self.config.textColor2, anchor="md")
+            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=self.config.textColor2,
+                      anchor="md")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=day_color, anchor="ma")
+
+            # Feiertage
             if holiday_name:
-                draw.text((x_pos, base_y+fontSizeLarge+fontSizeHoliday+spacing_date), holiday_name, font=font_holiday, fill=self.config.holidayColor, anchor="md")
+                draw.text((x_pos, base_y + fontSizeLarge + spacing_date), holiday_name, font=font_holiday,
+                          fill=self.config.holidayColor, anchor="md")
+
+            # Geburtstage/Todestage
+            if date_key in self.birthdays.birthday_dict:
+                birthday_label = self.birthdays.birthday_dict[date_key]
+                draw.text((x_pos, base_y + fontSizeLarge + fontSizeHoliday + spacing_date * 2), birthday_label,
+                          font=font_holiday, fill=self.config.textColor1, anchor="md")
 
         return img
 
@@ -124,6 +137,8 @@ class Calendarium:
             combined_holidays.update(local_holidays)
 
         return combined_holidays
+
+
 
 
 def main():
