@@ -196,26 +196,31 @@ def main():
     Testfunktion: Generiert Collagen für alle Wochen aus dem Ordner ../res/images.
     """
     base_dir = "../res/images"
-    output_dir = "output/collages"
+    output_dir = "temp/collages"
     os.makedirs(output_dir, exist_ok=True)
 
-    for week_folder in sorted(os.listdir(base_dir)):
-        week_path = os.path.join(base_dir, week_folder)
-        if os.path.isdir(week_path) and week_folder.startswith("week_"):
-            week_number = int(week_folder.split("_")[1])  # Extrahiere Wochennummer
+    for weekIndex, folder in enumerate(sorted(os.listdir(base_dir))):
+        folder_path = os.path.join(base_dir, folder)
+        if os.path.isdir(folder_path):
+            # Sammle alle Bilddateien im aktuellen Ordner
             image_files = [
-                os.path.join(week_path, file)
-                for file in sorted(os.listdir(week_path))
+                os.path.join(folder_path, file)
+                for file in sorted(os.listdir(folder_path))
                 if file.lower().endswith((".png", ".jpg", ".jpeg"))
             ]
 
             if not image_files:
-                print(f"Keine Bilder in {week_folder} gefunden, überspringe...")
+                print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
                 continue
 
+            # Generiere den Ausgabe-Pfad basierend auf dem Ordnernamen
+            output_file_name = f"collage_{folder}.jpg"
+            output_path = os.path.join(output_dir, output_file_name)
+
             # Collage generieren
-            output_path = os.path.join(output_dir, f"collage_week_{week_number}.jpg")
-            CollageGenerator().generate_collage(image_files, week_number, output_path)
+            print(f"Generiere Collage für Ordner: {folder}")
+            CollageGenerator().generate_collage(image_files, weekIndex, output_path)
+
 
 if __name__ == "__main__":
     main()
