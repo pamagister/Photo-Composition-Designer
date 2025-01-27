@@ -21,13 +21,14 @@ class Config:
         # Layout settings
         self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.calendarHeight
         self.fontSizeSmall = self.config.getfloat("LAYOUT", "fontSizeSmall") * self.calendarHeight
-        self.fontSizeHoliday = self.config.getfloat("LAYOUT", "fontSizeHoliday") * self.calendarHeight
+        self.fontSizeAnniversaries = self.config.getfloat("LAYOUT", "fontSizeAnniversaries") * self.calendarHeight
         self.marginBottom = self.config.getint("LAYOUT", "marginBottom")
         self.marginSides = self.config.getint("LAYOUT", "marginSides")
         self.spacing = self.config.getint("LAYOUT", "spacing")
-        self.shortDayNames = self.config.getboolean("LAYOUT", "shortDayNames")
-        self.shortMonthNames = self.config.getboolean("LAYOUT", "shortMonthNames")
-        self.photoLocationMaps = self.config.getboolean("LAYOUT", "photoLocationMaps")
+        self.useShortDayNames = self.config.getboolean("LAYOUT", "useShortDayNames")
+        self.useShortMonthNames = self.config.getboolean("LAYOUT", "useShortMonthNames")
+        self.usePhotoLocationMaps = self.config.getboolean("LAYOUT", "usePhotoLocationMaps")
+        self.usePhotoDescription = self.config.getboolean("LAYOUT", "usePhotoDescription")
         self.photoLocationRange = self.config.getfloat("LAYOUT", "photoLocationRange")
 
     def __repr__(self):

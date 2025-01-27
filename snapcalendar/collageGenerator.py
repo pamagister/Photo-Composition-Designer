@@ -7,6 +7,7 @@ from common.config import Config
 
 import exifread
 
+from snapcalendar.collage.descriptionGenerator import DescriptionGenerator
 from snapcalendar.geo.geoPlotter import GeoMapPlotter
 
 
@@ -17,6 +18,8 @@ class CollageGenerator:
         self.width = self.config.width
         self.height = self.config.height
         self.spacing = self.config.spacing
+        self.calendarObj = Calendarium(self.config)
+        self.descGenerator = DescriptionGenerator()
 
     def crop_and_resize(self, image, target_width, target_height):
         """
@@ -61,16 +64,19 @@ class CollageGenerator:
         """
         return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
 
-    def generate_collage(self, image_files, week, output_path):
+    def generate_collage(self, image_files, week, output_path, photo_description=''):
         """
         Erzeugt eine Collage mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
-        calendarObj = Calendarium(self.config)
-        calendarImage = calendarObj.generateCalendarium(week)
+        calendarImage = self.calendarObj.generateCalendarium(week)
         collage.paste(calendarImage, (0, self.height - self.calendarium_height))
 
-        available_height = self.height - self.calendarium_height
+        if self.config.usePhotoDescription:
+            descriptionImage = self.descGenerator.generateDescription(photo_description)
+            collage.paste(descriptionImage, (0, self.height - self.calendarium_height - self.descGenerator.height))
+
+        available_height = self.height - self.calendarium_height - self.descGenerator.height
         available_width = self.width
 
         if len(image_files) == 0:
@@ -104,7 +110,7 @@ class CollageGenerator:
             self.arrange_multiple_images(collage, images, available_width, available_height)
 
         # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
-        if gps_coords and self.config.photoLocationMaps:
+        if gps_coords and self.config.usePhotoLocationMaps:
             map_image = self.generate_map(gps_coords)
             map_image_resized = map_image.resize((self.calendarium_height, self.calendarium_height))
             collage.paste(map_image_resized, (self.width-self.calendarium_height, self.height - self.calendarium_height))

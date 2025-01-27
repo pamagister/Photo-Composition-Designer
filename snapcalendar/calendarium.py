@@ -16,7 +16,7 @@ class Calendarium:
         self.anniversaries = anniversaries or Anniversaries()
         self.width = self.config.width
         self.calendarHeight = self.config.calendarHeight
-        if self.config.photoLocationMaps:
+        if self.config.usePhotoLocationMaps:
             self.width -= self.calendarHeight - 2 * self.config.marginSides
     def generateCalendarium(self, week):
         # Nutze Parameter aus der Config
@@ -25,7 +25,7 @@ class Calendarium:
         marginSides = self.config.marginSides
         fontSizeLarge = self.config.fontSizeLarge
         fontSizeSmall = self.config.fontSizeSmall
-        fontSizeHoliday = self.config.fontSizeHoliday
+        fontSizeAnniversaries = self.config.fontSizeAnniversaries
         year = self.config.year
         language = self.config.language
 
@@ -46,19 +46,19 @@ class Calendarium:
         try:
             font_large = ImageFont.truetype("DejaVuSans.ttf", int(fontSizeLarge))
             font_small = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeSmall))
-            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeHoliday))
+            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeAnniversaries))
         except:
             font_large = font_small = ImageFont.load_default()
 
         # Zeichne Monat und Jahr
         month_name = self.get_month_name(dates[0].month, language)
-        if self.config.shortMonthNames:
+        if self.config.useShortMonthNames:
             month_name = month_name[:3]
 
         cols_count, col_width = self.get_cols_property()
 
         header_text = f"{month_name} {str(year)[-2:]}"
-        base_y = self.calendarHeight - marginBottom - fontSizeLarge - fontSizeHoliday
+        base_y = self.calendarHeight - marginBottom - fontSizeLarge - fontSizeAnniversaries
 
         draw.text((marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
         spacing_date =  int(fontSizeSmall * 0.4)
@@ -86,18 +86,18 @@ class Calendarium:
 
             # Feiertage
             if holiday_name:
-                draw.text((x_pos, base_y+fontSizeLarge+fontSizeHoliday+spacing_date), holiday_name, font=font_holiday,
+                draw.text((x_pos, base_y+fontSizeLarge+fontSizeAnniversaries+spacing_date), holiday_name, font=font_holiday,
                           fill=self.config.holidayColor, anchor="md")
 
             # Geburtstage/Todestage
             elif date_key in self.anniversaries:
                 birthday_label = self.anniversaries[date_key]
-                draw.text((x_pos, base_y+fontSizeLarge+fontSizeHoliday+spacing_date), birthday_label,
+                draw.text((x_pos, base_y+fontSizeLarge+fontSizeAnniversaries+spacing_date), birthday_label,
                           font=font_holiday, fill=self.config.textColor1, anchor="md")
 
         return img
     def get_cols_property(self):
-        if self.config.shortMonthNames:
+        if self.config.useShortMonthNames:
             cols = 2.0
         else:
             cols = 4.0
