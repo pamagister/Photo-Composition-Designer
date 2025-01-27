@@ -388,12 +388,11 @@ class CollageGenerator:
             y_offset = row * (cell_height + self.spacing)
             collage.paste(resized_img, (x_offset, y_offset))
 
-def generateWeekCollages():
+def generateWeekCollages(output_dir):
     """
     Testfunktion: Generiert Collagen für alle Wochen aus dem Ordner ../res/images.
     """
     base_dir = "../res/images"
-    output_dir = "temp/collages"
     os.makedirs(output_dir, exist_ok=True)
 
     for weekIndex, folder in enumerate(sorted(os.listdir(base_dir))):
@@ -416,16 +415,15 @@ def generateWeekCollages():
 
             # Collage generieren
             print(f"Generiere Collage für Ordner: {folder}")
-            CollageGenerator().generate_collage(image_files, weekIndex, output_path)
+            CollageGenerator().generate_collage(image_files, weekIndex+30, output_path)
 
 
-def generateDifferentLayouts():
+def generateDifferentLayouts(output_dir):
     """
     Testfunktion: Generiert Collagen mit verschiedenen Layouts und Bildkombinationen
     aus dem Ordner ../res/images.
     """
     base_dir = "../res/images"
-    output_dir = "temp/collages"
     os.makedirs(output_dir, exist_ok=True)
 
     # Sammle alle Bilddateien (auf oberster Ebene)
@@ -499,6 +497,7 @@ def generateDifferentLayouts():
 
 
 if __name__ == "__main__":
-    generateWeekCollages()
-    #generateDifferentLayouts()
+    output_dir = "../temp/collages"
+    generateWeekCollages(output_dir)
+    #generateDifferentLayouts(output_dir)
 
