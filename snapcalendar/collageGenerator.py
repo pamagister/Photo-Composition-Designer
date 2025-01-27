@@ -2,7 +2,7 @@ import os
 
 from PIL import Image
 
-from calendarium import Calendarium
+from snapcalendar.collage.calendarGenerator import CalendarGenerator
 from common.config import Config
 
 import exifread
@@ -18,7 +18,7 @@ class CollageGenerator:
         self.width = self.config.width
         self.height = self.config.height
         self.spacing = self.config.spacing
-        self.calendarObj = Calendarium(self.config)
+        self.calendarObj = CalendarGenerator(self.config)
         self.descGenerator = DescriptionGenerator()
 
     def crop_and_resize(self, image, target_width, target_height):
@@ -125,8 +125,6 @@ class CollageGenerator:
         :return: PIL.Image-Objekt mit der Karte.
         """
         from io import BytesIO
-        import geopandas as gpd
-        import matplotlib.pyplot as plt
 
         # Plotter initialisieren
         plotter = GeoMapPlotter(

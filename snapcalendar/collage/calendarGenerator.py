@@ -6,11 +6,11 @@ import holidays
 
 from PIL import Image, ImageDraw, ImageFont
 
-from common.config import Config  # Importiere die Config-Klasse
-from common.anniversaries import Anniversaries  # Importiere die Config-Klasse
+from snapcalendar.common.config import Config
+from snapcalendar.common.anniversaries import Anniversaries
 
 
-class Calendarium:
+class CalendarGenerator:
     def __init__(self, config=None, anniversaries=None):
         self.config = config or Config()
         self.anniversaries = anniversaries or Anniversaries()
@@ -18,6 +18,7 @@ class Calendarium:
         self.calendarHeight = self.config.calendarHeight
         if self.config.usePhotoLocationMaps:
             self.width -= self.calendarHeight - 2 * self.config.marginSides
+
     def generateCalendarium(self, week):
         # Nutze Parameter aus der Config
 
@@ -153,9 +154,9 @@ class Calendarium:
 def main():
     # Config aus Datei laden
     config = Config("config.ini")
-    calendar_gen = Calendarium(config=config)
+    calendar_gen = CalendarGenerator(config=config)
 
-    temp_dir = "../temp/calendarium"
+    temp_dir = "../../temp/calendarium"
     os.makedirs(temp_dir, exist_ok=True)
 
     for week in range(42, 47):
