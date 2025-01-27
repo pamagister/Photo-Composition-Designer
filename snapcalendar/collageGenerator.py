@@ -2,13 +2,10 @@ import os
 
 from PIL import Image
 
-from snapcalendar.collage.calendarGenerator import CalendarGenerator
 from common.config import Config
-
-import exifread
-
+from snapcalendar.collage.calendarGenerator import CalendarGenerator
 from snapcalendar.collage.descriptionGenerator import DescriptionGenerator
-from snapcalendar.geo.geoPlotter import GeoMapPlotter
+from snapcalendar.collage.mapGenerator import MapGenerator
 
 
 class CollageGenerator:
@@ -20,6 +17,7 @@ class CollageGenerator:
         self.spacing = self.config.spacing
         self.calendarObj = CalendarGenerator(self.config)
         self.descGenerator = DescriptionGenerator()
+        self.mapGenerator = MapGenerator()
 
     def crop_and_resize(self, image, target_width, target_height):
         """
@@ -88,13 +86,6 @@ class CollageGenerator:
         images = self.sort_by_aspect_ratio(images)
         formats = self.analyze_images(images)
 
-        # EXIF-Daten auslesen und GPS-Koordinaten extrahieren
-        gps_coords = []
-        for img_path in image_files:
-            coords = self.extract_gps_coordinates(img_path)
-            if coords:
-                gps_coords.append(coords)
-
         # Anordnungslogik basierend auf Bildanzahl
         if len(images) == 1:
             self.arrange_one_image(collage, images[0], available_width, available_height)
@@ -110,63 +101,20 @@ class CollageGenerator:
             self.arrange_multiple_images(collage, images, available_width, available_height)
 
         # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
-        if gps_coords and self.config.usePhotoLocationMaps:
-            map_image = self.generate_map(gps_coords)
+        if self.config.usePhotoLocationMaps:
+            # EXIF-Daten auslesen und GPS-Koordinaten extrahieren
+            gps_coords = []
+            for img_path in image_files:
+                coords = self.mapGenerator.extract_gps_coordinates(img_path)
+                if coords:
+                    gps_coords.append(coords)
+            map_image = self.mapGenerator.generate_map(gps_coords)
             map_image_resized = map_image.resize((self.calendarium_height, self.calendarium_height))
             collage.paste(map_image_resized, (self.width-self.calendarium_height, self.height - self.calendarium_height))
 
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
 
-    def generate_map(self, gps_coords):
-        """
-        Generiert eine Karte als Bild mit den GPS-Koordinaten.
-        :param gps_coords: Liste von (Breitengrad, Längengrad)-Tupeln.
-        :return: PIL.Image-Objekt mit der Karte.
-        """
-        from io import BytesIO
-
-        # Plotter initialisieren
-        plotter = GeoMapPlotter(
-            buffer_deg=self.config.photoLocationRange,
-            resolution=(self.calendarium_height, self.calendarium_height),
-            background_color=self.config.backgroundColor,
-            border_color=self.config.textColor1)
-
-        # GeoDataFrame aus Koordinaten erstellen
-        plt = plotter.render_map(gps_coords)
-
-        # In einen BytesIO-Puffer speichern
-        buf = BytesIO()
-        plt.savefig(buf, format='PNG', bbox_inches='tight', dpi=300)  # Optional: Anpassung des DPI-Werts
-        plt.close()  # Speicher freigeben
-        buf.seek(0)
-
-        # Puffer als PIL.Image öffnen und zurückgeben
-        return Image.open(buf)
-
-
-    def extract_gps_coordinates(self, img_path):
-        """
-        Liest die GPS-Koordinaten aus den EXIF-Daten eines Bildes.
-        """
-        with open(img_path, 'rb') as img_file:
-            tags = exifread.process_file(img_file, details=False)
-            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
-                lat = self.convert_to_decimal(tags['GPS GPSLatitude'].values)
-                lon = self.convert_to_decimal(tags['GPS GPSLongitude'].values)
-                if tags.get('GPS GPSLatitudeRef') == 'S':
-                    lat = -lat
-                if tags.get('GPS GPSLongitudeRef') == 'W':
-                    lon = -lon
-                return lat, lon
-        return None
-
-    def convert_to_decimal(self, dms):
-        """
-        Konvertiert Grad, Minuten und Sekunden in Dezimalgrad.
-        """
-        return dms[0] + dms[1] / 60 + dms[2] / 3600
 
     def arrange_one_image(self, collage, image, width, height):
         """
