@@ -41,7 +41,7 @@ class GeoMapPlotter:
 
         # Zusätzliche Layer hinzufügen
         lakes_path = Path(lakes_path).resolve()
-        self.add_layer("lakes", lakes_path, color="blue", edgecolor="blue", alpha=1.0)
+        self.add_layer("lakes", lakes_path, color="royalblue", edgecolor="blue", alpha=1.0)
 
     @staticmethod
     def _normalize_color(color):

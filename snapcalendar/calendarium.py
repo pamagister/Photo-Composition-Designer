@@ -64,7 +64,7 @@ class Calendarium:
         spacing_date =  int(fontSizeSmall * 0.4)
         # Zeichne Wochentage und Zahlen
         for day_no in range(7):
-            x_pos = marginSides + (day_no + cols_count) * col_width
+            x_pos = marginSides * 3 + (day_no + cols_count) * col_width
             day_date = dates[day_no]
             date_key = (day_date.day, day_date.month)  # (Tag, Monat)
             date = dates[day_no]
@@ -98,9 +98,9 @@ class Calendarium:
         return img
     def get_cols_property(self):
         if self.config.shortMonthNames:
-            cols = 2.5
+            cols = 2.0
         else:
-            cols = 4.5
+            cols = 4.0
         col_width = (self.width - 2 * self.config.marginSides) // (7 + cols - 0.5)
         return cols, col_width
 
@@ -155,7 +155,7 @@ def main():
     config = Config("config.ini")
     calendar_gen = Calendarium(config=config)
 
-    temp_dir = "temp"
+    temp_dir = "../temp/calendarium"
     os.makedirs(temp_dir, exist_ok=True)
 
     for week in range(42, 47):
