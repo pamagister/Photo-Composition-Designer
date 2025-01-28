@@ -46,11 +46,10 @@ class CollageGenerator:
             print(f"Keine Bilder gefunden.")
             return
 
-        images = [Image.open(img) for img in image_files]
         self.layoutManager = PhotoLayoutManager(collage, available_width, available_height)
 
         # Anordnungslogik basierend auf Bildanzahl
-        self.layoutManager.arrange_images(images)
+        self.layoutManager.arrange_images(image_files)
 
         # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
         if self.config.usePhotoLocationMaps:
@@ -67,9 +66,23 @@ class CollageGenerator:
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
 
-    def generateProjectFromSubfolders(self):
+    def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=100):
         """
-        Generiert Collagen für alle Wochen aus dem angegebenen Ordner
+        Interne Methode, um Bilder in Gruppen zu verarbeiten und Collagen zu erstellen.
+        """
+        for index, i in enumerate(range(0, len(image_files), max_images_per_collage)):
+            collage_files = image_files[i : i + max_images_per_collage]
+            output_file_name = f"{output_prefix}_part_{index + 1}.jpg"
+            output_path = os.path.join(self.outputDir, output_file_name)
+
+            # Berechne das Datum basierend auf dem Index (falls erforderlich)
+            date = start_date + timedelta(weeks=index)
+
+            self.generate_collage(collage_files, date, output_path, description)
+
+    def generateProjectFromSubFolders(self):
+        """
+        Generiert Collagen für alle Wochen aus dem angegebenen Ordner.
         """
         for weekIndex, folder in enumerate(sorted(os.listdir(self.photoDirectory))):
             folder_path = os.path.join(self.photoDirectory, folder)
@@ -94,26 +107,51 @@ class CollageGenerator:
                 ]
 
                 if text_files:
-                    # Verwende die erste gefundene Textdatei
                     text_file = text_files[0]
                     with open(text_file, "r", encoding="utf-8") as f:
                         photo_description = f.read().strip()
 
-                    # Falls die Textdatei leer ist, verwende den Dateinamen (ohne Erweiterung)
                     if not photo_description:
                         photo_description = os.path.splitext(os.path.basename(text_file))[0]
 
-                # Generiere den Ausgabe-Pfad basierend auf dem Ordnernamen
-                output_file_name = f"collage_{folder}.jpg"
-                output_path = os.path.join(self.outputDir, output_file_name)
+                # Generiere Collagen für die Woche
+                output_prefix = f"collage_{folder}"
+                self._process_images(
+                    image_files, output_prefix, photo_description, self.startDate + timedelta(weeks=weekIndex)
+                )
 
-                # Collage generieren
-                print(f"Generiere Collage für Ordner: {folder}")
-                date = self.startDate + timedelta(weeks=weekIndex)
-                self.generate_collage(image_files, date, output_path, photo_description)
+    def generateProjectFromImageFolder(self):
+        """
+        Generiert Collagen aus einem Ordner mit flachen Bildern.
+        """
+        image_folder = self.photoDirectory
+        if not os.path.isdir(image_folder):
+            print(f"Ordner {image_folder} existiert nicht.")
+            return
+
+        # Sammle alle Bilddateien im Ordner
+        image_files = [
+            os.path.join(image_folder, file)
+            for file in sorted(os.listdir(image_folder))
+            if file.lower().endswith((".png", ".jpg", ".jpeg"))
+        ]
+
+        if not image_files:
+            print(f"Keine Bilder im Ordner {image_folder} gefunden.")
+            return
+
+        # Beschreibung und Präfix für die Collagen
+        photo_description = os.path.basename(image_folder)
+        output_prefix = f"flat_collage_{photo_description}"
+
+        # Generiere Collagen aus flachen Bildern
+        self._process_images(image_files, output_prefix, photo_description, self.startDate, max_images_per_collage=4)
 
 
 if __name__ == "__main__":
     colGen = CollageGenerator()
-    colGen.generateProjectFromSubfolders()
+    colGen.generateProjectFromSubFolders()
 
+    colGenFolderBased = CollageGenerator()
+    colGenFolderBased.photoDirectory = colGenFolderBased.photoDirectory
+    colGenFolderBased.generateProjectFromImageFolder()

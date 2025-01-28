@@ -1,26 +1,5 @@
 from snapcalendar.common.config import Config
-
-
-def analyze_images(images):
-    """
-    Analysiert, ob Bilder Hoch- oder Querformat haben.
-    """
-    analysis = []
-    for img in images:
-        width, height = img.size
-        if height > width:
-            analysis.append("portrait")
-        else:
-            analysis.append("landscape")
-    return analysis
-
-
-def sort_by_aspect_ratio(images):
-    """
-    Sortiert Bilder basierend auf ihrem Seitenverhältnis (Breite / Höhe).
-    Schmalste ("portrait") zuerst, breiteste ("landscape") zuletzt.
-    """
-    return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
+from PIL import Image, UnidentifiedImageError
 
 
 class PhotoLayoutManager:
@@ -31,23 +10,80 @@ class PhotoLayoutManager:
         self.height = height
         self.spacing = self.config.spacing
 
-    def arrange_images(self, images):
+    @staticmethod
+    def filter_invalid_images(image_files):
+        """
+        Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
+        """
+        valid_images = []
+        for img_file in image_files:
+            try:
+                # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
+                img = Image.open(img_file)
+                img.crop((0, 2, 3, 3))
+                valid_images.append(img_file)
+            except (UnidentifiedImageError, OSError) as e:
+                print(f"Invalid image skipped: {img_file} - {e}")
+
+        # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
+        return valid_images
+
+    def arrange_images(self, image_files):
+        """
+        Ordnet die Bilder in der Collage an. Bilder werden vorab auf Lesbarkeit geprüft.
+        """
         # Bilder nach Seitenverhältnis sortieren
-        images = sort_by_aspect_ratio(images)
-        formats = analyze_images(images)
-        # Anordnungslogik basierend auf Bildanzahl
-        if len(images) == 1:
-            self.arrange_one_image(self.collage, images[0], self.width, self.height)
-        elif len(images) == 2:
-            self.arrange_two_images(self.collage, images, formats, self.width, self.height)
-        elif len(images) == 3:
-            self.arrange_three_images(self.collage, images, formats, self.width, self.height)
-        elif len(images) == 4:
-            self.arrange_four_images(self.collage, images, formats, self.width, self.height)
-        elif len(images) == 5:
-            self.arrange_five_images(self.collage, images, formats, self.width, self.height)
-        else:
-            self.arrange_multiple_images(self.collage, images, self.width, self.height)
+        images = [Image.open(img) for img in image_files]
+        images = self.sort_by_aspect_ratio(images)
+        formats = self.analyze_images(images)
+
+        try:
+            # Anordnungslogik basierend auf Bildanzahl
+            if len(images) == 1:
+                self.arrange_one_image(self.collage, images[0], self.width, self.height)
+            elif len(images) == 2:
+                self.arrange_two_images(self.collage, images, formats, self.width, self.height)
+            elif len(images) == 3:
+                self.arrange_three_images(self.collage, images, formats, self.width, self.height)
+            elif len(images) == 4:
+                self.arrange_four_images(self.collage, images, formats, self.width, self.height)
+            elif len(images) == 5:
+                self.arrange_five_images(self.collage, images, formats, self.width, self.height)
+            else:
+                self.arrange_multiple_images(self.collage, images, self.width, self.height)
+        except (UnidentifiedImageError, OSError) as e:
+            print(f"Error in the arrangement of images: {e}")
+            # Entferne ungültige Bilder und versuche es erneut
+            image_files = self.filter_invalid_images(image_files)
+            if image_files:
+                print("Invalid images removed, try again...")
+                self.arrange_images(image_files)
+            else:
+                # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
+                print("No more valid images available.")
+                raise e
+
+    @staticmethod
+    def analyze_images(images):
+        """
+        Analysiert, ob Bilder Hoch- oder Querformat haben.
+        """
+        analysis = []
+        for img in images:
+            width, height = img.size
+            if height > width:
+                analysis.append("portrait")
+            else:
+                analysis.append("landscape")
+        return analysis
+
+    @staticmethod
+    def sort_by_aspect_ratio(images):
+        """
+        Sortiert Bilder basierend auf ihrem Seitenverhältnis (Breite / Höhe).
+        Schmalste ("portrait") zuerst, breiteste ("landscape") zuletzt.
+        """
+        return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
 
     @staticmethod
     def crop_and_resize(image, target_width, target_height):
@@ -154,28 +190,49 @@ class PhotoLayoutManager:
                 (self.crop_and_resize(imgs[0], int(w * 0.6), h), (0, 0)),  # portrait, index 0
                 (self.crop_and_resize(imgs[1], int(w * 0.4), int(h / 3)), (int(w * 0.6) + s, 0)),
                 (self.crop_and_resize(imgs[2], int(w * 0.4), int(h / 3) - s), (int(w * 0.6) + s, int(h / 3) + s)),
-                (self.crop_and_resize(imgs[3], int(w * 0.4), int(h / 3) - 1 * s), (int(w * 0.6) + s, int(h * 2 / 3) + s * 1)),
+                (
+                    self.crop_and_resize(imgs[3], int(w * 0.4), int(h / 3) - 1 * s),
+                    (int(w * 0.6) + s, int(h * 2 / 3) + s * 1),
+                ),
             ],
             # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleine landscape nebeneinander
             lambda imgs: [
                 (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.crop_and_resize(imgs[1], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
-                (self.crop_and_resize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.4) + s, int(h * 3 / 5) + s)),  # portrait, index 1
-                (self.crop_and_resize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.7) + s, int(h * 3 / 5) + s)),
+                (
+                    self.crop_and_resize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
+                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
+                ),  # portrait, index 1
+                (
+                    self.crop_and_resize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s),
+                    (int(w * 0.7) + s, int(h * 3 / 5) + s),
+                ),
             ],
             # Großes portrait-Bild links, rechts oben landscape, darunter kleines portrait und landscape nebeneinander
             lambda imgs: [
                 (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.crop_and_resize(imgs[2], int(w * 0.6), int(h*3/5)), (int(w * 0.4) + s, 0)),
-                (self.crop_and_resize(imgs[1], int(w * 0.2), int(h*2/5) - s), (int(w * 0.4) + s, int(h*3/5) + s)),  # portrait, index 1
-                (self.crop_and_resize(imgs[3], int(w * 0.4-2*s), int(h*2/5) - s), (int(w * 0.6) + 2*s, int(h*3/5) + s)),
+                (self.crop_and_resize(imgs[2], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
+                (
+                    self.crop_and_resize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s),
+                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
+                ),  # portrait, index 1
+                (
+                    self.crop_and_resize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s),
+                    (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s),
+                ),
             ],
             # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleines portrait nebeneinander
             lambda imgs: [
                 (self.crop_and_resize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.crop_and_resize(imgs[3], int(w * 0.6), int(h * 2 / 5)), (int(w * 0.4) + s, 0)),
-                (self.crop_and_resize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s), (int(w * 0.4) + s, int(h * 2 / 5) + s)),  # portrait, index 1
-                (self.crop_and_resize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s), (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s)),  # portrait, index 2
+                (
+                    self.crop_and_resize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
+                    (int(w * 0.4) + s, int(h * 2 / 5) + s),
+                ),  # portrait, index 1
+                (
+                    self.crop_and_resize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s),
+                    (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s),
+                ),  # portrait, index 2
             ],
         ]
 
