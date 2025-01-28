@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from PIL import Image
 
@@ -12,8 +13,8 @@ from snapcalendar.collage.photoLayoutManager import PhotoLayoutManager
 class CollageGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
-        self.photoDirectory = self.config.photoDirectory
-        self.outputDir = self.photoDirectory + '/collages'
+        self.photoDirectory = Path(self.config.photoDirectory).resolve()
+        self.outputDir = self.photoDirectory.parent / 'collages'
         os.makedirs(self.outputDir, exist_ok=True)
         self.calendar_height = self.config.calendarHeight
         self.width = self.config.width
@@ -94,11 +95,11 @@ class CollageGenerator:
 def generateDifferentLayouts():
     """
     Testfunktion: Generiert Collagen mit verschiedenen Layouts und Bildkombinationen
-    aus dem Ordner ../res/images.
+    aus dem Ordner ../tests/images.
     """
 
     collageGen = CollageGenerator()
-    base_dir = collageGen.photoDirectory
+    base_dir = os.path.join(collageGen.photoDirectory, 'layout_orientation')
     output_dir = collageGen.outputDir
     # Sammle alle Bilddateien (auf oberster Ebene)
     image_files = [
@@ -171,7 +172,7 @@ def generateDifferentLayouts():
 
 
 if __name__ == "__main__":
-    if False:
+    if True:
         colGen = CollageGenerator()
         colGen.generateWeekCollages()
     else:
