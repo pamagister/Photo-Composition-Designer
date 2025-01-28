@@ -63,7 +63,7 @@ class CollageGenerator:
             map_image_resized = map_image.resize((self.calendar_height, self.calendar_height))
             collage.paste(map_image_resized, (self.width - self.calendar_height, self.height - self.calendar_height))
 
-        collage.save(output_path)
+        collage.save(output_path, quality=self.config.jpgQuality)
         print(f"Collage gespeichert: {output_path}")
 
     def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=100):
