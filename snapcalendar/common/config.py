@@ -1,8 +1,13 @@
 from configparser import ConfigParser
+from datetime import datetime
+from pathlib import Path
 
 
 class Config:
-    def __init__(self, config_file="config.ini"):
+    def __init__(self, config_file=None):
+        if not config_file:
+            base_path = Path(__file__).parent.parent
+            config_file = base_path / "config.ini"
         self.config = ConfigParser()
         self.config.read(config_file)
 
@@ -10,7 +15,9 @@ class Config:
         self.width = self.config.getint("GENERAL", "width")
         self.height = self.config.getint("GENERAL", "height")
         self.calendarHeight = self.config.getint("GENERAL", "calendarHeight")
-        self.year = self.config.getint("GENERAL", "year")
+        _startDate = self.config.get("GENERAL", "startDate")
+
+        self.startDate = self._parse_start_date(_startDate)
         self.backgroundColor = tuple(map(int, self.config.get("GENERAL", "backgroundColor").split(",")))
         self.textColor1 = tuple(map(int, self.config.get("GENERAL", "textColor1").split(",")))
         self.textColor2 = tuple(map(int, self.config.get("GENERAL", "textColor2").split(",")))
@@ -34,5 +41,23 @@ class Config:
         self.usePhotoDescription = self.config.getboolean("LAYOUT", "usePhotoDescription")
         self.photoLocationRange = self.config.getfloat("LAYOUT", "photoLocationRange")
 
-    def __repr__(self):
-        return f"Config({self.__dict__})"
+    def _parse_start_date(self, startDate):
+        date_formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]  # Unterstützte Formate
+        parsed_date = None
+        for date_format in date_formats:
+            try:
+                parsed_date = datetime.strptime(startDate, date_format)
+                break
+            except ValueError:
+                continue  # Versuche das nächste Format
+
+        if parsed_date is None:
+            raise ValueError(
+                f"Invalid date in the 'startDate' field: {startDate}. Supported formats: {', '.join(date_formats)}"
+            )
+        return parsed_date
+
+
+if __name__ == "__main__":
+    cfg = Config()
+    print(cfg.__dict__)

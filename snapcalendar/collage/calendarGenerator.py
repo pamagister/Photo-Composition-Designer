@@ -16,23 +16,19 @@ class CalendarGenerator:
         self.anniversaries = anniversaries or Anniversaries()
         self.width = self.config.width
         self.calendarHeight = self.config.calendarHeight
+        self.marginBottom = self.config.marginBottom
+        self.marginSides = self.config.marginSides
+        self.fontSizeLarge = self.config.fontSizeLarge
+        self.fontSizeSmall = self.config.fontSizeSmall
+        self.fontSizeAnniversaries = self.config.fontSizeAnniversaries
         if self.config.usePhotoLocationMaps:
             self.width -= self.calendarHeight - 2 * self.config.marginSides
 
-    def generateCalendarium(self, week):
-        # Nutze Parameter aus der Config
-
-        marginBottom = self.config.marginBottom
-        marginSides = self.config.marginSides
-        fontSizeLarge = self.config.fontSizeLarge
-        fontSizeSmall = self.config.fontSizeSmall
-        fontSizeAnniversaries = self.config.fontSizeAnniversaries
-        year = self.config.year
+    def generateCalendarium(self, date):
+        year = date.year
         language = self.config.language
-
         # Berechne die Daten
-        first_day = datetime.strptime(f"{year}-W{week}-1", "%Y-W%U-%w")
-        dates = [first_day + timedelta(days=i) for i in range(7)]
+        dates = [date + timedelta(days=i) for i in range(7)]
 
         # Feiertage für das Jahr und das Land abrufen
         country_code = language.split("_")[1].upper()  # z.B. "de_DE" -> "DE"
@@ -45,9 +41,9 @@ class CalendarGenerator:
 
         # Lade die Schriftarten
         try:
-            font_large = ImageFont.truetype("DejaVuSans.ttf", int(fontSizeLarge))
-            font_small = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeSmall))
-            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(fontSizeAnniversaries))
+            font_large = ImageFont.truetype("DejaVuSans.ttf", int(self.fontSizeLarge))
+            font_small = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
+            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
         except:
             font_large = font_small = ImageFont.load_default()
 
@@ -59,13 +55,13 @@ class CalendarGenerator:
         cols_count, col_width = self.get_cols_property()
 
         header_text = f"{month_name} {str(year)[-2:]}"
-        base_y = self.calendarHeight - marginBottom - fontSizeLarge - fontSizeAnniversaries
+        base_y = self.calendarHeight - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
 
-        draw.text((marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
-        spacing_date = int(fontSizeSmall * 0.4)
+        draw.text((self.marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
+        spacing_date = int(self.fontSizeSmall * 0.4)
         # Zeichne Wochentage und Zahlen
         for day_no in range(7):
-            x_pos = marginSides * 3 + (day_no + cols_count) * col_width
+            x_pos = self.marginSides * 3 + (day_no + cols_count) * col_width
             day_date = dates[day_no]
             date_key = (day_date.day, day_date.month)  # (Tag, Monat)
             date = dates[day_no]
@@ -87,7 +83,7 @@ class CalendarGenerator:
             # Feiertage
             if holiday_name:
                 draw.text(
-                    (x_pos, base_y + fontSizeLarge + fontSizeAnniversaries + spacing_date),
+                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + spacing_date),
                     holiday_name,
                     font=font_holiday,
                     fill=self.config.holidayColor,
@@ -98,7 +94,7 @@ class CalendarGenerator:
             elif date_key in self.anniversaries:
                 birthday_label = self.anniversaries[date_key]
                 draw.text(
-                    (x_pos, base_y + fontSizeLarge + fontSizeAnniversaries + spacing_date),
+                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + spacing_date),
                     birthday_label,
                     font=font_holiday,
                     fill=self.config.textColor1,
@@ -160,19 +156,19 @@ class CalendarGenerator:
         return combined_holidays
 
 
-
-
 def main():
     # Config aus Datei laden
-    config = Config("config.ini")
+    config = Config()
     calendar_gen = CalendarGenerator(config=config)
 
-    temp_dir = "../../temp/calendarium"
+    temp_dir = "../../tests/calendar"
     os.makedirs(temp_dir, exist_ok=True)
+    startDate = config.startDate
 
-    for week in range(42, 47):
-        image = calendar_gen.generateCalendarium(week)
-        image_path = os.path.join(temp_dir, f"calendarium_week_{week}.png")
+    for week in range(40, 45):
+        date = startDate + timedelta(weeks=week)
+        image = calendar_gen.generateCalendarium(date)
+        image_path = os.path.join(temp_dir, f"calendar_{date.year}-{date.month.zfill(2)}-{date.day.zfill(2)}.png")
         image.save(image_path)
         print(f"Generated: {image_path}")
 

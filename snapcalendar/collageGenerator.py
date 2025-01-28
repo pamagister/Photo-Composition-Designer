@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from PIL import Image
@@ -24,13 +25,14 @@ class CollageGenerator:
         self.descGenerator = DescriptionGenerator()
         self.mapGenerator = MapGenerator()
         self.layoutManager = None
+        self.startDate = self.config.startDate
 
-    def generate_collage(self, image_files, week, output_path, photo_description=''):
+    def generate_collage(self, image_files, date, output_path, photo_description=''):
         """
         Erzeugt eine Collage mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
-        calendarImage = self.calendarObj.generateCalendarium(week)
+        calendarImage = self.calendarObj.generateCalendarium(date)
         collage.paste(calendarImage, (0, self.height - self.calendar_height))
 
         if self.config.usePhotoDescription:
@@ -107,7 +109,8 @@ class CollageGenerator:
 
                 # Collage generieren
                 print(f"Generiere Collage für Ordner: {folder}")
-                self.generate_collage(image_files, weekIndex, output_path, photo_description)
+                date = self.startDate + timedelta(weeks=weekIndex)
+                self.generate_collage(image_files, date, output_path, photo_description)
 
 
 def generateDifferentLayouts():
