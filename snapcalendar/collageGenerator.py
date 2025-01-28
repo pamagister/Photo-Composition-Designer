@@ -67,7 +67,7 @@ class CollageGenerator:
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
 
-    def generateWeekCollages(self):
+    def generateProjectFromSubfolders(self):
         """
         Generiert Collagen für alle Wochen aus dem angegebenen Ordner
         """
@@ -115,5 +115,5 @@ class CollageGenerator:
 
 if __name__ == "__main__":
     colGen = CollageGenerator()
-    colGen.generateWeekCollages()
+    colGen.generateProjectFromSubfolders()
 
