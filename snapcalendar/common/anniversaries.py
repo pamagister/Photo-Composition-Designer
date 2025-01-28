@@ -1,42 +1,48 @@
-from configparser import ConfigParser
 import os
+from configparser import ConfigParser
+from pathlib import Path
 
 
 class Anniversaries:
-    def __init__(self, config_file="anniversaries.ini"):
+    def __init__(self, anniversaries_file=None):
+        if not anniversaries_file:
+            base_path = Path(__file__).parent.parent
+            anniversaries_file = base_path / "anniversaries.ini"
+
         self.anniversary_dict = {}
 
-        if not os.path.exists(config_file):
+        if not os.path.exists(anniversaries_file):
             return
 
         # ConfigParser so konfigurieren, dass Schlüssel (Namen) in Original-Schreibweise bleiben
         parser = ConfigParser()
         parser.optionxform = str  # Behalte die ursprüngliche Schreibweise der Namen
-        parser.read(config_file, encoding="utf-8")
+        parser.read(anniversaries_file, encoding="utf-8")
 
-        # Geburtstage aus der Konfigurationsdatei lesen
-        if "Birthdays" in parser:
-            for name, date in parser["Birthdays"].items():
+        # Kategorien mit ihren spezifischen Label-Formaten
+        categories = {
+            "Birthdays": lambda name, year: f"{name} {str(year)[-2:]}" if year else name,
+            "Dates of death": lambda name, year: f"{name} ✝ {str(year)[-2:]}" if year else f"{name} ✝",
+            "Weddings": lambda name, year: f"{name} ⚭ {str(year)[-2:]}" if year else f"{name} ⚭",
+        }
+
+        # Daten für jede Kategorie verarbeiten
+        for category, label_formatter in categories.items():
+            self._process_category(parser, category, label_formatter)
+
+    def _process_category(self, parser, category, label_formatter):
+        """
+        Liest Einträge aus einer Kategorie in der Konfigurationsdatei und fügt sie zum Dictionary hinzu.
+        :param parser: ConfigParser-Instanz
+        :param category: Name der Kategorie (z. B. "Birthdays")
+        :param label_formatter: Funktion zur Formatierung der Labels
+        """
+        if category in parser:
+            for name, date in parser[category].items():
                 day, month, *year = date.strip().split(".")
                 year = int(year[0]) if year[0] else None
-                birthday_label = f"{name} {str(year)[-2:]}" if year else name
-                self._add_to_dict(int(day), int(month), birthday_label)
-
-        # Todestage aus der Konfigurationsdatei lesen
-        if "Dates of death" in parser:
-            for name, date in parser["Dates of death"].items():
-                day, month, *year = date.strip().split(".")
-                year = int(year[0]) if year else None
-                death_label = f"{name} ✝ {str(year)[-2:]}" if year else f"{name} ✝"
-                self._add_to_dict(int(day), int(month), death_label)
-
-        # Hochzeitstage aus der Konfigurationsdatei lesen
-        if "Weddings" in parser:
-            for name, date in parser["Weddings"].items():
-                day, month, *year = date.strip().split(".")
-                year = int(year[0]) if year else None
-                wedding_label = f"{name} ⚭ {str(year)[-2:]}" if year else f"{name} ⚭"
-                self._add_to_dict(int(day), int(month), wedding_label)
+                label = label_formatter(name, year)
+                self._add_to_dict(int(day), int(month), label)
 
     def _add_to_dict(self, day, month, label):
         """Hinzufügen eines Eintrags zum Datum; bei Konflikten zusammenfügen."""
@@ -60,3 +66,8 @@ class Anniversaries:
 
     def __repr__(self):
         return f"Anniversaries({self.anniversary_dict})"
+
+
+if __name__ == "__main__":
+    annis = Anniversaries()
+    print(annis.items())
