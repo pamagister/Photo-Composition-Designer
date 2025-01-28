@@ -9,8 +9,8 @@ class Config:
     """
 
     def __init__(self, config_file=None):
+        base_path = Path(__file__).parent.parent
         if not config_file:
-            base_path = Path(__file__).parent.parent
             config_file = base_path / "config.ini"
 
         # Preprocess the config file to remove comments and strip whitespace
@@ -30,7 +30,9 @@ class Config:
         self.config.read_string(preprocessed_config)
 
         # General settings
-        self.photoDirectory = self.config.get("GENERAL", "photoDirectory")
+        photoDir = self.config.get("GENERAL", "photoDirectory")
+        self.photoDirectory = (base_path / Path(photoDir)).resolve()
+
         _startDate = self.config.get("CALENDAR", "startDate")
         self.startDate = self._parse_start_date(_startDate)
 

@@ -1,18 +1,71 @@
-import os
+from pathlib import Path
+
+import pytest
 from datetime import timedelta
-from unittest import TestCase
+import os
 
 from snapcalendar.collageGenerator import CollageGenerator
+from tempfile import NamedTemporaryFile
+
+from snapcalendar.common.config import Config
 
 
-class TestCollageGenerator(TestCase):
-    def test_generate_different_layouts(self):
+class TestCollageGenerator:
+
+    @pytest.fixture
+    def sample_config_file(self):
+        """
+        Creates a temporary config.ini file with sample data.
+        """
+        data = """
+        [GENERAL]
+        photoDirectory = ../tests/images 
+        								 
+        [CALENDAR]                       
+        language = de_DE                 
+        holidayCountries = SN            
+        startDate = 30.12.2024           
+                                         
+        [COLORS]                         
+        backgroundColor = 20,20,20       
+        textColor1 = 255,255,255         
+        textColor2 = 150,150,150         
+        holidayColor = 255,0,0           
+                                         
+        [GEO]                            
+        usePhotoLocationMaps = True      
+        photoLocationRange = 2.5         
+                                         
+        [SIZE]                           
+        width = 1920                     
+        height = 1280                    
+        calendarHeight = 200             
+        jpgQuality = 80                  
+                                         
+        [LAYOUT]                         
+        fontSizeLarge = 0.4              
+        fontSizeSmall = 0.15             
+        fontSizeAnniversaries = 0.10     
+        marginBottom = 30                
+        marginSides = 10                 
+        spacing = 10                     
+        useShortDayNames = True          
+        useShortMonthNames = True        
+        usePhotoDescription = True       
+        """
+        with NamedTemporaryFile("w", delete=False, suffix=".ini") as temp_file:
+            temp_file.write(data)
+            temp_file_path = temp_file.name
+        yield temp_file_path
+        Path(temp_file_path).unlink()  # Remove the file after the test
+
+    def test_generate_different_layouts(self, sample_config_file):
         """
         Testfunktion: Generiert Collagen mit verschiedenen Layouts und Bildkombinationen
         aus dem Ordner ../tests/images.
         """
-
-        collageGen = CollageGenerator()
+        config = Config(sample_config_file)
+        collageGen = CollageGenerator(config)
         startDate = collageGen.startDate
         base_dir = os.path.join(collageGen.photoDirectory, 'layout_orientation')
         output_dir = collageGen.outputDir
@@ -84,3 +137,10 @@ class TestCollageGenerator(TestCase):
             print(f"Generiere Collage für Layout: {layout}")
             date = startDate + timedelta(weeks=index)
             collageGen.generate_collage(selected_images, date, output_path)
+
+    def test_generate_from_folders(self, sample_config_file):
+        config = Config(sample_config_file)
+        config.photoDirectory = config.photoDirectory / 'layout_orientation'
+
+        collageGen = CollageGenerator(config)
+        collageGen.generateProjectFromImageFolder()

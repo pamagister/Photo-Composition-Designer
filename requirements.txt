@@ -3,11 +3,16 @@
 # Add the requirements you need to this file.
 # or run `make init` to create this file automatically based on the template.
 # You can also run `make switch-to-poetry` to use the poetry package manager.
-pillow~=11.1.0
-holidays~=0.65
-exifread~=3.0.0
-geopandas~=1.0.1
-matplotlib~=3.10.0
-shapely~=2.0.6
-pyproj~=3.7.0
-black~=24.10.0
+
+# install with> pip install -r requirements.txt
+pillow
+holidays
+exifread
+geopandas
+matplotlib
+shapely
+pyproj
+
+# Dev-dependencies
+black
+pytest

@@ -1,20 +1,19 @@
 import os
 from datetime import timedelta
-from pathlib import Path
 
 from PIL import Image
 
-from snapcalendar.common.config import Config
 from snapcalendar.collage.calendarGenerator import CalendarGenerator
 from snapcalendar.collage.descriptionGenerator import DescriptionGenerator
 from snapcalendar.collage.mapGenerator import MapGenerator
 from snapcalendar.collage.photoLayoutManager import PhotoLayoutManager
+from snapcalendar.common.config import Config
 
 
 class CollageGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
-        self.photoDirectory = Path(self.config.photoDirectory).resolve()
+        self.photoDirectory = self.config.photoDirectory
         self.outputDir = self.photoDirectory.parent / 'collages'
         os.makedirs(self.outputDir, exist_ok=True)
         self.calendar_height = self.config.calendarHeight
@@ -164,9 +163,3 @@ if __name__ == "__main__":
     # generate collage from separate folders
     colGen = CollageGenerator()
     colGen.generateProjectFromSubFolders()
-
-    # generate collage from flat images
-    colGenFolderBased = CollageGenerator()
-    colGenFolderBased.photoDirectory = colGenFolderBased.photoDirectory / 'layout_orientation'
-    colGenFolderBased.photoDirectory = colGenFolderBased.photoDirectory
-    colGenFolderBased.generateProjectFromImageFolder()
