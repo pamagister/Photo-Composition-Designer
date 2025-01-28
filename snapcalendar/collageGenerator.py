@@ -83,13 +83,31 @@ class CollageGenerator:
                     print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
                     continue
 
+                # Suche nach einer Textdatei im Ordner
+                photo_description = ""
+                text_files = [
+                    os.path.join(folder_path, file)
+                    for file in sorted(os.listdir(folder_path))
+                    if file.lower().endswith(".txt")
+                ]
+
+                if text_files:
+                    # Verwende die erste gefundene Textdatei
+                    text_file = text_files[0]
+                    with open(text_file, "r", encoding="utf-8") as f:
+                        photo_description = f.read().strip()
+
+                    # Falls die Textdatei leer ist, verwende den Dateinamen (ohne Erweiterung)
+                    if not photo_description:
+                        photo_description = os.path.splitext(os.path.basename(text_file))[0]
+
                 # Generiere den Ausgabe-Pfad basierend auf dem Ordnernamen
                 output_file_name = f"collage_{folder}.jpg"
                 output_path = os.path.join(self.outputDir, output_file_name)
 
                 # Collage generieren
                 print(f"Generiere Collage für Ordner: {folder}")
-                self.generate_collage(image_files, weekIndex + 30, output_path)
+                self.generate_collage(image_files, weekIndex, output_path, photo_description)
 
 
 def generateDifferentLayouts():
@@ -142,7 +160,6 @@ def generateDifferentLayouts():
         (5, ["landscape", "landscape", "portrait", "portrait", "portrait"]),  # Beispiele für 5 Bilder
         (6, ["landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),  # Beispiele für 6 Bilder
     ]
-
 
     for index, (num_images, layout) in enumerate(layout_configurations):
         # Wähle Bilder basierend auf Layout
