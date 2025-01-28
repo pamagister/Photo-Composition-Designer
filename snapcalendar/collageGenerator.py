@@ -78,7 +78,29 @@ class CollageGenerator:
             # Berechne das Datum basierend auf dem Index (falls erforderlich)
             date = start_date + timedelta(weeks=index)
 
-            self.generate_collage(collage_files, date, output_path, description)
+            # Wähle die passende Beschreibung aus der Liste oder verwende den Standard
+            if isinstance(description, list) and index < len(description):
+                collage_description = description[index]
+            else:
+                collage_description = description if isinstance(description, str) else ""
+
+            self.generate_collage(collage_files, date, output_path, collage_description)
+
+    @staticmethod
+    def _get_description(folder_path, fallback_to_foldername=False):
+        # Suche nach einer Textdatei im Ordner
+        photo_description = ""
+        text_files = [
+            os.path.join(folder_path, file) for file in sorted(os.listdir(folder_path)) if file.lower().endswith(".txt")
+        ]
+        if text_files:
+            text_file = text_files[0]
+            with open(text_file, "r", encoding="utf-8") as f:
+                photo_description = [line.strip() for line in f.readlines() if line.strip()]
+
+            if not photo_description and fallback_to_foldername:
+                photo_description = os.path.splitext(os.path.basename(text_file))[0]
+        return photo_description
 
     def generateProjectFromSubFolders(self):
         """
@@ -98,21 +120,7 @@ class CollageGenerator:
                     print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
                     continue
 
-                # Suche nach einer Textdatei im Ordner
-                photo_description = ""
-                text_files = [
-                    os.path.join(folder_path, file)
-                    for file in sorted(os.listdir(folder_path))
-                    if file.lower().endswith(".txt")
-                ]
-
-                if text_files:
-                    text_file = text_files[0]
-                    with open(text_file, "r", encoding="utf-8") as f:
-                        photo_description = f.read().strip()
-
-                    if not photo_description:
-                        photo_description = os.path.splitext(os.path.basename(text_file))[0]
+                photo_description = self._get_description(folder_path, fallback_to_foldername=True)
 
                 # Generiere Collagen für die Woche
                 output_prefix = f"collage_{folder}"
@@ -141,17 +149,24 @@ class CollageGenerator:
             return
 
         # Beschreibung und Präfix für die Collagen
-        photo_description = os.path.basename(image_folder)
-        output_prefix = f"flat_collage_{photo_description}"
+        folderName = os.path.basename(image_folder)
+        output_prefix = f"collage_{folderName}"
+
+        descriptions = self._get_description(image_folder)
 
         # Generiere Collagen aus flachen Bildern
-        self._process_images(image_files, output_prefix, photo_description, self.startDate, max_images_per_collage=4)
+        self._process_images(
+            image_files, output_prefix, description=descriptions, start_date=self.startDate, max_images_per_collage=4
+        )
 
 
 if __name__ == "__main__":
+    # generate collage from separate folders
     colGen = CollageGenerator()
     colGen.generateProjectFromSubFolders()
 
+    # generate collage from flat images
     colGenFolderBased = CollageGenerator()
+    colGenFolderBased.photoDirectory = colGenFolderBased.photoDirectory / 'layout_orientation'
     colGenFolderBased.photoDirectory = colGenFolderBased.photoDirectory
     colGenFolderBased.generateProjectFromImageFolder()
