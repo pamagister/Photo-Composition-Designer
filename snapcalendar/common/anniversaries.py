@@ -41,7 +41,7 @@ class Anniversaries:
             for name, date in parser[category].items():
                 day, month, *year = date.strip().split(".")
                 year = int(year[0]) if year[0] else None
-                label = label_formatter(name, year)
+                label = label_formatter(name, year).split(" ")[0]
                 self._add_to_dict(int(day), int(month), label)
 
     def _add_to_dict(self, day, month, label):
