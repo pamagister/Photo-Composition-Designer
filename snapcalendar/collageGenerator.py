@@ -91,14 +91,15 @@ class CollageGenerator:
                 self.generate_collage(image_files, weekIndex + 30, output_path)
 
 
-def generateDifferentLayouts(output_dir):
+def generateDifferentLayouts():
     """
     Testfunktion: Generiert Collagen mit verschiedenen Layouts und Bildkombinationen
     aus dem Ordner ../res/images.
     """
-    base_dir = "../res/images"
-    os.makedirs(output_dir, exist_ok=True)
 
+    collageGen = CollageGenerator()
+    base_dir = collageGen.photoDirectory
+    output_dir = collageGen.outputDir
     # Sammle alle Bilddateien (auf oberster Ebene)
     image_files = [
         os.path.join(base_dir, file)
@@ -141,6 +142,7 @@ def generateDifferentLayouts(output_dir):
         (6, ["landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),  # Beispiele für 6 Bilder
     ]
 
+
     for index, (num_images, layout) in enumerate(layout_configurations):
         # Wähle Bilder basierend auf Layout
         landscape_pointer = 0
@@ -165,11 +167,12 @@ def generateDifferentLayouts(output_dir):
 
         # Collage generieren
         print(f"Generiere Collage für Layout: {layout}")
-        CollageGenerator().generate_collage(selected_images, index, output_path)
+        collageGen.generate_collage(selected_images, index, output_path)
 
 
 if __name__ == "__main__":
-
-    colGen = CollageGenerator()
-    colGen.generateWeekCollages()
-    # generateDifferentLayouts(output_dir)
+    if False:
+        colGen = CollageGenerator()
+        colGen.generateWeekCollages()
+    else:
+        generateDifferentLayouts()
