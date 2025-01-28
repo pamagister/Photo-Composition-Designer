@@ -183,9 +183,9 @@ if __name__ == "__main__":
     ]
 
     # Karte erstellen und anzeigen
-    plt = plotter.render_map(gps_coords)
-    plt.show()
+    map_plt = plotter.render_map(gps_coords)
+    map_plt.show()
 
     # Karte erstellen ohne dass Koordinaten übergeben wurden.
-    plt = plotter.render_map([])
-    plt.show()
+    map_plt = plotter.render_map([])
+    map_plt.show()

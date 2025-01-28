@@ -70,7 +70,7 @@ class CollageGenerator:
         Interne Methode, um Bilder in Gruppen zu verarbeiten und Collagen zu erstellen.
         """
         for index, i in enumerate(range(0, len(image_files), max_images_per_collage)):
-            collage_files = image_files[i : i + max_images_per_collage]
+            collage_files = image_files[i: i + max_images_per_collage]
             output_file_name = f"{output_prefix}_part_{index + 1}.jpg"
             output_path = os.path.join(self.outputDir, output_file_name)
 

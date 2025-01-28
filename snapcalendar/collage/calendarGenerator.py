@@ -1,13 +1,13 @@
 import calendar
 import locale
 import os
-from datetime import datetime, timedelta
-import holidays
+from datetime import timedelta
 
+import holidays
 from PIL import Image, ImageDraw, ImageFont
 
-from snapcalendar.common.config import Config
 from snapcalendar.common.anniversaries import Anniversaries
+from snapcalendar.common.config import Config
 
 
 class CalendarGenerator:
@@ -132,7 +132,7 @@ class CalendarGenerator:
             locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
-    def get_combined_holidays(year, country='EN', subdivs = None):
+    def get_combined_holidays(year, country='EN', subdivs=None):
         """
         Kombiniert Feiertage aus mehreren Ländern oder Subdivisionen.
 
