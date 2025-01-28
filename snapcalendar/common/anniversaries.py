@@ -1,6 +1,6 @@
 import os
-from configparser import ConfigParser
 from pathlib import Path
+from collections import defaultdict
 
 
 class Anniversaries:
@@ -9,46 +9,61 @@ class Anniversaries:
             base_path = Path(__file__).parent.parent
             anniversaries_file = base_path / "anniversaries.ini"
 
-        self.anniversary_dict = {}
+        self.anniversary_dict = defaultdict(str)  # Dictionary für die Anniversaries
 
         if not os.path.exists(anniversaries_file):
             return
 
-        # ConfigParser so konfigurieren, dass Schlüssel (Namen) in Original-Schreibweise bleiben
-        parser = ConfigParser()
-        parser.optionxform = str  # Behalte die ursprüngliche Schreibweise der Namen
-        parser.read(anniversaries_file, encoding="utf-8")
+        # Preprocess the config file to remove comments and parse lines
+        with open(anniversaries_file, "r", encoding="utf-8") as file:
+            category = None
+            for line in file:
+                # Remove comments and strip whitespace
+                line = line.split(";", 1)[0].strip()
+                if not line:  # Skip empty lines
+                    continue
 
-        # Kategorien mit ihren spezifischen Label-Formaten
-        categories = {
-            "Birthdays": lambda name, year: f"{name} {str(year)[-2:]}" if year else name,
-            "Dates of death": lambda name, year: f"{name} ✝ {str(year)[-2:]}" if year else f"{name} ✝",
-            "Weddings": lambda name, year: f"{name} ⚭ {str(year)[-2:]}" if year else f"{name} ⚭",
-        }
+                # Detect category headers
+                if line.startswith("[") and line.endswith("]"):
+                    category = line[1:-1]  # Extract category name
+                    continue
 
-        # Daten für jede Kategorie verarbeiten
-        for category, label_formatter in categories.items():
-            self._process_category(parser, category, label_formatter)
+                # Skip invalid lines without a current category
+                if not category:
+                    continue
 
-    def _process_category(self, parser, category, label_formatter):
+                # Process valid data lines within the category
+                self._process_line(line, category)
+
+    def _process_line(self, line, category):
         """
-        Liest Einträge aus einer Kategorie in der Konfigurationsdatei und fügt sie zum Dictionary hinzu.
-        :param parser: ConfigParser-Instanz
-        :param category: Name der Kategorie (z. B. "Birthdays")
-        :param label_formatter: Funktion zur Formatierung der Labels
+        Processes a single line of data and adds it to the anniversary dictionary.
         """
-        if category in parser:
-            for name, date in parser[category].items():
-                day, month, *year = date.strip().split(".")
-                year = int(year[0]) if year[0] else None
-                label = label_formatter(name, year).split(" ")[0]
-                self._add_to_dict(int(day), int(month), label)
+        if "=" not in line:
+            return  # Skip malformed lines
+        name, date = map(str.strip, line.split("=", 1))
+
+        day, month, *year = date.split(".")
+        year = int(year[0]) if year[0] else None
+
+        # Define label formatters for each category
+        label_formatter = {
+            "Birthdays": lambda _name, _year: f"{_name} {str(_year)[-2:]}" if _year else _name,
+            "Dates of death": lambda _name, _year: f"{_name} ✝ {str(_year)[-2:]}" if _year else f"{_name} ✝",
+            "Weddings": lambda _name, _year: f"{_name} ⚭ {str(_year)[-2:]}" if _year else f"{_name} ⚭",
+        }.get(category, lambda _name, _year: _name)  # Default formatter if category is unknown
+
+        label = label_formatter(name, year)
+        self._add_to_dict(int(day), int(month), label)
 
     def _add_to_dict(self, day, month, label):
-        """Hinzufügen eines Eintrags zum Datum; bei Konflikten zusammenfügen."""
+        """
+        Adds an entry to the dictionary; merges labels in case of conflicts.
+        """
         key = (day, month)
         if key in self.anniversary_dict:
-            self.anniversary_dict[key] += f", {label}"
+            if label not in self.anniversary_dict[key]:
+                self.anniversary_dict[key] += f", {label}"
         else:
             self.anniversary_dict[key] = label
 
@@ -65,7 +80,7 @@ class Anniversaries:
         return self.anniversary_dict.items()
 
     def __repr__(self):
-        return f"Anniversaries({self.anniversary_dict})"
+        return f"Anniversaries({dict(self.anniversary_dict)})"
 
 
 if __name__ == "__main__":
