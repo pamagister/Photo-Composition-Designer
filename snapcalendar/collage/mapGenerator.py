@@ -24,7 +24,8 @@ class MapGenerator:
             buffer_deg=self.config.photoLocationRange,
             resolution=(self.height, self.height),
             background_color=self.config.backgroundColor,
-            border_color=self.config.textColor1)
+            border_color=self.config.textColor1,
+        )
 
         # GeoDataFrame aus Koordinaten erstellen
         plt = plotter.render_map(gps_coords)
@@ -37,7 +38,6 @@ class MapGenerator:
 
         # Puffer als PIL.Image öffnen und zurückgeben
         return Image.open(buf)
-
 
     def extract_gps_coordinates(self, img_path):
         """

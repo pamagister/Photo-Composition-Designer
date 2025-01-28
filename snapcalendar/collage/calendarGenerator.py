@@ -62,7 +62,7 @@ class CalendarGenerator:
         base_y = self.calendarHeight - marginBottom - fontSizeLarge - fontSizeAnniversaries
 
         draw.text((marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
-        spacing_date =  int(fontSizeSmall * 0.4)
+        spacing_date = int(fontSizeSmall * 0.4)
         # Zeichne Wochentage und Zahlen
         for day_no in range(7):
             x_pos = marginSides * 3 + (day_no + cols_count) * col_width
@@ -81,22 +81,32 @@ class CalendarGenerator:
 
             # Wochentag und Tag
             day_name = self.get_day_name(day_no, language)
-            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=name_color,
-                      anchor="md")
+            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=name_color, anchor="md")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
             # Feiertage
             if holiday_name:
-                draw.text((x_pos, base_y+fontSizeLarge+fontSizeAnniversaries+spacing_date), holiday_name, font=font_holiday,
-                          fill=self.config.holidayColor, anchor="md")
+                draw.text(
+                    (x_pos, base_y + fontSizeLarge + fontSizeAnniversaries + spacing_date),
+                    holiday_name,
+                    font=font_holiday,
+                    fill=self.config.holidayColor,
+                    anchor="md",
+                )
 
             # Geburtstage/Todestage
             elif date_key in self.anniversaries:
                 birthday_label = self.anniversaries[date_key]
-                draw.text((x_pos, base_y+fontSizeLarge+fontSizeAnniversaries+spacing_date), birthday_label,
-                          font=font_holiday, fill=self.config.textColor1, anchor="md")
+                draw.text(
+                    (x_pos, base_y + fontSizeLarge + fontSizeAnniversaries + spacing_date),
+                    birthday_label,
+                    font=font_holiday,
+                    fill=self.config.textColor1,
+                    anchor="md",
+                )
 
         return img
+
     def get_cols_property(self):
         if self.config.useShortMonthNames:
             cols = 2.0
@@ -125,7 +135,8 @@ class CalendarGenerator:
         finally:
             locale.setlocale(locale.LC_TIME, "")
 
-    def get_combined_holidays(self, year, country='EN', subdivs = None):
+    @staticmethod
+    def get_combined_holidays(year, country='EN', subdivs = None):
         """
         Kombiniert Feiertage aus mehreren Ländern oder Subdivisionen.
 

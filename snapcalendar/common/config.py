@@ -1,5 +1,6 @@
 from configparser import ConfigParser
 
+
 class Config:
     def __init__(self, config_file="config.ini"):
         self.config = ConfigParser()
@@ -15,8 +16,9 @@ class Config:
         self.textColor2 = tuple(map(int, self.config.get("GENERAL", "textColor2").split(",")))
         self.holidayColor = tuple(map(int, self.config.get("GENERAL", "holidayColor").split(",")))
         self.language = self.config.get("GENERAL", "language")
-        self.holidayCountries = [x.strip() for x in self.config.get("GENERAL", "holidayCountries", fallback="").split(",")
-                                if x.strip()]
+        self.holidayCountries = [
+            x.strip() for x in self.config.get("GENERAL", "holidayCountries", fallback="").split(",") if x.strip()
+        ]
         self.photoDirectory = self.config.get("GENERAL", "photoDirectory")
 
         # Layout settings

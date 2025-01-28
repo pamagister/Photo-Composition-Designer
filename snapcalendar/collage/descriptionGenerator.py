@@ -28,8 +28,10 @@ class DescriptionGenerator:
 
         # Schrift laden (Standard oder konfiguriert)
         try:
-            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", )
-            font = ImageFont.truetype("DejaVuSansCondensed.ttf",int(self.fontSize))
+            font_holiday = ImageFont.truetype(
+                "DejaVuSansCondensed.ttf",
+            )
+            font = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSize))
         except Exception as e:
             print(f"Fehler beim Laden der Schriftart: {e}")
             font = ImageFont.load_default()
@@ -40,5 +42,3 @@ class DescriptionGenerator:
         draw.text((self.spacing, self.spacing), text, fill=self.config.textColor1, font=font, anchor="la")
 
         return description_image
-
-

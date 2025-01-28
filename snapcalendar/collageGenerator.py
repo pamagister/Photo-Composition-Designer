@@ -88,7 +88,7 @@ class CollageGenerator:
 
                 # Collage generieren
                 print(f"Generiere Collage für Ordner: {folder}")
-                self.generate_collage(image_files, weekIndex+30, output_path)
+                self.generate_collage(image_files, weekIndex + 30, output_path)
 
 
 def generateDifferentLayouts(output_dir):
@@ -122,18 +122,18 @@ def generateDifferentLayouts(output_dir):
 
     layout_configurations = [
         (1, ["landscape"]),  # 1 Bild: 1x landscape
-        (1, ["portrait"]),   # 1 Bild: 1x portrait
+        (1, ["portrait"]),  # 1 Bild: 1x portrait
         (2, ["landscape", "landscape"]),  # 2 Bilder: 2x landscape
-        (2, ["portrait", "portrait"]),    # 2 Bilder: 2x portrait
-        (2, ["landscape", "portrait"]),   # 2 Bilder: 1x landscape, 1x portrait
+        (2, ["portrait", "portrait"]),  # 2 Bilder: 2x portrait
+        (2, ["landscape", "portrait"]),  # 2 Bilder: 1x landscape, 1x portrait
         (3, ["landscape", "landscape", "landscape"]),  # 3 Bilder: 3x landscape
-        (3, ["portrait", "portrait", "portrait"]),     # 3 Bilder: 3x portrait
-        (3, ["landscape", "landscape", "portrait"]),   # 3 Bilder: 2x landscape, 1x portrait
-        (3, ["landscape", "portrait", "portrait"]),    # 3 Bilder: 1x landscape, 2x portrait
+        (3, ["portrait", "portrait", "portrait"]),  # 3 Bilder: 3x portrait
+        (3, ["landscape", "landscape", "portrait"]),  # 3 Bilder: 2x landscape, 1x portrait
+        (3, ["landscape", "portrait", "portrait"]),  # 3 Bilder: 1x landscape, 2x portrait
         (4, ["landscape", "landscape", "landscape", "landscape"]),  # 4 Bilder: 4x landscape
-        (4, ["landscape", "landscape", "landscape", "portrait"]),   # 4 Bilder: 3x landscape, 1x portrait
-        (4, ["landscape", "landscape", "portrait", "portrait"]),    # 4 Bilder: 2x landscape, 2x portrait
-        (4, ["landscape", "portrait", "portrait", "portrait"]),     # 4 Bilder: 1x landscape, 3x portrait
+        (4, ["landscape", "landscape", "landscape", "portrait"]),  # 4 Bilder: 3x landscape, 1x portrait
+        (4, ["landscape", "landscape", "portrait", "portrait"]),  # 4 Bilder: 2x landscape, 2x portrait
+        (4, ["landscape", "portrait", "portrait", "portrait"]),  # 4 Bilder: 1x landscape, 3x portrait
         (5, ["landscape", "landscape", "landscape", "landscape", "landscape"]),  # 5 Bilder: 5x landscape
         (5, ["landscape", "landscape", "landscape", "landscape", "portrait"]),  # Beispiele für 5 Bilder
         (5, ["landscape", "landscape", "landscape", "portrait", "portrait"]),  # Beispiele für 5 Bilder
@@ -172,5 +172,4 @@ if __name__ == "__main__":
 
     colGen = CollageGenerator()
     colGen.generateWeekCollages()
-    #generateDifferentLayouts(output_dir)
-
+    # generateDifferentLayouts(output_dir)

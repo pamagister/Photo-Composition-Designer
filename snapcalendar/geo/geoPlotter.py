@@ -11,12 +11,9 @@ class GeoMapPlotter:
     Klasse zum Plotten eines Kartenausschnitts mit optionalen Layern wie Bundesländer oder Gewässer.
     """
 
-    def __init__(self,
-                 buffer_deg=2,
-                 resolution=(400, 300),
-                 background_color="white",
-                 border_color="black",
-                 line_width=1.0):
+    def __init__(
+        self, buffer_deg=2, resolution=(400, 300), background_color="white", border_color="black", line_width=1.0
+    ):
         """
         Initialisiert den GeoMapPlotter.
         :param buffer_deg: Zusätzliche Ausdehnung in Grad für die Kartengrenzen.
@@ -29,7 +26,9 @@ class GeoMapPlotter:
         base_path = Path(__file__).parent.parent.parent / "data/maps"
 
         countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"  # Ländergrenzen
-        lakes_shp = base_path / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"  # Flüsse und Seen
+        lakes_shp = (
+            base_path / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"
+        )  # Flüsse und Seen
 
         self.shapefile_path = countries_shp
         self.buffer_deg = buffer_deg
@@ -87,7 +86,14 @@ class GeoMapPlotter:
         # Berechne die Breite des Ausschnitts unter Berücksichtigung der geographischen Breite
         lon_dis_per_deg = lat_dis_per_deg * math.cos(math.radians(mid_lat))  # Längengrad-Distanz in km
         # Berechne die Breite basierend auf der Auflösung und der tatsächlichen Längengrad-Distanz
-        width_deg = 0.5*lat_dis_per_deg * (height_deg + height_deg + bounds[3] - bounds[1]) * self.resolution[0] / self.resolution[1] / lon_dis_per_deg
+        width_deg = (
+            0.5
+            * lat_dis_per_deg
+            * (height_deg + height_deg + bounds[3] - bounds[1])
+            * self.resolution[0]
+            / self.resolution[1]
+            / lon_dis_per_deg
+        )
 
         return (
             mid_lon - width_deg,  # minx - berechnete Breite (links)
@@ -135,7 +141,7 @@ class GeoMapPlotter:
         ax.set_facecolor(self.background_color)
 
         # Ländergrenzen plotten
-        world.plot(ax=ax, color=self.background_color, edgecolor=self.border_color, linewidth=self.line_width*1.0)
+        world.plot(ax=ax, color=self.background_color, edgecolor=self.border_color, linewidth=self.line_width * 1.0)
 
         # Zusätzliche Layer plotten - außer im großen Europa-Plot
         if coords:
