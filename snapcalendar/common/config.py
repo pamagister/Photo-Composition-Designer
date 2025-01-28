@@ -17,6 +17,7 @@ class Config:
         self.language = self.config.get("GENERAL", "language")
         self.holidayCountries = [x.strip() for x in self.config.get("GENERAL", "holidayCountries", fallback="").split(",")
                                 if x.strip()]
+        self.photoDirectory = self.config.get("GENERAL", "photoDirectory")
 
         # Layout settings
         self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.calendarHeight

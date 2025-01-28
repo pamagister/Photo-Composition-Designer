@@ -12,7 +12,10 @@ from snapcalendar.collage.photoLayoutManager import PhotoLayoutManager
 class CollageGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
-        self.calendarium_height = self.config.calendarHeight
+        self.photoDirectory = self.config.photoDirectory
+        self.outputDir = self.photoDirectory + '/collages'
+        os.makedirs(self.outputDir, exist_ok=True)
+        self.calendar_height = self.config.calendarHeight
         self.width = self.config.width
         self.height = self.config.height
         self.spacing = self.config.spacing
@@ -27,13 +30,13 @@ class CollageGenerator:
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
         calendarImage = self.calendarObj.generateCalendarium(week)
-        collage.paste(calendarImage, (0, self.height - self.calendarium_height))
+        collage.paste(calendarImage, (0, self.height - self.calendar_height))
 
         if self.config.usePhotoDescription:
             descriptionImage = self.descGenerator.generateDescription(photo_description)
-            collage.paste(descriptionImage, (0, self.height - self.calendarium_height - self.descGenerator.height))
+            collage.paste(descriptionImage, (0, self.height - self.calendar_height - self.descGenerator.height))
 
-        available_height = self.height - self.calendarium_height - self.descGenerator.height
+        available_height = self.height - self.calendar_height - self.descGenerator.height
         available_width = self.width
 
         if len(image_files) == 0:
@@ -55,41 +58,37 @@ class CollageGenerator:
                 if coords:
                     gps_coords.append(coords)
             map_image = self.mapGenerator.generate_map(gps_coords)
-            map_image_resized = map_image.resize((self.calendarium_height, self.calendarium_height))
-            collage.paste(map_image_resized, (self.width-self.calendarium_height, self.height - self.calendarium_height))
+            map_image_resized = map_image.resize((self.calendar_height, self.calendar_height))
+            collage.paste(map_image_resized, (self.width - self.calendar_height, self.height - self.calendar_height))
 
         collage.save(output_path)
         print(f"Collage gespeichert: {output_path}")
 
+    def generateWeekCollages(self):
+        """
+        Generiert Collagen für alle Wochen aus dem angegebenen Ordner
+        """
+        for weekIndex, folder in enumerate(sorted(os.listdir(self.photoDirectory))):
+            folder_path = os.path.join(self.photoDirectory, folder)
+            if os.path.isdir(folder_path):
+                # Sammle alle Bilddateien im aktuellen Ordner
+                image_files = [
+                    os.path.join(folder_path, file)
+                    for file in sorted(os.listdir(folder_path))
+                    if file.lower().endswith((".png", ".jpg", ".jpeg"))
+                ]
 
-def generateWeekCollages(output_dir):
-    """
-    Testfunktion: Generiert Collagen für alle Wochen aus dem Ordner ../res/images.
-    """
-    base_dir = "../res/images"
-    os.makedirs(output_dir, exist_ok=True)
+                if not image_files:
+                    print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
+                    continue
 
-    for weekIndex, folder in enumerate(sorted(os.listdir(base_dir))):
-        folder_path = os.path.join(base_dir, folder)
-        if os.path.isdir(folder_path):
-            # Sammle alle Bilddateien im aktuellen Ordner
-            image_files = [
-                os.path.join(folder_path, file)
-                for file in sorted(os.listdir(folder_path))
-                if file.lower().endswith((".png", ".jpg", ".jpeg"))
-            ]
+                # Generiere den Ausgabe-Pfad basierend auf dem Ordnernamen
+                output_file_name = f"collage_{folder}.jpg"
+                output_path = os.path.join(self.outputDir, output_file_name)
 
-            if not image_files:
-                print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
-                continue
-
-            # Generiere den Ausgabe-Pfad basierend auf dem Ordnernamen
-            output_file_name = f"collage_{folder}.jpg"
-            output_path = os.path.join(output_dir, output_file_name)
-
-            # Collage generieren
-            print(f"Generiere Collage für Ordner: {folder}")
-            CollageGenerator().generate_collage(image_files, weekIndex+30, output_path)
+                # Collage generieren
+                print(f"Generiere Collage für Ordner: {folder}")
+                self.generate_collage(image_files, weekIndex+30, output_path)
 
 
 def generateDifferentLayouts(output_dir):
@@ -150,10 +149,10 @@ def generateDifferentLayouts(output_dir):
         for img_type in layout:
             if img_type == "landscape" and landscape_images:
                 selected_images.append(landscape_images[landscape_pointer])
-                landscape_pointer+=1
+                landscape_pointer += 1
             elif img_type == "portrait" and portrait_images:
                 selected_images.append(portrait_images[portrait_pointer])
-                portrait_pointer+=1
+                portrait_pointer += 1
 
         # Skip, wenn nicht genug Bilder für die Kombination vorhanden sind
         if len(selected_images) < num_images:
@@ -170,7 +169,8 @@ def generateDifferentLayouts(output_dir):
 
 
 if __name__ == "__main__":
-    output_dir = "../temp/collages"
-    generateWeekCollages(output_dir)
+
+    colGen = CollageGenerator()
+    colGen.generateWeekCollages()
     #generateDifferentLayouts(output_dir)
 
