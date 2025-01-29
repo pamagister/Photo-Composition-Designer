@@ -3,11 +3,11 @@ from datetime import timedelta
 
 from PIL import Image
 
-from snapcalendar.collage.calendarGenerator import CalendarGenerator
-from snapcalendar.collage.descriptionGenerator import DescriptionGenerator
-from snapcalendar.collage.mapGenerator import MapGenerator
-from snapcalendar.collage.photoLayoutManager import PhotoLayoutManager
-from snapcalendar.common.config import Config
+from snapcalendar.collage.CalendarGenerator import CalendarGenerator
+from snapcalendar.collage.DescriptionGenerator import DescriptionGenerator
+from snapcalendar.collage.MapGenerator import MapGenerator
+from snapcalendar.collage.PhotoLayoutManager import PhotoLayoutManager
+from snapcalendar.common.Config import Config
 
 
 class CollageGenerator:
@@ -45,10 +45,10 @@ class CollageGenerator:
             print(f"Keine Bilder gefunden.")
             return
 
-        self.layoutManager = PhotoLayoutManager(collage, available_width, available_height)
+        self.layoutManager = PhotoLayoutManager(collage, available_width, available_height, self.spacing)
 
         # Anordnungslogik basierend auf Bildanzahl
-        self.layoutManager.arrange_images(image_files)
+        self.layoutManager.arrangeImages(image_files)
 
         # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
         if self.config.usePhotoLocationMaps:

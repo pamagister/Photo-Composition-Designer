@@ -1,8 +1,8 @@
 import exifread
 from PIL import Image
 
-from snapcalendar.common.config import Config
-from snapcalendar.geo.geoPlotter import GeoMapPlotter
+from snapcalendar.common.Config import Config
+from snapcalendar.geo.GeoPlotter import GeoMapPlotter
 
 
 class MapGenerator:

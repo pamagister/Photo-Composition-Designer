@@ -6,8 +6,8 @@ from datetime import timedelta
 import holidays
 from PIL import Image, ImageDraw, ImageFont
 
-from snapcalendar.common.anniversaries import Anniversaries
-from snapcalendar.common.config import Config
+from snapcalendar.common.Anniversaries import Anniversaries
+from snapcalendar.common.Config import Config
 
 
 class CalendarGenerator:

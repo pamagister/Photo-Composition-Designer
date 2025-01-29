@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
-from snapcalendar.common.config import Config
+from snapcalendar.common.Config import Config
 
 
 class DescriptionGenerator:
@@ -15,9 +15,6 @@ class DescriptionGenerator:
         """
         Erzeugt ein Bild mit dem angegebenen Text.
         :param text: Der darzustellende Text.
-        :param height: Die Höhe des erzeugten Bildes.
-        :param width: Die Breite des erzeugten Bildes.
-        :param font_size:
         :return: Ein PIL.Image-Objekt mit dem gerenderten Text.
         """
         # Erstelle ein neues Bild mit der Hintergrundfarbe aus der Konfiguration

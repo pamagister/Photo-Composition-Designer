@@ -2,6 +2,13 @@ import os
 from pathlib import Path
 from collections import defaultdict
 
+"""
+Regex to parse ical:
+(?s)BEGIN:VEVENT.*?DTSTART[^:]*:(\d{4})(\d{2})(\d{2}).*?SUMMARY:\s*([^(\r\n]+)\s*\(\d{4}\).*?END:VEVENT
+$4 = $3.$2.$1
+
+"""
+
 
 class Anniversaries:
     def __init__(self, anniversaries_file=None):
