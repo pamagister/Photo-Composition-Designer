@@ -31,46 +31,46 @@ class CollageGenerator:
         Erzeugt eine Collage mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
-        calendarImage = self.calendarObj.generateCalendarium(date)
-        collage.paste(calendarImage, (0, self.height - self.calendar_height))
+        available_height = self.height
+        available_cal_width = self.width
+
+        if self.config.usePhotoLocationMaps:
+            available_cal_width -= self.config.mapWidth
+
+        if self.config.useCalendar:
+            calendarImage = self.calendarObj.generateCalendar(date, available_cal_width, self.calendar_height)
+            collage.paste(calendarImage, (0, self.height - self.calendar_height))
+            available_height -= self.calendar_height
 
         if self.config.usePhotoDescription:
             descriptionImage = self.descGenerator.generateDescription(photo_description)
             collage.paste(descriptionImage, (0, self.height - self.calendar_height - self.descGenerator.height))
+            available_height -= self.descGenerator.height
 
-        available_height = self.height - self.calendar_height - self.descGenerator.height
         available_width = self.width
 
         if len(image_files) == 0:
             print(f"Keine Bilder gefunden.")
             return
 
+        # Arrange image collage
         self.layoutManager = PhotoLayoutManager(collage, available_width, available_height, self.spacing)
-
-        # Anordnungslogik basierend auf Bildanzahl
         self.layoutManager.arrangeImages(image_files)
 
-        # Wenn GPS-Koordinaten vorliegen, eine Karte generieren
         if self.config.usePhotoLocationMaps:
-            # EXIF-Daten auslesen und GPS-Koordinaten extrahieren
-            gps_coords = []
-            for img_path in image_files:
-                coords = self.mapGenerator.extract_gps_coordinates(img_path)
-                if coords:
-                    gps_coords.append(coords)
-            map_image = self.mapGenerator.generate_map(gps_coords)
-            map_image_resized = map_image.resize((self.calendar_height, self.calendar_height))
-            collage.paste(map_image_resized, (self.width - self.calendar_height, self.height - self.calendar_height))
+            imgMap = self.mapGenerator.generateImageLocationMap(image_files)
+            collage.paste(imgMap, (self.width - self.config.mapWidth, self.height - self.config.mapHeight))
 
         collage.save(output_path, quality=self.config.jpgQuality)
         print(f"Collage gespeichert: {output_path}")
+
 
     def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=100):
         """
         Interne Methode, um Bilder in Gruppen zu verarbeiten und Collagen zu erstellen.
         """
         for index, i in enumerate(range(0, len(image_files), max_images_per_collage)):
-            collage_files = image_files[i: i + max_images_per_collage]
+            collage_files = image_files[i : i + max_images_per_collage]
             output_file_name = f"{output_prefix}_part_{index + 1}.jpg"
             output_path = os.path.join(self.outputDir, output_file_name)
 

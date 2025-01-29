@@ -4,10 +4,10 @@ import pytest
 from datetime import timedelta
 import os
 
-from snapcalendar.collageGenerator import CollageGenerator
+from snapcalendar.CollageGenerator import CollageGenerator
 from tempfile import NamedTemporaryFile
 
-from snapcalendar.common.config import Config
+from snapcalendar.common.Config import Config
 
 
 class TestCollageGenerator:
@@ -18,40 +18,43 @@ class TestCollageGenerator:
         Creates a temporary config.ini file with sample data.
         """
         data = """
-        [GENERAL]
-        photoDirectory = ../tests/images 
-        								 
-        [CALENDAR]                       
-        language = de_DE                 
-        holidayCountries = SN            
-        startDate = 30.12.2024           
-                                         
-        [COLORS]                         
-        backgroundColor = 20,20,20       
-        textColor1 = 255,255,255         
-        textColor2 = 150,150,150         
-        holidayColor = 255,0,0           
-                                         
-        [GEO]                            
-        usePhotoLocationMaps = True      
-        photoLocationRange = 2.5         
-                                         
-        [SIZE]                           
-        width = 1920                     
-        height = 1280                    
-        calendarHeight = 200             
-        jpgQuality = 80                  
-                                         
-        [LAYOUT]                         
-        fontSizeLarge = 0.4              
-        fontSizeSmall = 0.15             
-        fontSizeAnniversaries = 0.10     
-        marginBottom = 30                
-        marginSides = 10                 
-        spacing = 10                     
-        useShortDayNames = True          
-        useShortMonthNames = True        
-        usePhotoDescription = True       
+[GENERAL]
+photoDirectory = ../tests/images  ; Path to the directory containing photos
+
+[CALENDAR]
+useCalendar = True               ; True: Calendar elements are generated. False if only a photo collage is wanted
+language = de_DE                 ; Language for the calendar (e.g., de_DE, en_US)
+holidayCountries = SN            ; Country/state codes for public holidays
+startDate = 30.12.2024           ; Start date of the calendar
+
+[COLORS]
+backgroundColor = 20,20,20       ; Background color of the collage (RGB)
+textColor1 = 255,255,255         ; Primary text color
+textColor2 = 150,150,150         ; Secondary text color (e.g., for subtitles)
+holidayColor = 255,0,0           ; Color for holidays
+
+[GEO]
+usePhotoLocationMaps = True      ; Use GPS data to generate maps
+photoLocationRange = 2.5         ; Range for map display (in degree)
+
+[SIZE]
+width = 1920                     ; Width of the collage in pixels
+height = 1280                    ; Height of the collage in pixels
+calendarHeight = 200             ; Height of the calendar area in pixels
+mapWidth = 230
+mapHeight = 240
+jpgQuality = 80                  ; JPG compression quality (1-100)
+
+[LAYOUT]
+fontSizeLarge = 0.4              ; Font size for large text (relative to image height)
+fontSizeSmall = 0.15             ; Font size for small text
+fontSizeAnniversaries = 0.10     ; Font size for anniversaries
+marginBottom = 30                ; Bottom margin in pixels
+marginSides = 10                 ; Side margins in pixels
+spacing = 10                     ; Spacing between elements
+useShortDayNames = True          ; Use short names for weekdays (e.g., Mon, Tue)
+useShortMonthNames = True        ; Use short names for months (e.g., Jan, Feb)
+usePhotoDescription = True       ; Include photo descriptions in the collage    
         """
         with NamedTemporaryFile("w", delete=False, suffix=".ini") as temp_file:
             temp_file.write(data)

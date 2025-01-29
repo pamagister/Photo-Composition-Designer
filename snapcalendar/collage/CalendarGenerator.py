@@ -14,17 +14,13 @@ class CalendarGenerator:
     def __init__(self, config=None, anniversaries=None):
         self.config = config or Config()
         self.anniversaries = anniversaries or Anniversaries()
-        self.width = self.config.width
-        self.calendarHeight = self.config.calendarHeight
         self.marginBottom = self.config.marginBottom
         self.marginSides = self.config.marginSides
         self.fontSizeLarge = self.config.fontSizeLarge
         self.fontSizeSmall = self.config.fontSizeSmall
         self.fontSizeAnniversaries = self.config.fontSizeAnniversaries
-        if self.config.usePhotoLocationMaps:
-            self.width -= self.calendarHeight - 2 * self.config.marginSides
 
-    def generateCalendarium(self, date):
+    def generateCalendar(self, date, width, height):
         year = date.year
         language = self.config.language
         # Berechne die Daten
@@ -36,7 +32,7 @@ class CalendarGenerator:
         localHolidays = self.get_combined_holidays(year, country_code, self.config.holidayCountries)
 
         # Erstelle das Bild
-        img = Image.new("RGB", (self.width, self.calendarHeight), self.config.backgroundColor)
+        img = Image.new("RGB", (width, height), self.config.backgroundColor)
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
@@ -52,10 +48,10 @@ class CalendarGenerator:
         if self.config.useShortMonthNames:
             month_name = month_name[:3]
 
-        cols_count, col_width = self.get_cols_property()
+        cols_count, col_width = self.get_cols_property(width)
 
         header_text = f"{month_name} {str(year)[-2:]}"
-        base_y = self.calendarHeight - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
+        base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
 
         draw.text((self.marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
         spacing_date = int(self.fontSizeSmall * 0.4)
@@ -103,12 +99,12 @@ class CalendarGenerator:
 
         return img
 
-    def get_cols_property(self):
+    def get_cols_property(self, width):
         if self.config.useShortMonthNames:
             cols = 2.0
         else:
             cols = 4.0
-        col_width = (self.width - 2 * self.config.marginSides) // (7 + cols - 0.5)
+        col_width = (width - 2 * self.config.marginSides) // (7 + cols - 0.5)
         return cols, col_width
 
     @staticmethod
@@ -167,7 +163,7 @@ def main():
 
     for week in range(40, 45):
         date = startDate + timedelta(weeks=week)
-        image = calendar_gen.generateCalendarium(date)
+        image = calendar_gen.generateCalendar(date)
         image_path = os.path.join(temp_dir, f"calendar_{date.year}-{date.month.zfill(2)}-{date.day.zfill(2)}.png")
         image.save(image_path)
         print(f"Generated: {image_path}")

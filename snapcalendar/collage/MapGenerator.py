@@ -9,7 +9,20 @@ class MapGenerator:
 
     def __init__(self):
         self.config = Config()
-        self.height = self.config.calendarHeight
+        self.height = self.config.mapHeight
+        self.width = self.config.mapWidth
+
+
+    def generateImageLocationMap(self, image_files):
+        # Read EXIF data and extract GPS coordinates
+        coordinatesList = []
+        for img_path in image_files:
+            coordinates = self.extract_gps_coordinates(img_path)
+            if coordinates:
+                coordinatesList.append(coordinates)
+        map_image = self.generate_map(coordinatesList)
+        map_image_resized = map_image.resize((self.width, self.height))
+        return map_image_resized
 
     def generate_map(self, gps_coords):
         """
@@ -22,7 +35,7 @@ class MapGenerator:
         # Plotter initialisieren
         plotter = GeoMapPlotter(
             buffer_deg=self.config.photoLocationRange,
-            resolution=(self.height, self.height),
+            resolution=(self.width, self.height),
             background_color=self.config.backgroundColor,
             border_color=self.config.textColor1,
         )

@@ -37,6 +37,7 @@ class Config:
         self.startDate = self._parse_start_date(_startDate)
 
         # Calendar settings
+        self.useCalendar = self.config.getboolean("CALENDAR", "useCalendar")
         self.language = self.config.get("CALENDAR", "language")
         self.holidayCountries = [
             x.strip()
@@ -58,6 +59,8 @@ class Config:
         self.width = self.config.getint("SIZE", "width")
         self.height = self.config.getint("SIZE", "height")
         self.calendarHeight = self.config.getint("SIZE", "calendarHeight")
+        self.mapWidth = self.config.getint("SIZE", "mapWidth")
+        self.mapHeight = self.config.getint("SIZE", "mapHeight")
         self.jpgQuality = self.config.getint("SIZE", "jpgQuality")
 
         # Layout settings

@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from snapcalendar.common.anniversaries import Anniversaries  # Annahme: Die Klasse ist in "anniversaries.py" gespeichert
+from snapcalendar.common.Anniversaries import Anniversaries  # Annahme: Die Klasse ist in "anniversaries.py" gespeichert
 
 
 class TestAnniversaries:
@@ -43,7 +43,7 @@ class TestAnniversaries:
             (6, 1): "Paul",
             (7, 1): "Anna 84",
             (8, 1): "Peter, Helmut ✝ 23",
-            (9, 1): "Liz",
+            (9, 1): "Liz 93",
             (10, 1): "Anna",
             (11, 1): "Gisela ✝ 20",
             (12, 1): "Mary & Josh ⚭ 21",
