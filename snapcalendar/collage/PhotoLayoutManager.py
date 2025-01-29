@@ -1,3 +1,5 @@
+import random
+
 from PIL import Image, UnidentifiedImageError
 
 
@@ -7,7 +9,6 @@ class PhotoLayoutManager:
         self.width = width
         self.height = height
         self.spacing = spacing
-
 
     @staticmethod
     def filterInvalidImages(image_files):
@@ -143,11 +144,17 @@ class PhotoLayoutManager:
         """
         s = self.spacing
         layouts = [
-            # Ein großes Bild oben, zwei kleinere unten nebeneinander
+            # Ein großes Bild quer oben, zwei kleinere unten nebeneinander
             lambda imgs: [
                 (self.cropAndResize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
                 (self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)), (0, int(h * 0.6))),
                 (self.cropAndResize(imgs[2], int(w * 0.5), int(h * 0.4)), (int(w * 0.5) + s, int(h * 0.6))),
+            ],
+            # Großes Querformat links, zwei Querformat rechts übereinander
+            lambda imgs: [
+                (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),
+                (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)), (int(w * 0.7) + s, 0)),
+                (self.cropAndResize(imgs[2], int(w * 0.3), int(h * 0.5) - s), (int(w * 0.7) + s, int(h * 0.5) + s)),
             ],
             # Großes Hochformat links, zwei Querformat rechts übereinander
             lambda imgs: [
@@ -155,18 +162,28 @@ class PhotoLayoutManager:
                 (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)), (int(w * 0.4) + s, 0)),
                 (self.cropAndResize(imgs[2], int(w * 0.6), int(h * 0.5) - s), (int(w * 0.4) + s, int(h * 0.5) + s)),
             ],
-            # Drei gleich große Bilder im Hochformat nebeneinander
+            # Großes Querformat links, zwei Hochformat rechts übereinander
             lambda imgs: [
-                (self.cropAndResize(img, int(w / 3) - s, h), (i * (int(w / 3)), 0)) for i, img in enumerate(imgs)
+                (self.cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),
+                (self.cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)), (int(w * 0.6) + s, 0)),
+                (self.cropAndResize(imgs[2], int(w * 0.4), int(h * 0.5) - s), (int(w * 0.6) + s, int(h * 0.5) + s)),
             ],
+            # Drei gleich große Bilder im Hochformat nebeneinander
+            lambda imgs: [(self.cropAndResize(img, int(w / 3) - s, h), (i * (int(w / 3)), 0)) for i, img in enumerate(imgs)],
         ]
 
         if formats.count("portrait") == 0:
-            layout = layouts[0]
+            random.seed()
+            if random.random() > 0.8:
+                layout = layouts[0]
+            else:
+                layout = layouts[1]
         elif formats.count("portrait") == 1:
-            layout = layouts[1]
-        else:
             layout = layouts[2]
+        elif formats.count("portrait") == 2:
+            layout = layouts[3]
+        else:
+            layout = layouts[4]
 
         for img, pos in layout(images):
             collage.paste(img, pos)
@@ -177,66 +194,49 @@ class PhotoLayoutManager:
         """
         s = self.spacing
         layouts = [
-            # Zwei große Bilder oben, zwei kleine unten (LLLL)
+            # Zwei große Bilder oben, zwei etwas kleiner unten, leicht versetzt (LLLL)
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.45), int(h * 0.55) - s), (0, 0)),
                 (self.cropAndResize(imgs[3], int(w * 0.55), int(h * 0.55) - s), (int(w * 0.45) + s, 0)),
                 (self.cropAndResize(imgs[2], int(w * 0.55), int(h * 0.45)), (0, int(h * 0.55))),
                 (self.cropAndResize(imgs[1], int(w * 0.45), int(h * 0.45)), (int(w * 0.55) + s, int(h * 0.55))),
             ],
-            # Großes portrait-Bild links, drei kleine landscape rechts
+            # Großes Quadrat, drei kleine landscape rechts Q-LLL
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.4), int(h / 3)), (int(w * 0.6) + s, 0)),
-                (self.cropAndResize(imgs[2], int(w * 0.4), int(h / 3) - s), (int(w * 0.6) + s, int(h / 3) + s)),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.4), int(h / 3) - 1 * s),
-                    (int(w * 0.6) + s, int(h * 2 / 3) + s * 1),
-                ),
+                (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),  # portrait, index 0
+                (self.cropAndResize(imgs[1], int(w * 0.3), int(h / 3)), (int(w * 0.7) + s, 0)),
+                (self.cropAndResize(imgs[2], int(w * 0.3), int(h / 3) - s), (int(w * 0.7) + s, int(h / 3) + s)),
+                (self.cropAndResize(imgs[3], int(w * 0.3), int(h / 3) - 1 * s), (int(w * 0.7) + s, int(h * 2 / 3) + s)),
             ],
-            # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleine landscape nebeneinander
+            # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleine landscape nebeneinander PLLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
-                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
-                ),  # portrait, index 1
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s),
-                    (int(w * 0.7) + s, int(h * 3 / 5) + s),
-                ),
+                (self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.4) + s, int(h * 3 / 5) + s)),
+                (self.cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.7) + s, int(h * 3 / 5) + s)),
             ],
-            # Großes portrait-Bild links, rechts oben landscape, darunter kleines portrait und landscape nebeneinander
+            # Großes portrait-Bild links, rechts oben landscape, darunter kleines portrait und landscape PPLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s),
-                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
-                ),  # portrait, index 1
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s),
-                    (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s),
-                ),
+                (self.cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s), (int(w * 0.4) + s, int(h * 3 / 5) + s)),
+                (self.cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s), (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s)),
             ],
-            # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleines portrait nebeneinander
+            # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleines portrait nebeneinander PPLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
-                    (int(w * 0.4) + s, int(h * 2 / 5) + s),
-                ),  # portrait, index 1
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s),
-                    (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s),
-                ),  # portrait, index 2
+                (self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s), (int(w * 0.4) + s, int(h * 2 / 5) + s)),
+                (self.cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s), (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s)),
             ],
         ]
 
         if formats.count("portrait") == 0:  # LLLL = 4x landscape
-            layout = layouts[0]
+            random.seed()
+            if random.random() > 0.5:
+                layout = layouts[0]
+            else:
+                layout = layouts[1]
         elif formats.count("portrait") == 1:  # PLLL
             layout = layouts[2]
         elif formats.count("portrait") == 2:  # PPLL
@@ -260,15 +260,16 @@ class PhotoLayoutManager:
                 (self.cropAndResize(imgs[2], int(w / 3), int(h * 0.4)), (int(w * 0 / 3) + 0 * s, int(h * 0.6))),
                 (self.cropAndResize(imgs[3], int(w / 3), int(h * 0.4)), (int(w * 1 / 3) + 1 * s, int(h * 0.6))),
                 (self.cropAndResize(imgs[4], int(w / 3), int(h * 0.4)), (int(w * 2 / 3) + 2 * s, int(h * 0.6))),
-            ],  # großes Portrait links oben, großes landscape rechts oben, unten drei kleine landscape (PLLLL)
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.3), int(h * 2 / 3) - s), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.7), int(h * 2 / 3) - s), (int(w * 0.3) + s, 0)),
-                (self.cropAndResize(imgs[4], int(w / 3), int(h / 3)), (int(w * 0 / 3) + 0 * s, int(h * 2 / 3))),
-                (self.cropAndResize(imgs[3], int(w / 3), int(h / 3)), (int(w * 1 / 3) + 1 * s, int(h * 2 / 3))),
-                (self.cropAndResize(imgs[2], int(w / 3), int(h / 3)), (int(w * 2 / 3) + 2 * s, int(h * 2 / 3))),
             ],
-            # zwei großes Portrais oben,  unten drei kleine landscape  (PPLLL)
+            # Links ein großes Portrait, rechts daneben im goldenen Schnitt vier kleinere Bilder (PLLLL)
+            lambda imgs: [
+                (self.cropAndResize(imgs[0], int(w * 0.3 - s), int(h)), (0, 0)),  # portrait, index 0
+                (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.55) - s), (int(w * 0.3), 0)),
+                (self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s), (int(w * 0.6) + s, 0)),
+                (self.cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)), (int(w * 0.3), int(h * 0.55))),
+                (self.cropAndResize(imgs[4], int(w * 0.3) - s, int(h * 0.45)), (int(w * 0.7) + s, int(h * 0.55))),
+            ],
+            # zwei große aber dennoch leider recht breite Portrais oben, unten drei kleine landscape  (PPLLL)
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.5), int(h * 2 / 3) - s), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[1], int(w * 0.5), int(h * 2 / 3) - s), (int(w * 0.5) + s, 0)),
