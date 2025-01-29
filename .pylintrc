@@ -10,20 +10,12 @@ disable=
 [BASIC]
 # only match correct module names
 module-naming-style=PascalCase
-
-# only match correct class names
 class-naming-style=PascalCase
-
-# only match correct function names
 function-naming-style=camelCase
-
-# only match correct method names
 method-naming-style=camelCase
-
-# only match correct argument names
+class-attribute-naming-style=camelCase
+attr-naming-style=camelCase
 argument-naming-style=any
-
-# only match correct variable names
 variable-naming-style=any
 
 [FORMAT]
