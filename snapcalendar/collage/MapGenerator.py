@@ -40,7 +40,7 @@ class MapGenerator:
         )
 
         # GeoDataFrame aus Koordinaten erstellen
-        plt = plotter.render_map(gps_coords)
+        plt = plotter.renderMap(gps_coords)
 
         # In einen BytesIO-Puffer speichern
         buf = BytesIO()

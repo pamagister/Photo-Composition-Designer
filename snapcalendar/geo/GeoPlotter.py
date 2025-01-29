@@ -36,7 +36,7 @@ class GeoMapPlotter:
 
         # Zusätzliche Layer hinzufügen
         lakes_shp = Path(lakes_shp).resolve()
-        self.add_layer("lakes", lakes_shp, color="royalblue", edgecolor="blue", alpha=1.0)
+        self._addLayer("lakes", lakes_shp, color="royalblue", edgecolor="blue", alpha=1.0)
 
     @staticmethod
     def _normalize_color(color):
@@ -95,7 +95,7 @@ class GeoMapPlotter:
             mid_lat + height_deg,
         )
 
-    def add_layer(self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5):
+    def _addLayer(self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5):
         """
         Adds a layer such as federal states or bodies of water.
 
@@ -108,7 +108,7 @@ class GeoMapPlotter:
         gdf = gpd.read_file(shapefile_path)
         self.layers[name] = {"gdf": gdf, "color": color, "edgecolor": edgecolor, "alpha": alpha}
 
-    def render_map(self, coords):
+    def renderMap(self, coords):
         """
         Creates a map section as a plotable object.
         :param coords: List of (latitude, longitude) tuples.
@@ -172,13 +172,13 @@ if __name__ == "__main__":
         (51.3397, 12.3731),  # Leipzig
         (50.8278, 12.9214),  # Chemnitz
         (51.1079, 17.0441),  # Breslau
-        (42.5200, 13.5156),  # Berlin
+        (52.5200, 13.5156),  # Berlin
     ]
 
     # Karte erstellen und anzeigen
-    map_plt = plotter.render_map(gps_coords)
+    map_plt = plotter.renderMap(gps_coords)
     map_plt.show()
 
     # Karte erstellen ohne dass Koordinaten übergeben wurden.
-    map_plt = plotter.render_map([])
+    map_plt = plotter.renderMap([])
     map_plt.show()
