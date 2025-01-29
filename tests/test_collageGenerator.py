@@ -59,7 +59,7 @@ holidayColor = 255,0,0           ; Color for holidays
 
 [GEO]
 usePhotoLocationMaps = True      ; Use GPS data to generate maps
-photoLocationRange = 2.5         ; Range for map display (in degree)
+minimalExtension = 6         ; Range for map display (in degree)
 
 [SIZE]
 width = 1920                     ; Width of the collage in pixels

@@ -53,7 +53,7 @@ class Config:
 
         # Geo settings
         self.usePhotoLocationMaps = self.config.getboolean("GEO", "usePhotoLocationMaps")
-        self.photoLocationRange = self.config.getfloat("GEO", "photoLocationRange")
+        self.minimalExtension = self.config.getfloat("GEO", "minimalExtension")
 
         # Size settings
         self.width = self.config.getint("SIZE", "width")

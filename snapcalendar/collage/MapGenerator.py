@@ -12,7 +12,6 @@ class MapGenerator:
         self.height = self.config.mapHeight
         self.width = self.config.mapWidth
 
-
     def generateImageLocationMap(self, image_files):
         # Read EXIF data and extract GPS coordinates
         coordinatesList = []
@@ -34,7 +33,7 @@ class MapGenerator:
 
         # Plotter initialisieren
         plotter = GeoMapPlotter(
-            buffer_deg=self.config.photoLocationRange,
+            minimalExtension=self.config.minimalExtension,
             resolution=(self.width, self.height),
             background_color=self.config.backgroundColor,
             border_color=self.config.textColor1,
