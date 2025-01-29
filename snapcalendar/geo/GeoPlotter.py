@@ -175,6 +175,8 @@ if __name__ == "__main__":
         (52.5200, 13.5156),  # Berlin
     ]
 
+    # locations = Locations()
+    # gps_coords = list(locations.locations_dict.values())
     # Karte erstellen und anzeigen
     map_plt = plotter.renderMap(gps_coords)
     map_plt.show()

@@ -71,12 +71,11 @@ class Locations:
         except Exception as e:
             print(f'Error processing line "{line}": {e}')
 
-    def _add_to_dict(self, city, coordinates, category):
+    def _add_to_dict(self, city, coordinates, _):
         """
         Adds an entry to the dictionary under the given category.
         """
-        key = f"{category}: {city}" if category else city
-        self.locations_dict[key] = coordinates
+        self.locations_dict[city] = coordinates
 
     def __getitem__(self, key):
         return self.locations_dict.get(key)
