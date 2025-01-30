@@ -43,7 +43,7 @@ class TestCollageGenerator:
         """
         data = """
 [GENERAL]
-photoDirectory = ../tests/images  ; Path to the directory containing photos
+photoDirectory = ../images  ; Path to the directory containing photos
 
 [CALENDAR]
 useCalendar = True               ; True: Calendar elements are generated. False if only a photo collage is wanted

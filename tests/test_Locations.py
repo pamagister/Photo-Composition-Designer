@@ -33,9 +33,9 @@ class TestLocations:
 
         # Expected output
         expected = {
-            "Dresden": (51.0504, 13.7373),
-            "Leipzig": (51.3397, 12.3731),
-            "Chemnitz": (50.8278, 12.9214),
+            "dresden": (51.0504, 13.7373),
+            "leipzig": (51.3397, 12.3731),
+            "chemnitz": (50.8278, 12.9214),
         }
 
         # Assert that the parsed output matches the expected result
