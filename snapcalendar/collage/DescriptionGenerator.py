@@ -4,8 +4,8 @@ from snapcalendar.common.Config import Config
 
 
 class DescriptionGenerator:
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config=None):
+        self.config = config or Config()
         self.width = int(self.config.width)  # Die Breite des erzeugten Bildes.
         self.fontSize = self.config.fontSizeAnniversaries  # Die Schriftgröße des Textes.
         self.height = int(self.fontSize + self.config.spacing * 2)  # Die Höhe des erzeugten Bildes.

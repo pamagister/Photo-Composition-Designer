@@ -9,10 +9,11 @@ class Config:
     """
 
     def __init__(self, config_file=None):
-        base_path = Path(__file__).parent.parent
-        if not config_file:
-            config_file = base_path / 'config' / "config.ini"
 
+        if not config_file:
+            project_base_path = Path(__file__).parent.parent
+            config_file = project_base_path / 'config' / "config.ini"
+        base_path = config_file.parent
         # Preprocess the config file to remove comments and strip whitespace
         processed_lines = []
         with open(config_file, "r", encoding="utf-8") as file:
@@ -31,7 +32,17 @@ class Config:
 
         # General settings
         photoDir = self.config.get("GENERAL", "photoDirectory")
-        self.photoDirectory = (base_path / Path(photoDir)).resolve()
+        self.photoDirectory = (Path(photoDir) if Path(photoDir).is_absolute() else base_path / Path(photoDir)).resolve()
+
+        anniversariesFile = self.config.get("GENERAL", "anniversariesConfig")
+        self.anniversariesFile = (
+            Path(anniversariesFile) if Path(anniversariesFile).is_absolute() else base_path / Path(anniversariesFile)
+        ).resolve()
+
+        locationsFile = self.config.get("GENERAL", "locationsConfig")
+        self.locationsFile = (
+            Path(locationsFile) if Path(locationsFile).is_absolute() else base_path / Path(locationsFile)
+        ).resolve()
 
         _startDate = self.config.get("CALENDAR", "startDate")
         self.startDate = self._parse_start_date(_startDate)
@@ -40,9 +51,7 @@ class Config:
         self.useCalendar = self.config.getboolean("CALENDAR", "useCalendar")
         self.language = self.config.get("CALENDAR", "language")
         self.holidayCountries = [
-            x.strip()
-            for x in self.config.get("CALENDAR", "holidayCountries", fallback="").split(",")
-            if x.strip()
+            x.strip() for x in self.config.get("CALENDAR", "holidayCountries", fallback="").split(",") if x.strip()
         ]
 
         # Color settings
@@ -67,9 +76,7 @@ class Config:
         # Layout settings
         self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.calendarHeight
         self.fontSizeSmall = self.config.getfloat("LAYOUT", "fontSizeSmall") * self.calendarHeight
-        self.fontSizeAnniversaries = (
-            self.config.getfloat("LAYOUT", "fontSizeAnniversaries") * self.calendarHeight
-        )
+        self.fontSizeAnniversaries = self.config.getfloat("LAYOUT", "fontSizeAnniversaries") * self.calendarHeight
         self.marginBottom = self.config.getint("LAYOUT", "marginBottom")
         self.marginSides = self.config.getint("LAYOUT", "marginSides")
         self.spacing = self.config.getint("LAYOUT", "spacing")
@@ -102,8 +109,7 @@ class Config:
 
         if parsed_date is None:
             raise ValueError(
-                f"Invalid date in the 'startDate' field: {start_date}. "
-                f"Supported formats: {', '.join(date_formats)}"
+                f"Invalid date in the 'startDate' field: {start_date}. " f"Supported formats: {', '.join(date_formats)}"
             )
         return parsed_date
 

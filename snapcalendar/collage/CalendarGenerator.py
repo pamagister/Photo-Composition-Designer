@@ -1,5 +1,6 @@
 import calendar
 import locale
+import logging
 import os
 from datetime import timedelta
 
@@ -130,24 +131,27 @@ class CalendarGenerator:
     @staticmethod
     def get_combined_holidays(year, country='EN', subdivs=None):
         """
-        Kombiniert Feiertage aus mehreren Ländern oder Subdivisionen.
+        Combines holidays from several countries or subdivisions.
 
         Args:
-            year (int): Das Jahr, für das Feiertage abgerufen werden sollen.
-            country (str): Das Land z.B. EN oder DE
-            countryCodes (list): Eine Liste von Länder- oder Subdivision-Codes, z. B. ['SN', 'BY'].
+            year (int): The year for which public holidays are to be retrieved.
+            country (str): The country e.g. EN or DE
+            subdivs (list): A list of country or subdivision codes, e.g. ['SN', 'BY'].
 
         Returns:
-            holidays.HolidayBase: Ein Objekt mit allen kombinierten Feiertagen.
+            holidays.HolidayBase: An object with all combined holidays.
         """
+        years = (year, year+1)
         combined_holidays = holidays.HolidayBase()
-        for subdiv in subdivs:
-
-            # Lade Feiertage für das Land/Subdivision
-            local_holidays = holidays.country_holidays(country, years=year, subdiv=subdiv)
-
-            # Kombiniere mit den bisherigen Feiertagen
-            combined_holidays.update(local_holidays)
+        combined_holidays.update(holidays.country_holidays(country, years=years))
+        try:
+            for subdiv in subdivs:
+                # Loading holidays for the country/subdivision
+                local_holidays = holidays.country_holidays(country, years=years, subdiv=subdiv)
+                # Combine with the previous holidays
+                combined_holidays.update(local_holidays)
+        except Exception as err:
+            logging.warning(f'Unable to determine holidays for country "{country}" in region "{subdiv}": {err}')
 
         return combined_holidays
 

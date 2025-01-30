@@ -21,8 +21,8 @@ class CollageGenerator:
         self.height = self.config.height
         self.spacing = self.config.spacing
         self.calendarObj = CalendarGenerator(self.config)
-        self.descGenerator = DescriptionGenerator()
-        self.mapGenerator = MapGenerator()
+        self.descGenerator = DescriptionGenerator(self.config)
+        self.mapGenerator = MapGenerator(self.config)
         self.layoutManager = None
         self.startDate = self.config.startDate
 

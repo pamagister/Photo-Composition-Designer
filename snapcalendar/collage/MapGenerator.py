@@ -10,8 +10,8 @@ from snapcalendar.geo.GeoPlotter import GeoMapPlotter
 
 class MapGenerator:
 
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config=None):
+        self.config = config or Config()
         self.height = self.config.mapHeight
         self.width = self.config.mapWidth
         self.locations = Locations()

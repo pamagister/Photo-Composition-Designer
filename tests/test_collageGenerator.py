@@ -36,64 +36,15 @@ layout_configurations = [
 
 class TestCollageGenerator:
 
-    @pytest.fixture
-    def sample_config_file(self):
-        """
-        Creates a temporary config.ini file with sample data.
-        """
-        data = """
-[GENERAL]
-photoDirectory = ../images  ; Path to the directory containing photos
-
-[CALENDAR]
-useCalendar = True               ; True: Calendar elements are generated. False if only a photo collage is wanted
-language = en_us                 ; Language for the calendar (e.g., de_DE, en_US)
-holidayCountries = SN            ; Country/state codes for public holidays
-startDate = 30.12.2024           ; Start date of the calendar
-
-[COLORS]
-backgroundColor = 20,20,20       ; Background color of the collage (RGB)
-textColor1 = 255,255,255         ; Primary text color
-textColor2 = 150,150,150         ; Secondary text color (e.g., for subtitles)
-holidayColor = 255,0,0           ; Color for holidays
-
-[GEO]
-usePhotoLocationMaps = True      ; Use GPS data to generate maps
-minimalExtension = 6         ; Range for map display (in degree)
-
-[SIZE]
-width = 210                      ; Width of the collage in millimeter [mm]
-height = 148                     ; Height of the collage in millimeter [mm]
-calendarHeight = 25              ; Height of the calendar area millimeter [mm]
-mapWidth = 30                    ; Width of the locations map in millimeter [mm]
-mapHeight = 30                   ; Height of the locations map in millimeter [mm]
-dpi = 100                        ; resolution of the image to be generated in dpi
-jpgQuality = 80                  ; JPG compression quality (1-100)
-
-[LAYOUT]
-fontSizeLarge = 0.4              ; Font size for large text (relative to image height)
-fontSizeSmall = 0.15             ; Font size for small text
-fontSizeAnniversaries = 0.10     ; Font size for anniversaries
-marginBottom = 30                ; Bottom margin in pixels
-marginSides = 10                 ; Side margins in pixels
-spacing = 10                     ; Spacing between elements
-useShortDayNames = True          ; Use short names for weekdays (e.g., Mon, Tue)
-useShortMonthNames = True        ; Use short names for months (e.g., Jan, Feb)
-usePhotoDescription = True       ; Include photo descriptions in the collage    
-        """
-        with NamedTemporaryFile("w", delete=False, suffix=".ini") as temp_file:
-            temp_file.write(data)
-            temp_file_path = temp_file.name
-        yield temp_file_path
-        Path(temp_file_path).unlink()  # Remove the file after the test
-
     @pytest.mark.parametrize("num_images, layout", layout_configurations)
-    def test_generate_different_layouts(self, sample_config_file, num_images, layout):
+    def test_generate_different_layouts(self, num_images, layout):
         """
         Testet verschiedene Layouts mit CollageGenerator.
         """
 
-        config = Config(sample_config_file)
+        config = Config()
+        config.dpi = 100
+        config.jpgQuality = 40
         collageGen = CollageGenerator(config)
         startDate = collageGen.startDate
         base_dir = os.path.join(collageGen.photoDirectory, 'layout_orientation')
@@ -140,8 +91,8 @@ usePhotoDescription = True       ; Include photo descriptions in the collage
 
         assert os.path.exists(output_path), f"Ausgabedatei wurde nicht erstellt: {output_path}"
 
-    def test_generate_from_folders(self, sample_config_file):
-        config = Config(sample_config_file)
+    def test_generate_from_folders(self):
+        config = Config()
         config.photoDirectory = config.photoDirectory / 'layout_orientation'
 
         collageGen = CollageGenerator(config)
