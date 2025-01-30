@@ -144,32 +144,30 @@ class PhotoLayoutManager:
         """
         s = self.spacing
         layouts = [
-            # Ein großes Bild quer oben, zwei kleinere unten nebeneinander
+            # Ein großes Bild quer oben, zwei kleinere unten nebeneinander LLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
                 (self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)), (0, int(h * 0.6))),
                 (self.cropAndResize(imgs[2], int(w * 0.5), int(h * 0.4)), (int(w * 0.5) + s, int(h * 0.6))),
             ],
-            # Großes Querformat links, zwei Querformat rechts übereinander
+            # Großes Querformat links, zwei Querformat rechts übereinander LLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),
                 (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)), (int(w * 0.7) + s, 0)),
                 (self.cropAndResize(imgs[2], int(w * 0.3), int(h * 0.5) - s), (int(w * 0.7) + s, int(h * 0.5) + s)),
             ],
-            # Großes Hochformat links, zwei Querformat rechts übereinander
+            # Großes Hochformat links, zwei Querformat rechts übereinander PLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),
                 (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)), (int(w * 0.4) + s, 0)),
                 (self.cropAndResize(imgs[2], int(w * 0.6), int(h * 0.5) - s), (int(w * 0.4) + s, int(h * 0.5) + s)),
             ],
-            # Großes Querformat links, zwei Hochformat rechts übereinander
+            # Großes Querformat links, zwei Hochformat rechts übereinander PPL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),
                 (self.cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)), (int(w * 0.6) + s, 0)),
                 (self.cropAndResize(imgs[2], int(w * 0.4), int(h * 0.5) - s), (int(w * 0.6) + s, int(h * 0.5) + s)),
             ],
-            # Drei gleich große Bilder im Hochformat nebeneinander
-            lambda imgs: [(self.cropAndResize(img, int(w / 3) - s, h), (i * (int(w / 3)), 0)) for i, img in enumerate(imgs)],
         ]
 
         if formats.count("portrait") == 0:
@@ -183,7 +181,9 @@ class PhotoLayoutManager:
         elif formats.count("portrait") == 2:
             layout = layouts[3]
         else:
-            layout = layouts[4]
+            # Drei gleich große Bilder im Hochformat nebeneinander PPP
+            self.arrangeMultipleImages(self.collage, images, self.width, self.height)
+            return
 
         for img, pos in layout(images):
             collage.paste(img, pos)
