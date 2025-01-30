@@ -55,13 +55,14 @@ class Config:
         self.usePhotoLocationMaps = self.config.getboolean("GEO", "usePhotoLocationMaps")
         self.minimalExtension = self.config.getfloat("GEO", "minimalExtension")
 
-        # Size settings
-        self.width = self.config.getint("SIZE", "width")
-        self.height = self.config.getint("SIZE", "height")
-        self.calendarHeight = self.config.getint("SIZE", "calendarHeight")
-        self.mapWidth = self.config.getint("SIZE", "mapWidth")
-        self.mapHeight = self.config.getint("SIZE", "mapHeight")
+        # Size settings (convert from mm to pixels)
         self.jpgQuality = self.config.getint("SIZE", "jpgQuality")
+        self.dpi = self.config.getint("SIZE", "dpi")
+        self.width = int(self.config.getint("SIZE", "width") * self.dpi / 25.4)
+        self.height = int(self.config.getint("SIZE", "height") * self.dpi / 25.4)
+        self.calendarHeight = int(self.config.getint("SIZE", "calendarHeight") * self.dpi / 25.4)
+        self.mapWidth = int(self.config.getint("SIZE", "mapWidth") * self.dpi / 25.4)
+        self.mapHeight = int(self.config.getint("SIZE", "mapHeight") * self.dpi / 25.4)
 
         # Layout settings
         self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.calendarHeight
