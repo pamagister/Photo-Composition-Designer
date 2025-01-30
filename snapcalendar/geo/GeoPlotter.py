@@ -21,7 +21,7 @@ class GeoMapPlotter:
         """
 
         # Basisverzeichnis der shape files relativ zu diesem Modul
-        base_path = Path(__file__).parent.parent.parent / "data/maps"
+        base_path = Path(__file__).parent.parent.parent / "res/maps"
 
         countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"  # Ländergrenzen
         lakes_shp = base_path / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"  # Flüsse und Seen

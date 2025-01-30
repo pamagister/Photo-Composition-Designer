@@ -8,33 +8,21 @@ class Locations:
     This class is used to provide position information if it is not saved in the image.
     This class searches a locations.ini, which has the following structure below.
 
-    It provides a dict that contains locations as tuple: (52.5200, 13.5156)
-
-    [GERMANY]
-    Dresden = 51.0504, 13.7373
-    Leipzig = 51.3397, 12.3731
-    Chemnitz= 50.8278, 12.9214
-    Breslau = 51.1079, 17.0441
-    Berlin = 52.5200, 13.5156
+    It provides a dict that contains locations as tuple:
 
     [EUROPE]
-    London = ....
+    London = 51.5074, -0.1278
+    Bavaria = 48.7904, 11.4979
 
-    [NORTH AMERICA]
+    [AMERICA]
+    United States = 37.0902, -95.7129
 
-    [SOUTH AMERICA]
-
-    [ASIA]
-
-    [AFRICA]
-
-    [AUSTRALIA]
     """
 
     def __init__(self, locations_file=None):
         if not locations_file:
             base_path = Path(__file__).parent.parent
-            locations_file = base_path / "locations.ini"
+            locations_file = base_path / 'config' / "locations.ini"
 
         self.locations_dict = defaultdict(tuple)  # Dictionary for the locations
 

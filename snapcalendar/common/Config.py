@@ -11,7 +11,7 @@ class Config:
     def __init__(self, config_file=None):
         base_path = Path(__file__).parent.parent
         if not config_file:
-            config_file = base_path / "config.ini"
+            config_file = base_path / 'config' / "config.ini"
 
         # Preprocess the config file to remove comments and strip whitespace
         processed_lines = []
