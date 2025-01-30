@@ -1,7 +1,10 @@
+import os.path
+
 import exifread
 from PIL import Image
 
 from snapcalendar.common.Config import Config
+from snapcalendar.common.Locations import Locations
 from snapcalendar.geo.GeoPlotter import GeoMapPlotter
 
 
@@ -11,14 +14,18 @@ class MapGenerator:
         self.config = Config()
         self.height = self.config.mapHeight
         self.width = self.config.mapWidth
+        self.locations = Locations()
 
     def generateImageLocationMap(self, image_files):
         # Read EXIF data and extract GPS coordinates
         coordinatesList = []
         for img_path in image_files:
             coordinates = self.extract_gps_coordinates(img_path)
+            file_name = str(os.path.splitext(os.path.basename(img_path))[0]).lower()
             if coordinates:
                 coordinatesList.append(coordinates)
+            elif file_name in self.locations.locations_dict.keys():
+                coordinatesList.append(self.locations.locations_dict[file_name])
         map_image = self.generate_map(coordinatesList)
         map_image_resized = map_image.resize((self.width, self.height))
         return map_image_resized
