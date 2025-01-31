@@ -89,5 +89,10 @@ class Config:
 
 if __name__ == "__main__":
     cfg = Config()
-    cfg.write_config()
-    print("Config-Datei wurde erstellt!")
+    cfg.write_config(config_file="../config/config.ini")
+    print("Config-Datei wurde erstellt")
+
+    #cfg_file = "../config/config.ini"
+    #cfg_fromfile = Config(config_file=cfg_file)
+    #print("Config-Datei wurde gelesen")
+
