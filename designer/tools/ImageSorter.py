@@ -64,7 +64,7 @@ class ImageSorter:
                 self.unmatched_files.append(file)
             else:
                 self.sorted_images[file] = date
-        self.sorted_images = sorted(self.sorted_images, key=self.sorted_images.get)
+        # self.sorted_images = sorted(self.sorted_images, key=self.sorted_images.get)
 
     def run(self):
         self.process_images()
