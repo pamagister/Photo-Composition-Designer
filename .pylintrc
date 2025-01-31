@@ -11,12 +11,8 @@ disable=
 # only match correct module names
 module-naming-style=PascalCase
 class-naming-style=PascalCase
-function-naming-style=camelCase
-method-naming-style=camelCase
-class-attribute-naming-style=camelCase
-attr-naming-style=camelCase
-argument-naming-style=any
-variable-naming-style=any
+function-rgx=[a-z_][a-zA-Z0-9_]*$
+method-rgx=[a-z_][a-zA-Z0-9_]*$
 
 [FORMAT]
 max-line-length=140

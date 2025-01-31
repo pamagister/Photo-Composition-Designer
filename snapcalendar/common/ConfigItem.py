@@ -1,11 +1,10 @@
-from configparser import ConfigParser
 from datetime import datetime
 from pathlib import Path
 
 
 class ConfigItem:
     """
-    Repräsentiert eine Konfigurationsoption mit Typ-Information und Beschreibung.
+    Represents a configuration option with type information and description.
     """
 
     def __init__(self, category, key, value, value_type, description):
@@ -17,8 +16,8 @@ class ConfigItem:
 
     def get_value(self, config_parser):
         """
-        Liest den Wert aus der Konfigurationsdatei und wandelt ihn in den angegebenen Typ um.
-        Falls die Datei nicht existiert, wird der Standardwert verwendet.
+        Reads the value from the configuration file and converts it to the specified type.
+        If the file does not exist, the default value is used.
         """
         try:
             if self.value_type == bool:
@@ -35,8 +34,7 @@ class ConfigItem:
                 return self._parse_start_date(date_str)
             elif self.value_type == tuple:  # RGB-Farbwerte als Tupel (R,G,B)
                 color_str = config_parser.get(self.category, self.key, fallback=self.value)
-                return color_str
-                return self._parse_color(color_str)
+                return self._parse_tuple(color_str)
             else:
                 return config_parser.get(self.category, self.key, fallback=self.value)
         except Exception as e:
@@ -44,25 +42,27 @@ class ConfigItem:
 
     @staticmethod
     def _parse_start_date(start_date):
-        """ Konvertiert das Datum aus der Config-Datei in ein `datetime`-Objekt. """
+        """Converts the date from the config file into a `datetime` object."""
         date_formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]
         for fmt in date_formats:
             try:
                 return datetime.strptime(start_date, fmt)
             except ValueError:
                 continue
-        raise ValueError(f"Ungültiges Datum: {start_date}. Erlaubte Formate: {', '.join(date_formats)}")
+        raise ValueError(f"Invalid date: {start_date}. Permitted formats: {', '.join(date_formats)}")
 
     @staticmethod
-    def _parse_color(color_string):
-        """ Wandelt eine Zeichenfolge im Format `R,G,B` in ein Tupel `(R, G, B)` um. """
+    def _parse_tuple(tupleValue: str|tuple):
+        """Converts a character string in the format `R,G,B` into a tuple `(R, G, B)`."""
+        if isinstance(tupleValue, tuple):
+            return tupleValue
         try:
-            return tuple(map(int, color_string.split(",")))
+            return tuple(map(int, tupleValue.split(",")))
         except ValueError:
-            raise ValueError(f"Ungültiges Farbformat: {color_string}. Erwartetes Format: R,G,B")
+            raise ValueError(f"Invalid color format: {tupleValue}. Expected format: R,G,B")
 
     def format_value(self):
-        """Gibt den Wert als String für die Config-Datei aus."""
+        """Outputs the value as a string for the config file."""
         if isinstance(self.value, bool):
             return "True" if self.value else "False"
         if isinstance(self.value, tuple):
