@@ -105,7 +105,7 @@ class CalendarGenerator:
             cols_month_name = 2.0
         else:
             cols_month_name = 4.0
-        col_width = (width - 2 * self.config.marginSides) // (7 + cols_month_name )
+        col_width = (width - 2 * self.config.marginSides) // (7 + cols_month_name)
         return cols_month_name, col_width
 
     @staticmethod
@@ -161,14 +161,14 @@ def main():
     config = Config()
     calendar_gen = CalendarGenerator(config=config)
 
-    temp_dir = "../../tests/calendar"
+    temp_dir = "../../collages/calendar"
     os.makedirs(temp_dir, exist_ok=True)
     startDate = config.startDate
 
     for week in range(40, 45):
         date = startDate + timedelta(weeks=week)
-        image = calendar_gen.generateCalendar(date)
-        image_path = os.path.join(temp_dir, f"calendar_{date.year}-{date.month.zfill(2)}-{date.day.zfill(2)}.png")
+        image = calendar_gen.generateCalendar(date, width=config.width, height=config.calendarHeight)
+        image_path = os.path.join(temp_dir, f"calendar_{date.year}-{str(date.month).zfill(2)}-{str(date.day).zfill(2)}.jpg")
         image.save(image_path)
         print(f"Generated: {image_path}")
 
