@@ -3,141 +3,120 @@ from datetime import datetime
 from pathlib import Path
 
 
+class ConfigItem:
+    """Speichert Konfigurationswerte mit Beschreibung."""
+
+    def __init__(self, category, key, value, value_type, description):
+        self.category = category
+        self.key = key
+        self.value = value
+        self.value_type = value_type
+        self.description = description
+
+    def get_value(self, config_parser):
+        """Liest einen Wert aus dem ConfigParser und konvertiert ihn ins richtige Format."""
+        if self.value_type == bool:
+            return config_parser.getboolean(self.category, self.key, fallback=self.value)
+        elif self.value_type == int:
+            return config_parser.getint(self.category, self.key, fallback=self.value)
+        elif self.value_type == float:
+            return config_parser.getfloat(self.category, self.key, fallback=self.value)
+        else:
+            return config_parser.get(self.category, self.key, fallback=self.value)
+
+    def format_value(self):
+        """Gibt den Wert als String für die Config-Datei aus."""
+        if isinstance(self.value, bool):
+            return "True" if self.value else "False"
+        if isinstance(self.value, tuple):
+            return ",".join(map(str, self.value))
+        return str(self.value)
+
+
 class Config:
-    """
-    Configuration class for loading and managing settings from an INI file.
-    """
+    """Lädt und speichert Konfigurationswerte."""
 
     def __init__(self, config_file=None):
+        # Standardwerte als Liste von ConfigItem-Objekten
+        self.config_items = [
+            # GENERAL
+            ConfigItem("GENERAL", "photoDirectory", "../../images", Path, "Path to the directory containing photos"),
+            ConfigItem("GENERAL", "anniversariesConfig", "anniversaries.ini", Path, "Path to anniversaries.ini file"),
+            ConfigItem("GENERAL", "locationsConfig", "locations_en.ini", Path, "Path to locations.ini file"),
 
-        if not config_file:
-            project_base_path = Path(__file__).parent.parent
-            config_file = project_base_path / 'config' / "config.ini"
-        base_path = config_file.parent
-        # Preprocess the config file to remove comments and strip whitespace
-        processed_lines = []
-        with open(config_file, "r", encoding="utf-8") as file:
-            for line in file:
-                # Remove everything after the first ";" (comments)
-                line = line.split(";", 1)[0].strip()
-                if line:  # Skip empty lines
-                    processed_lines.append(line)
+            # CALENDAR
+            ConfigItem("CALENDAR", "useCalendar", True, bool, "True: Calendar elements are generated"),
+            ConfigItem("CALENDAR", "language", "en_US", str, "Language for the calendar (e.g., de_DE, en_US)"),
+            ConfigItem("CALENDAR", "holidayCountries", "NY", str, "Country/state codes for public holidays"),
+            ConfigItem("CALENDAR", "startDate", "30.12.2024", str, "Start date of the calendar"),
 
-        # Create a temporary string to load into ConfigParser
-        preprocessed_config = "\n".join(processed_lines)
+            # COLORS
+            ConfigItem("COLORS", "backgroundColor", (20, 20, 20), tuple, "Background color (RGB)"),
+            ConfigItem("COLORS", "textColor1", (255, 255, 255), tuple, "Primary text color"),
+            ConfigItem("COLORS", "textColor2", (150, 150, 150), tuple, "Secondary text color"),
+            ConfigItem("COLORS", "holidayColor", (255, 0, 0), tuple, "Color for holidays"),
 
-        # Load the preprocessed configuration
-        self.config = ConfigParser()
-        self.config.read_string(preprocessed_config)
+            # GEO
+            ConfigItem("GEO", "usePhotoLocationMaps", True, bool, "Use GPS data to generate maps"),
+            ConfigItem("GEO", "minimalExtension", 7, int, "Minimum range for map display (degrees)"),
 
-        # General settings
-        photoDir = self.config.get("GENERAL", "photoDirectory")
-        self.photoDirectory = (Path(photoDir) if Path(photoDir).is_absolute() else base_path / Path(photoDir)).resolve()
+            # SIZE
+            ConfigItem("SIZE", "width", 210, int, "Width of the collage in mm"),
+            ConfigItem("SIZE", "height", 148, int, "Height of the collage in mm"),
+            ConfigItem("SIZE", "calendarHeight", 25, int, "Height of the calendar area in mm"),
+            ConfigItem("SIZE", "mapWidth", 30, int, "Width of the locations map in mm"),
+            ConfigItem("SIZE", "mapHeight", 30, int, "Height of the locations map in mm"),
+            ConfigItem("SIZE", "dpi", 150, int, "Resolution of the image in dpi"),
+            ConfigItem("SIZE", "jpgQuality", 80, int, "JPG compression quality (1-100)"),
 
-        anniversariesFile = self.config.get("GENERAL", "anniversariesConfig")
-        self.anniversariesFile = (
-            Path(anniversariesFile) if Path(anniversariesFile).is_absolute() else base_path / Path(anniversariesFile)
-        ).resolve()
-
-        locationsFile = self.config.get("GENERAL", "locationsConfig")
-        self.locationsFile = (
-            Path(locationsFile) if Path(locationsFile).is_absolute() else base_path / Path(locationsFile)
-        ).resolve()
-
-        _startDate = self.config.get("CALENDAR", "startDate")
-        self.startDate = self._parse_start_date(_startDate)
-
-        # Calendar settings
-        self.useCalendar = self.config.getboolean("CALENDAR", "useCalendar")
-        self.language = self.config.get("CALENDAR", "language")
-        self.holidayCountries = [
-            x.strip() for x in self.config.get("CALENDAR", "holidayCountries", fallback="").split(",") if x.strip()
+            # LAYOUT
+            ConfigItem("LAYOUT", "fontSizeLarge", 0.4, float, "Font size for large text (relative to height)"),
+            ConfigItem("LAYOUT", "fontSizeSmall", 0.15, float, "Font size for small text"),
+            ConfigItem("LAYOUT", "fontSizeAnniversaries", 0.10, float, "Font size for anniversaries"),
+            ConfigItem("LAYOUT", "marginBottom", 30, int, "Bottom margin in pixels"),
+            ConfigItem("LAYOUT", "marginSides", 10, int, "Side margins in pixels"),
+            ConfigItem("LAYOUT", "spacing", 10, int, "Spacing between elements"),
+            ConfigItem("LAYOUT", "useShortDayNames", True, bool, "Use short weekday names (e.g., Mon, Tue)"),
+            ConfigItem("LAYOUT", "useShortMonthNames", True, bool, "Use short month names (e.g., Jan, Feb)"),
+            ConfigItem("LAYOUT", "usePhotoDescription", True, bool, "Include photo descriptions in the collage"),
         ]
 
-        # Color settings
-        self.backgroundColor = self._parse_color(self.config.get("COLORS", "backgroundColor"))
-        self.textColor1 = self._parse_color(self.config.get("COLORS", "textColor1"))
-        self.textColor2 = self._parse_color(self.config.get("COLORS", "textColor2"))
-        self.holidayColor = self._parse_color(self.config.get("COLORS", "holidayColor"))
+        # Wenn eine Konfigurationsdatei existiert, laden wir sie
+        self.config_parser = ConfigParser()
+        if config_file and Path(config_file).exists():
+            self.config_parser.read(config_file, encoding="utf-8")
 
-        # Geo settings
-        self.usePhotoLocationMaps = self.config.getboolean("GEO", "usePhotoLocationMaps")
-        self.minimalExtension = self.config.getfloat("GEO", "minimalExtension")
+        # Die Werte aus dem File oder die Standardwerte übernehmen
+        for item in self.config_items:
+            setattr(self, item.key, item.get_value(self.config_parser))
 
-        # Size settings (convert from mm to pixels)
-        self.jpgQuality = self.config.getint("SIZE", "jpgQuality")
-        self.dpi = self.config.getint("SIZE", "dpi")
-        self.width = int(self.config.getint("SIZE", "width") * self.dpi / 25.4)
-        self.height = int(self.config.getint("SIZE", "height") * self.dpi / 25.4)
-        self.calendarHeight = int(self.config.getint("SIZE", "calendarHeight") * self.dpi / 25.4)
-        self.mapWidth = int(self.config.getint("SIZE", "mapWidth") * self.dpi / 25.4)
-        self.mapHeight = int(self.config.getint("SIZE", "mapHeight") * self.dpi / 25.4)
+    def write_config(self, config_file="../config/config.ini"):
+        """Schreibt die aktuelle Konfiguration in eine Datei."""
+        config_parser = ConfigParser()
 
-        # Layout settings
-        self.fontSizeLarge = self.config.getfloat("LAYOUT", "fontSizeLarge") * self.calendarHeight
-        self.fontSizeSmall = self.config.getfloat("LAYOUT", "fontSizeSmall") * self.calendarHeight
-        self.fontSizeAnniversaries = self.config.getfloat("LAYOUT", "fontSizeAnniversaries") * self.calendarHeight
-        self.marginBottom = self.config.getint("LAYOUT", "marginBottom")
-        self.marginSides = self.config.getint("LAYOUT", "marginSides")
-        self.spacing = self.config.getint("LAYOUT", "spacing")
-        self.useShortDayNames = self.config.getboolean("LAYOUT", "useShortDayNames")
-        self.useShortMonthNames = self.config.getboolean("LAYOUT", "useShortMonthNames")
-        self.usePhotoDescription = self.config.getboolean("LAYOUT", "usePhotoDescription")
+        for item in self.config_items:
+            if item.category not in config_parser:
+                config_parser[item.category] = {}
 
-    def _parse_start_date(self, start_date):
-        """
-        Parses the start date from the INI file and returns it as a datetime object.
-        Supports multiple formats: dd.mm.yy, dd.mm.yyyy, dd-mm-yy, dd-mm-yyyy.
+            config_parser[item.category][item.key] = item.format_value()
 
-        Args:
-            start_date (str): Date string from the configuration.
-
-        Returns:
-            datetime: Parsed start date.
-
-        Raises:
-            ValueError: If the date format is not valid.
-        """
-        date_formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]  # Supported formats
-        parsed_date = None
-        for date_format in date_formats:
-            try:
-                parsed_date = datetime.strptime(start_date, date_format)
-                break
-            except ValueError:
-                continue  # Try the next format
-
-        if parsed_date is None:
-            raise ValueError(
-                f"Invalid date in the 'startDate' field: {start_date}. " f"Supported formats: {', '.join(date_formats)}"
-            )
-        return parsed_date
-
-    def _parse_color(self, color_string):
-        """
-        Parses a comma-separated RGB color string into a tuple of integers.
-
-        Args:
-            color_string (str): Color in the format "R,G,B".
-
-        Returns:
-            tuple: RGB color as a tuple of integers.
-
-        Raises:
-            ValueError: If the color format is invalid.
-        """
-        try:
-            return tuple(map(int, color_string.split(",")))
-        except ValueError:
-            raise ValueError(f"Invalid color format: {color_string}. Expected format: R,G,B")
+        # Konfigurationsdatei mit Kommentaren schreiben
+        with open(config_file, "w", encoding="utf-8") as file:
+            for section in config_parser.sections():
+                file.write(f"[{section}]\n")
+                for item in self.config_items:
+                    if item.category == section:
+                        key_value = f"{item.key} = {config_parser[section][item.key]}"
+                        comment = f"; {item.description}"
+                        file.write(f"{key_value.ljust(35)} {comment}\n")
+                file.write("\n")
 
     def __str__(self):
-        """
-        Returns a string representation of the configuration object for debugging purposes.
-        """
-        return str(self.__dict__)
+        """String-Repräsentation der Konfiguration für Debugging."""
+        return "\n".join([f"{item.category}.{item.key} = {getattr(self, item.key)}" for item in self.config_items])
 
 
 if __name__ == "__main__":
     cfg = Config()
-    print(cfg)
+    cfg.write_config()
+    print("Config-Datei wurde erstellt!")
