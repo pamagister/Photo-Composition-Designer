@@ -28,21 +28,21 @@ class FolderGenerator:
 
         for week in range(weeksToGenerate):
             weekDate = self.startDate + timedelta(weeks=week)
-            folderName = f"Week_{week:02d}_{weekDate.strftime('%Y-%m-%d')}"
+            folderName = f"{week:02d}_{weekDate.strftime('%Y-%m-%d')}"
             folderPath = os.path.join(self.outputDir, folderName)
 
             os.makedirs(folderPath, exist_ok=True)
             print(f"Folder created: {folderPath}")
 
             if self.generateDescriptionFile:
-                descriptionFile = f"description_{week:02d}.txt"
+                descriptionFile = f"{week:02d}_description.txt"
                 descriptionPath = os.path.join(folderPath, descriptionFile)
                 with open(descriptionPath, 'w', encoding="utf-8") as f:
                     f.close()
                     print(f"  → {descriptionFile} created")
 
             if self.generateLocationFile:
-                locationFile = f"location_{week:02d}.txt"
+                locationFile = f"{week:02d}_location.txt"
                 locationPath = os.path.join(folderPath, locationFile)
                 with open(locationPath, 'w', encoding="utf-8") as loc_file:
                     loc_file.write("51.0504, 13.7373\n")

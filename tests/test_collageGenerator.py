@@ -1,14 +1,13 @@
+import os
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from datetime import timedelta
-import os
 
 from snapcalendar.CollageGenerator import CollageGenerator
-from tempfile import NamedTemporaryFile
-
 from snapcalendar.common.Config import Config
-from parameterized import parameterized
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 layout_configurations = [
@@ -41,8 +40,10 @@ class TestCollageGenerator:
         """
         Testet verschiedene Layouts mit CollageGenerator.
         """
-
-        config = Config()
+        config_file = PROJECT_ROOT / 'config' / 'config.ini'
+        print(f'####### config_file {config_file}')
+        config = Config(config_file)
+        print(f'####### photo {config.photoDirectory}')
         config.dpi = 100
         config.jpgQuality = 40
         collageGen = CollageGenerator(config)

@@ -13,6 +13,7 @@ class ConfigItem:
         self.value = value
         self.value_type = value_type
         self.description = description
+        self.config_base_path = Path(__file__).parent.parent / 'config'
 
     def get_value(self, config_parser):
         """
@@ -28,17 +29,30 @@ class ConfigItem:
                 return config_parser.getfloat(self.category, self.key, fallback=self.value)
             elif self.value_type == Path:
                 path_str = config_parser.get(self.category, self.key, fallback=str(self.value))
-                return Path(path_str).resolve()  # Relativ zu Absolut
+                return self._resolve_path(path_str)
             elif self.value_type == datetime:
                 date_str = config_parser.get(self.category, self.key, fallback=self.value)
                 return self._parse_start_date(date_str)
             elif self.value_type == tuple:  # RGB-Farbwerte als Tupel (R,G,B)
-                color_str = config_parser.get(self.category, self.key, fallback=self.value)
-                return self._parse_tuple(color_str)
+                tuple_string = config_parser.get(self.category, self.key, fallback=self.value)
+                return self._parse_tuple(tuple_string)
             else:
                 return config_parser.get(self.category, self.key, fallback=self.value)
         except Exception as e:
             raise ValueError(f"Fehler beim Parsen von {self.key}: {e}")
+
+    def set_base_path(self, path_str):
+        self.config_base_path = Path(path_str)
+
+    def _resolve_path(self, path_str):
+        if self.config_base_path:
+            resolved_path = (
+                Path(path_str) if Path(path_str).is_absolute() else self.config_base_path / Path(path_str)
+            ).resolve()
+        else:
+            resolved_path = self.config_base_path = Path(path_str).resolve()
+
+        return resolved_path
 
     @staticmethod
     def _parse_start_date(start_date):
@@ -52,14 +66,19 @@ class ConfigItem:
         raise ValueError(f"Invalid date: {start_date}. Permitted formats: {', '.join(date_formats)}")
 
     @staticmethod
-    def _parse_tuple(tupleValue: str|tuple):
-        """Converts a character string in the format `R,G,B` into a tuple `(R, G, B)`."""
+    def _parse_tuple(tupleValue: str | tuple):
+        """Converts a string of multiple values (string or int) `value1,value2,value3` into a tuple `(value1, value2, value3)`.
+
+        Supports both integers and strings as elements.
+        """
         if isinstance(tupleValue, tuple):
-            return tupleValue
+            return tupleValue  # If already a tuple, return directly
+
         try:
-            return tuple(map(int, tupleValue.split(",")))
-        except ValueError:
-            raise ValueError(f"Invalid color format: {tupleValue}. Expected format: R,G,B")
+            # Try to parse the values as integer or string
+            return tuple(int(v) if v.strip().isdigit() else v.strip() for v in tupleValue.split(","))
+        except Exception:
+            raise ValueError(f"Invalid tuple format: {tupleValue}. Expected format: value1, value2, ...")
 
     def format_value(self):
         """Outputs the value as a string for the config file."""

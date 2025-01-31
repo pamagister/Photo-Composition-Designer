@@ -21,16 +21,16 @@ class CalendarGenerator:
         self.fontSizeSmall = self.config.fontSizeSmall
         self.fontSizeAnniversaries = self.config.fontSizeAnniversaries
 
+        # Retrieve public holidays for the year and the country
+        year = self.config.startDate.year
+        country_code = self.config.language.split("_")[1].upper()  # z.B. "de_DE" -> "DE"
+        self.localHolidays = self.get_combined_holidays(year, country_code, self.config.holidayCountries)
+
     def generateCalendar(self, date, width, height):
         year = date.year
         language = self.config.language
         # Berechne die Daten
         dates = [date + timedelta(days=i) for i in range(7)]
-
-        # Feiertage für das Jahr und das Land abrufen
-        country_code = language.split("_")[1].upper()  # z.B. "de_DE" -> "DE"
-
-        localHolidays = self.get_combined_holidays(year, country_code, self.config.holidayCountries)
 
         # Erstelle das Bild
         img = Image.new("RGB", (width, height), self.config.backgroundColor)
@@ -54,18 +54,18 @@ class CalendarGenerator:
         header_text = f"{month_name} {str(year)[-2:]}"
         base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
 
-        draw.text((self.marginSides * 3, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
+        draw.text((0, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
         spacing_date = int(self.fontSizeSmall * 0.4)
         # Zeichne Wochentage und Zahlen
         for day_no in range(7):
-            x_pos = self.marginSides * 3 + (day_no + cols_count) * col_width
+            x_pos = self.marginSides + (day_no + cols_count+0.5) * col_width
             day_date = dates[day_no]
             date_key = (day_date.day, day_date.month)  # (Tag, Monat)
             date = dates[day_no]
-            holiday_name = localHolidays.get(date)  # Name des Feiertags ermitteln
+            holiday_name = self.localHolidays.get(date)  # Name des Feiertags ermitteln
 
             # Feiertage und Wochenende hervorheben
-            if day_date.weekday() >= 6 or day_date in localHolidays:
+            if day_date.weekday() >= 6 or day_date in self.localHolidays:
                 name_color = self.config.textColor2
                 number_color = self.config.holidayColor
             else:
@@ -102,11 +102,11 @@ class CalendarGenerator:
 
     def get_cols_property(self, width):
         if self.config.useShortMonthNames:
-            cols = 2.0
+            cols_month_name = 2.0
         else:
-            cols = 4.0
-        col_width = (width - 2 * self.config.marginSides) // (7 + cols - 0.5)
-        return cols, col_width
+            cols_month_name = 4.0
+        col_width = (width - 2 * self.config.marginSides) // (7 + cols_month_name )
+        return cols_month_name, col_width
 
     @staticmethod
     def get_month_name(month_no, locale_name="en_US.UTF-8"):

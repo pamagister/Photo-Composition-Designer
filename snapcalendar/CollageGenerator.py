@@ -35,11 +35,11 @@ class CollageGenerator:
         available_cal_width = self.width
 
         if self.config.usePhotoLocationMaps:
-            available_cal_width -= self.config.mapWidth
+            available_cal_width -= self.config.mapWidth - self.config.marginSides
 
         if self.config.useCalendar:
             calendarImage = self.calendarObj.generateCalendar(date, available_cal_width, self.calendar_height)
-            collage.paste(calendarImage, (0, self.height - self.calendar_height))
+            collage.paste(calendarImage, (self.config.marginSides, self.height - self.calendar_height))
             available_height -= self.calendar_height
 
         if self.config.usePhotoDescription:
