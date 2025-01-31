@@ -87,7 +87,7 @@ class Config:
         if config_file:
             base_dir = Path(config_file)
         else:
-            base_dir = Path(__file__).parent / 'config'
+            base_dir = Path(__file__).parent.parent / 'config'
 
         # Standardwerte als Liste von ConfigItem-Objekten
         self.config_items: list[ConfigItem] = [
