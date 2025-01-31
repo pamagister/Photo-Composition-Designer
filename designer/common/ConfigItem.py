@@ -47,7 +47,7 @@ class ConfigItem:
     def _resolve_path(self, path_str):
         if self.config_base_path:
             resolved_path = (
-                Path(path_str) if Path(path_str).is_absolute() else self.config_base_path / Path(path_str)
+                Path(path_str) if Path(path_str).is_absolute() else self.config_base_path.parent / Path(path_str)
             ).resolve()
         else:
             resolved_path = self.config_base_path = Path(path_str).resolve()

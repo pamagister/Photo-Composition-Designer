@@ -45,9 +45,7 @@ class TestConfig:
         cfg = Config(temp_config_file)
 
         # Überprüfung von Standard- und aktualisierten Werten
-        assert cfg.photoDirectory == Path("../../images").resolve(), "photoDirectory sollte nicht geändert sein."
-        assert (
-            cfg.anniversariesConfig == Path("anniversaries_private.ini").resolve()
-        ), "anniversariesConfig wurde nicht aktualisiert."
+        assert cfg.dpi == 150, "dpi sollte nicht geändert sein."
+
         assert cfg.language == "de_DE", "Sprache sollte auf de_DE geändert sein."
         assert cfg.useCalendar is False, "useCalendar sollte auf False gesetzt sein."

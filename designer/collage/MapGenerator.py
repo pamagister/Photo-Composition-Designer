@@ -5,7 +5,7 @@ from PIL import Image
 
 from designer.common.Config import Config
 from designer.common.Locations import Locations
-from designer.geo.GeoPlotter import GeoMapPlotter
+from designer.geo.GeoPlotter import GeoPlotter
 
 
 class MapGenerator:
@@ -39,7 +39,7 @@ class MapGenerator:
         from io import BytesIO
 
         # Plotter initialisieren
-        plotter = GeoMapPlotter(
+        plotter = GeoPlotter(
             minimalExtension=self.config.minimalExtension,
             resolution=(self.width, self.height),
             background_color=self.config.backgroundColor,

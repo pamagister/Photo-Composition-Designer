@@ -46,8 +46,7 @@ class TestCollageGenerator:
         """
         Tests different layouts with CollageGenerator.
         """
-        config_file = PROJECT_ROOT / 'config' / 'config.ini'
-        config = Config(config_file)
+        config = Config()
         config.dpi = 50
         config.jpgQuality = 40
         collageGen = CollageGenerator(config)

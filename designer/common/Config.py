@@ -83,11 +83,13 @@ class Config:
         self._fontSizeLarge = 0
         self._fontSizeSmall = 0
         self._fontSizeAnniversaries = 0
+        self._config_path = None
 
         if config_file:
             base_dir = Path(config_file)
         else:
-            base_dir = Path(__file__).parent.parent / 'config'
+            base_dir = Path(__file__).parent.parent / 'config' / 'config.ini'
+        self._config_path = base_dir
 
         # Standardwerte als Liste von ConfigItem-Objekten
         self.config_items: list[ConfigItem] = [
@@ -176,6 +178,14 @@ class Config:
                         comment = f"; {item.description}"
                         file.write(f"{key_value.ljust(35)} {comment}\n")
                 file.write("\n")
+
+    def update_config_items(self):
+        for itemIndex, item in enumerate(self.config_items):
+            value = getattr(self, item.key)
+            self.config_items[itemIndex].value = value
+
+    def get_config_path(self):
+        return self._config_path
 
     def __str__(self):
         """String-Repräsentation der Konfiguration für Debugging."""

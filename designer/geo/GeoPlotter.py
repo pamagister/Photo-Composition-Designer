@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
 
-class GeoMapPlotter:
+class GeoPlotter:
     """
     Class for plotting a map section with optional layers such as federal states or bodies of water.
     """
@@ -164,7 +164,7 @@ class GeoMapPlotter:
 
 # Example call
 if __name__ == "__main__":
-    plotter = GeoMapPlotter(minimalExtension=4, resolution=(400, 400), background_color="white", line_width=1.0)
+    plotter = GeoPlotter(minimalExtension=4, resolution=(400, 400), background_color="white", line_width=1.0)
 
     # Coordinates:
     gps_coords = [
