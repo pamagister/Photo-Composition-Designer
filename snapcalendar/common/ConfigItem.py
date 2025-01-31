@@ -42,7 +42,8 @@ class ConfigItem:
         except Exception as e:
             raise ValueError(f"Fehler beim Parsen von {self.key}: {e}")
 
-    def _parse_start_date(self, start_date):
+    @staticmethod
+    def _parse_start_date(start_date):
         """ Konvertiert das Datum aus der Config-Datei in ein `datetime`-Objekt. """
         date_formats = ["%d.%m.%y", "%d.%m.%Y", "%d-%m-%y", "%d-%m-%Y"]
         for fmt in date_formats:
@@ -52,7 +53,8 @@ class ConfigItem:
                 continue
         raise ValueError(f"Ungültiges Datum: {start_date}. Erlaubte Formate: {', '.join(date_formats)}")
 
-    def _parse_color(self, color_string):
+    @staticmethod
+    def _parse_color(color_string):
         """ Wandelt eine Zeichenfolge im Format `R,G,B` in ein Tupel `(R, G, B)` um. """
         try:
             return tuple(map(int, color_string.split(",")))
