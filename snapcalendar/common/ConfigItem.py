@@ -7,13 +7,13 @@ class ConfigItem:
     Represents a configuration option with type information and description.
     """
 
-    def __init__(self, category, key, value, value_type, description):
+    def __init__(self, category, key, value, value_type, description, base_dir=None):
         self.category = category
         self.key = key
         self.value = value
         self.value_type = value_type
         self.description = description
-        self.config_base_path = Path(__file__).parent.parent / 'config'
+        self.config_base_path = base_dir
 
     def get_value(self, config_parser):
         """

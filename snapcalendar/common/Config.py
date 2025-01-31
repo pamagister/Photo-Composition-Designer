@@ -6,21 +6,21 @@ from snapcalendar.common.ConfigItem import ConfigItem
 
 DEFAULT_CONFIG = [
     # GENERAL
-    ConfigItem(
+    (
         "GENERAL",
         "photoDirectory",
         "../../images",
         Path,
         "Path to the directory containing photos (absolute, or relative to this config.ini file)",
     ),
-    ConfigItem(
+    (
         "GENERAL",
         "anniversariesConfig",
         "anniversaries.ini",
         Path,
         "Path to anniversaries.ini file (absolute, or relative to this config.ini file)",
     ),
-    ConfigItem(
+    (
         "GENERAL",
         "locationsConfig",
         "locations_en.ini",
@@ -28,42 +28,42 @@ DEFAULT_CONFIG = [
         "Path to locations.ini file (absolute, or relative to this config.ini file)",
     ),
     # CALENDAR
-    ConfigItem("CALENDAR", "useCalendar", True, bool, "True: Calendar elements are generated"),
-    ConfigItem("CALENDAR", "language", "en_US", str, "Language for the calendar (e.g., de_DE, en_US)"),
-    ConfigItem(
+    ("CALENDAR", "useCalendar", True, bool, "True: Calendar elements are generated"),
+    ("CALENDAR", "language", "en_US", str, "Language for the calendar (e.g., de_DE, en_US)"),
+    (
         "CALENDAR",
         "holidayCountries",
         "NY",
         tuple,
         "Country/state codes for public holidays, e.g. NY,CA See https://pypi.org/project/holidays/",
     ),
-    ConfigItem("CALENDAR", "startDate", "30.12.2024", datetime, "Start date of the calendar"),
+    ("CALENDAR", "startDate", "30.12.2024", datetime, "Start date of the calendar"),
     # COLORS
-    ConfigItem("COLORS", "backgroundColor", (20, 20, 20), tuple, "Background color (RGB)"),
-    ConfigItem("COLORS", "textColor1", (255, 255, 255), tuple, "Primary text color"),
-    ConfigItem("COLORS", "textColor2", (150, 150, 150), tuple, "Secondary text color"),
-    ConfigItem("COLORS", "holidayColor", (255, 0, 0), tuple, "Color for holidays"),
+    ("COLORS", "backgroundColor", (20, 20, 20), tuple, "Background color (RGB)"),
+    ("COLORS", "textColor1", (255, 255, 255), tuple, "Primary text color"),
+    ("COLORS", "textColor2", (150, 150, 150), tuple, "Secondary text color"),
+    ("COLORS", "holidayColor", (255, 0, 0), tuple, "Color for holidays"),
     # GEO
-    ConfigItem("GEO", "usePhotoLocationMaps", True, bool, "Use GPS data to generate maps"),
-    ConfigItem("GEO", "minimalExtension", 7, int, "Minimum range for map display (degrees)"),
+    ("GEO", "usePhotoLocationMaps", True, bool, "Use GPS data to generate maps"),
+    ("GEO", "minimalExtension", 7, int, "Minimum range for map display (degrees)"),
     # SIZE
-    ConfigItem("SIZE", "width", 210, int, "Width of the collage in mm"),
-    ConfigItem("SIZE", "height", 148, int, "Height of the collage in mm"),
-    ConfigItem("SIZE", "calendarHeight", 25, int, "Height of the calendar area in mm"),
-    ConfigItem("SIZE", "mapWidth", 30, int, "Width of the locations map in mm"),
-    ConfigItem("SIZE", "mapHeight", 30, int, "Height of the locations map in mm"),
-    ConfigItem("SIZE", "dpi", 150, int, "Resolution of the image in dpi"),
-    ConfigItem("SIZE", "jpgQuality", 80, int, "JPG compression quality (1-100)"),
+    ("SIZE", "width", 210, int, "Width of the collage in mm"),
+    ("SIZE", "height", 148, int, "Height of the collage in mm"),
+    ("SIZE", "calendarHeight", 25, int, "Height of the calendar area in mm"),
+    ("SIZE", "mapWidth", 30, int, "Width of the locations map in mm"),
+    ("SIZE", "mapHeight", 30, int, "Height of the locations map in mm"),
+    ("SIZE", "dpi", 150, int, "Resolution of the image in dpi"),
+    ("SIZE", "jpgQuality", 80, int, "JPG compression quality (1-100)"),
     # LAYOUT
-    ConfigItem("LAYOUT", "fontSizeLarge", 0.4, float, "Font size for large text"),
-    ConfigItem("LAYOUT", "fontSizeSmall", 0.15, float, "Font size for small text"),
-    ConfigItem("LAYOUT", "fontSizeAnniversaries", 0.1, float, "Font size for anniversaries"),
-    ConfigItem("LAYOUT", "marginBottom", 4, int, "Bottom margin in mm"),
-    ConfigItem("LAYOUT", "marginSides", 3, int, "Side margins in mm"),
-    ConfigItem("LAYOUT", "spacing", 3, int, "Spacing between elements in mm"),
-    ConfigItem("LAYOUT", "useShortDayNames", True, bool, "Use short weekday names (e.g., Mon, Tue)"),
-    ConfigItem("LAYOUT", "useShortMonthNames", True, bool, "Use short month names (e.g., Jan, Feb)"),
-    ConfigItem("LAYOUT", "usePhotoDescription", True, bool, "Include photo descriptions in the collage"),
+    ("LAYOUT", "fontSizeLarge", 0.4, float, "Font size for large text"),
+    ("LAYOUT", "fontSizeSmall", 0.15, float, "Font size for small text"),
+    ("LAYOUT", "fontSizeAnniversaries", 0.1, float, "Font size for anniversaries"),
+    ("LAYOUT", "marginBottom", 4, int, "Bottom margin in mm"),
+    ("LAYOUT", "marginSides", 3, int, "Side margins in mm"),
+    ("LAYOUT", "spacing", 3, int, "Spacing between elements in mm"),
+    ("LAYOUT", "useShortDayNames", True, bool, "Use short weekday names (e.g., Mon, Tue)"),
+    ("LAYOUT", "useShortMonthNames", True, bool, "Use short month names (e.g., Jan, Feb)"),
+    ("LAYOUT", "usePhotoDescription", True, bool, "Include photo descriptions in the collage"),
 ]
 
 
@@ -83,8 +83,16 @@ class Config:
         self._fontSizeLarge = 0
         self._fontSizeSmall = 0
         self._fontSizeAnniversaries = 0
+
+        if config_file:
+            base_dir = Path(config_file)
+        else:
+            base_dir = Path(__file__).parent / 'config'
+
         # Standardwerte als Liste von ConfigItem-Objekten
-        self.config_items: list[ConfigItem] = DEFAULT_CONFIG
+        self.config_items: list[ConfigItem] = [
+            ConfigItem(*item, base_dir=base_dir) for item in DEFAULT_CONFIG
+        ]
         self.config_parser = ConfigParser()
 
         for item in self.config_items:

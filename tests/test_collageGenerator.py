@@ -35,15 +35,19 @@ layout_configurations = [
 
 class TestCollageGenerator:
 
+    WEEK_COUNTER = 0
+
+    def setup_method(self):
+        self.WEEK_COUNTER += 1
+        print(f"WEEK_COUNTER: {self.WEEK_COUNTER}")
+
     @pytest.mark.parametrize("num_images, layout", layout_configurations)
     def test_generate_different_layouts(self, num_images, layout):
         """
-        Testet verschiedene Layouts mit CollageGenerator.
+        Tests different layouts with CollageGenerator.
         """
         config_file = PROJECT_ROOT / 'config' / 'config.ini'
-        print(f'####### config_file {config_file}')
         config = Config(config_file)
-        print(f'####### photo {config.photoDirectory}')
         config.dpi = 100
         config.jpgQuality = 40
         collageGen = CollageGenerator(config)
@@ -51,19 +55,21 @@ class TestCollageGenerator:
         base_dir = os.path.join(collageGen.photoDirectory, 'layout_orientation')
         output_dir = collageGen.outputDir
 
-        # Sammle Bilddateien
+        # Collect image files
         image_files = [
-            os.path.join(base_dir, file) for file in sorted(os.listdir(base_dir)) if file.lower().endswith((".png", ".jpg", ".jpeg"))
+            os.path.join(base_dir, file)
+            for file in sorted(os.listdir(base_dir))
+            if file.lower().endswith((".png", ".jpg", ".jpeg"))
         ]
 
         if not image_files:
-            pytest.skip(f"Keine Bilder in {base_dir} gefunden.")
+            pytest.skip(f"No pictures in {base_dir} found.")
 
         landscape_images = [f for f in image_files if "landscape" in os.path.basename(f).lower()]
         portrait_images = [f for f in image_files if "portrait" in os.path.basename(f).lower()]
 
         if not landscape_images or not portrait_images:
-            pytest.skip("Sowohl 'landscape'- als auch 'portrait'-Bilder werden benötigt.")
+            pytest.skip("Both 'landscape' and 'portrait' images are required.")
 
         # Bilder für das Layout auswählen
         landscape_pointer = 0
@@ -79,18 +85,19 @@ class TestCollageGenerator:
 
         # Skip, falls nicht genügend Bilder vorhanden sind
         if len(selected_images) < num_images:
-            pytest.skip(f"Nicht genügend Bilder für Layout {layout}. Überspringe...")
+            pytest.skip(f"Not enough images for layout {layout}. Skip...")
 
         # Generiere den Ausgabe-Pfad
         output_file_name = f"collage_layout_{num_images}_{'_'.join(layout)}.jpg"
         output_path = os.path.join(output_dir, output_file_name)
 
         # Collage generieren
-        print(f"Generiere Collage für Layout: {layout}")
-        date = startDate + timedelta(weeks=len(layout))  # Variiere das Datum pro Test
+        print(f"Generate collage for layout: {layout}")
+        date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
+        self.WEEK_COUNTER += 1
         collageGen.generate_collage(selected_images, date, output_path)
 
-        assert os.path.exists(output_path), f"Ausgabedatei wurde nicht erstellt: {output_path}"
+        assert os.path.exists(output_path), f"Output file was not created: {output_path}"
 
     def test_generate_from_folders(self):
         config = Config()
