@@ -1,83 +1,100 @@
+# 📖 Photo-Composition-Designer Documentation
 
-# Photo-Composition-Designer
+![Photo-Composition-Designer Logo](res/images/logo.png)
 
-* This project was created on base of https://github.com/rochacbruno/python-project-template/  --> Thanks!
-
-A low dependency and really simple to start project template for Python Projects.
-
+Photo-Composition-Designer is a tool designed to automate the creation of beautiful image-based calendars. The system sorts images, generates collages, adds descriptions and maps, and formats everything into a structured calendar layout.
 
 
+## 🛠️ Features
+✅ **Automated Calendar Generation** – Generates a full image-based calendar.
+✅ **Configurable Settings** – Modify sizes, layouts, and text via `config.ini`.
+✅ **Anniversaries & Events** – Load anniversaries and special dates.
+✅ **Location-Based Maps** – Integrate maps showing image locations.
+✅ **GUI Configuration Tool** – Easily modify configurations via a dynamic UI.
+✅ **Folder Management** – Automatically structures images into necessary folders.
 
-### HOW TO USE THIS TEMPLATE
+## 📂 Project Structure
+```plaintext
+📁 Photo-Composition-Designer/
+├── 📁 config/        # Configuration files (config.ini, anniversaries.ini, locations.ini)
+├── 📁 images/        # Source images for the calendar
+├── 📁 collages/      # Generated calendar collages
+├── 📁 res/
+│   ├── 📁 icons/     # UI icons
+│   ├── 📁 images/    # Documentation images
+├── 📁 designer/  # Core application
+├── 📄 README.md      # Project overview
+├── 📄 requirements.txt # Dependencies
+```
 
-> **DO NOT FORK** this is meant to be used from **[Use this template](https://github.com/rochacbruno/python-project-template/generate)** feature.
+## 🔄 Workflow
+### 1️⃣ **Sorting Images into Folders**
+Organize your images in the `images/` directory before running the generator.
+```plaintext
+📁 images/
+├── 2024-01-01_ski_trip.jpg
+├── 2024-02-14_valentines_dinner.jpg
+```
 
-1. Click on **[Use this template](https://github.com/rochacbruno/python-project-template/generate)**
-3. Give a name to your project  
-   (e.g. `my_awesome_project` recommendation is to use all lowercase and underscores separation for repo names.)
-3. Wait until the first run of CI finishes  
-   (Github Actions will process the template and commit to your new repo)
-4. If you want [codecov](https://about.codecov.io/sign-up/) Reports and Automatic Release to [PyPI](https://pypi.org)  
-  On the new repository `settings->secrets` add your `PYPI_API_TOKEN` and `CODECOV_TOKEN` (get the tokens on respective websites)
-4. Read the file [CONTRIBUTING.md](CONTRIBUTING.md)
-5. Then clone your new project and happy coding!
+### 2️⃣ **Configuring the Settings**
+Modify `config.ini` for:
+- Image sizes (mm converted to pixels internally)
+- Calendar layout
+- Paths to `anniversaries.ini` and `locations.ini`
 
-> **NOTE**: **WAIT** until first CI run on github actions before cloning your new project.
+### 3️⃣ **Running the GUI** 🖥️
+Launch the graphical interface:
+```sh
+python gui.py
+```
+Use the GUI to:
+- Edit settings
+- Choose files
+- Generate required folders
+- Start the calendar generator
 
-### What is included on this template?
+### 4️⃣ **Generating the Calendar** 🖼️📅
+Run the generator:
+```sh
+python generate_calendar.py
+```
 
-- 🖼️ Templates for starting multiple application types:
-  * **Basic low dependency** Python program (default) [use this template](https://github.com/rochacbruno/python-project-template/generate)
-  * **Flask** with database, admin interface, restapi and authentication [use this template](https://github.com/rochacbruno/flask-project-template/generate).
-  **or Run `make init` after cloning to generate a new project based on a template.**
-- 📦 A basic [setup.py](setup.py) file to provide installation, packaging and distribution for your project.  
-  Template uses setuptools because it's the de-facto standard for Python packages, you can run `make switch-to-poetry` later if you want.
-- 🤖 A [Makefile](Makefile) with the most useful commands to install, test, lint, format and release your project.
-- 📃 Documentation structure using [mkdocs](http://www.mkdocs.org)
-- 💬 Auto generation of change log using **gitchangelog** to keep a HISTORY.md file automatically based on your commit history on every release.
-- 🐋 A simple [Containerfile](Containerfile) to build a container image for your project.  
-  `Containerfile` is a more open standard for building container images than Dockerfile, you can use buildah or docker with this file.
-- 🧪 Testing structure using [pytest](https://docs.pytest.org/en/latest/)
-- ✅ Code linting using [flake8](https://flake8.pycqa.org/en/latest/)
-- 📊 Code coverage reports using [codecov](https://about.codecov.io/sign-up/)
-- 🛳️ Automatic release to [PyPI](https://pypi.org) using [twine](https://twine.readthedocs.io/en/latest/) and github actions.
-- 🎯 Entry points to execute your program using `python -m <designer>` or `$ designer` with basic CLI argument parsing.
-- 🔄 Continuous integration using [Github Actions](.github/workflows/) with jobs to lint, test and release your project on Linux, Mac and Windows environments.
+## ⚙️ Configuration Files
+### `config.ini`
+Example settings:
+```ini
+[GENERAL]
+photoDirectory = images/
+anniversariesConfig = anniversaries.ini
+locationsConfig = locations.ini
 
-> Curious about architectural decisions on this template? read [ABOUT_THIS_TEMPLATE.md](ABOUT_THIS_TEMPLATE.md)  
-> If you want to contribute to this template please open an [issue](https://github.com/rochacbruno/python-project-template/issues) or fork and send a PULL REQUEST.
+[SIZE]
+width = 210 ; in mm
+height = 148 ; in mm
+dpi = 300
+```
 
+### `anniversaries.ini`
+```ini
+[Birthdays]
+John Doe = 15.04.1990
+```
+
+## 🏗️ Development Setup
+### Install Dependencies
+```sh
+pip install -r requirements.txt
+```
+
+### Run Tests
+```sh
+pytest tests/
+```
+
+## 📜 License
+This project is licensed under the MIT License.
 
 ---
-# photo-composition-designer
 
-[![codecov](https://codecov.io/gh/pamagister/designer/branch/main/graph/badge.svg?token=SnapCalendar_token_here)](https://codecov.io/gh/pamagister/SnapCalendar)
-[![CI](https://github.com/pamagister/designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml)
+📷 _Photo-Composition-Designer - Turning moments into memories!_
 
-Awesome photo-composition-designer created by pamagister
-
-## Install it from PyPI
-
-```bash
-pip install designer
-```
-
-## Usage
-
-```py
-from designer import BaseClass
-from designer import base_function
-
-BaseClass().base_method()
-base_function()
-```
-
-```bash
-$ python -m designer
-#or
-$ designer
-```
-
-## Development
-
-Read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
