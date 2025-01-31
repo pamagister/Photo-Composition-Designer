@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
-from snapcalendar.common.Config import Config
+from designer.common.Config import Config
 
 
 class DescriptionGenerator:

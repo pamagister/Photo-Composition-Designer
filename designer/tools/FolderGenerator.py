@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 
-from snapcalendar.common.Config import Config
+from designer.common.Config import Config
 
 
 class FolderGenerator:

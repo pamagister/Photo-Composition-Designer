@@ -62,23 +62,23 @@ Awesome snapcalendar created by pamagister
 ## Install it from PyPI
 
 ```bash
-pip install snapcalendar
+pip install designer
 ```
 
 ## Usage
 
 ```py
-from snapcalendar import BaseClass
-from snapcalendar import base_function
+from designer import BaseClass
+from designer import base_function
 
 BaseClass().base_method()
 base_function()
 ```
 
 ```bash
-$ python -m snapcalendar
+$ python -m designer
 #or
-$ snapcalendar
+$ designer
 ```
 
 ## Development

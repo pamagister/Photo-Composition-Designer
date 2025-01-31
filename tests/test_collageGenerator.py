@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from snapcalendar.CollageGenerator import CollageGenerator
-from snapcalendar.common.Config import Config
+from designer.CollageGenerator import CollageGenerator
+from designer.common.Config import Config
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

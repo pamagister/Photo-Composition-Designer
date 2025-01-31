@@ -3,11 +3,11 @@ from datetime import timedelta
 
 from PIL import Image
 
-from snapcalendar.collage.CalendarGenerator import CalendarGenerator
-from snapcalendar.collage.DescriptionGenerator import DescriptionGenerator
-from snapcalendar.collage.MapGenerator import MapGenerator
-from snapcalendar.collage.PhotoLayoutManager import PhotoLayoutManager
-from snapcalendar.common.Config import Config
+from designer.collage.CalendarGenerator import CalendarGenerator
+from designer.collage.DescriptionGenerator import DescriptionGenerator
+from designer.collage.MapGenerator import MapGenerator
+from designer.collage.PhotoLayoutManager import PhotoLayoutManager
+from designer.common.Config import Config
 
 
 class CollageGenerator:

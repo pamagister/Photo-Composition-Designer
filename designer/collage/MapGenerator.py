@@ -3,9 +3,9 @@ import os.path
 import exifread
 from PIL import Image
 
-from snapcalendar.common.Config import Config
-from snapcalendar.common.Locations import Locations
-from snapcalendar.geo.GeoPlotter import GeoMapPlotter
+from designer.common.Config import Config
+from designer.common.Locations import Locations
+from designer.geo.GeoPlotter import GeoMapPlotter
 
 
 class MapGenerator:

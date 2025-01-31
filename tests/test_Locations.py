@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 
-from snapcalendar.common.Locations import Locations
+from designer.common.Locations import Locations
 
 
 class TestLocations:

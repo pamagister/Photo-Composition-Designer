@@ -1,5 +1,5 @@
-from snapcalendar.base import NAME
+from designer.base import NAME
 
 
 def test_base():
-    assert NAME == "snapcalendar"
+    assert NAME == "designer"

@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from snapcalendar.common.Anniversaries import Anniversaries  # Annahme: Die Klasse ist in "anniversaries.py" gespeichert
+from designer.common.Anniversaries import Anniversaries  # Annahme: Die Klasse ist in "anniversaries.py" gespeichert
 
 
 class TestAnniversaries:

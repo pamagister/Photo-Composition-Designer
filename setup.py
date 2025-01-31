@@ -1,4 +1,4 @@
-"""Python setup.py for snapcalendar package"""
+"""Python setup.py for designer package"""
 import io
 import os
 from setuptools import find_packages, setup
@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 
 def read(*paths, **kwargs):
     """Read the contents of a text file safely.
-    >>> read("snapcalendar", "VERSION")
+    >>> read("designer", "VERSION")
     '0.1.0'
     >>> read("README.md")
     ...
@@ -30,9 +30,9 @@ def read_requirements(path):
 
 
 setup(
-    name="snapcalendar",
-    version=read("snapcalendar", "VERSION"),
-    description="Awesome snapcalendar created by pamagister",
+    name="designer",
+    version=read("designer", "VERSION"),
+    description="Awesome designer created by pamagister",
     url="https://github.com/pamagister/SnapCalendar/",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -40,7 +40,7 @@ setup(
     packages=find_packages(exclude=["tests", ".github"]),
     install_requires=read_requirements("requirements.txt"),
     entry_points={
-        "console_scripts": ["snapcalendar = snapcalendar.__main__:main"]
+        "console_scripts": ["designer = designer.__main__:main"]
     },
     extras_require={"test": read_requirements("requirements-test.txt")},
 )

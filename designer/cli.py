@@ -1,4 +1,4 @@
-"""CLI interface for snapcalendar project.
+"""CLI interface for designer project.
 
 Be creative! do whatever you want!
 
@@ -12,7 +12,7 @@ Be creative! do whatever you want!
 def main():  # pragma: no cover
     """
     The main function executes on commands:
-    `python -m snapcalendar` and `$ snapcalendar `.
+    `python -m designer` and `$ designer `.
 
     This is your program's entry point.
 

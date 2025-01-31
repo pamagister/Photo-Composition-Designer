@@ -130,17 +130,17 @@ dmypy.json
 
 # templates
 .github/templates/*
-/snapcalendar/temp/collages/collage_week_0.jpg
-/snapcalendar/temp/collages/collage_week_1.jpg
-/snapcalendar/temp/collages/collage_week_2.jpg
-/snapcalendar/temp/collages/collage_week_3.jpg
-/snapcalendar/temp/collages/collage_week_4.jpg
-/snapcalendar/temp/collages/collage_week_5.jpg
-/snapcalendar/temp/calendarium_week_42.png
-/snapcalendar/temp/calendarium_week_43.png
-/snapcalendar/temp/calendarium_week_44.png
-/snapcalendar/temp/calendarium_week_45.png
-/snapcalendar/temp/calendarium_week_46.png
+/designer/temp/collages/collage_week_0.jpg
+/designer/temp/collages/collage_week_1.jpg
+/designer/temp/collages/collage_week_2.jpg
+/designer/temp/collages/collage_week_3.jpg
+/designer/temp/collages/collage_week_4.jpg
+/designer/temp/collages/collage_week_5.jpg
+/designer/temp/calendarium_week_42.png
+/designer/temp/calendarium_week_43.png
+/designer/temp/calendarium_week_44.png
+/designer/temp/calendarium_week_45.png
+/designer/temp/calendarium_week_46.png
 /temp/calendarium/calendarium_week_42.png
 /temp/calendarium/calendarium_week_43.png
 /temp/calendarium/calendarium_week_44.png

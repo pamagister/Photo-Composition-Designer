@@ -2,7 +2,7 @@ from configparser import ConfigParser
 from datetime import datetime
 from pathlib import Path
 
-from snapcalendar.common.ConfigItem import ConfigItem
+from designer.common.ConfigItem import ConfigItem
 
 DEFAULT_CONFIG = [
     # GENERAL

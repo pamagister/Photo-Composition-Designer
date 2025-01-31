@@ -30,7 +30,7 @@ do
     echo "Renamed $filename"
 done
 
-mv snapcalendar $name
+mv designer $name
 
 # This command runs only once on GHA!
 rm -rf .github/template.yml

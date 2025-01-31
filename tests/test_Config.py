@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from configparser import ConfigParser
-from snapcalendar.common.Config import Config
+from designer.common.Config import Config
 
 
 def create_temp_config_file(tmp_path, content):
@@ -20,7 +20,7 @@ class TestConfig:
 
         # Original-Datei als Referenz einlesen
         project_base_path = Path(__file__).parent.parent
-        original_config_file = project_base_path / "snapcalendar/config/config.ini"
+        original_config_file = project_base_path / "designer/config/config.ini"
         assert original_config_file.exists(), "Referenz-Konfigurationsdatei fehlt!"
 
         with (
