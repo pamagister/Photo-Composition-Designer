@@ -38,8 +38,8 @@ class TestCollageGenerator:
     WEEK_COUNTER = 0
 
     def setup_method(self):
-        self.WEEK_COUNTER += 1
-        print(f"WEEK_COUNTER: {self.WEEK_COUNTER}")
+        type(self).WEEK_COUNTER += 1  # Greife direkt auf die Klassenvariable zu
+        print(f"WEEK_COUNTER: {type(self).WEEK_COUNTER}")
 
     @pytest.mark.parametrize("num_images, layout", layout_configurations)
     def test_generate_different_layouts(self, num_images, layout):
@@ -48,7 +48,7 @@ class TestCollageGenerator:
         """
         config_file = PROJECT_ROOT / 'config' / 'config.ini'
         config = Config(config_file)
-        config.dpi = 100
+        config.dpi = 50
         config.jpgQuality = 40
         collageGen = CollageGenerator(config)
         startDate = collageGen.startDate

@@ -33,7 +33,7 @@ setup(
     name="designer",
     version=read("designer", "VERSION"),
     description="Awesome designer created by pamagister",
-    url="https://github.com/pamagister/SnapCalendar/",
+    url="https://github.com/pamagister/Photo-Composition-Designer/",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     author="pamagister",

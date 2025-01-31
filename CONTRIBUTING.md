@@ -1,6 +1,6 @@
 # How to develop on this project
 
-snapcalendar welcomes contributions from the community.
+Photo-Composition-Designer welcomes contributions from the community.
 
 **You need PYTHON3!**
 
@@ -8,9 +8,9 @@ This instructions are for linux base systems. (Linux, MacOS, BSD, etc.)
 ## Setting up your own fork of this repo.
 
 - On github interface click on `Fork` button.
-- Clone your fork of this repo. `git clone git@github.com:YOUR_GIT_USERNAME/SnapCalendar.git`
-- Enter the directory `cd SnapCalendar`
-- Add upstream repo `git remote add upstream https://github.com/pamagister/SnapCalendar`
+- Clone your fork of this repo. `git clone git@github.com:YOUR_GIT_USERNAME/Photo-Composition-Designer.git`
+- Enter the directory `cd Photo-Composition-Designer`
+- Add upstream repo `git remote add upstream https://github.com/pamagister/Photo-Composition-Designer`
 
 ## Setting up your own virtual environment
 

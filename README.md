@@ -1,5 +1,5 @@
 
-# SnapCalendar
+# Photo-Composition-Designer
 
 * This project was created on base of https://github.com/rochacbruno/python-project-template/  --> Thanks!
 
@@ -41,23 +41,20 @@ A low dependency and really simple to start project template for Python Projects
 - ✅ Code linting using [flake8](https://flake8.pycqa.org/en/latest/)
 - 📊 Code coverage reports using [codecov](https://about.codecov.io/sign-up/)
 - 🛳️ Automatic release to [PyPI](https://pypi.org) using [twine](https://twine.readthedocs.io/en/latest/) and github actions.
-- 🎯 Entry points to execute your program using `python -m <snapcalendar>` or `$ snapcalendar` with basic CLI argument parsing.
+- 🎯 Entry points to execute your program using `python -m <designer>` or `$ designer` with basic CLI argument parsing.
 - 🔄 Continuous integration using [Github Actions](.github/workflows/) with jobs to lint, test and release your project on Linux, Mac and Windows environments.
 
 > Curious about architectural decisions on this template? read [ABOUT_THIS_TEMPLATE.md](ABOUT_THIS_TEMPLATE.md)  
 > If you want to contribute to this template please open an [issue](https://github.com/rochacbruno/python-project-template/issues) or fork and send a PULL REQUEST.
 
-[❤️ Sponsor this project](https://github.com/sponsors/rochacbruno/)
-
-<!--  DELETE THE LINES ABOVE THIS AND WRITE YOUR PROJECT README BELOW -->
 
 ---
-# snapcalendar
+# photo-composition-designer
 
-[![codecov](https://codecov.io/gh/pamagister/SnapCalendar/branch/main/graph/badge.svg?token=SnapCalendar_token_here)](https://codecov.io/gh/pamagister/SnapCalendar)
-[![CI](https://github.com/pamagister/SnapCalendar/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/SnapCalendar/actions/workflows/main.yml)
+[![codecov](https://codecov.io/gh/pamagister/designer/branch/main/graph/badge.svg?token=SnapCalendar_token_here)](https://codecov.io/gh/pamagister/SnapCalendar)
+[![CI](https://github.com/pamagister/designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml)
 
-Awesome snapcalendar created by pamagister
+Awesome photo-composition-designer created by pamagister
 
 ## Install it from PyPI
 

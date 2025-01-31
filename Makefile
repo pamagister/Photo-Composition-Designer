@@ -26,20 +26,20 @@ install:          ## Install the project in dev mode.
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
-	$(ENV_PREFIX)isort snapcalendar/
-	$(ENV_PREFIX)black -l 79 snapcalendar/
-	$(ENV_PREFIX)black -l 79 tests/
+	$(ENV_PREFIX)isort designer/
+	$(ENV_PREFIX)black -l 120 designer/
+	$(ENV_PREFIX)black -l 120 tests/
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
-	$(ENV_PREFIX)flake8 snapcalendar/
-	$(ENV_PREFIX)black -l 79 --check snapcalendar/
-	$(ENV_PREFIX)black -l 79 --check tests/
-	$(ENV_PREFIX)mypy --ignore-missing-imports snapcalendar/
+	$(ENV_PREFIX)flake8 designer/
+	$(ENV_PREFIX)black -l 120 --check designer/
+	$(ENV_PREFIX)black -l 120 --check tests/
+	$(ENV_PREFIX)mypy --ignore-missing-imports designer/
 
 .PHONY: test
 test: lint        ## Run tests and generate coverage report.
-	$(ENV_PREFIX)pytest -v --cov-config .coveragerc --cov=snapcalendar -l --tb=short --maxfail=1 tests/
+	$(ENV_PREFIX)pytest -v --cov-config .coveragerc --cov=designer -l --tb=short --maxfail=1 tests/
 	$(ENV_PREFIX)coverage xml
 	$(ENV_PREFIX)coverage html
 
@@ -78,9 +78,9 @@ virtualenv:       ## Create a virtual environment.
 release:          ## Create a new tag for release.
 	@echo "WARNING: This operation will create s version tag and push to github"
 	@read -p "Version? (provide the next x.y.z semver) : " TAG
-	@echo "$${TAG}" > snapcalendar/VERSION
+	@echo "$${TAG}" > designer/VERSION
 	@$(ENV_PREFIX)gitchangelog > HISTORY.md
-	@git add snapcalendar/VERSION HISTORY.md
+	@git add designer/VERSION HISTORY.md
 	@git commit -m "release: version $${TAG} 🚀"
 	@echo "creating git tag : $${TAG}"
 	@git tag $${TAG}
@@ -101,7 +101,7 @@ switch-to-poetry: ## Switch to poetry package manager.
 	@poetry init --no-interaction --name=a_flask_test --author=rochacbruno
 	@echo "" >> pyproject.toml
 	@echo "[tool.poetry.scripts]" >> pyproject.toml
-	@echo "snapcalendar = 'snapcalendar.__main__:main'" >> pyproject.toml
+	@echo "designer = 'designer.__main__:main'" >> pyproject.toml
 	@cat requirements.txt | while read in; do poetry add --no-interaction "$${in}"; done
 	@cat requirements-test.txt | while read in; do poetry add --no-interaction "$${in}" --dev; done
 	@poetry install --no-interaction
@@ -109,7 +109,7 @@ switch-to-poetry: ## Switch to poetry package manager.
 	@mv requirements* .github/backup
 	@mv setup.py .github/backup
 	@echo "You have switched to https://python-poetry.org/ package manager."
-	@echo "Please run 'poetry shell' or 'poetry run snapcalendar'"
+	@echo "Please run 'poetry shell' or 'poetry run photo-composition-designer'"
 
 .PHONY: init
 init:             ## Initialize the project based on an application template.
