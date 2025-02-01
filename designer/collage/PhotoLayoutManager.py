@@ -212,22 +212,37 @@ class PhotoLayoutManager:
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
-                (self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.4) + s, int(h * 3 / 5) + s)),
-                (self.cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s), (int(w * 0.7) + s, int(h * 3 / 5) + s)),
+                (
+                    self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
+                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
+                ),
+                (
+                    self.cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s),
+                    (int(w * 0.7) + s, int(h * 3 / 5) + s),
+                ),
             ],
             # Großes portrait-Bild links, rechts oben landscape, darunter kleines portrait und landscape PPLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
                 (self.cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s), (int(w * 0.4) + s, int(h * 3 / 5) + s)),
-                (self.cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s), (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s)),
+                (
+                    self.cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s),
+                    (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s),
+                ),
             ],
             # Großes portrait-Bild links, rechts oben landscape, darunter zwei kleines portrait nebeneinander PPLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
                 (self.cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)), (int(w * 0.4) + s, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s), (int(w * 0.4) + s, int(h * 2 / 5) + s)),
-                (self.cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s), (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s)),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
+                    (int(w * 0.4) + s, int(h * 2 / 5) + s),
+                ),
+                (
+                    self.cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s),
+                    (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s),
+                ),
             ],
         ]
 

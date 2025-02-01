@@ -29,9 +29,7 @@ class ImageSorter:
         for week in range(52):
             week_start = self.start_date + timedelta(weeks=week)
             week_end = week_start + timedelta(days=6)
-            self.week_mapping[(week_start.month, week_start.day)] = week_start.strftime(
-                "%b_%Y-%m-%d"
-            )
+            self.week_mapping[(week_start.month, week_start.day)] = week_start.strftime("%b_%Y-%m-%d")
 
     def extract_date_from_exif(self, file_path):
         """Liest EXIF-Datum aus, falls vorhanden."""
@@ -61,9 +59,7 @@ class ImageSorter:
             if file.suffix.lower() not in [".jpg", ".jpeg", ".png"]:
                 continue
 
-            date = self.extract_date_from_exif(file) or self.extract_date_from_filename(
-                file.name
-            )
+            date = self.extract_date_from_exif(file) or self.extract_date_from_filename(file.name)
             if not date:
                 self.unmatched_files.append(file)
             else:

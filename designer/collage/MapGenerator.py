@@ -9,7 +9,6 @@ from designer.geo.GeoPlotter import GeoPlotter
 
 
 class MapGenerator:
-
     def __init__(self, config=None):
         self.config = config or Config()
         self.height = self.config.mapHeight
@@ -51,9 +50,7 @@ class MapGenerator:
 
         # In einen BytesIO-Puffer speichern
         buf = BytesIO()
-        plt.savefig(
-            buf, format="PNG", bbox_inches="tight", dpi=300
-        )  # Optional: Anpassung des DPI-Werts
+        plt.savefig(buf, format="PNG", bbox_inches="tight", dpi=300)  # Optional: Anpassung des DPI-Werts
         plt.close()  # Speicher freigeben
         buf.seek(0)
 

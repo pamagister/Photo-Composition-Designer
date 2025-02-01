@@ -7,13 +7,9 @@ class DescriptionGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
         self.width = int(self.config.width)  # Die Breite des erzeugten Bildes.
-        self.fontSize = (
-            self.config.fontSizeAnniversaries
-        )  # Die Schriftgröße des Textes.
+        self.fontSize = self.config.fontSizeAnniversaries  # Die Schriftgröße des Textes.
         self.spacing = self.config.spacing
-        self.height = int(
-            self.fontSize + self.spacing * 2
-        )  # Die Höhe des erzeugten Bildes.
+        self.height = int(self.fontSize + self.spacing * 2)  # Die Höhe des erzeugten Bildes.
         self.margin_side = self.config.marginSides
 
     def generateDescription(self, text):
@@ -23,9 +19,7 @@ class DescriptionGenerator:
         :return: Ein PIL.Image-Objekt mit dem gerenderten Text.
         """
         # Erstelle ein neues Bild mit der Hintergrundfarbe aus der Konfiguration
-        description_image = Image.new(
-            "RGB", (self.width, self.height), self.config.backgroundColor
-        )
+        description_image = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
 
         # Zeichnungsobjekt initialisieren
         draw = ImageDraw.Draw(description_image)

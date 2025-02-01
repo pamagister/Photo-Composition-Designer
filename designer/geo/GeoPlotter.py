@@ -30,12 +30,9 @@ class GeoPlotter:
         # Basisverzeichnis der shape files relativ zu diesem Modul
         base_path = Path(__file__).parent.parent.parent / "res/maps"
 
-        countries_shp = (
-            base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"
-        )  # Ländergrenzen
+        countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"  # Ländergrenzen
         lakes_shp = (
-            base_path
-            / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"
+            base_path / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"
         )  # Flüsse und Seen
 
         self.shapefile_path = countries_shp
@@ -48,9 +45,7 @@ class GeoPlotter:
 
         # Zusätzliche Layer hinzufügen
         lakes_shp = Path(lakes_shp).resolve()
-        self._addLayer(
-            "lakes", lakes_shp, color="royalblue", edgecolor="blue", alpha=1.0
-        )
+        self._addLayer("lakes", lakes_shp, color="royalblue", edgecolor="blue", alpha=1.0)
 
     @staticmethod
     def _normalize_color(color):
@@ -93,18 +88,12 @@ class GeoPlotter:
         height_deg += self.minimalExtension / 8  # minimal margin
 
         # Calculate the average width (average width of the points in the GeoDataFrame)
-        mid_lat = (
-            bounds[1] + bounds[3]
-        ) / 2  # Average value of the miny and maxy coordinates (latitude)
-        mid_lon = (
-            bounds[0] + bounds[2]
-        ) / 2  # Average value of minx and maxx coordinates (longitude)
+        mid_lat = (bounds[1] + bounds[3]) / 2  # Average value of the miny and maxy coordinates (latitude)
+        mid_lon = (bounds[0] + bounds[2]) / 2  # Average value of minx and maxx coordinates (longitude)
 
         lat_dis_per_deg = 111.32  # Spacing Latitude circle
         # Calculate the width of the section taking into account the latitude
-        lon_dis_per_deg = lat_dis_per_deg * math.cos(
-            math.radians(mid_lat)
-        )  # Longitude distance in km
+        lon_dis_per_deg = lat_dis_per_deg * math.cos(math.radians(mid_lat))  # Longitude distance in km
         # Calculate the latitude based on the resolution and the actual longitude distance
         width_deg = (
             0.5
@@ -122,9 +111,7 @@ class GeoPlotter:
             mid_lat + height_deg,
         )
 
-    def _addLayer(
-        self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5
-    ):
+    def _addLayer(self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5):
         """
         Adds a layer such as federal states or bodies of water.
 
@@ -164,9 +151,7 @@ class GeoPlotter:
             bounds = self._calculate_bounds(points_gdf)
 
         # Karte plotten
-        fig, ax = plt.subplots(
-            figsize=(self.resolution[0] / 100, self.resolution[1] / 100)
-        )
+        fig, ax = plt.subplots(figsize=(self.resolution[0] / 100, self.resolution[1] / 100))
         fig.patch.set_facecolor(self.background_color)
         ax.set_facecolor(self.background_color)
 
@@ -191,9 +176,7 @@ class GeoPlotter:
                     label=layer_name,
                 )
 
-        points_gdf.plot(
-            ax=ax, color="red", markersize=location_markersize, label="GPS Points"
-        )
+        points_gdf.plot(ax=ax, color="red", markersize=location_markersize, label="GPS Points")
 
         # Set axes to the calculated limits
         ax.set_xlim(bounds[0], bounds[2])

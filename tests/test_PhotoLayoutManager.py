@@ -32,13 +32,9 @@ def test_arrange_images(mock_open, photo_layout, mock_images, num_images):
     mock_img_list = mock_images(num_images)
     orientations = ["landscape"] * num_images
 
-    with patch.object(
-        PhotoLayoutManager, "sortByAspectRatio", return_value=mock_img_list
-    ), patch.object(
+    with patch.object(PhotoLayoutManager, "sortByAspectRatio", return_value=mock_img_list), patch.object(
         PhotoLayoutManager, "analyzeImages", return_value=orientations
-    ), patch.object(
-        PhotoLayoutManager, "arrangeOneImage"
-    ) as mock_arrange_one, patch.object(
+    ), patch.object(PhotoLayoutManager, "arrangeOneImage") as mock_arrange_one, patch.object(
         PhotoLayoutManager, "arrangeTwoImages"
     ) as mock_arrange_two, patch.object(
         PhotoLayoutManager, "arrangeThreeImages"
@@ -54,33 +50,9 @@ def test_arrange_images(mock_open, photo_layout, mock_images, num_images):
 
         assert mock_open.call_count == num_images
 
-        (
-            mock_arrange_one.assert_called_once()
-            if num_images == 1
-            else mock_arrange_one.assert_not_called()
-        )
-        (
-            mock_arrange_two.assert_called_once()
-            if num_images == 2
-            else mock_arrange_two.assert_not_called()
-        )
-        (
-            mock_arrange_three.assert_called_once()
-            if num_images == 3
-            else mock_arrange_three.assert_not_called()
-        )
-        (
-            mock_arrange_four.assert_called_once()
-            if num_images == 4
-            else mock_arrange_four.assert_not_called()
-        )
-        (
-            mock_arrange_five.assert_called_once()
-            if num_images == 5
-            else mock_arrange_five.assert_not_called()
-        )
-        (
-            mock_arrange_multiple.assert_called_once()
-            if num_images >= 6
-            else mock_arrange_multiple.assert_not_called()
-        )
+        (mock_arrange_one.assert_called_once() if num_images == 1 else mock_arrange_one.assert_not_called())
+        (mock_arrange_two.assert_called_once() if num_images == 2 else mock_arrange_two.assert_not_called())
+        (mock_arrange_three.assert_called_once() if num_images == 3 else mock_arrange_three.assert_not_called())
+        (mock_arrange_four.assert_called_once() if num_images == 4 else mock_arrange_four.assert_not_called())
+        (mock_arrange_five.assert_called_once() if num_images == 5 else mock_arrange_five.assert_not_called())
+        (mock_arrange_multiple.assert_called_once() if num_images >= 6 else mock_arrange_multiple.assert_not_called())

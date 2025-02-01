@@ -61,9 +61,7 @@ class FolderGenerator:
                 del self.sorted_images[image_path]
 
             if self.generateDescriptionFile:
-                description_file = os.path.join(
-                    folder_path, f"{week:02d}_description.txt"
-                )
+                description_file = os.path.join(folder_path, f"{week:02d}_description.txt")
                 with open(description_file, "w", encoding="utf-8") as f:
                     print(f"  → {description_file} created")
 

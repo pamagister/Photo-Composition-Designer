@@ -55,12 +55,21 @@ class ConfigEditorApp:
                     "year": tk.StringVar(value=year),
                 }
 
-                ttk.Combobox(frame, textvariable=self.start_date_vars[key]["day"],
-                             values=[str(i) for i in range(1, 32)], width=3).grid(row=row, column=1)
-                ttk.Combobox(frame, textvariable=self.start_date_vars[key]["month"],
-                             values=[str(i) for i in range(1, 13)], width=3).grid(row=row, column=2)
-                ttk.Combobox(frame, textvariable=self.start_date_vars[key]["year"],
-                             values=[str(i) for i in range(1900, 2100)], width=5).grid(row=row, column=3)
+                ttk.Combobox(
+                    frame, textvariable=self.start_date_vars[key]["day"], values=[str(i) for i in range(1, 32)], width=3
+                ).grid(row=row, column=1)
+                ttk.Combobox(
+                    frame,
+                    textvariable=self.start_date_vars[key]["month"],
+                    values=[str(i) for i in range(1, 13)],
+                    width=3,
+                ).grid(row=row, column=2)
+                ttk.Combobox(
+                    frame,
+                    textvariable=self.start_date_vars[key]["year"],
+                    values=[str(i) for i in range(1900, 2100)],
+                    width=5,
+                ).grid(row=row, column=3)
 
             elif isinstance(processedValue, Path):  # File-Pfad mit Auswahl-Dialog
                 entry_var = tk.StringVar(value=str(value))
@@ -146,8 +155,9 @@ class ConfigEditorApp:
         self.tooltip.wm_overrideredirect(True)
         self.tooltip.wm_geometry(f"+{x}+{y}")
 
-        label = tk.Label(self.tooltip, text=text, background="yellow", relief="solid", borderwidth=1,
-                         font=("Arial", 10))
+        label = tk.Label(
+            self.tooltip, text=text, background="yellow", relief="solid", borderwidth=1, font=("Arial", 10)
+        )
         label.pack()
 
     def hide_tooltip(self, event):

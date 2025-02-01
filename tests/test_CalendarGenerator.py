@@ -55,24 +55,30 @@ def test_get_cols_property(calendar_generator):
     assert col_width > 0, "Die Spaltenbreite sollte größer als 0 sein."
 
 
-@pytest.mark.parametrize("month_no, expected_name", [
-    (1, "Januar"),
-    (2, "Februar"),
-    (4, "April"),
-    (12, "Dezember"),
-])
+@pytest.mark.parametrize(
+    "month_no, expected_name",
+    [
+        (1, "Januar"),
+        (2, "Februar"),
+        (4, "April"),
+        (12, "Dezember"),
+    ],
+)
 def test_get_month_name(calendar_generator, month_no, expected_name):
     """Testet die korrekte Ausgabe von Monatsnamen."""
     month_name = calendar_generator.get_month_name(month_no, locale_name="de_DE.UTF-8")
     assert month_name == expected_name, f"Erwartet: {expected_name}, erhalten: {month_name}"
 
 
-@pytest.mark.parametrize("day_no, expected_name", [
-    (0, "Montag"),
-    (1, "Dienstag"),
-    (2, "Mittwoch"),
-    (6, "Sonntag"),
-])
+@pytest.mark.parametrize(
+    "day_no, expected_name",
+    [
+        (0, "Montag"),
+        (1, "Dienstag"),
+        (2, "Mittwoch"),
+        (6, "Sonntag"),
+    ],
+)
 def test_get_day_name(calendar_generator, day_no, expected_name):
     """Testet die korrekte Ausgabe von Wochentagsnamen."""
     day_name = calendar_generator.get_day_name(day_no, locale_name="de_DE")
