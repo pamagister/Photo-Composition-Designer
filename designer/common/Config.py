@@ -70,7 +70,7 @@ DEFAULT_CONFIG = [
 class Config:
     """Lädt und speichert Konfigurationswerte."""
 
-    def __init__(self, config_file: Path | str = None):
+    def __init__(self, config_file=None):
         self._width = 0
         self._height = 0
         self._calendarHeight = 0

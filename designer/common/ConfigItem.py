@@ -66,7 +66,7 @@ class ConfigItem:
         raise ValueError(f"Invalid date: {start_date}. Permitted formats: {', '.join(date_formats)}")
 
     @staticmethod
-    def _parse_tuple(tupleValue: str | tuple):
+    def _parse_tuple(tupleValue):
         """Converts a string of multiple values (string or int) `value1,value2,value3`
         into a tuple `(value1, value2, value3)`.
 
