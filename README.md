@@ -80,6 +80,15 @@ dpi = 300
 John Doe = 15.04.1990
 ```
 
+To extract birthdays of your contacts, use this regex to parse them from an *.ical file:
+```ini
+[search expression]
+(?s)BEGIN:VEVENT.*?DTSTART[^:]*:(\d{4})(\d{2})(\d{2}).*?SUMMARY:\s*([^(\r\n]+)\s*\(\d{4}\).*?END:VEVENT
+
+[replacement expression]
+$4 = $3.$2.$1
+```
+
 ## 🏗️ Development Setup
 ### Install Dependencies
 ```sh

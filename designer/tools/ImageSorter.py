@@ -1,8 +1,6 @@
-import os
 import re
-import shutil
 from datetime import datetime, timedelta
-from pathlib import Path
+
 from PIL import Image
 from PIL.ExifTags import TAGS
 
@@ -28,7 +26,7 @@ class ImageSorter:
 
         for week in range(52):
             week_start = self.start_date + timedelta(weeks=week)
-            week_end = week_start + timedelta(days=6)
+            # week_end = week_start + timedelta(days=6)
             self.week_mapping[(week_start.month, week_start.day)] = week_start.strftime("%b_%Y-%m-%d")
 
     def extract_date_from_exif(self, file_path):

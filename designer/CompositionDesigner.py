@@ -50,7 +50,7 @@ class CompositionDesigner:
         available_width = self.width
 
         if len(image_files) == 0:
-            print(f"Keine Bilder gefunden.")
+            print("No pictures found.")
             return
 
         # Arrange image collage

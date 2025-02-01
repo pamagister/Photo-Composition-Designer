@@ -41,8 +41,20 @@ class CalendarGenerator:
             font_large = ImageFont.truetype("DejaVuSans.ttf", int(self.fontSizeLarge))
             font_small = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
             font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
-        except:
-            font_large = font_small = ImageFont.load_default()
+        except FileNotFoundError as e:
+            print(f"Font file not found: {e}")
+        except IOError as e:
+            print(f"Unable to read font file: {e}")
+        except ValueError as e:
+            print(f"Invalid font size: {e}")
+        except AttributeError as e:
+            print(f"Missing attribute: {e}")
+        except TypeError as e:
+            print(f"Invalid type for font size: {e}")
+        except ImportError as e:
+            print(f"Pillow library not installed or imported correctly: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
         # Zeichne Monat und Jahr
         month_name = self.get_month_name(dates[0].month, language)

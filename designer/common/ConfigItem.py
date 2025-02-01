@@ -67,7 +67,8 @@ class ConfigItem:
 
     @staticmethod
     def _parse_tuple(tupleValue: str | tuple):
-        """Converts a string of multiple values (string or int) `value1,value2,value3` into a tuple `(value1, value2, value3)`.
+        """Converts a string of multiple values (string or int) `value1,value2,value3`
+        into a tuple `(value1, value2, value3)`.
 
         Supports both integers and strings as elements.
         """

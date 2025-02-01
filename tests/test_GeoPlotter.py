@@ -1,7 +1,6 @@
-import pytest
 import geopandas as gpd
+import pytest
 from shapely.geometry import Point
-from matplotlib import pyplot
 
 from designer.geo.GeoPlotter import GeoPlotter
 

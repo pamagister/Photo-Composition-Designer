@@ -1,6 +1,5 @@
-import pytest
 from pathlib import Path
-from configparser import ConfigParser
+
 from designer.common.Config import Config
 
 
@@ -36,7 +35,7 @@ class TestConfig:
             photoDirectory = ../../images
             anniversariesConfig = anniversaries_private.ini
             locationsConfig = locations_en.ini
-            
+
             [CALENDAR]
             useCalendar = False
             language = de_DE
