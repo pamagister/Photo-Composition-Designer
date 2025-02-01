@@ -95,7 +95,7 @@ class GeoPlotter:
         # Calculate the width of the section taking into account the latitude
         lon_dis_per_deg = lat_dis_per_deg * math.cos(math.radians(mid_lat))  # Longitude distance in km
         # Calculate the latitude based on the resolution and the actual longitude distance
-        width_deg = (lat_dis_per_deg * height_deg * self.resolution[0] / self.resolution[1] / lon_dis_per_deg)
+        width_deg = lat_dis_per_deg * height_deg * self.resolution[0] / self.resolution[1] / lon_dis_per_deg
 
         return (
             mid_lon - width_deg,

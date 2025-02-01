@@ -127,9 +127,9 @@ class Config:
         self.calendarHeight = int(self._calendarHeight * self.dpi / 25.4)
         self.mapWidth = int(self._mapWidth * self.dpi / 25.4)
         self.mapHeight = int(self._mapHeight * self.dpi / 25.4)
-        self.marginBottom = int(self.marginBottom * self.dpi / 25.4)
-        self.marginSides = int(self.marginSides * self.dpi / 25.4)
-        self.spacing = int(self.spacing * self.dpi / 25.4)
+        self.marginBottom = int(self._marginBottom * self.dpi / 25.4)
+        self.marginSides = int(self._marginSides * self.dpi / 25.4)
+        self.spacing = int(self._spacing * self.dpi / 25.4)
 
         self.fontSizeLarge = self._fontSizeLarge * self.calendarHeight
         self.fontSizeSmall = self._fontSizeSmall * self.calendarHeight
@@ -149,7 +149,7 @@ class Config:
         preprocessed_config = "\n".join(processed_lines)
         file_config_parser = ConfigParser()
         file_config_parser.read_string(preprocessed_config)
-        base_path = config_file.parent
+        base_path = config_file
         for item in self.config_items:
             item.set_base_path(base_path)
             setattr(self, item.key, item.get_value(file_config_parser))
@@ -178,6 +178,7 @@ class Config:
                 file.write("\n")
 
     def update_config_items(self):
+        """writes the values of the current object to the raw values in config_items"""
         for itemIndex, item in enumerate(self.config_items):
             value = getattr(self, item.key)
             self.config_items[itemIndex].value = value
