@@ -118,7 +118,7 @@ class ConfigEditorApp:
         self.config_path = self.config.get_config_path()
         self.config.update_config_items()
         self.config.write_config(self.config_path)
-        print(f'Config saved as: {self.config_path}')
+        print(f"Config saved as: {self.config_path}")
         messagebox.showinfo("Erfolg", "Konfiguration gespeichert.")
 
     def open_config(self):

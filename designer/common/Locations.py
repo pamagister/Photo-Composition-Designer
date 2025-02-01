@@ -22,7 +22,7 @@ class Locations:
     def __init__(self, locations_file=None):
         if not locations_file:
             base_path = Path(__file__).parent.parent
-            locations_file = base_path / 'config' / "locations_en.ini"
+            locations_file = base_path / "config" / "locations_en.ini"
 
         self.locations_dict = defaultdict(tuple)  # Dictionary for the locations
 

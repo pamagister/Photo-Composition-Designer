@@ -129,7 +129,7 @@ class CalendarGenerator:
             locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
-    def get_combined_holidays(year, country='EN', subdivs=None):
+    def get_combined_holidays(year, country="EN", subdivs=None):
         """
         Combines holidays from several countries or subdivisions.
 

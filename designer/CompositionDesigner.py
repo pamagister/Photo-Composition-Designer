@@ -14,7 +14,7 @@ class CompositionDesigner:
     def __init__(self, config=None):
         self.config = config or Config()
         self.photoDirectory = self.config.photoDirectory
-        self.outputDir = self.photoDirectory.parent / 'collages'
+        self.outputDir = self.photoDirectory.parent / "collages"
         os.makedirs(self.outputDir, exist_ok=True)
         self.calendar_height = self.config.calendarHeight
         self.width = self.config.width
@@ -26,7 +26,7 @@ class CompositionDesigner:
         self.layoutManager = None
         self.startDate = self.config.startDate
 
-    def generate_collage(self, image_files, date, output_path, photo_description=''):
+    def generate_collage(self, image_files, date, output_path, photo_description=""):
         """
         Erzeugt eine Composition mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """

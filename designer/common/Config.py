@@ -88,7 +88,7 @@ class Config:
         if config_file:
             base_dir = Path(config_file)
         else:
-            base_dir = Path(__file__).parent.parent / 'config' / 'config.ini'
+            base_dir = Path(__file__).parent.parent / "config" / "config.ini"
         self._config_path = base_dir
 
         # Standardwerte als Liste von ConfigItem-Objekten
@@ -198,6 +198,6 @@ if __name__ == "__main__":
     cfg_file_name = "config_update.ini"
 
     project_base_path = Path(__file__).parent.parent
-    cfg_file = project_base_path / 'config' / cfg_file_name
+    cfg_file = project_base_path / "config" / cfg_file_name
     cfg_fromfile = Config(cfg_file)
     print(cfg_fromfile)
