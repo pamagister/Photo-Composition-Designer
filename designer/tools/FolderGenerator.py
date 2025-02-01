@@ -1,7 +1,7 @@
 import os
+import random
 import shutil
 from datetime import timedelta
-
 from designer.common.Config import Config
 from designer.tools.ImageSorter import ImageSorter
 
@@ -22,41 +22,59 @@ class FolderGenerator:
         self.move_files = False
         imageSorter = ImageSorter()
         imageSorter.run()
-        self.sorted_images = imageSorter.sorted_images
-
+        self.sorted_images = imageSorter.sorted_images  # Dictionary {image_path: date}
+        self.distribute = False
         self.generateDescriptionFile = False
         self.generateLocationFile = False
 
     def generateFolders(self, weeksToGenerate=55):
-        """Generates the desired folders with optional files and sorts images into them."""
         if not os.path.exists(self.outputDir):
             os.makedirs(self.outputDir)
 
+        sorted_images = sorted(self.sorted_images.items(), key=lambda x: x[1])  # Sort images by date
+        total_images = len(sorted_images)
+        avg_images_per_week = total_images // weeksToGenerate
+        remaining_images = total_images
+
         for week in range(weeksToGenerate):
             week_start = self.startDate + timedelta(weeks=week)
-            week_end = week_start + timedelta(days=6)
             folder_name = f"{week:02d}_{week_start.strftime('%Y-%m-%d')}"
             folder_path = os.path.join(self.outputDir, folder_name)
-
             os.makedirs(folder_path, exist_ok=True)
             print(f"Folder created: {folder_path}")
 
-            images_to_remove = []
-            start_date = (week_start.month, week_start.day)
-            end_date = (week_end.month, week_end.day)
+            if self.distribute and remaining_images > 0:
+                num_images = avg_images_per_week + random.choice([-1, 0, 1])
+                num_images = min(num_images, remaining_images)  # Ensure we don’t exceed available images
 
-            for image_path, image_date in self.sorted_images.items():
-                if start_date <= (image_date.month, image_date.day) <= end_date:
+                for _ in range(num_images):
+                    image_path, _ = sorted_images.pop(0)  # Take first available image chronologically
                     destination_path = os.path.join(folder_path, image_path.name)
+
                     if self.move_files:
                         shutil.move(image_path, destination_path)
                     else:
                         shutil.copy2(image_path, destination_path)
-                    images_to_remove.append(image_path)
-                    print(f"  → Image {image_path.name} sorted into {folder_name}")
 
-            for image_path in images_to_remove:
-                del self.sorted_images[image_path]
+                    print(f"  → Image {image_path.name} sorted into {folder_name}")
+                    remaining_images -= 1
+            else:
+                images_to_remove = []
+                week_end = week_start + timedelta(days=6)
+                start_date = (week_start.month, week_start.day)
+                end_date = (week_end.month, week_end.day)
+                for image_path, image_date in self.sorted_images.items():
+                    if start_date <= (image_date.month, image_date.day) <= end_date:
+                        destination_path = os.path.join(folder_path, image_path.name)
+                        if self.move_files:
+                            shutil.move(image_path, destination_path)
+                        else:
+                            shutil.copy2(image_path, destination_path)
+                        images_to_remove.append(image_path)
+                        print(f"  → Image {image_path.name} sorted into {folder_name}")
+
+                for image_path in images_to_remove:
+                    del self.sorted_images[image_path]
 
             if self.generateDescriptionFile:
                 description_file = os.path.join(folder_path, f"{week:02d}_description.txt")
@@ -69,7 +87,11 @@ class FolderGenerator:
                     loc_file.write("51.0504, 13.7373\n")
                     print(f"  → {location_file} created")
 
+        # print all remaining images that are not distributed:
+        for image_path, image_date in self.sorted_images.items():
+            print(f"  → Image {image_path.name} NOT considered")
+
 
 if __name__ == "__main__":
     folderGen = FolderGenerator()
-    folderGen.generateFolders(50)
+    folderGen.generateFolders(52)
