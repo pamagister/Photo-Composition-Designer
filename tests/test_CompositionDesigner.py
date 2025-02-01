@@ -55,7 +55,7 @@ class TestCollageGenerator:
     @pytest.mark.parametrize("num_images, layout", layout_configurations)
     def test_generate_different_layouts(self, num_images, layout):
         """
-        Tests different layouts with CollageGenerator.
+        Tests different layouts with CompositionDesigner.
         """
         config = Config()
         config.dpi = 50
