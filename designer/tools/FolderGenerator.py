@@ -17,7 +17,7 @@ class FolderGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
         self.photoDirectory = self.config.photoDirectory
-        self.outputDir = self.photoDirectory.parent / "folders"
+        self.outputDir = self.photoDirectory / "folders"
         self.startDate = self.config.startDate
         self.move_files = False
         imageSorter = ImageSorter()
@@ -26,19 +26,20 @@ class FolderGenerator:
         self.distribute = False
         self.generateDescriptionFile = False
         self.generateLocationFile = False
+        self.collagesToGenerate = self.config.collagesToGenerate
 
-    def generateFolders(self, weeksToGenerate=55):
+    def generateFolders(self):
         if not os.path.exists(self.outputDir):
             os.makedirs(self.outputDir)
 
         sorted_images = sorted(self.sorted_images.items(), key=lambda x: x[1])  # Sort images by date
         total_images = len(sorted_images)
-        avg_images_per_week = total_images // weeksToGenerate
+        avg_images_per_week = total_images // self.collagesToGenerate
         remaining_images = total_images
 
-        for week in range(weeksToGenerate):
+        for week in range(self.collagesToGenerate):
             week_start = self.startDate + timedelta(weeks=week)
-            folder_name = f"{week:02d}_{week_start.strftime('%Y-%m-%d')}"
+            folder_name = f"{week:02d}_{week_start.strftime('%b-%d')}"
             folder_path = os.path.join(self.outputDir, folder_name)
             os.makedirs(folder_path, exist_ok=True)
             print(f"Folder created: {folder_path}")
@@ -61,10 +62,14 @@ class FolderGenerator:
             else:
                 images_to_remove = []
                 week_end = week_start + timedelta(days=6)
-                start_date = (week_start.month, week_start.day)
-                end_date = (week_end.month, week_end.day)
+                end_date_md = (week_end.month, week_end.day)
+                if week_start.year < week_end.year:
+                    start_date_md = (0, week_start.day)
+                else:
+                    start_date_md = (week_start.month, week_start.day)
                 for image_path, image_date in self.sorted_images.items():
-                    if start_date <= (image_date.month, image_date.day) <= end_date:
+                    image_date_md = (image_date.month, image_date.day)
+                    if start_date_md <= image_date_md <= end_date_md:
                         destination_path = os.path.join(folder_path, image_path.name)
                         if self.move_files:
                             shutil.move(image_path, destination_path)
@@ -94,4 +99,4 @@ class FolderGenerator:
 
 if __name__ == "__main__":
     folderGen = FolderGenerator()
-    folderGen.generateFolders(52)
+    folderGen.generateFolders()
