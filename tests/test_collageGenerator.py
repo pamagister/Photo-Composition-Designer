@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from designer.CollageGenerator import CollageGenerator
+from designer.CollageGenerator import CompositionDesigner
 from designer.common.Config import Config
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -49,7 +49,7 @@ class TestCollageGenerator:
         config = Config()
         config.dpi = 50
         config.jpgQuality = 40
-        collageGen = CollageGenerator(config)
+        collageGen = CompositionDesigner(config)
         startDate = collageGen.startDate
         base_dir = os.path.join(collageGen.photoDirectory, 'layout_orientation')
         output_dir = collageGen.outputDir
@@ -90,7 +90,7 @@ class TestCollageGenerator:
         output_file_name = f"collage_layout_{num_images}_{'_'.join(layout)}.jpg"
         output_path = os.path.join(output_dir, output_file_name)
 
-        # Collage generieren
+        # Composition generieren
         print(f"Generate collage for layout: {layout}")
         date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
@@ -102,5 +102,5 @@ class TestCollageGenerator:
         config = Config()
         config.photoDirectory = config.photoDirectory / 'layout_orientation'
 
-        collageGen = CollageGenerator(config)
+        collageGen = CompositionDesigner(config)
         collageGen.generateProjectFromImageFolder()

@@ -10,7 +10,7 @@ from designer.collage.PhotoLayoutManager import PhotoLayoutManager
 from designer.common.Config import Config
 
 
-class CollageGenerator:
+class CompositionDesigner:
     def __init__(self, config=None):
         self.config = config or Config()
         self.photoDirectory = self.config.photoDirectory
@@ -28,7 +28,7 @@ class CollageGenerator:
 
     def generate_collage(self, image_files, date, output_path, photo_description=''):
         """
-        Erzeugt eine Collage mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
+        Erzeugt eine Composition mit Bildern, einem Calendarium und einer Europakarte mit Foto-Locations.
         """
         collage = Image.new("RGB", (self.width, self.height), self.config.backgroundColor)
         available_height = self.height
@@ -62,7 +62,7 @@ class CollageGenerator:
             collage.paste(imgMap, (self.width - self.config.mapWidth, self.height - self.config.mapHeight))
 
         collage.save(output_path, quality=self.config.jpgQuality)
-        print(f"Collage gespeichert: {output_path}")
+        print(f"Composition gespeichert: {output_path}")
 
 
     def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=100):
@@ -161,5 +161,5 @@ class CollageGenerator:
 
 if __name__ == "__main__":
     # generate collage from separate folders
-    colGen = CollageGenerator()
+    colGen = CompositionDesigner()
     colGen.generateProjectFromSubFolders()

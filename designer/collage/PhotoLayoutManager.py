@@ -30,7 +30,7 @@ class PhotoLayoutManager:
 
     def arrangeImages(self, image_files):
         """
-        Ordnet die Bilder in der Collage an. Bilder werden vorab auf Lesbarkeit geprüft.
+        Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
         # Bilder nach Seitenverhältnis sortieren
         images = [Image.open(img) for img in image_files]
@@ -308,7 +308,7 @@ class PhotoLayoutManager:
         rows = int(len(images) ** 0.5)  # Quadratwurzel für möglichst gleichmäßige Aufteilung
         cols = (len(images) + rows - 1) // rows  # Rundung nach oben
 
-        # Berechnung der Zellgrößen basierend auf der Collage-Größe und Abstände
+        # Berechnung der Zellgrößen basierend auf der Composition-Größe und Abstände
         cell_width = (width - (cols - 1) * self.spacing) // cols
         cell_height = (height - (rows - 1) * self.spacing) // rows
 
@@ -321,9 +321,9 @@ class PhotoLayoutManager:
             # Passe die Bildgröße an die Rasterzelle an
             resized_img = self.cropAndResize(img, cell_width, cell_height)
 
-            # Berechne die Position des Bildes in der Collage
+            # Berechne die Position des Bildes in der Composition
             x_offset = col * (cell_width + self.spacing)
             y_offset = row * (cell_height + self.spacing)
 
-            # Füge das Bild in die Collage ein
+            # Füge das Bild in die Composition ein
             collage.paste(resized_img, (x_offset, y_offset))

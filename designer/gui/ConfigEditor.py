@@ -3,7 +3,7 @@ from datetime import datetime
 from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 
-from designer.CollageGenerator import CollageGenerator
+from designer.CollageGenerator import CompositionDesigner
 from designer.common.Config import Config
 from designer.tools.FolderGenerator import FolderGenerator
 
@@ -164,7 +164,7 @@ class ConfigEditorApp:
     @staticmethod
     def run_generator():
         messagebox.showinfo("Info", "Generator wird gestartet!")
-        colGen = CollageGenerator()
+        colGen = CompositionDesigner()
         colGen.generateProjectFromSubFolders()
 
 
