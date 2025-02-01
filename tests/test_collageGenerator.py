@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 layout_configurations = [
-    (1, ["landscape"]),
+    para(1, ["landscape"]),
     (1, ["portrait"]),
     (2, ["landscape", "landscape"]),
     (2, ["portrait", "portrait"]),

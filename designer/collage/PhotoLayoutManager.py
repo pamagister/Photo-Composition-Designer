@@ -5,10 +5,10 @@ from PIL import Image, UnidentifiedImageError
 
 class PhotoLayoutManager:
     def __init__(self, collage, width=900, height=600, spacing=10):
-        self.collage = collage
-        self.width = width
-        self.height = height
-        self.spacing = spacing
+        self.collage: Image = collage
+        self.width: int = width
+        self.height: int = height
+        self.spacing: int = spacing
 
     @staticmethod
     def filterInvalidImages(image_files):
