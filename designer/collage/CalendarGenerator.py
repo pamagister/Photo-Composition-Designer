@@ -55,6 +55,8 @@ class CalendarGenerator:
             print(f"Pillow library not installed or imported correctly: {e}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
+        finally:
+            font_large = font_small = font_holiday = ImageFont.load_default()
 
         # Zeichne Monat und Jahr
         month_name = self.get_month_name(dates[0].month, language)
