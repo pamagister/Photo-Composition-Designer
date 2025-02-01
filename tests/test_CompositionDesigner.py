@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 layout_configurations = [
-    para(1, ["landscape"]),
+    (1, ["landscape"]),
     (1, ["portrait"]),
     (2, ["landscape", "landscape"]),
     (2, ["portrait", "portrait"]),
@@ -57,8 +57,8 @@ class TestCollageGenerator:
         Tests different layouts with CompositionDesigner.
         """
         config = Config()
-        config.dpi = 50
-        config.jpgQuality = 40
+        config.dpi = 20
+        config.jpgQuality = 20
         collageGen = CompositionDesigner(config)
         startDate = collageGen.startDate
         base_dir = os.path.join(collageGen.photoDirectory, "layout_orientation")

@@ -80,7 +80,7 @@ Except those tools that are up to the developer choice (like ipython, ipdb etc).
 ### Why the template doesn't have a `pyproject.toml` file ?
 
 It is possible to run `pip install https://github.com/name/repo/tarball/main` and
-have pip to download the package direcly from Git repo.
+have pip to download the package directly from Git repo.
 
 For that to work you need to have a `setup.py` file, and `pyproject.toml` is not
 supported for that kind of installation.
