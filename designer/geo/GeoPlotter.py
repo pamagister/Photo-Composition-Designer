@@ -11,7 +11,14 @@ class GeoPlotter:
     Class for plotting a map section with optional layers such as federal states or bodies of water.
     """
 
-    def __init__(self, minimalExtension=5, resolution=(400, 300), background_color="white", border_color="black", line_width=1.0):
+    def __init__(
+        self,
+        minimalExtension=5,
+        resolution=(400, 300),
+        background_color="white",
+        border_color="black",
+        line_width=1.0,
+    ):
         """
         Initialisiert den GeoMapPlotter.
         :param minimalExtension: minimal extension in degrees for the map borders.
@@ -23,8 +30,13 @@ class GeoPlotter:
         # Basisverzeichnis der shape files relativ zu diesem Modul
         base_path = Path(__file__).parent.parent.parent / "res/maps"
 
-        countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"  # Ländergrenzen
-        lakes_shp = base_path / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"  # Flüsse und Seen
+        countries_shp = (
+            base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"
+        )  # Ländergrenzen
+        lakes_shp = (
+            base_path
+            / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"
+        )  # Flüsse und Seen
 
         self.shapefile_path = countries_shp
         self.minimalExtension = minimalExtension
@@ -36,7 +48,9 @@ class GeoPlotter:
 
         # Zusätzliche Layer hinzufügen
         lakes_shp = Path(lakes_shp).resolve()
-        self._addLayer("lakes", lakes_shp, color="royalblue", edgecolor="blue", alpha=1.0)
+        self._addLayer(
+            "lakes", lakes_shp, color="royalblue", edgecolor="blue", alpha=1.0
+        )
 
     @staticmethod
     def _normalize_color(color):
@@ -79,14 +93,27 @@ class GeoPlotter:
         height_deg += self.minimalExtension / 8  # minimal margin
 
         # Calculate the average width (average width of the points in the GeoDataFrame)
-        mid_lat = (bounds[1] + bounds[3]) / 2  # Average value of the miny and maxy coordinates (latitude)
-        mid_lon = (bounds[0] + bounds[2]) / 2  # Average value of minx and maxx coordinates (longitude)
+        mid_lat = (
+            bounds[1] + bounds[3]
+        ) / 2  # Average value of the miny and maxy coordinates (latitude)
+        mid_lon = (
+            bounds[0] + bounds[2]
+        ) / 2  # Average value of minx and maxx coordinates (longitude)
 
         lat_dis_per_deg = 111.32  # Spacing Latitude circle
         # Calculate the width of the section taking into account the latitude
-        lon_dis_per_deg = lat_dis_per_deg * math.cos(math.radians(mid_lat))  # Longitude distance in km
+        lon_dis_per_deg = lat_dis_per_deg * math.cos(
+            math.radians(mid_lat)
+        )  # Longitude distance in km
         # Calculate the latitude based on the resolution and the actual longitude distance
-        width_deg = 0.5 * lat_dis_per_deg * (height_deg + height_deg) * self.resolution[0] / self.resolution[1] / lon_dis_per_deg
+        width_deg = (
+            0.5
+            * lat_dis_per_deg
+            * (height_deg + height_deg)
+            * self.resolution[0]
+            / self.resolution[1]
+            / lon_dis_per_deg
+        )
 
         return (
             mid_lon - width_deg,
@@ -95,7 +122,9 @@ class GeoPlotter:
             mid_lat + height_deg,
         )
 
-    def _addLayer(self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5):
+    def _addLayer(
+        self, name, shapefile_path, color="blue", edgecolor="black", alpha=0.5
+    ):
         """
         Adds a layer such as federal states or bodies of water.
 
@@ -106,7 +135,12 @@ class GeoPlotter:
         :param alpha: Transparency of the layer.
         """
         gdf = gpd.read_file(shapefile_path)
-        self.layers[name] = {"gdf": gdf, "color": color, "edgecolor": edgecolor, "alpha": alpha}
+        self.layers[name] = {
+            "gdf": gdf,
+            "color": color,
+            "edgecolor": edgecolor,
+            "alpha": alpha,
+        }
 
     def renderMap(self, coords):
         """
@@ -130,12 +164,19 @@ class GeoPlotter:
             bounds = self._calculate_bounds(points_gdf)
 
         # Karte plotten
-        fig, ax = plt.subplots(figsize=(self.resolution[0] / 100, self.resolution[1] / 100))
+        fig, ax = plt.subplots(
+            figsize=(self.resolution[0] / 100, self.resolution[1] / 100)
+        )
         fig.patch.set_facecolor(self.background_color)
         ax.set_facecolor(self.background_color)
 
         # Ländergrenzen plotten
-        world.plot(ax=ax, color=self.background_color, edgecolor=self.border_color, linewidth=self.line_width * 1.0)
+        world.plot(
+            ax=ax,
+            color=self.background_color,
+            edgecolor=self.border_color,
+            linewidth=self.line_width * 1.0,
+        )
 
         # Zusätzliche Layer plotten - außer im großen Europa-Plot
         if coords:
@@ -150,7 +191,9 @@ class GeoPlotter:
                     label=layer_name,
                 )
 
-        points_gdf.plot(ax=ax, color="red", markersize=location_markersize, label="GPS Points")
+        points_gdf.plot(
+            ax=ax, color="red", markersize=location_markersize, label="GPS Points"
+        )
 
         # Set axes to the calculated limits
         ax.set_xlim(bounds[0], bounds[2])
@@ -164,7 +207,12 @@ class GeoPlotter:
 
 # Example call
 if __name__ == "__main__":
-    plotter = GeoPlotter(minimalExtension=4, resolution=(400, 400), background_color="white", line_width=1.0)
+    plotter = GeoPlotter(
+        minimalExtension=4,
+        resolution=(400, 400),
+        background_color="white",
+        line_width=1.0,
+    )
 
     # Coordinates:
     gps_coords = [

@@ -10,12 +10,12 @@ from designer.common.Config import Config
 
 
 class ImageSorter:
-    DATE_PATTERN = re.compile(r'(?:(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2}))')
+    DATE_PATTERN = re.compile(r"(?:(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2}))")
 
     def __init__(self, config=None):
         self.config = config or Config()
         self.photo_dir = self.config.photoDirectory
-        self.output_dir = self.photo_dir.parent / 'folders'
+        self.output_dir = self.photo_dir.parent / "folders"
         self.start_date = self.config.startDate
         self.move_files = False
         self.unmatched_files = []
@@ -29,7 +29,9 @@ class ImageSorter:
         for week in range(52):
             week_start = self.start_date + timedelta(weeks=week)
             week_end = week_start + timedelta(days=6)
-            self.week_mapping[(week_start.month, week_start.day)] = week_start.strftime("%b_%Y-%m-%d")
+            self.week_mapping[(week_start.month, week_start.day)] = week_start.strftime(
+                "%b_%Y-%m-%d"
+            )
 
     def extract_date_from_exif(self, file_path):
         """Liest EXIF-Datum aus, falls vorhanden."""
@@ -56,10 +58,12 @@ class ImageSorter:
     def process_images(self):
         """Iteriert über Bilder, analysiert Datum und sortiert sie in die sortierte Liste ein"""
         for file in self.photo_dir.iterdir():
-            if file.suffix.lower() not in ['.jpg', '.jpeg', '.png']:
+            if file.suffix.lower() not in [".jpg", ".jpeg", ".png"]:
                 continue
 
-            date = self.extract_date_from_exif(file) or self.extract_date_from_filename(file.name)
+            date = self.extract_date_from_exif(file) or self.extract_date_from_filename(
+                file.name
+            )
             if not date:
                 self.unmatched_files.append(file)
             else:

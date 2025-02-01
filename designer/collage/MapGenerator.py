@@ -51,7 +51,9 @@ class MapGenerator:
 
         # In einen BytesIO-Puffer speichern
         buf = BytesIO()
-        plt.savefig(buf, format='PNG', bbox_inches='tight', dpi=300)  # Optional: Anpassung des DPI-Werts
+        plt.savefig(
+            buf, format="PNG", bbox_inches="tight", dpi=300
+        )  # Optional: Anpassung des DPI-Werts
         plt.close()  # Speicher freigeben
         buf.seek(0)
 
@@ -62,14 +64,14 @@ class MapGenerator:
         """
         Liest die GPS-Koordinaten aus den EXIF-Daten eines Bildes.
         """
-        with open(img_path, 'rb') as img_file:
+        with open(img_path, "rb") as img_file:
             tags = exifread.process_file(img_file, details=False)
-            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
-                lat = self.convert_to_decimal(tags['GPS GPSLatitude'].values)
-                lon = self.convert_to_decimal(tags['GPS GPSLongitude'].values)
-                if tags.get('GPS GPSLatitudeRef') == 'S':
+            if "GPS GPSLatitude" in tags and "GPS GPSLongitude" in tags:
+                lat = self.convert_to_decimal(tags["GPS GPSLatitude"].values)
+                lon = self.convert_to_decimal(tags["GPS GPSLongitude"].values)
+                if tags.get("GPS GPSLatitudeRef") == "S":
                     lat = -lat
-                if tags.get('GPS GPSLongitudeRef') == 'W':
+                if tags.get("GPS GPSLongitudeRef") == "W":
                     lon = -lon
                 return lat, lon
         return None

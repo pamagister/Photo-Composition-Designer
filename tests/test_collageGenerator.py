@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from designer.CollageGenerator import CompositionDesigner
+from designer.CompositionDesigner import CompositionDesigner
 from designer.common.Config import Config
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -29,7 +29,18 @@ layout_configurations = [
     (5, ["landscape", "landscape", "landscape", "portrait", "portrait"]),
     (5, ["landscape", "landscape", "portrait", "portrait", "portrait"]),
     (6, ["landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),
-    (7, ["landscape", "landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),
+    (
+        7,
+        [
+            "landscape",
+            "landscape",
+            "landscape",
+            "landscape",
+            "portrait",
+            "portrait",
+            "portrait",
+        ],
+    ),
 ]
 
 
@@ -51,7 +62,7 @@ class TestCollageGenerator:
         config.jpgQuality = 40
         collageGen = CompositionDesigner(config)
         startDate = collageGen.startDate
-        base_dir = os.path.join(collageGen.photoDirectory, 'layout_orientation')
+        base_dir = os.path.join(collageGen.photoDirectory, "layout_orientation")
         output_dir = collageGen.outputDir
 
         # Collect image files
@@ -64,8 +75,12 @@ class TestCollageGenerator:
         if not image_files:
             pytest.skip(f"No pictures in {base_dir} found.")
 
-        landscape_images = [f for f in image_files if "landscape" in os.path.basename(f).lower()]
-        portrait_images = [f for f in image_files if "portrait" in os.path.basename(f).lower()]
+        landscape_images = [
+            f for f in image_files if "landscape" in os.path.basename(f).lower()
+        ]
+        portrait_images = [
+            f for f in image_files if "portrait" in os.path.basename(f).lower()
+        ]
 
         if not landscape_images or not portrait_images:
             pytest.skip("Both 'landscape' and 'portrait' images are required.")
@@ -92,15 +107,19 @@ class TestCollageGenerator:
 
         # Composition generieren
         print(f"Generate collage for layout: {layout}")
-        date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
+        date = startDate + timedelta(
+            weeks=self.WEEK_COUNTER
+        )  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
         collageGen.generate_collage(selected_images, date, output_path)
 
-        assert os.path.exists(output_path), f"Output file was not created: {output_path}"
+        assert os.path.exists(
+            output_path
+        ), f"Output file was not created: {output_path}"
 
     def test_generate_from_folders(self):
         config = Config()
-        config.photoDirectory = config.photoDirectory / 'layout_orientation'
+        config.photoDirectory = config.photoDirectory / "layout_orientation"
 
         collageGen = CompositionDesigner(config)
         collageGen.generateProjectFromImageFolder()

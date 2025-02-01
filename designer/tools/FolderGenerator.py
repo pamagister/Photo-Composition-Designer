@@ -17,7 +17,7 @@ class FolderGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
         self.photoDirectory = self.config.photoDirectory
-        self.outputDir = self.photoDirectory.parent / 'folders'
+        self.outputDir = self.photoDirectory.parent / "folders"
         self.startDate = self.config.startDate
         self.move_files = False
         imageSorter = ImageSorter()
@@ -44,7 +44,11 @@ class FolderGenerator:
             images_to_remove = []
 
             for image_path, image_date in self.sorted_images.items():
-                if (week_start.month, week_start.day) <= (image_date.month, image_date.day) <= (week_end.month, week_end.day):
+                if (
+                    (week_start.month, week_start.day)
+                    <= (image_date.month, image_date.day)
+                    <= (week_end.month, week_end.day)
+                ):
                     destination_path = os.path.join(folder_path, image_path.name)
                     if self.move_files:
                         shutil.move(image_path, destination_path)
@@ -57,13 +61,15 @@ class FolderGenerator:
                 del self.sorted_images[image_path]
 
             if self.generateDescriptionFile:
-                description_file = os.path.join(folder_path, f"{week:02d}_description.txt")
-                with open(description_file, 'w', encoding="utf-8") as f:
+                description_file = os.path.join(
+                    folder_path, f"{week:02d}_description.txt"
+                )
+                with open(description_file, "w", encoding="utf-8") as f:
                     print(f"  → {description_file} created")
 
             if self.generateLocationFile:
                 location_file = os.path.join(folder_path, f"{week:02d}_location.txt")
-                with open(location_file, 'w', encoding="utf-8") as loc_file:
+                with open(location_file, "w", encoding="utf-8") as loc_file:
                     loc_file.write("51.0504, 13.7373\n")
                     print(f"  → {location_file} created")
 

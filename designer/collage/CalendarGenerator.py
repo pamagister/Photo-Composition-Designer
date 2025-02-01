@@ -58,7 +58,7 @@ class CalendarGenerator:
         spacing_date = int(self.fontSizeSmall * 0.4)
         # Zeichne Wochentage und Zahlen
         for day_no in range(7):
-            x_pos = self.marginSides + (day_no + cols_count+0.5) * col_width
+            x_pos = self.marginSides + (day_no + cols_count + 0.5) * col_width
             day_date = dates[day_no]
             date_key = (day_date.day, day_date.month)  # (Tag, Monat)
             date = dates[day_no]
@@ -74,7 +74,7 @@ class CalendarGenerator:
 
             # Wochentag und Tag
             day_name = self.get_day_name(day_no, language)
-            draw.text((x_pos, base_y - 0*spacing_date), day_name, font=font_small, fill=name_color, anchor="mb")
+            draw.text((x_pos, base_y - 0 * spacing_date), day_name, font=font_small, fill=name_color, anchor="mb")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
             # Feiertage
@@ -141,7 +141,7 @@ class CalendarGenerator:
         Returns:
             holidays.HolidayBase: An object with all combined holidays.
         """
-        years = (year, year+1)
+        years = (year, year + 1)
         combined_holidays = holidays.HolidayBase()
         combined_holidays.update(holidays.country_holidays(country, years=years))
         try:
@@ -168,7 +168,9 @@ def main():
     for week in range(40, 45):
         date = startDate + timedelta(weeks=week)
         image = calendar_gen.generateCalendar(date, width=config.width, height=config.calendarHeight)
-        image_path = os.path.join(temp_dir, f"calendar_{date.year}-{str(date.month).zfill(2)}-{str(date.day).zfill(2)}.jpg")
+        image_path = os.path.join(
+            temp_dir, f"calendar_{date.year}-{str(date.month).zfill(2)}-{str(date.day).zfill(2)}.jpg"
+        )
         image.save(image_path)
         print(f"Generated: {image_path}")
 

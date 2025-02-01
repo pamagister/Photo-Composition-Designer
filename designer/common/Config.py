@@ -92,9 +92,7 @@ class Config:
         self._config_path = base_dir
 
         # Standardwerte als Liste von ConfigItem-Objekten
-        self.config_items: list[ConfigItem] = [
-            ConfigItem(*item, base_dir=base_dir) for item in DEFAULT_CONFIG
-        ]
+        self.config_items: list[ConfigItem] = [ConfigItem(*item, base_dir=base_dir) for item in DEFAULT_CONFIG]
         self.config_parser = ConfigParser()
 
         for item in self.config_items:
