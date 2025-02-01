@@ -1,3 +1,4 @@
+[![CI](https://github.com/pamagister/SnapCalendar/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/SnapCalendar/actions/workflows/main.yml)
 # 📖 Photo-Composition-Designer – Dokumentation
 
 ![Photo-Composition-Designer Logo](res/images/logo.png)
