@@ -74,7 +74,7 @@ class CalendarGenerator:
 
             # Wochentag und Tag
             day_name = self.get_day_name(day_no, language)
-            draw.text((x_pos, base_y - spacing_date), day_name, font=font_small, fill=name_color, anchor="md")
+            draw.text((x_pos, base_y - 0*spacing_date), day_name, font=font_small, fill=name_color, anchor="mb")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
             # Feiertage
@@ -84,7 +84,7 @@ class CalendarGenerator:
                     holiday_name,
                     font=font_holiday,
                     fill=self.config.holidayColor,
-                    anchor="md",
+                    anchor="mb",
                 )
 
             # Geburtstage/Todestage
@@ -95,7 +95,7 @@ class CalendarGenerator:
                     birthday_label,
                     font=font_holiday,
                     fill=self.config.textColor1,
-                    anchor="md",
+                    anchor="mb",
                 )
 
         return img

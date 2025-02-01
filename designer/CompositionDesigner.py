@@ -64,7 +64,6 @@ class CompositionDesigner:
         collage.save(output_path, quality=self.config.jpgQuality)
         print(f"Composition gespeichert: {output_path}")
 
-
     def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=100):
         """
         Interne Methode, um Bilder in Gruppen zu verarbeiten und Collagen zu erstellen.
@@ -105,8 +104,12 @@ class CompositionDesigner:
         """
         Generiert Collagen für alle Wochen aus dem angegebenen Ordner.
         """
-        for weekIndex, folder in enumerate(sorted(os.listdir(self.photoDirectory))):
-            folder_path = os.path.join(self.photoDirectory, folder)
+        weekIndex: int = 0
+        for element in sorted(os.listdir(self.photoDirectory)):
+            folder_path = os.path.join(self.photoDirectory, element)
+            if not os.path.isdir(folder_path):
+                continue
+
             if os.path.isdir(folder_path):
                 # Sammle alle Bilddateien im aktuellen Ordner
                 image_files = [
@@ -122,10 +125,11 @@ class CompositionDesigner:
                 photo_description = self._get_description(folder_path, fallback_to_foldername=True)
 
                 # Generiere Collagen für die Woche
-                output_prefix = f"collage_{folder}"
+                output_prefix = f"collage_{element}"
                 self._process_images(
                     image_files, output_prefix, photo_description, self.startDate + timedelta(weeks=weekIndex)
                 )
+                weekIndex += 1
 
     def generateProjectFromImageFolder(self):
         """
