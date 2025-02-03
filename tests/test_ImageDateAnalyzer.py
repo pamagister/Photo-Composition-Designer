@@ -54,7 +54,7 @@ class TestImageDateAnalyzer:
 
         assert len(sorter.dated_images) == 3
         assert len(sorter.undated_images) == 1
-        assert sorter.dated_images[file3] == datetime.fromisoformat("20230517_143025")
+        assert sorter.dated_images[file3] == self.TEST_DATE
 
     @patch.object(ImageDateAnalyzer, "process_images")
     def test_run(self, mock_process):
