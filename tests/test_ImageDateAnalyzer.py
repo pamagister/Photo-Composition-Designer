@@ -11,6 +11,8 @@ class TestImageDateAnalyzer:
 
     EXAMPLE_IMAGE_1 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape2.jpg"
     EXAMPLE_IMAGE_2 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape5.jpg"
+    TEST_DATE = datetime(2023, 5, 17, 14, 30, 25)
+    TEST_DATE_NO_TIME = datetime(2023, 5, 17, 12, 0, 0)
 
     def test_extract_date_from_exif(self):
         sorter = ImageDateAnalyzer([self.EXAMPLE_IMAGE_1])
@@ -20,11 +22,11 @@ class TestImageDateAnalyzer:
     @pytest.mark.parametrize(
         "filename, expected_date",
         [
-            ("20230517_143025.jpg", datetime.fromisoformat("20230517_143025")),
-            ("IMG_20221201-093012.jpeg", datetime.fromisoformat("20221201-093012")),
-            ("IMG_20221201.jpeg", datetime.fromisoformat("20221201-120000")),
-            ("IMG_20221201-093012_sometext.jpeg", datetime.fromisoformat("20221201-093012")),
-            ("IMG_20221201_Holiday.jpg", datetime.fromisoformat("20221201-120000")),
+            ("20230517_143025.jpg", TEST_DATE),
+            ("IMG_20230517-143025.jpeg", TEST_DATE),
+            ("IMG_20230517.jpeg", TEST_DATE_NO_TIME),
+            ("IMG_20230517_143025_sometext.jpeg", TEST_DATE),
+            ("IMG_20230517_Holiday.jpg", TEST_DATE_NO_TIME),
             ("random_name.jpg", None),
         ],
     )
