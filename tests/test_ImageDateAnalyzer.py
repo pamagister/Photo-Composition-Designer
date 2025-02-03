@@ -45,7 +45,7 @@ class TestImageDateAnalyzer:
 
         file4 = MagicMock()
         file4.suffix = ".jpg"
-        file4.name = "random.jpg"
+        file4.name = "random_name.jpg"
 
         file_list = [file1, file2, file3, file4]
 
