@@ -21,6 +21,9 @@ class TestImageDateAnalyzer:
     @pytest.mark.parametrize("filename, expected_date", [
         ("20230517_143025.jpg", datetime.fromisoformat("20230517_143025")),
         ("IMG_20221201-093012.jpeg", datetime.fromisoformat("20221201-093012")),
+        ("IMG_20221201.jpeg", datetime.fromisoformat("20221201-120000")),
+        ("IMG_20221201-093012_sometext.jpeg", datetime.fromisoformat("20221201-093012")),
+        ("IMG_20221201_Holiday.jpg", datetime.fromisoformat("20221201-120000")),
         ("random_name.jpg", None),
     ])
     def test_extract_date_from_filename(self, filename, expected_date):
@@ -46,7 +49,7 @@ class TestImageDateAnalyzer:
         sorter.process_images()
 
         assert len(sorter.dated_images) == 3
-        assert len(sorter.unmatched_images) == 1
+        assert len(sorter.undated_images) == 1
         assert sorter.dated_images[file3] == datetime.fromisoformat("20230517_143025")
 
     @patch.object(ImageDateAnalyzer, "process_images")
