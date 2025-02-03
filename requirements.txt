@@ -6,7 +6,7 @@
 
 # install with> pip install -r requirements.txt
 # update requirements: pip freeze > requirements.txt
-pillow~=10.1.0
+pillow~=10.3.0
 holidays~=0.65
 ExifRead~=3.0.0
 geopandas~=1.0.1
