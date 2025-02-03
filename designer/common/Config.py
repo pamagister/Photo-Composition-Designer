@@ -27,6 +27,13 @@ DEFAULT_CONFIG = [
         Path,
         "Path to locations.ini file (absolute, or relative to this config.ini file)",
     ),
+    (
+        "GENERAL",
+        "compositionTitle",
+        "This is the title of the composition",
+        str,
+        "This is the title of the composition on the first page. Leave empty if not required.",
+    ),
     # CALENDAR
     ("CALENDAR", "useCalendar", True, bool, "True: Calendar elements are generated"),
     ("CALENDAR", "language", "de_DE", str, "Language for the calendar (e.g., de_DE, en_US)"),

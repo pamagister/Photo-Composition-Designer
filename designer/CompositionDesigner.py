@@ -13,6 +13,7 @@ from designer.common.Config import Config
 class CompositionDesigner:
     def __init__(self, config=None):
         self.config = config or Config()
+        self.compositionTitle = self.config.compositionTitle
         self.photoDirectory = self.config.photoDirectory
         self.outputDir = self.photoDirectory.parent / "collages"
         os.makedirs(self.outputDir, exist_ok=True)
@@ -24,7 +25,10 @@ class CompositionDesigner:
         self.descGenerator = DescriptionGenerator(self.config)
         self.mapGenerator = MapGenerator(self.config)
         self.layoutManager = None
-        self.startDate = self.config.startDate
+        if self.compositionTitle:
+            self.startDate = self.config.startDate - timedelta(weeks=7)
+        else:
+            self.startDate = self.config.startDate
 
     def generate_collage(self, image_files, date, output_path, photo_description=""):
         """
@@ -34,13 +38,20 @@ class CompositionDesigner:
         available_height = self.height
         available_cal_width = self.width
 
-        if self.config.usePhotoLocationMaps:
-            available_cal_width -= self.config.mapWidth - self.config.marginSides
+        if self.compositionTitle:
+            titleImage = self.calendarObj.generateTitle(
+                self.compositionTitle, available_cal_width, self.calendar_height
+            )
+            collage.paste(titleImage, (self.config.marginSides, self.height - self.calendar_height))
+            available_height -= self.calendar_height
 
-        if self.config.useCalendar:
+        elif self.config.useCalendar and not self.compositionTitle:
             calendarImage = self.calendarObj.generateCalendar(date, available_cal_width, self.calendar_height)
             collage.paste(calendarImage, (self.config.marginSides, self.height - self.calendar_height))
             available_height -= self.calendar_height
+
+        if self.config.usePhotoLocationMaps:
+            available_cal_width -= self.config.mapWidth - self.config.marginSides
 
         if self.config.usePhotoDescription:
             descriptionImage = self.descGenerator.generateDescription(photo_description)
@@ -57,14 +68,16 @@ class CompositionDesigner:
         self.layoutManager = PhotoLayoutManager(collage, available_width, available_height, self.spacing)
         self.layoutManager.arrangeImages(image_files)
 
-        if self.config.usePhotoLocationMaps:
+        if self.config.usePhotoLocationMaps and not self.compositionTitle:
             imgMap = self.mapGenerator.generateImageLocationMap(image_files)
             collage.paste(imgMap, (self.width - self.config.mapWidth, self.height - self.config.mapHeight))
 
+        # create title only once
+        self.compositionTitle = None
         collage.save(output_path, quality=self.config.jpgQuality)
         print(f"Composition gespeichert: {output_path}")
 
-    def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=100):
+    def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=36):
         """
         Interne Methode, um Bilder in Gruppen zu verarbeiten und Collagen zu erstellen.
         """

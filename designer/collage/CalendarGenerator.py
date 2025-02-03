@@ -37,26 +37,10 @@ class CalendarGenerator:
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
-        try:
-            font_large = ImageFont.truetype("DejaVuSans.ttf", int(self.fontSizeLarge))
-            font_small = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
-            font_holiday = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
-        except FileNotFoundError as e:
-            print(f"Font file not found: {e}")
-        except IOError as e:
-            print(f"Unable to read font file: {e}")
-        except ValueError as e:
-            print(f"Invalid font size: {e}")
-        except AttributeError as e:
-            print(f"Missing attribute: {e}")
-        except TypeError as e:
-            print(f"Invalid type for font size: {e}")
-        except ImportError as e:
-            print(f"Pillow library not installed or imported correctly: {e}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-        finally:
-            font_large = font_small = font_holiday = ImageFont.load_default()
+
+        font_large = self._set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_small = self._set_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
+        font_holiday = self._set_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
 
         # Zeichne Monat und Jahr
         month_name = self.get_month_name(dates[0].month, language)
@@ -113,6 +97,46 @@ class CalendarGenerator:
                 )
 
         return img
+
+    def generateTitle(self, title_text, width, height):
+        # Erstelle das Bild
+        img = Image.new("RGB", (width, height), self.config.backgroundColor)
+        draw = ImageDraw.Draw(img)
+
+        font_large = self._set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+
+        base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
+        x_pos = self.marginSides
+        draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="ma")
+
+        return img
+
+    @staticmethod
+    def _set_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
+        """
+        Load font. Fallback to system default font
+        """
+        font = None
+        try:
+            font = ImageFont.truetype(font_type, font_size)
+        except FileNotFoundError as e:
+            print(f"Font file not found: {e}")
+        except IOError as e:
+            print(f"Unable to read font file: {e}")
+        except ValueError as e:
+            print(f"Invalid font size: {e}")
+        except AttributeError as e:
+            print(f"Missing attribute: {e}")
+        except TypeError as e:
+            print(f"Invalid type for font size: {e}")
+        except ImportError as e:
+            print(f"Pillow library not installed or imported correctly: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+        finally:
+            if not font:
+                font = ImageFont.load_default()
+        return font
 
     def get_cols_property(self, width):
         if self.config.useShortMonthNames:
@@ -178,10 +202,15 @@ def main():
     temp_dir = "../../collages/calendar"
     os.makedirs(temp_dir, exist_ok=True)
     startDate = config.startDate
-
+    first_collage = True
+    title = "This is the title of the composition 2025"
     for week in range(40, 45):
         date = startDate + timedelta(weeks=week)
-        image = calendar_gen.generateCalendar(date, width=config.width, height=config.calendarHeight)
+        if first_collage:
+            image = calendar_gen.generateTitle(title, width=config.width, height=config.calendarHeight)
+            first_collage = False
+        else:
+            image = calendar_gen.generateCalendar(date, width=config.width, height=config.calendarHeight)
         image_path = os.path.join(
             temp_dir, f"calendar_{date.year}-{str(date.month).zfill(2)}-{str(date.day).zfill(2)}.jpg"
         )
