@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 
 import exifread
-from PIL import Image, ExifTags
 
 
 class ImageDateAnalyzer:
@@ -13,7 +12,7 @@ class ImageDateAnalyzer:
         self.photo_files: list(str) = photo_files
 
         self.undated_images: list[str] = []
-        self.dated_images: dict[str: datetime] = {}
+        self.dated_images: dict[str:datetime] = {}
 
     @staticmethod
     def extract_date_from_exif(img_path):

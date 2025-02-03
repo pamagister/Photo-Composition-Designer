@@ -1,31 +1,33 @@
-import pytest
-from unittest.mock import MagicMock, patch
-from pathlib import Path
 from datetime import datetime
-import exifread
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from designer.tools.ImageDateAnalyzer import ImageDateAnalyzer
 
 
 class TestImageDateAnalyzer:
 
-    EXAMPLE_IMAGE_1 = Path(__file__).parent.parent / 'images' / 'layout_orientation' / 'landscape2.jpg'
-    EXAMPLE_IMAGE_2 = Path(__file__).parent.parent / 'images' / 'layout_orientation' / 'landscape5.jpg'
-
+    EXAMPLE_IMAGE_1 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape2.jpg"
+    EXAMPLE_IMAGE_2 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape5.jpg"
 
     def test_extract_date_from_exif(self):
         sorter = ImageDateAnalyzer([self.EXAMPLE_IMAGE_1])
         date = sorter.extract_date_from_exif(self.EXAMPLE_IMAGE_1)
         assert date == datetime(2023, 7, 31, 18, 54, 56)
 
-    @pytest.mark.parametrize("filename, expected_date", [
-        ("20230517_143025.jpg", datetime.fromisoformat("20230517_143025")),
-        ("IMG_20221201-093012.jpeg", datetime.fromisoformat("20221201-093012")),
-        ("IMG_20221201.jpeg", datetime.fromisoformat("20221201-120000")),
-        ("IMG_20221201-093012_sometext.jpeg", datetime.fromisoformat("20221201-093012")),
-        ("IMG_20221201_Holiday.jpg", datetime.fromisoformat("20221201-120000")),
-        ("random_name.jpg", None),
-    ])
+    @pytest.mark.parametrize(
+        "filename, expected_date",
+        [
+            ("20230517_143025.jpg", datetime.fromisoformat("20230517_143025")),
+            ("IMG_20221201-093012.jpeg", datetime.fromisoformat("20221201-093012")),
+            ("IMG_20221201.jpeg", datetime.fromisoformat("20221201-120000")),
+            ("IMG_20221201-093012_sometext.jpeg", datetime.fromisoformat("20221201-093012")),
+            ("IMG_20221201_Holiday.jpg", datetime.fromisoformat("20221201-120000")),
+            ("random_name.jpg", None),
+        ],
+    )
     def test_extract_date_from_filename(self, filename, expected_date):
         sorter = ImageDateAnalyzer([])
         date = sorter.extract_date_from_filename(filename)
