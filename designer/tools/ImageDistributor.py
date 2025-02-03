@@ -30,26 +30,30 @@ class ImageDistributor:
         """
         Ähnlich wie distribute_equally, aber mit einem gewissen Zufallseffekt,
         sodass die Anzahl der Bilder pro Gruppe leicht variieren kann.
+        Die Reihenfolge bleibt sortiert, und ein Zufalls-Seed sorgt für Reproduzierbarkeit.
         """
+        random.seed(11)  # Fester Seed für deterministische Ergebnisse
         grouped_images = defaultdict(list)
         images = list(self.image_dict.items())
-
-        images_per_group = len(images) // self.distribution_count
+        remaining_images = len(images)
+        remaining_groups = self.distribution_count
 
         iterator = iter(images)
-        for i in range(self.distribution_count):
+        for i in range(self.distribution_count - 1):
+            images_per_group = remaining_images // remaining_groups
             group_size = images_per_group + random.choice(range(-allowed_delta, allowed_delta + 1))
+            grouped_images[i] = [next(iterator) for _ in range(min(group_size, remaining_images))]
+            remaining_images -= len(grouped_images[i])
+            remaining_groups -= 1
 
-            grouped_images[i] = [
-                next(iterator)
-                for _ in range(min(group_size, len(images) - sum(len(g) for g in grouped_images.values())))
-            ]
+        # Alle verbleibenden Bilder der letzten Gruppe zuweisen
+        grouped_images[self.distribution_count - 1] = list(iterator)
 
         return grouped_images
 
-    def distribute_group_matching_dates(self, allowed_over_saturation: int = 2):
+    def distribute_group_matching_dates(self, allowed_over_saturation: int = 2, allowed_under_saturation: int = 1):
         """
-        Gruppiert Bilder mit demselben Datum zusammen, während eine Überfüllung pro Gruppe erlaubt ist.
+        Gruppiert Bilder mit demselben Datum zusammen, während eine Über- oder Unterfüllung pro Gruppe erlaubt ist.
         """
         grouped_images = defaultdict(list)
         date_groups = defaultdict(list)
@@ -58,16 +62,36 @@ class ImageDistributor:
             date_groups[date.date()].append((img, date))
 
         sorted_dates = sorted(date_groups.keys())
-        all_images = [img for date in sorted_dates for img in date_groups[date]]
-        avg_per_group = len(all_images) // self.distribution_count
+        remaining_images = sum(len(v) for v in date_groups.values())
+        remaining_groups = self.distribution_count
 
-        iterator = iter(all_images)
-        for i in range(self.distribution_count):
-            max_group_size = avg_per_group + allowed_over_saturation
-            grouped_images[i] = [
-                next(iterator)
-                for _ in range(min(max_group_size, len(all_images) - sum(len(g) for g in grouped_images.values())))
-            ]
+        while sorted_dates and remaining_groups > 0:
+            avg_per_group = remaining_images // remaining_groups
+            current_group = []
+            current_date = sorted_dates.pop(0)
+            current_group.extend(date_groups.pop(current_date))
+
+            while sorted_dates:
+                next_date = sorted_dates[0]
+                if (
+                    len(date_groups[next_date]) >= avg_per_group
+                    and len(current_group) >= avg_per_group - allowed_under_saturation
+                ):
+                    break
+                elif len(current_group) >= avg_per_group + allowed_over_saturation:
+                    break
+                else:
+                    current_group.extend(date_groups.pop(next_date))
+                    sorted_dates.pop(0)
+
+            grouped_images[len(grouped_images)] = current_group
+            remaining_images -= len(current_group)
+            remaining_groups -= 1
+
+        # Falls noch Bilder übrig sind, der letzten Gruppe zuweisen
+        if date_groups:
+            for remaining_date in sorted_dates:
+                grouped_images[len(grouped_images) - 1].extend(date_groups[remaining_date])
 
         return grouped_images
 
