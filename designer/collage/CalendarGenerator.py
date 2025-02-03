@@ -102,11 +102,8 @@ class CalendarGenerator:
         # Erstelle das Bild
         img = Image.new("RGB", (width, height), self.config.backgroundColor)
         draw = ImageDraw.Draw(img)
-
         font_large = self._set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-
         base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
-        x_pos = self.marginSides
         draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="ma")
 
         return img
