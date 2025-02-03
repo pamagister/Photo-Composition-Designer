@@ -149,9 +149,11 @@ class GeoPlotter:
         ax.set_facecolor(self.background_color)
 
         # Ländergrenzen plotten
+        # Shading of the land area for better contrast to the background
+        map_land_color = tuple([x - 0.15 if x >= 0.5 else x + 0.15 for x in self.background_color])
         world.plot(
             ax=ax,
-            color=self.background_color,
+            color=map_land_color,
             edgecolor=self.border_color,
             linewidth=self.line_width * 1.0,
         )
