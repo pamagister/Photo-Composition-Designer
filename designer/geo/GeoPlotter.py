@@ -3,6 +3,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from shapely.geometry import Point
 
 
@@ -150,7 +151,10 @@ class GeoPlotter:
 
         # Ländergrenzen plotten
         # Shading of the land area for better contrast to the background
-        map_land_color = tuple([x - 0.15 if x >= 0.5 else x + 0.15 for x in self.background_color])
+        bg_color = (
+            mcolors.to_rgb(self.background_color) if isinstance(self.background_color, str) else self.background_color
+        )
+        map_land_color = tuple([x - 0.15 if x >= 0.5 else x + 0.15 for x in bg_color])
         world.plot(
             ax=ax,
             color=map_land_color,

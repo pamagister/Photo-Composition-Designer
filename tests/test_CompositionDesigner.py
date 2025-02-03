@@ -57,8 +57,6 @@ class TestCollageGenerator:
         Tests different layouts with CompositionDesigner.
         """
         config = Config()
-        config.dpi = 20
-        config.jpgQuality = 20
         collageGen = CompositionDesigner(config)
         startDate = collageGen.startDate
         base_dir = os.path.join(collageGen.photoDirectory, "layout_orientation")
