@@ -31,3 +31,20 @@ class TestImageDistributor:
         assert len(distributed_images[1]) == 8
         assert len(distributed_images[2]) == 7
         assert len(distributed_images[3]) == 7
+
+    def test_distribute_randomly(self):
+        distributor = ImageDistributor(self.image_data, 4)
+        distributed_images = distributor.distribute_randomly(1)
+        assert len(distributed_images[0]) == 8
+        assert len(distributed_images[1]) == 8
+        assert len(distributed_images[2]) == 7
+        assert len(distributed_images[3]) == 7
+
+    def test_distribute_group_matching_dates(self):
+        distributor = ImageDistributor(self.image_data, 6)
+        distributed_images = distributor.distribute_group_matching_dates(2)
+        assert len(distributed_images[0]) == 8
+        assert len(distributed_images[1]) == 8
+        assert len(distributed_images[2]) == 7
+        assert len(distributed_images[3]) == 7
+
