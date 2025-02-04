@@ -79,7 +79,7 @@ class FolderGenerator:
                         shutil.copy2(image_path, destination_path)
                     print(f"  → Image {image_path} sorted into {folder_name}")
 
-        description_file_global = os.path.join(self.output_dir, f"descriptions.txt")
+        description_file_global = os.path.join(self.output_dir, "descriptions.txt")
         if not os.path.exists(description_file_global):
             with open(description_file_global, "w", encoding="utf-8") as f:
                 f.writelines(text + "\n" for text in global_description_text)

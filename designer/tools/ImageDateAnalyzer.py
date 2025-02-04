@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import exifread
 
@@ -17,7 +18,7 @@ class ImageDateAnalyzer:
         self._process_images()
 
     @staticmethod
-    def extract_date_from_exif(img_path) -> datetime | None:
+    def extract_date_from_exif(img_path) -> Optional[datetime]:
         """Reads EXIF date, if available."""
         try:
             with open(img_path, "rb") as img_file:
@@ -29,7 +30,7 @@ class ImageDateAnalyzer:
             print(f"Error processing image {img_path}: {e}")
         return None
 
-    def extract_date_from_filename(self, img_path: str) -> datetime | None:
+    def extract_date_from_filename(self, img_path: str) -> Optional[datetime]:
         """Attempts to extract date from file name."""
         match = self.DATE_PATTERN_FULL.search(img_path)
         if match:
