@@ -193,7 +193,7 @@ if __name__ == "__main__":
     plotter = GeoPlotter(
         minimalExtension=4,
         resolution=(400, 400),
-        background_color="white",
+        background_color="black",
         line_width=1.0,
     )
 
