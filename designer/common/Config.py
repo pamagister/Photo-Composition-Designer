@@ -72,6 +72,7 @@ DEFAULT_CONFIG = [
     ("LAYOUT", "useShortDayNames", True, bool, "Use short weekday names (e.g., Mon, Tue)"),
     ("LAYOUT", "useShortMonthNames", True, bool, "Use short month names (e.g., Jan, Feb)"),
     ("LAYOUT", "usePhotoDescription", True, bool, "Include photo descriptions in the collage"),
+    ("LAYOUT", "generatePdf", True, bool, "Combine all generated collages into one pdf"),
 ]
 
 
