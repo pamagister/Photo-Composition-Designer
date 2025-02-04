@@ -1,7 +1,11 @@
-import pytest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from designer.common.Anniversaries import Anniversaries  # Annahme: Die Klasse ist in "anniversaries.py" gespeichert
+
+import pytest
+
+from designer.common.Anniversaries import (
+    Anniversaries,  # Annahme: Die Klasse ist in "anniversaries.py" gespeichert
+)
 
 
 class TestAnniversaries:

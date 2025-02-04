@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from designer.CompositionDesigner import CompositionDesigner
 from designer.common.Config import Config
+from designer.CompositionDesigner import CompositionDesigner
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

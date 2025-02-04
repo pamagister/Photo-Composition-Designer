@@ -1,10 +1,10 @@
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
-from tkinter import ttk, filedialog, messagebox, colorchooser
+from tkinter import colorchooser, filedialog, messagebox, ttk
 
-from designer.CompositionDesigner import CompositionDesigner
 from designer.common.Config import Config
+from designer.CompositionDesigner import CompositionDesigner
 from designer.tools.FolderGenerator import FolderGenerator
 
 

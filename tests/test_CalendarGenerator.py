@@ -1,8 +1,8 @@
-import pytest
 from datetime import datetime
-from tempfile import TemporaryDirectory
 from pathlib import Path
-from PIL import Image
+from tempfile import TemporaryDirectory
+
+import pytest
 
 from designer.collage.CalendarGenerator import CalendarGenerator
 from designer.common.Config import Config
