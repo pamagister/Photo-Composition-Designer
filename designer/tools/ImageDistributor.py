@@ -117,7 +117,7 @@ class ImageDistributor:
                 if start_date_md <= image_date_md <= end_date_md:
 
                     images_to_remove.append(image_path)
-                    print(f"  → Image {image_path} sorted into {week_start}")
+                    print(f"  --> Image {image_path} sorted into {week_start}")
             grouped_images[len(grouped_images)] = images_to_remove
 
             for image_path in images_to_remove:

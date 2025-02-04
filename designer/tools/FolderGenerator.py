@@ -58,7 +58,7 @@ class FolderGenerator:
             if self.generateDescriptionFile:
                 description_file = os.path.join(folder_path, f"{week:02d}_description.txt")
                 with open(description_file, "w", encoding="utf-8") as f:
-                    print(f"  → {f.name} created")
+                    print(f"  --> {f.name} created")
 
             global_description_text.append(f"{folder_name}: ")
 
@@ -66,7 +66,7 @@ class FolderGenerator:
                 location_file = os.path.join(folder_path, f"{week:02d}_location.txt")
                 with open(location_file, "w", encoding="utf-8") as loc_file:
                     loc_file.write("51.0504, 13.7373\n")
-                    print(f"  → {location_file} created")
+                    print(f"  --> {location_file} created")
 
             if self.distribute_images:
                 images_in_group = self.image_groups.pop(week)
@@ -77,7 +77,7 @@ class FolderGenerator:
                         shutil.move(image_path, destination_path)
                     else:
                         shutil.copy2(image_path, destination_path)
-                    print(f"  → Image {image_path} sorted into {folder_name}")
+                    print(f"  --> Image {image_path} sorted into {folder_name}")
 
         description_file_global = os.path.join(self.output_dir, "descriptions.txt")
         if not os.path.exists(description_file_global):
@@ -87,7 +87,7 @@ class FolderGenerator:
         # print all remaining images that are not distributed:
         print("\n\n ##############################################")
         for image_path in self.images_undated:
-            print(f"  → Image {image_path} NOT considered")
+            print(f"  --> Image {image_path} NOT considered")
 
 
 if __name__ == "__main__":
