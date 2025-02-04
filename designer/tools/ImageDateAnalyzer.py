@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from pathlib import Path
 
 import exifread
 
@@ -8,11 +9,11 @@ class ImageDateAnalyzer:
     DATE_PATTERN_FULL = re.compile(r"(?:(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2}))")
     DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})(\d{2})(\d{2}))")
 
-    def __init__(self, photo_files):
-        self.photo_files: list(str) = photo_files
+    def __init__(self, image_files: list[str]):
+        self.image_list: list[str] = image_files
 
-        self.undated_images: list[str] = []
-        self.dated_images: dict[str:datetime] = {}
+        self.image_date_dict: dict[str:datetime] = {}
+        self.images_undated: list[str] = []
 
     @staticmethod
     def extract_date_from_exif(img_path):
@@ -27,7 +28,7 @@ class ImageDateAnalyzer:
             print(f"Error processing image {img_path}: {e}")
         return None
 
-    def extract_date_from_filename(self, img_path):
+    def extract_date_from_filename(self, img_path: str):
         """Attempts to extract date from file name."""
         match = self.DATE_PATTERN_FULL.search(img_path)
         if match:
@@ -42,24 +43,29 @@ class ImageDateAnalyzer:
 
     def process_images(self):
         """Iterates over images, analyzes date and sorts them into the sorted list"""
-        for file in self.photo_files:
-            if file.suffix.lower() not in [".jpg", ".jpeg", ".png"]:
+        for file in self.image_list:
+            if Path(file).suffix.lower() not in [".jpg", ".jpeg", ".png"]:
                 continue
 
-            date = self.extract_date_from_exif(file) or self.extract_date_from_filename(file.name)
+            date = self.extract_date_from_exif(file) or self.extract_date_from_filename(file)
             if not date:
-                self.undated_images.append(file)
+                self.images_undated.append(file)
             else:
-                self.dated_images[file] = date
+                self.image_date_dict[file] = date
         # self.sorted_images = sorted(self.sorted_images, key=self.sorted_images.get)
 
     def run(self):
         self.process_images()
-        print(f"Unmatched files: {[f'{file.name}' for file in self.undated_images]}")
-        print(f"Matched files: {[f'{value.name}' for value in self.dated_images]}")
+        print(f"Matched files: {[f'{value}' for value in self.image_date_dict]}")
+        print(f"Unmatched files: {[f'{file}' for file in self.images_undated]}")
 
 
 # Nutzung
 if __name__ == "__main__":
-    sorter = ImageDateAnalyzer()
+    file_list = [
+        "20230517_143025.jpg",
+        "IMG_20230517_Holiday.jpg",
+        "random_name.jpg",
+    ]
+    sorter = ImageDateAnalyzer(file_list)
     sorter.run()

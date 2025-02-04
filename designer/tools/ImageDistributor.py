@@ -1,6 +1,6 @@
-from collections import defaultdict
-from datetime import datetime
 import random
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 
 class ImageDistributor:
@@ -34,11 +34,11 @@ class ImageDistributor:
         """
         random.seed(11)  # Fester Seed für deterministische Ergebnisse
         grouped_images = defaultdict(list)
-        images = list(self.image_dict.items())
-        remaining_images = len(images)
+        image_list = list(self.image_dict.items())
+        remaining_images = len(image_list)
         remaining_groups = self.distribution_count
 
-        iterator = iter(images)
+        iterator = iter(image_list)
         for i in range(self.distribution_count - 1):
             images_per_group = remaining_images // remaining_groups
             group_size = images_per_group + random.choice(range(-allowed_delta, allowed_delta + 1))
@@ -54,6 +54,7 @@ class ImageDistributor:
     def distribute_group_matching_dates(self, allowed_over_saturation: int = 2, allowed_under_saturation: int = 1):
         """
         Gruppiert Bilder mit demselben Datum zusammen, während eine Über- oder Unterfüllung pro Gruppe erlaubt ist.
+        Bilder eines Tages können auf mehrere Gruppen aufgeteilt werden.
         """
         grouped_images = defaultdict(list)
         date_groups = defaultdict(list)
@@ -68,11 +69,16 @@ class ImageDistributor:
         while sorted_dates and remaining_groups > 0:
             avg_per_group = remaining_images // remaining_groups
             current_group = []
-            current_date = sorted_dates.pop(0)
-            current_group.extend(date_groups.pop(current_date))
+            current_date = sorted_dates[0]
+
+            # Füge das erste Bild des Tages hinzu
+            current_group.append(date_groups[current_date].pop(0))
+            if not date_groups[current_date]:
+                sorted_dates.pop(0)  # Falls keine Bilder mehr an diesem Tag vorhanden sind, Datum entfernen
 
             while sorted_dates:
                 next_date = sorted_dates[0]
+
                 if (
                     len(date_groups[next_date]) >= avg_per_group
                     and len(current_group) >= avg_per_group - allowed_under_saturation
@@ -81,18 +87,41 @@ class ImageDistributor:
                 elif len(current_group) >= avg_per_group + allowed_over_saturation:
                     break
                 else:
-                    current_group.extend(date_groups.pop(next_date))
-                    sorted_dates.pop(0)
+                    current_group.append(date_groups[next_date].pop(0))
+                    if not date_groups[next_date]:
+                        sorted_dates.pop(0)
 
             grouped_images[len(grouped_images)] = current_group
             remaining_images -= len(current_group)
             remaining_groups -= 1
 
         # Falls noch Bilder übrig sind, der letzten Gruppe zuweisen
-        if date_groups:
-            for remaining_date in sorted_dates:
-                grouped_images[len(grouped_images) - 1].extend(date_groups[remaining_date])
+        for remaining_date in sorted_dates:
+            grouped_images[len(grouped_images) - 1].extend(date_groups[remaining_date])
 
+        return grouped_images
+
+    def distribute_by_week(self, start_date):
+        grouped_images = defaultdict(list)
+        for week in range(self.distribution_count):
+            week_start = start_date + timedelta(weeks=week)
+            images_to_remove = []
+            week_end = week_start + timedelta(days=6)
+            end_date_md = (week_end.month, week_end.day)
+            if week_start.year < week_end.year:
+                start_date_md = (0, week_start.day)
+            else:
+                start_date_md = (week_start.month, week_start.day)
+            for image_path, image_date in self.image_dict.items():
+                image_date_md = (image_date.month, image_date.day)
+                if start_date_md <= image_date_md <= end_date_md:
+
+                    images_to_remove.append(image_path)
+                    print(f"  → Image {image_path} sorted into {week_start}")
+            grouped_images[len(grouped_images)] = images_to_remove
+
+            for image_path in images_to_remove:
+                del self.image_dict[image_path]
         return grouped_images
 
 
