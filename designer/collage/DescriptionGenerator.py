@@ -7,7 +7,7 @@ class DescriptionGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
         self.width = int(self.config.width)  # Die Breite des erzeugten Bildes.
-        self.fontSize = self.config.fontSizeAnniversaries  # Die Schriftgröße des Textes.
+        self.fontSize = self.config.fontSizeSmall  # Die Schriftgröße des Textes.
         self.spacing = self.config.spacing
         self.height = int(self.fontSize + self.spacing * 2)  # Die Höhe des erzeugten Bildes.
         self.margin_side = self.config.marginSides

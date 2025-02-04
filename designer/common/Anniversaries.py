@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 
 class Anniversaries:
@@ -44,7 +44,7 @@ class Anniversaries:
         name, date = map(str.strip, line.split("=", 1))
 
         day, month, *year = date.split(".")
-        year = int(year[0]) if year[0] else None
+        year = int(year[0]) if year and year[0] else None
 
         # Define label formatters for each category
         label_formatter = {

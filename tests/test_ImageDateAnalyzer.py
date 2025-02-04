@@ -15,8 +15,8 @@ class TestImageDateAnalyzer:
     TEST_DATE_NO_TIME = datetime(2023, 5, 17, 12, 0, 0)
 
     def test_extract_date_from_exif(self):
-        sorter = ImageDateAnalyzer([self.EXAMPLE_IMAGE_2])
-        date = sorter.extract_date_from_exif(self.EXAMPLE_IMAGE_2)
+        sorter = ImageDateAnalyzer([])
+        date = sorter.extract_date_from_exif(self.EXAMPLE_IMAGE_2.as_posix())
         assert date == datetime(2023, 7, 31, 18, 54, 56)
 
     @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ class TestImageDateAnalyzer:
         file_list = [file1, file2, file5]
 
         sorter = ImageDateAnalyzer(file_list)
-        sorter.process_images()
+
         expectedDate2 = datetime(2023, 7, 31, 18, 54, 56)
 
         assert len(sorter.image_date_dict) == 2
@@ -61,14 +61,7 @@ class TestImageDateAnalyzer:
         ]
 
         sorter = ImageDateAnalyzer(file_list)
-        sorter.process_images()
 
         assert len(sorter.image_date_dict) == 5
         assert len(sorter.images_undated) == 1
         assert sorter.image_date_dict[file_list[0]] == self.TEST_DATE
-
-    @patch.object(ImageDateAnalyzer, "process_images")
-    def test_run(self, mock_process):
-        sorter = ImageDateAnalyzer([])
-        sorter.run()
-        mock_process.assert_called_once()

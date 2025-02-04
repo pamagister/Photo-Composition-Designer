@@ -2,8 +2,8 @@ import math
 from pathlib import Path
 
 import geopandas as gpd
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
 
@@ -16,8 +16,8 @@ class GeoPlotter:
         self,
         minimalExtension=5,
         resolution=(400, 300),
-        background_color="white",
-        border_color="black",
+        background_color="black",
+        border_color="white",
         line_width=1.0,
     ):
         """
@@ -145,9 +145,10 @@ class GeoPlotter:
             bounds = self._calculate_bounds(points_gdf)
 
         # Karte plotten
-        fig, ax = plt.subplots(figsize=(self.resolution[0] / 100, self.resolution[1] / 100))
+        fig, ax = plt.subplots(figsize=(self.resolution[0] / 100, self.resolution[1] / 100), tight_layout=True)
         fig.patch.set_facecolor(self.background_color)
         ax.set_facecolor(self.background_color)
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
         # Ländergrenzen plotten
         # Shading of the land area for better contrast to the background

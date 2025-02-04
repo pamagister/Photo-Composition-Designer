@@ -12,9 +12,9 @@ from designer.common.Config import Config
 
 
 class CalendarGenerator:
-    def __init__(self, config=None, anniversaries=None):
+    def __init__(self, config=None):
         self.config = config or Config()
-        self.anniversaries = anniversaries or Anniversaries()
+        self.anniversaries = Anniversaries(self.config.anniversariesConfig)
         self.marginBottom = self.config.marginBottom
         self.marginSides = self.config.marginSides
         self.fontSizeLarge = self.config.fontSizeLarge
@@ -72,6 +72,8 @@ class CalendarGenerator:
 
             # Wochentag und Tag
             day_name = self.get_day_name(day_no, language)
+            if self.config.useShortDayNames:
+                day_name = day_name[:2]
             draw.text((x_pos, base_y - 0 * spacing_date), day_name, font=font_small, fill=name_color, anchor="mb")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
@@ -137,7 +139,7 @@ class CalendarGenerator:
 
     def get_cols_property(self, width):
         if self.config.useShortMonthNames:
-            cols_month_name = 2.0
+            cols_month_name = 1.5
         else:
             cols_month_name = 4.0
         col_width = (width - 2 * self.config.marginSides) // (7 + cols_month_name)

@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import timedelta
 
 from PIL import Image
@@ -26,7 +27,7 @@ class CompositionDesigner:
         self.mapGenerator = MapGenerator(self.config)
         self.layoutManager = None
         if self.compositionTitle:
-            self.startDate = self.config.startDate - timedelta(weeks=7)
+            self.startDate = self.config.startDate - timedelta(days=7)
         else:
             self.startDate = self.config.startDate
 
@@ -46,12 +47,11 @@ class CompositionDesigner:
             available_height -= self.calendar_height
 
         elif self.config.useCalendar and not self.compositionTitle:
+            if self.config.usePhotoLocationMaps:
+                available_cal_width -= self.config.mapWidth - self.config.marginSides
             calendarImage = self.calendarObj.generateCalendar(date, available_cal_width, self.calendar_height)
             collage.paste(calendarImage, (self.config.marginSides, self.height - self.calendar_height))
             available_height -= self.calendar_height
-
-        if self.config.usePhotoLocationMaps:
-            available_cal_width -= self.config.mapWidth - self.config.marginSides
 
         if self.config.usePhotoDescription:
             descriptionImage = self.descGenerator.generateDescription(photo_description)
@@ -107,42 +107,50 @@ class CompositionDesigner:
         if text_files:
             text_file = text_files[0]
             with open(text_file, "r", encoding="utf-8") as f:
-                photo_description = [line.strip() for line in f.readlines() if line.strip()]
+                # Entfernt alles links vom Doppelpunkt inklusive Doppelpunkt
+                photo_description = [re.sub(r"^[^:]*:\s*", "", line.strip()) for line in f.readlines() if line.strip()]
 
             if not photo_description and fallback_to_foldername:
                 photo_description = os.path.splitext(os.path.basename(text_file))[0]
+
         return photo_description
 
     def generateProjectFromSubFolders(self):
         """
         Generiert Collagen für alle Wochen aus dem angegebenen Ordner.
         """
+        descriptions = (
+            self._get_description(self.photoDirectory) or []
+        )  # Sicherstellen, dass descriptions eine Liste ist
         weekIndex: int = 0
-        for element in sorted(os.listdir(self.photoDirectory)):
+        for week_index, element in enumerate(sorted(os.listdir(self.photoDirectory))):
             folder_path = os.path.join(self.photoDirectory, element)
             if not os.path.isdir(folder_path):
                 continue
 
-            if os.path.isdir(folder_path):
-                # Sammle alle Bilddateien im aktuellen Ordner
-                image_files = [
-                    os.path.join(folder_path, file)
-                    for file in sorted(os.listdir(folder_path))
-                    if file.lower().endswith((".png", ".jpg", ".jpeg"))
-                ]
+            # Sammle alle Bilddateien im aktuellen Ordner
+            image_files = [
+                os.path.join(folder_path, file)
+                for file in sorted(os.listdir(folder_path))
+                if file.lower().endswith((".png", ".jpg", ".jpeg"))
+            ]
 
-                if not image_files:
-                    print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
-                    continue
+            if not image_files:
+                print(f"Keine Bilder in {folder_path} gefunden, überspringe...")
+                continue
 
-                photo_description = self._get_description(folder_path, fallback_to_foldername=True)
+            # Standardmäßig die Beschreibung aus descriptions nutzen, falls vorhanden
+            description = descriptions[week_index] if week_index < len(descriptions) else ""
 
-                # Generiere Collagen für die Woche
-                output_prefix = f"collage_{element}"
-                self._process_images(
-                    image_files, output_prefix, photo_description, self.startDate + timedelta(weeks=weekIndex)
-                )
-                weekIndex += 1
+            # Falls `photo_description` existiert, überschreibt es die bestehende `description`
+            photo_description = self._get_description(folder_path, fallback_to_foldername=True)
+            if photo_description:
+                description = photo_description
+
+            # Generiere Collagen für die Woche
+            output_prefix = f"collage_{element}"
+            self._process_images(image_files, output_prefix, description, self.startDate + timedelta(weeks=weekIndex))
+            weekIndex += 1
 
     def generateProjectFromImageFolder(self):
         """

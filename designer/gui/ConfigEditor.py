@@ -1,7 +1,7 @@
 import tkinter as tk
 from datetime import datetime
-from tkinter import ttk, filedialog, messagebox, colorchooser
 from pathlib import Path
+from tkinter import ttk, filedialog, messagebox, colorchooser
 
 from designer.CompositionDesigner import CompositionDesigner
 from designer.common.Config import Config
@@ -189,8 +189,8 @@ class ConfigEditorApp:
     def create_folders(self):
         config = Config(self.config_path)
         folderGen = FolderGenerator(config)
-        folderGen.generateFolders(56)
-        messagebox.showinfo("Erfolg", f"Ordner in '{folderGen.outputDir}' wurden erstellt.")
+        folderGen.generateFolders()
+        messagebox.showinfo("Erfolg", f"Ordner in '{folderGen.output_dir}' wurden erstellt.")
 
     def run_generator(self):
         self.save_config()
