@@ -15,17 +15,17 @@ class GeoPlotter:
     def __init__(
         self,
         minimalExtension=5,
-        resolution=(400, 300),
+        size=(400, 300),
         background_color="black",
         border_color="white",
-        line_width=1.0,
+        line_width=0.4,
     ):
         """
         Initialisiert den GeoMapPlotter.
         :param minimalExtension: minimal extension in degrees for the map borders.
-        :param resolution: Resolution of the map in pixels (width, height).
+        :param size: Resolution of the map in pixels (width, height).
         :param background_color: Background color of the map.
-        :param line_width: Line width for country and layer boundaries.
+        :param line_width: Line width for country and layer boundaries in percent of width
         """
 
         # Basisverzeichnis der shape files relativ zu diesem Modul
@@ -38,10 +38,11 @@ class GeoPlotter:
 
         self.shapefile_path = countries_shp
         self.minimalExtension = minimalExtension
-        self.resolution = resolution
+        self.size = size
         self.background_color = self._normalize_color(background_color)
         self.border_color = self._normalize_color(border_color)
-        self.line_width = line_width
+        self.line_width = line_width * size[1] / 100
+        self.size_marker = 50 * size[1] / 100
         self.layers = {}
 
         # Zusätzliche Layer hinzufügen
@@ -96,12 +97,12 @@ class GeoPlotter:
         # Calculate the width of the section taking into account the latitude
         lon_dis_per_deg = lat_dis_per_deg * math.cos(math.radians(mid_lat))  # Longitude distance in km
         # Calculate the latitude based on the resolution and the actual longitude distance
-        width_deg = lat_dis_per_deg * height_deg * self.resolution[0] / self.resolution[1] / lon_dis_per_deg
+        width_deg = lat_dis_per_deg * height_deg * self.size[0] / self.size[1] / lon_dis_per_deg
 
         return (
-            mid_lon - width_deg,
+            min(bounds[0], mid_lon - width_deg),
             mid_lat - height_deg,
-            mid_lon + width_deg,
+            max(bounds[2], mid_lon + width_deg),
             mid_lat + height_deg,
         )
 
@@ -131,21 +132,21 @@ class GeoPlotter:
         """
         # Shapefile für Ländergrenzen laden
         world = gpd.read_file(self.shapefile_path)
-        location_markersize = 50
+        size_marker = self.size_marker
 
         # Kartengrenzen berechnen
         if not coords:
             points_gdf = self._create_geodataframe([(51.0504, 13.7373)])
             self.minimalExtension = 25
             bounds = self._calculate_bounds(points_gdf)
-            location_markersize = 0
+            size_marker = 0
         else:
             # GeoDataFrame für GPS-Punkte erstellen
             points_gdf = self._create_geodataframe(coords)
             bounds = self._calculate_bounds(points_gdf)
 
         # Karte plotten
-        fig, ax = plt.subplots(figsize=(self.resolution[0] / 100, self.resolution[1] / 100), tight_layout=True)
+        fig, ax = plt.subplots(figsize=(self.size[0] / 100, self.size[1] / 100), tight_layout=True)
         fig.patch.set_facecolor(self.background_color)
         ax.set_facecolor(self.background_color)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
@@ -168,7 +169,7 @@ class GeoPlotter:
             for layer_name, layer_data in self.layers.items():
                 layer_data["gdf"].plot(
                     ax=ax,
-                    markersize=20,
+                    markersize=self.size_marker,
                     color=layer_data["color"],
                     edgecolor=layer_data["edgecolor"],
                     alpha=layer_data["alpha"],
@@ -176,7 +177,7 @@ class GeoPlotter:
                     label=layer_name,
                 )
 
-        points_gdf.plot(ax=ax, color="red", markersize=location_markersize, label="GPS Points")
+        points_gdf.plot(ax=ax, marker="o", color="red", edgecolors="red", markersize=size_marker)
 
         # Set axes to the calculated limits
         ax.set_xlim(bounds[0], bounds[2])
@@ -192,7 +193,7 @@ class GeoPlotter:
 if __name__ == "__main__":
     plotter = GeoPlotter(
         minimalExtension=4,
-        resolution=(400, 400),
+        size=(400, 400),
         background_color="black",
         line_width=1.0,
     )
