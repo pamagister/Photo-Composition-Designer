@@ -40,7 +40,7 @@ class MapGenerator:
         # Plotter initialisieren
         plotter = GeoPlotter(
             minimalExtension=self.config.minimalExtension,
-            resolution=(self.width, self.height),
+            size=(self.width, self.height),
             background_color=self.config.backgroundColor,
             border_color=self.config.textColor1,
         )

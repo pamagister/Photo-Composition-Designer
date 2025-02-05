@@ -2,13 +2,14 @@ import os
 import re
 from datetime import timedelta
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from designer.collage.CalendarGenerator import CalendarGenerator
 from designer.collage.DescriptionGenerator import DescriptionGenerator
 from designer.collage.MapGenerator import MapGenerator
 from designer.collage.PhotoLayoutManager import PhotoLayoutManager
 from designer.common.Config import Config
+from designer.tools.ImageDateAnalyzer import ImageDateAnalyzer
 
 
 class CompositionDesigner:
@@ -39,6 +40,7 @@ class CompositionDesigner:
         available_height = self.height
         available_cal_width = self.width
 
+        # add elements to the composition
         if self.compositionTitle:
             titleImage = self.calendarObj.generateTitle(
                 self.compositionTitle, available_cal_width, self.calendar_height
@@ -67,10 +69,28 @@ class CompositionDesigner:
         # Arrange image collage
         self.layoutManager = PhotoLayoutManager(collage, available_width, available_height, self.spacing)
         self.layoutManager.arrangeImages(image_files)
-
         if self.config.usePhotoLocationMaps and not self.compositionTitle:
             imgMap = self.mapGenerator.generateImageLocationMap(image_files)
             collage.paste(imgMap, (self.width - self.config.mapWidth, self.height - self.config.mapHeight))
+
+        # draw dates of images into lower corner of the collage
+        image_dates = ImageDateAnalyzer(image_files).image_date_dict.values()
+        unique_dates = set()  # Speichert bereits hinzugefügte Datumswerte
+        date_str = ""
+
+        for idx, date in enumerate(image_dates):
+            formatted_date = date.strftime("%d. %b ")
+
+            if formatted_date not in unique_dates:  # Nur hinzufügen, wenn noch nicht vorhanden
+                unique_dates.add(formatted_date)
+                date_str += formatted_date
+
+            if len(unique_dates) >= 4:  # Maximal 4 verschiedene Daten
+                break
+
+        draw = ImageDraw.Draw(collage)
+        font = CalendarGenerator.set_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeAnniversaries * 0.75))
+        draw.text((self.width - 10, self.height - 1), date_str, font=font, fill=self.config.textColor2, anchor="rd")
 
         # create title only once
         self.compositionTitle = None
@@ -217,7 +237,7 @@ class CompositionDesigner:
         # First image as base, attach remaining images as additional pages
         first_image, *remaining_images = image_list
         output_path = os.path.join(collages_dir, output_pdf)
-        first_image.save(output_path, save_all=True, append_images=remaining_images)
+        first_image.save(output_path, save_all=True, append_images=remaining_images, quality=95)
 
         print(f"PDF successfully created: {output_path}")
 

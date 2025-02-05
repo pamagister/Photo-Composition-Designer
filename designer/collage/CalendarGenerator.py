@@ -2,7 +2,7 @@ import calendar
 import locale
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import holidays
 import pytz
@@ -40,9 +40,9 @@ class CalendarGenerator:
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
-        font_large = self._set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        font_small = self._set_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
-        font_holiday = self._set_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
+        font_large = self.set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_small = self.set_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
+        font_holiday = self.set_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
 
         # Draw the month and year
         month_name = self.get_month_name(dates[0].month, language)
@@ -105,30 +105,31 @@ class CalendarGenerator:
             # Moon phase
             moon_symbol = self.get_moon_phase_symbol(day_date)
             if moon_symbol:
-                day_name = f"  {day_name} {moon_symbol}"
+                day_name = f"   {day_name} {moon_symbol}"
                 # draw.text((x_pos, base_y + spacing_date), moon_symbol, font=font_small, fill=name_color, anchor="mt")
 
             draw.text((x_pos, base_y - 0 * spacing_date), day_name, font=font_small, fill=name_color, anchor="md")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
-            # Holidays
-            if holiday_name:
-                draw.text(
-                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
-                    holiday_name,
-                    font=font_holiday,
-                    fill=self.config.holidayColor,
-                    anchor="md",
-                )
-
             # Birthdays/Days of death
-            elif date_key in self.anniversaries:
+            if date_key in self.anniversaries:
                 birthday_label = self.anniversaries[date_key]
+                if holiday_name:
+                    birthday_label += f", {holiday_name}"  # add holiday name because it would not be printed otherwise
                 draw.text(
                     (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
                     birthday_label,
                     font=font_holiday,
                     fill=self.config.textColor1,
+                    anchor="md",
+                )
+            # Holidays
+            elif holiday_name:
+                draw.text(
+                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
+                    holiday_name,
+                    font=font_holiday,
+                    fill=self.config.holidayColor,
                     anchor="md",
                 )
 
@@ -138,7 +139,7 @@ class CalendarGenerator:
         # Erstelle das Bild
         img = Image.new("RGB", (width, height), self.config.backgroundColor)
         draw = ImageDraw.Draw(img)
-        font_large = self._set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_large = self.set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
         base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
         draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="ma")
 
@@ -160,7 +161,7 @@ class CalendarGenerator:
             return ""  # Keine spezielle Phase anzeigen
 
     @staticmethod
-    def _set_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
+    def set_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
         """
         Load font. Fallback to system default font
         """

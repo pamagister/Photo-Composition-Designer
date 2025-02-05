@@ -54,8 +54,8 @@ class ImageDateAnalyzer:
             else:
                 self.image_date_dict[file] = date
 
-        print(f"Matched files: {[f'{value}' for value in self.image_date_dict]}")
-        print(f"Unmatched files: {[f'{file}' for file in self.images_undated]}")
+        # print(f"Matched files: {[f'{value}' for value in self.image_date_dict]}")
+        # print(f"Unmatched files: {[f'{file}' for file in self.images_undated]}")
 
 
 # Nutzung
