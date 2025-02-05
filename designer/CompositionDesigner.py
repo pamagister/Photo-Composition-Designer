@@ -121,7 +121,7 @@ class CompositionDesigner:
         """
         descriptions = self._get_description(self.photoDirectory) or []  # Ensure that descriptions is a list
         weekIndex: int = 0
-        for week_index, element in enumerate(sorted(os.listdir(self.photoDirectory))):
+        for element in sorted(os.listdir(self.photoDirectory)):
             folder_path = os.path.join(self.photoDirectory, element)
             if not os.path.isdir(folder_path):
                 continue
@@ -138,7 +138,7 @@ class CompositionDesigner:
                 continue
 
             # Use the description from descriptions by default, if available
-            description = descriptions[week_index] if week_index < len(descriptions) else ""
+            description = descriptions[weekIndex] if weekIndex < len(descriptions) else ""
 
             # If `photo_description` exists, it overwrites the existing `description`.
             photo_description = self._get_description(folder_path, fallback_to_foldername=True)

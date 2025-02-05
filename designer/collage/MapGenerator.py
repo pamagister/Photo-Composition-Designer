@@ -13,7 +13,7 @@ class MapGenerator:
         self.config = config or Config()
         self.height = self.config.mapHeight
         self.width = self.config.mapWidth
-        self.locations = Locations()
+        self.locations = Locations(self.config.locationsConfig)
 
     def generateImageLocationMap(self, image_files):
         # Read EXIF data and extract GPS coordinates

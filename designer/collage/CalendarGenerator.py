@@ -2,9 +2,12 @@ import calendar
 import locale
 import logging
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import holidays
+import pytz
+from astral import LocationInfo, moon
+from astral.sun import sun
 from PIL import Image, ImageDraw, ImageFont
 
 from designer.common.Anniversaries import Anniversaries
@@ -37,24 +40,48 @@ class CalendarGenerator:
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
-
         font_large = self._set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
         font_small = self._set_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
         font_holiday = self._set_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
 
-        # Zeichne Monat und Jahr
+        # Draw the month and year
         month_name = self.get_month_name(dates[0].month, language)
         if self.config.useShortMonthNames:
             month_name = month_name[:3]
 
         cols_count, col_width = self.get_cols_property(width)
+        spacing_date = int(self.fontSizeSmall * 0.4)
 
         header_text = f"{month_name} {str(year)[-2:]}"
         base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
 
         draw.text((0, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
-        spacing_date = int(self.fontSizeSmall * 0.4)
-        # Zeichne Wochentage und Zahlen
+
+        # Sunrise and sunset
+        timezone = "Europe/Berlin"
+        location = LocationInfo("Dresden", timezone=timezone, latitude=51.0504, longitude=13.7373)
+
+        sun_times = sun(location.observer, date=date)
+        tz = pytz.timezone(timezone)
+
+        # Convert times to local time
+        sunrise_local = sun_times["sunrise"].astimezone(tz)
+        sunset_local = sun_times["sunset"].astimezone(tz)
+
+        # Output with correct time zone
+        calendar_week = date.isocalendar().week
+        sun_string = (
+            f"KW {calendar_week}  ● ↑: {sunrise_local.strftime('%H:%M')}  ○ ↓: {sunset_local.strftime('%H:%M')}"
+        )
+        draw.text(
+            (0, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 2 * spacing_date),
+            sun_string,
+            font=font_holiday,
+            fill=self.config.textColor2,
+            anchor="ld",
+        )
+
+        # Draw days of the week and numbers
         for day_no in range(7):
             x_pos = self.marginSides + (day_no + cols_count + 0.5) * col_width
             day_date = dates[day_no]
@@ -62,7 +89,7 @@ class CalendarGenerator:
             date = dates[day_no]
             holiday_name = self.localHolidays.get(date)  # Name des Feiertags ermitteln
 
-            # Feiertage und Wochenende hervorheben
+            # Highlight holidays and weekends
             if day_date.weekday() >= 6 or day_date in self.localHolidays:
                 name_color = self.config.textColor2
                 number_color = self.config.holidayColor
@@ -70,32 +97,39 @@ class CalendarGenerator:
                 name_color = self.config.textColor2
                 number_color = self.config.textColor1
 
-            # Wochentag und Tag
+            # Weekday and day
             day_name = self.get_day_name(day_no, language)
             if self.config.useShortDayNames:
                 day_name = day_name[:2]
-            draw.text((x_pos, base_y - 0 * spacing_date), day_name, font=font_small, fill=name_color, anchor="mb")
+
+            # Moon phase
+            moon_symbol = self.get_moon_phase_symbol(day_date)
+            if moon_symbol:
+                day_name = f"  {day_name} {moon_symbol}"
+                # draw.text((x_pos, base_y + spacing_date), moon_symbol, font=font_small, fill=name_color, anchor="mt")
+
+            draw.text((x_pos, base_y - 0 * spacing_date), day_name, font=font_small, fill=name_color, anchor="md")
             draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
 
-            # Feiertage
+            # Holidays
             if holiday_name:
                 draw.text(
-                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + spacing_date),
+                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
                     holiday_name,
                     font=font_holiday,
                     fill=self.config.holidayColor,
-                    anchor="mb",
+                    anchor="md",
                 )
 
-            # Geburtstage/Todestage
+            # Birthdays/Days of death
             elif date_key in self.anniversaries:
                 birthday_label = self.anniversaries[date_key]
                 draw.text(
-                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + spacing_date),
+                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
                     birthday_label,
                     font=font_holiday,
                     fill=self.config.textColor1,
-                    anchor="mb",
+                    anchor="md",
                 )
 
         return img
@@ -109,6 +143,21 @@ class CalendarGenerator:
         draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="ma")
 
         return img
+
+    @staticmethod
+    def get_moon_phase_symbol(date):
+        moon_phase = moon.phase(date)
+
+        if moon_phase <= 1:  # Neumond
+            return "○"
+        elif 7.5 <= moon_phase <= 8.5:  # Zunehmender Halbmond
+            return "🌗"
+        elif 13.5 <= moon_phase <= 14.5:  # Vollmond
+            return "●"
+        elif 20.5 <= moon_phase <= 21.5:  # Abnehmender Halbmond
+            return "🌓"
+        else:
+            return ""  # Keine spezielle Phase anzeigen
 
     @staticmethod
     def _set_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
@@ -139,10 +188,10 @@ class CalendarGenerator:
 
     def get_cols_property(self, width):
         if self.config.useShortMonthNames:
-            cols_month_name = 1.5
+            cols_month_name = 1.3
         else:
             cols_month_name = 4.0
-        col_width = (width - 2 * self.config.marginSides) // (7 + cols_month_name)
+        col_width = (width - 3 * self.config.marginSides) // (7.0 + cols_month_name)
         return cols_month_name, col_width
 
     @staticmethod
@@ -203,7 +252,7 @@ def main():
     startDate = config.startDate
     first_collage = True
     title = "This is the title of the composition 2025"
-    for week in range(40, 45):
+    for week in range(1, 45):
         date = startDate + timedelta(weeks=week)
         if first_collage:
             image = calendar_gen.generateTitle(title, width=config.width, height=config.calendarHeight)

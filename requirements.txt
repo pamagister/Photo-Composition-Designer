@@ -13,6 +13,7 @@ geopandas~=1.0.1
 matplotlib~=3.8.2
 shapely~=2.0.7
 pyproj~=3.6.1
+astral~=3.2
 
 # Dev-dependencies
 black~=24.3.0

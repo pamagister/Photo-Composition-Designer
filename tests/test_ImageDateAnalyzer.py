@@ -26,6 +26,7 @@ class TestImageDateAnalyzer:
             ("IMG_20230517.jpeg", TEST_DATE_NO_TIME),
             ("IMG_20230517_143025_sometext.jpeg", TEST_DATE),
             ("IMG_20230517_Holiday.jpg", TEST_DATE_NO_TIME),
+            ("03-2023-05-17-143025_002-strange_format.jpg", TEST_DATE),
             ("random_name.jpg", None),
         ],
     )

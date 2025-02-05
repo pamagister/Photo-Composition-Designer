@@ -155,7 +155,7 @@ class GeoPlotter:
         bg_color = (
             mcolors.to_rgb(self.background_color) if isinstance(self.background_color, str) else self.background_color
         )
-        map_land_color = tuple([x - 0.15 if x >= 0.5 else x + 0.15 for x in bg_color])
+        map_land_color = tuple([x - 0.10 if x >= 0.5 else x + 0.10 for x in bg_color])
         world.plot(
             ax=ax,
             color=map_land_color,

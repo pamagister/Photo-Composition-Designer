@@ -7,8 +7,8 @@ import exifread
 
 
 class ImageDateAnalyzer:
-    DATE_PATTERN_FULL = re.compile(r"(?:(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2}))")
-    DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})(\d{2})(\d{2}))")
+    DATE_PATTERN_FULL = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2}))")
+    DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
     def __init__(self, image_files: list[str]):
         self.image_list: list[str] = image_files
@@ -60,10 +60,9 @@ class ImageDateAnalyzer:
 
 # Nutzung
 if __name__ == "__main__":
-    file_list = [
-        "20230517_143025.jpg",
-        "IMG_20230517_Holiday.jpg",
-        "random_name.jpg",
-    ]
-    sorter = ImageDateAnalyzer(file_list)
-    sorter.run()
+    from designer.common.Config import Config
+
+    config = Config()
+    photo_dir = config.photoDirectory
+    img_files = [img_file.as_posix() for img_file in photo_dir.iterdir()]
+    sorter = ImageDateAnalyzer(img_files)
