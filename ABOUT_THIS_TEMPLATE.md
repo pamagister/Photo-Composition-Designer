@@ -90,6 +90,30 @@ do `pip install https://github.com/name/repo/tarball/{TAG|REVISON|COMMIT}`
 
 People automating CI for your project will be grateful for having a setup.py file
 
+Alternatively, use this core as pre-commit in ./git/hooks:
+
+```bash
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed.
+
+# To enable this hook, rename this file to "pre-commit".
+
+# Stop the commit if a command fails
+set -e
+
+echo "Running isort..."
+isort tests designer
+
+echo "Running Black..."
+black tests designer
+
+echo "Running Pytest..."
+pytest tests
+
+echo "Pre-commit checks passed!"
+```
+
 ### Why isn't this template made as a cookiecutter template?
 
 I really like [cookiecutter](https://github.com/cookiecutter/cookiecutter) and it is a great way to create new projects,
