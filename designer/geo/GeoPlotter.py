@@ -15,26 +15,17 @@ class GeoPlotter:
     def __init__(
         self,
         minimalExtension=5,
-        size=(400, 300),
+        size=(400, 400),
         background_color="black",
         border_color="white",
         line_width=0.4,
     ):
-        """
-        Initialisiert den GeoMapPlotter.
-        :param minimalExtension: minimal extension in degrees for the map borders.
-        :param size: Resolution of the map in pixels (width, height).
-        :param background_color: Background color of the map.
-        :param line_width: Line width for country and layer boundaries in percent of width
-        """
-
-        # Basisverzeichnis der shape files relativ zu diesem Modul
         base_path = Path(__file__).parent.parent.parent / "res/maps"
 
-        countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"  # Ländergrenzen
+        countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"
         lakes_shp = (
             base_path / "ne_50m_rivers_lake_centerlines_scale_rank/ne_50m_rivers_lake_centerlines_scale_rank.shp"
-        )  # Flüsse und Seen
+        )
 
         self.shapefile_path = countries_shp
         self.minimalExtension = minimalExtension
@@ -57,7 +48,6 @@ class GeoPlotter:
         :return: Color in Matplotlib-compatible format.
         """
         if isinstance(color, tuple) and len(color) == 3:
-            # Skaliere RGB-Werte von 0-255 auf 0-1
             return tuple(c / 255 for c in color)
         return color
 
@@ -183,36 +173,27 @@ class GeoPlotter:
         ax.set_xlim(bounds[0], bounds[2])
         ax.set_ylim(bounds[1], bounds[3])
 
-        # Achsen und Rand entfernen
+        # Remove axes and edge
         ax.axis("off")
 
         return plt
 
 
-# Example call
 if __name__ == "__main__":
-    plotter = GeoPlotter(
-        minimalExtension=4,
-        size=(400, 400),
-        background_color="black",
-        line_width=1.0,
-    )
+    output_dir = Path.cwd()  # Speichert die Bilder im aktuellen Arbeitsverzeichnis
 
-    # Coordinates:
-    gps_coords = [
-        (51.0504, 13.7373),  # Dresden
-        (51.3397, 12.3731),  # Leipzig
-        (50.8278, 12.9214),  # Chemnitz
-        (51.1079, 17.0441),  # Breslau
-        (52.5200, 13.5156),  # Berlin
-    ]
+    for size in range(100, 900, 200):
+        plotter = GeoPlotter(size=(size, size))
 
-    # locations = Locations()
-    # gps_coords = list(locations.locations_dict.values())
-    # Karte erstellen und anzeigen
-    map_plt = plotter.renderMap(gps_coords)
-    map_plt.show()
+        gps_coords = [
+            (51.0504, 13.7373),  # Dresden
+            (51.3397, 12.3731),  # Leipzig
+            (50.8278, 12.9214),  # Chemnitz
+            (51.1079, 17.0441),  # Breslau
+            (52.5200, 13.5156),  # Berlin
+        ]
 
-    # Karte erstellen ohne dass Koordinaten übergeben wurden.
-    map_plt = plotter.renderMap([])
-    map_plt.show()
+        map_plt = plotter.renderMap(gps_coords)
+
+        map_plt.savefig(output_dir / f"map_{size}.jpg", bbox_inches=None)
+        plt.close()
