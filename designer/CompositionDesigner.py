@@ -32,7 +32,7 @@ class CompositionDesigner:
         else:
             self.startDate = self.config.startDate
 
-    def generate_collage(self, image_files, date, output_path, photo_description=""):
+    def generate_composition(self, image_files, date, output_path, photo_description=""):
         """
         Creates a composition with pictures, a calendar and a map of Europe with photo locations.
         """
@@ -52,12 +52,17 @@ class CompositionDesigner:
             if self.config.usePhotoLocationMaps:
                 available_cal_width -= self.config.mapWidth - self.config.marginSides
             calendarImage = self.calendarObj.generateCalendar(date, available_cal_width, self.calendar_height)
-            collage.paste(calendarImage, (self.config.marginSides, self.height - self.calendar_height))
-            available_height -= self.calendar_height
+            collage.paste(
+                calendarImage, (self.config.marginSides, self.height - self.calendar_height - self.config.marginBottom)
+            )
+            available_height -= self.calendar_height + self.config.marginBottom
 
         if self.config.usePhotoDescription:
             descriptionImage = self.descGenerator.generateDescription(photo_description)
-            collage.paste(descriptionImage, (0, self.height - self.calendar_height - self.descGenerator.height))
+            collage.paste(
+                descriptionImage,
+                (0, self.height - self.calendar_height - self.descGenerator.height - self.config.marginBottom),
+            )
             available_height -= self.descGenerator.height
 
         available_width = self.width
@@ -71,7 +76,13 @@ class CompositionDesigner:
         self.layoutManager.arrangeImages(image_files)
         if self.config.usePhotoLocationMaps and not self.compositionTitle:
             imgMap = self.mapGenerator.generateImageLocationMap(image_files)
-            collage.paste(imgMap, (self.width - self.config.mapWidth, self.height - self.config.mapHeight))
+            collage.paste(
+                imgMap,
+                (
+                    self.width - self.config.mapWidth - self.config.marginSides,
+                    self.height - self.config.mapHeight - self.config.marginBottom,
+                ),
+            )
 
         # draw dates of images into lower corner of the collage
         image_dates = ImageDateAnalyzer(image_files).image_date_dict.values()
@@ -89,7 +100,7 @@ class CompositionDesigner:
                 break
 
         draw = ImageDraw.Draw(collage)
-        font = CalendarGenerator.set_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeAnniversaries * 0.75))
+        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeAnniversaries * 0.75))
         draw.text((self.width - 10, self.height - 1), date_str, font=font, fill=self.config.textColor2, anchor="rd")
 
         # create title only once
@@ -115,7 +126,7 @@ class CompositionDesigner:
             else:
                 collage_description = description if isinstance(description, str) else ""
 
-            self.generate_collage(collage_files, date, output_path, collage_description)
+            self.generate_composition(collage_files, date, output_path, collage_description)
 
     @staticmethod
     def _get_description(folder_path, fallback_to_foldername=False):

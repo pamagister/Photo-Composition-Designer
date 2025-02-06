@@ -102,7 +102,7 @@ class TestCollageGenerator:
         print(f"Generate collage for layout: {layout}")
         date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
-        collageGen.generate_collage(selected_images, date, output_path)
+        collageGen.generate_composition(selected_images, date, output_path)
 
         assert os.path.exists(output_path), f"Output file was not created: {output_path}"
 

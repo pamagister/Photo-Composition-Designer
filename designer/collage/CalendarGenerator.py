@@ -18,7 +18,6 @@ class CalendarGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
         self.anniversaries = Anniversaries(self.config.anniversariesConfig)
-        self.marginBottom = self.config.marginBottom
         self.marginSides = self.config.marginSides
         self.fontSizeLarge = self.config.fontSizeLarge
         self.fontSizeSmall = self.config.fontSizeSmall
@@ -40,9 +39,9 @@ class CalendarGenerator:
         draw = ImageDraw.Draw(img)
 
         # Lade die Schriftarten
-        font_large = self.set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        font_small = self.set_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
-        font_holiday = self.set_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
+        font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_small = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
+        font_holiday = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
 
         # Draw the month and year
         month_name = self.get_month_name(dates[0].month, language)
@@ -50,12 +49,15 @@ class CalendarGenerator:
             month_name = month_name[:3]
 
         cols_count, col_width = self.get_cols_property(width)
-        spacing_date = int(self.fontSizeSmall * 0.4)
-
         header_text = f"{month_name} {str(year)[-2:]}"
-        base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
 
-        draw.text((0, base_y), header_text, font=font_large, fill=self.config.textColor2, anchor="la")
+        draw.text(
+            (0, height - self.fontSizeAnniversaries),
+            header_text,
+            font=font_large,
+            fill=self.config.textColor2,
+            anchor="ld",
+        )
 
         # Sunrise and sunset
         timezone = "Europe/Berlin"
@@ -74,7 +76,7 @@ class CalendarGenerator:
             f"KW {calendar_week}  ● ↑: {sunrise_local.strftime('%H:%M')}  ○ ↓: {sunset_local.strftime('%H:%M')}"
         )
         draw.text(
-            (0, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 2 * spacing_date),
+            (0, height),
             sun_string,
             font=font_holiday,
             fill=self.config.textColor2,
@@ -106,10 +108,21 @@ class CalendarGenerator:
             moon_symbol = self.get_moon_phase_symbol(day_date)
             if moon_symbol:
                 day_name = f"   {day_name} {moon_symbol}"
-                # draw.text((x_pos, base_y + spacing_date), moon_symbol, font=font_small, fill=name_color, anchor="mt")
 
-            draw.text((x_pos, base_y - 0 * spacing_date), day_name, font=font_small, fill=name_color, anchor="md")
-            draw.text((x_pos, base_y), str(day_date.day), font=font_large, fill=number_color, anchor="ma")
+            draw.text(
+                (x_pos, height - self.fontSizeAnniversaries - self.fontSizeLarge * 1.15),
+                day_name,
+                font=font_small,
+                fill=name_color,
+                anchor="md",
+            )
+            draw.text(
+                (x_pos, height - self.fontSizeAnniversaries),
+                str(day_date.day),
+                font=font_large,
+                fill=number_color,
+                anchor="md",
+            )
 
             # Birthdays/Days of death
             if date_key in self.anniversaries:
@@ -117,7 +130,7 @@ class CalendarGenerator:
                 if holiday_name:
                     birthday_label += f", {holiday_name}"  # add holiday name because it would not be printed otherwise
                 draw.text(
-                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
+                    (x_pos, height),
                     birthday_label,
                     font=font_holiday,
                     fill=self.config.textColor1,
@@ -126,7 +139,7 @@ class CalendarGenerator:
             # Holidays
             elif holiday_name:
                 draw.text(
-                    (x_pos, base_y + self.fontSizeLarge + self.fontSizeAnniversaries + 1.5 * spacing_date),
+                    (x_pos, height),
                     holiday_name,
                     font=font_holiday,
                     fill=self.config.holidayColor,
@@ -139,9 +152,9 @@ class CalendarGenerator:
         # Erstelle das Bild
         img = Image.new("RGB", (width, height), self.config.backgroundColor)
         draw = ImageDraw.Draw(img)
-        font_large = self.set_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        base_y = height - self.marginBottom - self.fontSizeLarge - self.fontSizeAnniversaries
-        draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="ma")
+        font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        base_y = height - self.fontSizeAnniversaries
+        draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="md")
 
         return img
 
@@ -161,7 +174,7 @@ class CalendarGenerator:
             return ""  # Keine spezielle Phase anzeigen
 
     @staticmethod
-    def set_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
+    def get_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
         """
         Load font. Fallback to system default font
         """
@@ -189,7 +202,7 @@ class CalendarGenerator:
 
     def get_cols_property(self, width):
         if self.config.useShortMonthNames:
-            cols_month_name = 1.3
+            cols_month_name = 1.6
         else:
             cols_month_name = 4.0
         col_width = (width - 3 * self.config.marginSides) // (7.0 + cols_month_name)
@@ -253,7 +266,7 @@ def main():
     startDate = config.startDate
     first_collage = True
     title = "This is the title of the composition 2025"
-    for week in range(1, 45):
+    for week in range(0, 52):
         date = startDate + timedelta(weeks=week)
         if first_collage:
             image = calendar_gen.generateTitle(title, width=config.width, height=config.calendarHeight)
