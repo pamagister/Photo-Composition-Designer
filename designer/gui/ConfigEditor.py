@@ -3,8 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
-from designer.common.Config import Config
 from designer.CompositionDesigner import CompositionDesigner
+from designer.common.Config import Config
 from designer.tools.FolderGenerator import FolderGenerator
 
 

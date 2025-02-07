@@ -33,7 +33,7 @@ class GeoPlotter:
         self.background_color = self._normalize_color(background_color)
         self.border_color = self._normalize_color(border_color)
         self.line_width = line_width * size[1] / 100
-        self.size_marker = 50 * size[1] / 100
+        self.size_marker = 0.25 * size[1] * size[1] / 100
         self.layers = {}
 
         # Zusätzliche Layer hinzufügen

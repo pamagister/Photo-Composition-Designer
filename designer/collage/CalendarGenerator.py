@@ -6,9 +6,9 @@ from datetime import timedelta
 
 import holidays
 import pytz
+from PIL import Image, ImageDraw, ImageFont
 from astral import LocationInfo, moon
 from astral.sun import sun
-from PIL import Image, ImageDraw, ImageFont
 
 from designer.common.Anniversaries import Anniversaries
 from designer.common.Config import Config
@@ -44,9 +44,7 @@ class CalendarGenerator:
         font_holiday = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
 
         # Draw the month and year
-        month_name = self.get_month_name(dates[0].month, language)
-        if self.config.useShortMonthNames:
-            month_name = month_name[:3]
+        month_name = self.get_month_name(dates[0].month, language, abbreviation=self.config.useShortMonthNames)
 
         cols_count, col_width = self.get_cols_property(width)
         header_text = f"{month_name} {str(year)[-2:]}"
@@ -202,19 +200,19 @@ class CalendarGenerator:
 
     def get_cols_property(self, width):
         if self.config.useShortMonthNames:
-            cols_month_name = 1.6
+            cols_month_name = 1.5
         else:
             cols_month_name = 4.0
         col_width = (width - 3 * self.config.marginSides) // (7.0 + cols_month_name)
         return cols_month_name, col_width
 
     @staticmethod
-    def get_month_name(month_no, locale_name="en_US.UTF-8"):
+    def get_month_name(month_no, locale_name="en_US.UTF-8", abbreviation=False):
         try:
             locale.setlocale(locale.LC_TIME, locale_name)
-            return calendar.month_name[month_no]
+            return calendar.month_abbr[month_no] if abbreviation else calendar.month_name[month_no]
         except locale.Error:
-            return calendar.month_name[month_no]
+            return calendar.month_abbr[month_no] if abbreviation else calendar.month_name[month_no]
         finally:
             locale.setlocale(locale.LC_TIME, "")
 

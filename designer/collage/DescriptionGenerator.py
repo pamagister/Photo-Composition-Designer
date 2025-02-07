@@ -9,7 +9,7 @@ class DescriptionGenerator:
         self.width = int(self.config.width)  # Die Breite des erzeugten Bildes.
         self.fontSize = self.config.fontSizeSmall  # Die Schriftgröße des Textes.
         self.spacing = self.config.spacing
-        self.height = int(self.fontSize + self.spacing * 2)  # Die Höhe des erzeugten Bildes.
+        self.height = int(self.fontSize + self.spacing)  # Die Höhe des erzeugten Bildes.
         self.margin_side = self.config.marginSides
 
     def generateDescription(self, text):
@@ -33,11 +33,11 @@ class DescriptionGenerator:
 
         # Text zeichnen
         draw.text(
-            (self.margin_side, self.spacing),
+            (self.margin_side, self.height),
             text,
             fill=self.config.textColor2,
             font=font,
-            anchor="lt",
+            anchor="lb",
         )
 
         return description_image

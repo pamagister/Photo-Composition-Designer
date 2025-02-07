@@ -46,11 +46,11 @@ class CompositionDesigner:
                 self.compositionTitle, available_cal_width, self.calendar_height
             )
             collage.paste(titleImage, (self.config.marginSides, self.height - self.calendar_height))
-            available_height -= self.calendar_height
+            available_height -= self.calendar_height + self.config.marginBottom
 
         elif self.config.useCalendar and not self.compositionTitle:
             if self.config.usePhotoLocationMaps:
-                available_cal_width -= self.config.mapWidth - self.config.marginSides
+                available_cal_width -= self.config.mapWidth + self.config.marginSides * 1
             calendarImage = self.calendarObj.generateCalendar(date, available_cal_width, self.calendar_height)
             collage.paste(
                 calendarImage, (self.config.marginSides, self.height - self.calendar_height - self.config.marginBottom)
@@ -100,8 +100,14 @@ class CompositionDesigner:
                 break
 
         draw = ImageDraw.Draw(collage)
-        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeAnniversaries * 0.75))
-        draw.text((self.width - 10, self.height - 1), date_str, font=font, fill=self.config.textColor2, anchor="rd")
+        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.marginBottom * 0.6))
+        draw.text(
+            (self.width - self.config.marginSides, self.height - font.size),
+            date_str,
+            font=font,
+            fill=self.config.textColor2,
+            anchor="rm",
+        )
 
         # create title only once
         self.compositionTitle = None
@@ -218,8 +224,7 @@ class CompositionDesigner:
         if self.config.generatePdf:
             self.generate_pdf(self.outputDir)
 
-    @staticmethod
-    def generate_pdf(collages_dir, output_pdf="output.pdf"):
+    def generate_pdf(self, collages_dir, output_pdf="output.pdf"):
         """
         Creates a PDF file from all images in a directory.
 
@@ -248,7 +253,7 @@ class CompositionDesigner:
         # First image as base, attach remaining images as additional pages
         first_image, *remaining_images = image_list
         output_path = os.path.join(collages_dir, output_pdf)
-        first_image.save(output_path, save_all=True, append_images=remaining_images, quality=95)
+        first_image.save(output_path, save_all=True, append_images=remaining_images, quality=self.config.jpgQuality)
 
         print(f"PDF successfully created: {output_path}")
 
