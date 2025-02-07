@@ -4,8 +4,8 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from designer.collage.CalendarGenerator import CalendarGenerator
 from designer.common.Config import Config
+from designer.core.CalendarGenerator import CalendarGenerator
 
 
 @pytest.fixture

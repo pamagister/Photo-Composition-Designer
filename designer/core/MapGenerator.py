@@ -7,7 +7,7 @@ from PIL import Image
 
 from designer.common.Config import Config
 from designer.common.Locations import Locations
-from designer.geo.GeoPlotter import GeoPlotter
+from designer.core.GeoPlotter import GeoPlotter
 
 
 class MapGenerator:

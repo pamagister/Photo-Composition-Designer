@@ -57,10 +57,10 @@ class TestCollageGenerator:
         Tests different layouts with CompositionDesigner.
         """
         config = Config()
-        collageGen = CompositionDesigner(config)
-        startDate = collageGen.startDate
-        base_dir = os.path.join(collageGen.photoDirectory, "layout_orientation")
-        output_dir = collageGen.outputDir
+        designer = CompositionDesigner(config)
+        startDate = designer.startDate
+        base_dir = os.path.join(designer.photoDirectory, "layout_orientation")
+        output_dir = designer.outputDir
 
         # Collect image files
         image_files = [
@@ -102,7 +102,7 @@ class TestCollageGenerator:
         print(f"Generate collage for layout: {layout}")
         date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
-        collageGen.generate_composition(selected_images, date, output_path)
+        designer.generate_composition(selected_images, date, output_path)
 
         assert os.path.exists(output_path), f"Output file was not created: {output_path}"
 
@@ -110,5 +110,5 @@ class TestCollageGenerator:
         config = Config()
         config.photoDirectory = config.photoDirectory / "layout_orientation"
 
-        collageGen = CompositionDesigner(config)
-        collageGen.generateProjectFromImageFolder()
+        designer = CompositionDesigner(config)
+        designer.generateProjectFromImageFolder()

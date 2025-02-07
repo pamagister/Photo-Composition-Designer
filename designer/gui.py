@@ -8,7 +8,7 @@ from designer.common.Config import Config
 from designer.tools.FolderGenerator import FolderGenerator
 
 
-class ConfigEditorApp:
+class Gui:
     def __init__(self, root, config=None):
         self.config = config or Config()
         self.root = root
@@ -202,5 +202,5 @@ class ConfigEditorApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = ConfigEditorApp(root)
+    app = Gui(root)
     root.mainloop()

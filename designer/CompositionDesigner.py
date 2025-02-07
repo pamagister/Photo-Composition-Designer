@@ -4,11 +4,11 @@ from datetime import timedelta
 
 from PIL import Image, ImageDraw
 
-from designer.collage.CalendarGenerator import CalendarGenerator
-from designer.collage.DescriptionGenerator import DescriptionGenerator
-from designer.collage.MapGenerator import MapGenerator
-from designer.collage.PhotoLayoutManager import PhotoLayoutManager
 from designer.common.Config import Config
+from designer.core.CalendarGenerator import CalendarGenerator
+from designer.core.DescriptionGenerator import DescriptionGenerator
+from designer.core.MapGenerator import MapGenerator
+from designer.core.PhotoLayoutManager import PhotoLayoutManager
 from designer.tools.ImageDateAnalyzer import ImageDateAnalyzer
 
 

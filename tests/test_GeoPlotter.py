@@ -2,7 +2,7 @@ import geopandas as gpd
 import pytest
 from shapely.geometry import Point
 
-from designer.geo.GeoPlotter import GeoPlotter
+from designer.core.GeoPlotter import GeoPlotter
 
 
 @pytest.fixture
