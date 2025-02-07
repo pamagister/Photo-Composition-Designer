@@ -4,8 +4,8 @@ from PIL import Image, UnidentifiedImageError
 
 
 class PhotoLayoutManager:
-    def __init__(self, collage, width=900, height=600, spacing=10):
-        self.collage: Image = collage
+    def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
+        self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
@@ -28,29 +28,30 @@ class PhotoLayoutManager:
         # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
         return valid_images
 
-    def arrangeImages(self, image_files):
+    def arrangeImages(self, image_files) -> Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
         # Bilder nach Seitenverhältnis sortieren
         images = [Image.open(img) for img in image_files]
+        collage: Image = Image.new(mode="RGB", size=(self.width, self.height), color=self.color)
         images = self.sortByAspectRatio(images)
         formats = self.analyzeImages(images)
 
         try:
             # Anordnungslogik basierend auf Bildanzahl
             if len(images) == 1:
-                self.arrangeOneImage(self.collage, images[0], self.width, self.height)
+                self.arrangeOneImage(collage, images[0], self.width, self.height)
             elif len(images) == 2:
-                self.arrangeTwoImages(self.collage, images, formats, self.width, self.height)
+                self.arrangeTwoImages(collage, images, formats, self.width, self.height)
             elif len(images) == 3:
-                self.arrangeThreeImages(self.collage, images, formats, self.width, self.height)
+                self.arrangeThreeImages(collage, images, formats, self.width, self.height)
             elif len(images) == 4:
-                self.arrangeFourImages(self.collage, images, formats, self.width, self.height)
+                self.arrangeFourImages(collage, images, formats, self.width, self.height)
             elif len(images) == 5:
-                self.arrangeFiveImages(self.collage, images, formats, self.width, self.height)
+                self.arrangeFiveImages(collage, images, formats, self.width, self.height)
             else:
-                self.arrangeMultipleImages(self.collage, images, self.width, self.height)
+                self.arrangeMultipleImages(collage, images, self.width, self.height)
         except (UnidentifiedImageError, OSError) as e:
             print(f"Error in the arrangement of images: {e}")
             # Entferne ungültige Bilder und versuche es erneut
@@ -62,6 +63,7 @@ class PhotoLayoutManager:
                 # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
                 print("No more valid images available.")
                 raise e
+        return collage
 
     @staticmethod
     def analyzeImages(images):
@@ -182,7 +184,7 @@ class PhotoLayoutManager:
             layout = layouts[3]
         else:
             # Drei gleich große Bilder im Hochformat nebeneinander PPP
-            self.arrangeMultipleImages(self.collage, images, self.width, self.height)
+            self.arrangeMultipleImages(collage, images, self.width, self.height)
             return
 
         for img, pos in layout(images):

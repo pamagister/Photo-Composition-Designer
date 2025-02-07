@@ -21,8 +21,8 @@ def mock_images():
 @pytest.fixture
 def photo_layout():
     """Erstellt eine PhotoLayoutManager-Instanz mit einem Mock-Collage-Bild."""
-    mock_collage = MagicMock(spec=Image.Image)
-    return PhotoLayoutManager(mock_collage)
+    # mock_collage = MagicMock(spec=Image.Image)
+    return PhotoLayoutManager()
 
 
 @pytest.mark.parametrize("num_images", [1, 2, 3, 4, 5, 6, 7, 8])
