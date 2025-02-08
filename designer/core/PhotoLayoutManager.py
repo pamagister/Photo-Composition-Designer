@@ -2,6 +2,8 @@ import random
 
 from PIL import Image, UnidentifiedImageError
 
+from designer.common.Photo import Photo
+
 
 class PhotoLayoutManager:
     def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
@@ -11,29 +13,29 @@ class PhotoLayoutManager:
         self.spacing: int = spacing
 
     @staticmethod
-    def filterInvalidImages(image_files):
+    def filterInvalidImages(photos: list[Photo]):
         """
         Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
         """
         valid_images = []
-        for img_file in image_files:
+        for photo in photos:
             try:
                 # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
-                img = Image.open(img_file)
+                img = Image.open(photo.file_path)
                 img.crop((0, 2, 3, 3))
-                valid_images.append(img_file)
+                valid_images.append(photo)
             except (UnidentifiedImageError, OSError) as e:
-                print(f"Invalid image skipped: {img_file} - {e}")
+                print(f"Invalid image skipped: {photo.file_path} - {e}")
 
         # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
         return valid_images
 
-    def arrangeImages(self, image_files) -> Image:
+    def arrangeImages(self, photos: list[Photo]) -> Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
         # Bilder nach Seitenverhältnis sortieren
-        images = [Image.open(img) for img in image_files]
+        images = [img.get_image() for img in photos]
         collage: Image = Image.new(mode="RGB", size=(self.width, self.height), color=self.color)
         images = self.sortByAspectRatio(images)
         formats = self.analyzeImages(images)
@@ -55,10 +57,10 @@ class PhotoLayoutManager:
         except (UnidentifiedImageError, OSError) as e:
             print(f"Error in the arrangement of images: {e}")
             # Entferne ungültige Bilder und versuche es erneut
-            image_files = self.filterInvalidImages(image_files)
-            if image_files:
+            photos = self.filterInvalidImages(photos)
+            if photos:
                 print("Invalid images removed, try again...")
-                self.arrangeImages(image_files)
+                self.arrangeImages(photos)
             else:
                 # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
                 print("No more valid images available.")

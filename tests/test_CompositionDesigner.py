@@ -6,6 +6,7 @@ import pytest
 
 from designer.CompositionDesigner import CompositionDesigner
 from designer.common.Config import Config
+from designer.common.Photo import Photo
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -102,13 +103,7 @@ class TestCollageGenerator:
         print(f"Generate collage for layout: {layout}")
         date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
-        designer.generate_composition(selected_images, date, output_path)
+        photos = [Photo(image_file) for image_file in selected_images]
+        designer.generate_composition(photos, date, output_path)
 
         assert os.path.exists(output_path), f"Output file was not created: {output_path}"
-
-    def test_generate_from_folders(self):
-        config = Config()
-        config.photoDirectory = config.photoDirectory / "layout_orientation"
-
-        designer = CompositionDesigner(config)
-        designer.generateProjectFromImageFolder()

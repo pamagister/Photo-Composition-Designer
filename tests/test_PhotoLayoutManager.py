@@ -1,8 +1,10 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from PIL import Image
 
+from designer.common.Photo import Photo
 from designer.core.PhotoLayoutManager import PhotoLayoutManager
 
 
@@ -42,9 +44,11 @@ def test_arrange_images(mock_open, photo_layout, mock_images, num_images):
         patch.object(PhotoLayoutManager, "arrangeFourImages") as mock_arrange_four,
         patch.object(PhotoLayoutManager, "arrangeFiveImages") as mock_arrange_five,
         patch.object(PhotoLayoutManager, "arrangeMultipleImages") as mock_arrange_multiple,
+        patch.object(Path, "exists", return_value=True),
     ):
         image_paths = [f"img{i}.jpg" for i in range(num_images)]
-        photo_layout.arrangeImages(image_paths)
+        photos = [Photo(filename) for filename in image_paths]
+        photo_layout.arrangeImages(photos)
 
         assert mock_open.call_count == num_images
 

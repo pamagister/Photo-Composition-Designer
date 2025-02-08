@@ -23,7 +23,7 @@ TEST_DATE_NO_TIME = datetime(2023, 5, 17, 12, 0, 0)
         ("IMG_20230517_143025_sometext.jpeg", datetime(2023, 5, 17, 14, 30, 25)),
         ("IMG_20230517_Holiday.jpg", datetime(2023, 5, 17, 12, 0, 0)),
         ("03-2023-05-17-143025_002-strange_format.jpg", datetime(2023, 5, 17, 14, 30, 25)),
-        ("random_name.jpg", None),
+        ("random_name.jpg", datetime.max),
     ],
 )
 def test_extract_date_from_filename(filename, expected_date):

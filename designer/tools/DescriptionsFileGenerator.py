@@ -23,6 +23,9 @@ class DescriptionsFileGenerator:
         global_description_text: list[str] = []
 
         for element in sorted(os.listdir(self.photo_dir)):
+            folder_path = os.path.join(self.photo_dir, element)
+            if not os.path.isdir(folder_path):
+                continue
             global_description_text.append(f"{element}: ")
 
         description_file_global = os.path.join(self.output_dir, "descriptions.txt")

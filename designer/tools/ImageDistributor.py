@@ -1,66 +1,72 @@
 import random
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
+
+from designer.common.Photo import Photo
 
 
 class ImageDistributor:
-    def __init__(self, image_dict: dict[str, datetime], distributions_count: int):
-        self.image_dict = dict(sorted(image_dict.items(), key=lambda item: item[1]))  # Sortiere nach Datum
-        self.distribution_count = distributions_count
-        self.max_images_per_group = 5
+    def __init__(self, photos: list[Photo], distributions_count: int):
+        self.photos = photos
+        self.sorted_photos = sorted(photos, key=lambda photo: photo.get_date() or datetime.min)
 
-    def distribute_equally(self):
+        self.distribution_count = distributions_count
+
+    def distribute_equally(self) -> list[list[Photo]]:
         """
         Verteilt die Bilder möglichst gleichmäßig auf die gewünschte Anzahl von Gruppen.
         """
-        grouped_images = defaultdict(list)
+        grouped_images = []  # Liste von Listen für die Verteilung
 
         # Anzahl der Bilder pro Gruppe berechnen
-        images_per_group = len(self.image_dict) // self.distribution_count
-        extra_images = len(self.image_dict) % self.distribution_count  # Falls es nicht exakt aufgeht
+        images_per_group = len(self.sorted_photos) // self.distribution_count
+        extra_images = len(self.sorted_photos) % self.distribution_count  # Falls es nicht exakt aufgeht
 
-        iterator = iter(self.image_dict.items())
+        photo_queue = deque(self.sorted_photos)  # Nutzt deque für effiziente Pop-Operationen
+
         for i in range(self.distribution_count):
-            group_size = images_per_group + (1 if i < extra_images else 0)  # Falls extra Bilder verteilt werden müssen
-            grouped_images[i] = [next(iterator) for _ in range(group_size)]
+            group_size = images_per_group + (1 if i < extra_images else 0)  # Extra-Bilder gleichmäßig verteilen
+            grouped_images.append([photo_queue.popleft() for _ in range(group_size) if photo_queue])
 
         return grouped_images
 
-    def distribute_randomly(self, allowed_delta: int = 1):
+    def distribute_randomly(self, allowed_delta: int = 1) -> list[list[Photo]]:
         """
         Ähnlich wie distribute_equally, aber mit einem gewissen Zufallseffekt,
         sodass die Anzahl der Bilder pro Gruppe leicht variieren kann.
         Die Reihenfolge bleibt sortiert, und ein Zufalls-Seed sorgt für Reproduzierbarkeit.
         """
-        random.seed(11)  # Fester Seed für deterministische Ergebnisse
-        grouped_images = defaultdict(list)
-        image_list = list(self.image_dict.items())
-        remaining_images = len(image_list)
+        random.seed(11)  # Fester Seed für reproduzierbare Ergebnisse
+        grouped_images = []
+        photo_queue = deque(self.sorted_photos)  # Nutzt deque für effizientes Entfernen
+        remaining_images = len(photo_queue)
         remaining_groups = self.distribution_count
 
-        iterator = iter(image_list)
         for i in range(self.distribution_count - 1):
             images_per_group = remaining_images // remaining_groups
-            group_size = images_per_group + random.choice(range(-allowed_delta, allowed_delta + 1))
-            grouped_images[i] = [next(iterator) for _ in range(min(group_size, remaining_images))]
-            remaining_images -= len(grouped_images[i])
+            group_size = max(1, images_per_group + random.choice(range(-allowed_delta, allowed_delta + 1)))
+            grouped_images.append([photo_queue.popleft() for _ in range(min(group_size, remaining_images))])
+            remaining_images -= len(grouped_images[-1])
             remaining_groups -= 1
 
         # Alle verbleibenden Bilder der letzten Gruppe zuweisen
-        grouped_images[self.distribution_count - 1] = list(iterator)
+        grouped_images.append(list(photo_queue))
 
         return grouped_images
 
-    def distribute_group_matching_dates(self, allowed_over_saturation: int = 2, allowed_under_saturation: int = 1):
+    def distribute_group_matching_dates(
+        self, allowed_over_saturation: int = 2, allowed_under_saturation: int = 1
+    ) -> list[list[Photo]]:
         """
         Gruppiert Bilder mit demselben Datum zusammen, während eine Über- oder Unterfüllung pro Gruppe erlaubt ist.
         Bilder eines Tages können auf mehrere Gruppen aufgeteilt werden.
         """
-        grouped_images = defaultdict(list)
+        grouped_images = []
         date_groups = defaultdict(list)
 
-        for img, date in self.image_dict.items():
-            date_groups[date.date()].append((img, date))
+        # Gruppiere Bilder nach ihrem Datum
+        for img in self.sorted_photos:
+            date_groups[img.get_date()].append(img)
 
         sorted_dates = sorted(date_groups.keys())
         remaining_images = sum(len(v) for v in date_groups.values())
@@ -74,69 +80,61 @@ class ImageDistributor:
             # Füge das erste Bild des Tages hinzu
             current_group.append(date_groups[current_date].pop(0))
             if not date_groups[current_date]:
-                sorted_dates.pop(0)  # Falls keine Bilder mehr an diesem Tag vorhanden sind, Datum entfernen
+                sorted_dates.pop(0)  # Datum entfernen, wenn keine Bilder mehr vorhanden sind
 
             while sorted_dates:
                 next_date = sorted_dates[0]
 
                 if (
-                    len(date_groups[next_date]) >= avg_per_group
+                    not self.is_same_calendar_week(current_date, next_date)
                     and len(current_group) >= avg_per_group - allowed_under_saturation
                 ):
+                    # Dieses Datum gehört nicht zur gleichen Woche & Gruppe ist ausreichend voll
                     break
                 elif len(current_group) >= avg_per_group + allowed_over_saturation:
+                    # Gruppe hat das erlaubte Maximum erreicht
                     break
                 else:
                     current_group.append(date_groups[next_date].pop(0))
                     if not date_groups[next_date]:
                         sorted_dates.pop(0)
 
-            grouped_images[len(grouped_images)] = current_group
+            grouped_images.append(current_group)
             remaining_images -= len(current_group)
             remaining_groups -= 1
 
         # Falls noch Bilder übrig sind, der letzten Gruppe zuweisen
-        for remaining_date in sorted_dates:
-            grouped_images[len(grouped_images) - 1].extend(date_groups[remaining_date])
+        if sorted_dates:
+            for remaining_date in sorted_dates:
+                grouped_images[-1].extend(date_groups[remaining_date])
 
         return grouped_images
 
-    def distribute_by_week(self, start_date):
-        grouped_images = defaultdict(list)
+    def get_monday_of_same_week(self, date: datetime) -> datetime:
+        return date - timedelta(days=date.weekday())
+
+    def is_same_calendar_week(self, date1: datetime, date2: datetime) -> bool:
+        """
+        Prüft, ob zwei Datumswerte in der gleichen Kalenderwoche liegen.
+        Berücksichtigt dabei das Jahr und die Kalenderwochen-Nummer.
+        """
+        return date1.isocalendar()[:2] == date2.isocalendar()[:2]
+
+    def distribute_by_week(self, start_date: datetime) -> list[list[Photo]]:
+        grouped_images = []
+
         for week in range(self.distribution_count):
             week_start = start_date + timedelta(weeks=week)
-            images_to_remove = []
             week_end = week_start + timedelta(days=6)
-            end_date_md = (week_end.month, week_end.day)
-            if week_start.year < week_end.year:
-                start_date_md = (0, week_start.day)
-            else:
-                start_date_md = (week_start.month, week_start.day)
-            for image_path, image_date in self.image_dict.items():
-                image_date_md = (image_date.month, image_date.day)
-                if start_date_md <= image_date_md <= end_date_md:
 
-                    images_to_remove.append(image_path)
-                    print(f"  --> Image {image_path} sorted into {week_start}")
-            grouped_images[len(grouped_images)] = images_to_remove
+            # Fotos auswählen, die in diese Woche passen
+            photos_in_week = [
+                photo for photo in self.sorted_photos if week_start.date() <= photo.get_date().date() <= week_end.date()
+            ]
 
-            for image_path in images_to_remove:
-                del self.image_dict[image_path]
+            # Entferne gefilterte Fotos aus der Hauptliste
+            self.sorted_photos = [photo for photo in self.sorted_photos if photo not in photos_in_week]
+
+            grouped_images.append(photos_in_week)
+
         return grouped_images
-
-
-# Beispielaufruf
-if __name__ == "__main__":
-    image_data = {
-        "image1.jpg": datetime(2024, 1, 6, 10, 0, 0),
-        "image2.jpg": datetime(2024, 1, 1, 11, 0, 0),
-        "image3.jpg": datetime(2024, 1, 11, 12, 0, 0),
-        "image4.jpg": datetime(2024, 1, 24, 13, 0, 0),
-        "image5.jpg": datetime(2024, 1, 5, 14, 0, 0),
-        "image6.jpg": datetime(2024, 1, 9, 15, 0, 0),
-    }
-    distributor = ImageDistributor(image_data, 3)
-    distributed_images = distributor.distribute_equally()
-
-    for group, images in distributed_images.items():
-        print(f"Gruppe {group + 1}: {[img[0] for img in images]}")

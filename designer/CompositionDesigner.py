@@ -5,11 +5,11 @@ from datetime import timedelta
 from PIL import Image, ImageDraw
 
 from designer.common.Config import Config
+from designer.common.Photo import get_photos_from_dir
 from designer.core.CalendarGenerator import CalendarGenerator
 from designer.core.DescriptionGenerator import DescriptionGenerator
 from designer.core.MapGenerator import MapGenerator
 from designer.core.PhotoLayoutManager import PhotoLayoutManager
-from designer.tools.ImageDateAnalyzer import ImageDateAnalyzer
 
 
 class CompositionDesigner:
@@ -41,7 +41,7 @@ class CompositionDesigner:
             available_height -= self.descGenerator.height
         return available_height
 
-    def generate_composition(self, image_files, date, output_path, photo_description=""):
+    def generate_composition(self, photos, date, output_path, photo_description=""):
         """
         Creates a composition with pictures, a calendar and a map of Europe with photo locations.
         """
@@ -70,17 +70,18 @@ class CompositionDesigner:
                 (0, self.height - self.calendar_height - self.descGenerator.height - self.config.marginBottom),
             )
 
-        if len(image_files) == 0:
+        if len(photos) == 0:
             print("No pictures found.")
             return
 
         # Arrange image composition
-        collage = self.layoutManager.arrangeImages(image_files)
+        collage = self.layoutManager.arrangeImages(photos)
         composition.paste(collage, (1, 1))
 
         # add location map
         if self.config.usePhotoLocationMaps and not self.compositionTitle:
-            imgMap = self.mapGenerator.generateImageLocationMap(image_files)
+            coordinates = [location for photo in photos if (location := photo.get_location()) is not None]
+            imgMap = self.mapGenerator.generateImageLocationMap(coordinates)
             composition.paste(
                 imgMap,
                 (
@@ -90,7 +91,8 @@ class CompositionDesigner:
             )
 
         # draw dates of images into lower corner of the composition
-        image_dates = ImageDateAnalyzer(image_files).image_date_dict.values()
+        image_dates = [date for photo in photos if (date := photo.get_date()) is not None]
+
         unique_dates = set()  # Speichert bereits hinzugefügte Datumswerte
         date_str = ""
 
@@ -119,12 +121,12 @@ class CompositionDesigner:
         composition.save(output_path, quality=self.config.jpgQuality)
         print(f"Composition saved: {output_path}")
 
-    def _process_images(self, image_files, output_prefix, description, start_date, max_images_per_collage=36):
+    def _process_images(self, photos, output_prefix, description, start_date, max_images_per_collage=36):
         """
         Internal method for processing images in groups and creating collages.
         """
-        for index, i in enumerate(range(0, len(image_files), max_images_per_collage)):
-            collage_files = image_files[i : i + max_images_per_collage]
+        for index, i in enumerate(range(0, len(photos), max_images_per_collage)):
+            photos_for_collage = photos[i : i + max_images_per_collage]
             output_file_name = f"{output_prefix}_part_{index + 1}.jpg"
             output_path = os.path.join(self.outputDir, output_file_name)
 
@@ -137,7 +139,7 @@ class CompositionDesigner:
             else:
                 collage_description = description if isinstance(description, str) else ""
 
-            self.generate_composition(collage_files, date, output_path, collage_description)
+            self.generate_composition(photos_for_collage, date, output_path, collage_description)
 
     @staticmethod
     def _get_description(folder_path, fallback_to_foldername=False):
@@ -169,13 +171,9 @@ class CompositionDesigner:
                 continue
 
             # Collect all image files in the current folder
-            image_files = [
-                os.path.join(folder_path, file)
-                for file in sorted(os.listdir(folder_path))
-                if file.lower().endswith((".png", ".jpg", ".jpeg"))
-            ]
+            photos = get_photos_from_dir(folder_path)
 
-            if not image_files:
+            if not photos:
                 print(f"No images found in {folder_path}, skip...")
                 continue
 
@@ -189,42 +187,8 @@ class CompositionDesigner:
 
             # Generate collages for this page
             output_prefix = f"collage_{element}"
-            self._process_images(image_files, output_prefix, description, self.startDate + timedelta(weeks=weekIndex))
+            self._process_images(photos, output_prefix, description, self.startDate + timedelta(weeks=weekIndex))
             weekIndex += 1
-
-        if self.config.generatePdf:
-            self.generate_pdf(self.outputDir)
-
-    def generateProjectFromImageFolder(self):
-        """
-        Generates collages from a folder with flat images.
-        """
-        image_folder = self.photoDirectory
-        if not os.path.isdir(image_folder):
-            print(f"Folder {image_folder} does not exist.")
-            return
-
-        # Collect all image files in the folder
-        image_files = [
-            os.path.join(image_folder, file)
-            for file in sorted(os.listdir(image_folder))
-            if file.lower().endswith((".png", ".jpg", ".jpeg"))
-        ]
-
-        if not image_files:
-            print(f"No images found in the {image_folder} folder.")
-            return
-
-        # Description and prefix for the collages
-        folderName = os.path.basename(image_folder)
-        output_prefix = f"collage_{folderName}"
-
-        descriptions = self._get_description(image_folder)
-
-        # Generate collages from flat images
-        self._process_images(
-            image_files, output_prefix, description=descriptions, start_date=self.startDate, max_images_per_collage=4
-        )
 
         if self.config.generatePdf:
             self.generate_pdf(self.outputDir)

@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +13,7 @@ class Photo:
     DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
     def __init__(self, file_path: str | Path):
-        self.file_path = Path(file_path)
+        self.file_path: Path = Path(file_path)
         if not self.file_path.exists():
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
@@ -70,4 +71,26 @@ class Photo:
         match = self.DATE_PATTERN_NO_TIME.search(self.file_path.name)
         if match:
             return datetime(*map(int, match.groups()), 12, 0, 0)
+        return datetime.max
+
+
+def get_photos_from_dir(image_folder: str | Path) -> Optional[list["Photo"]]:
+    """Liest alle Bilddateien aus einem Ordner ein und gibt eine Liste von Photo-Objekten zurück."""
+
+    folder_path = Path(image_folder)
+
+    if not folder_path.is_dir():
+        raise ValueError(f"Folder '{image_folder}' does not exist.")
+
+    # Alle Bilddateien sammeln
+    image_files = [
+        os.path.join(image_folder, file)
+        for file in sorted(os.listdir(image_folder))
+        if file.lower().endswith((".png", ".jpg", ".jpeg"))
+    ]
+
+    if not image_files:
+        print(f"No images found in '{image_folder}'.")
         return None
+
+    return [Photo(file) for file in image_files]  # Photo-Objekte erstellen

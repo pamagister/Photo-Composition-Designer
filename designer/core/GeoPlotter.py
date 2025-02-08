@@ -58,6 +58,7 @@ class GeoPlotter:
         :param coords: List of (latitude, longitude) tuples.
         :return: GeoDataFrame with points.
         """
+
         gdf = gpd.GeoDataFrame(
             {"geometry": [Point(lon, lat) for lat, lon in coords]},
             crs="EPSG:4326",

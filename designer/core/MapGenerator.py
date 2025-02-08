@@ -1,4 +1,3 @@
-import os.path
 from io import BytesIO
 from pathlib import Path
 
@@ -17,17 +16,8 @@ class MapGenerator:
         self.width = self.config.mapWidth
         self.locations = Locations(self.config.locationsConfig)
 
-    def generateImageLocationMap(self, image_files):
-        # Read EXIF data and extract GPS coordinates
-        coordinatesList = []
-        for img_path in image_files:
-            coordinates = self.extract_gps_coordinates(img_path)
-            file_name = str(os.path.splitext(os.path.basename(img_path))[0]).lower()
-            if coordinates:
-                coordinatesList.append(coordinates)
-            elif file_name in self.locations.locations_dict.keys():
-                coordinatesList.append(self.locations.locations_dict[file_name])
-        map_image = self.generate_map(coordinatesList)
+    def generateImageLocationMap(self, coordinates_list):
+        map_image = self.generate_map(coordinates_list)
 
         return map_image
 

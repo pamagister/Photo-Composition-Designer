@@ -45,7 +45,7 @@ DEFAULT_CONFIG = [
         "Country/state codes for public holidays, e.g. NY,CA See https://pypi.org/project/holidays/",
     ),
     ("CALENDAR", "startDate", "30.12.2024", datetime, "Start date of the calendar"),
-    ("CALENDAR", "collagesToGenerate", 55, int, "Number of collages to be generated (e.g. number of weeks)"),
+    ("CALENDAR", "collagesToGenerate", 11, int, "Number of collages to be generated (e.g. number of weeks)"),
     # COLORS
     ("COLORS", "backgroundColor", (20, 20, 20), tuple, "Background color (RGB)"),
     ("COLORS", "textColor1", (255, 255, 255), tuple, "Primary text color"),
