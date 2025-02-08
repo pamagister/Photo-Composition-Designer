@@ -5,6 +5,7 @@ from datetime import timedelta
 from PIL import Image, ImageDraw
 
 from designer.common.Config import Config
+from designer.common.Locations import Locations
 from designer.common.Photo import get_photos_from_dir
 from designer.core.CalendarGenerator import CalendarGenerator
 from designer.core.DescriptionGenerator import DescriptionGenerator
@@ -171,7 +172,8 @@ class CompositionDesigner:
                 continue
 
             # Collect all image files in the current folder
-            photos = get_photos_from_dir(folder_path)
+            locations = Locations(self.config.locationsConfig).locations_dict
+            photos = get_photos_from_dir(folder_path, locations)
 
             if not photos:
                 print(f"No images found in {folder_path}, skip...")
@@ -235,5 +237,6 @@ class CompositionDesigner:
 
 if __name__ == "__main__":
     # generate collage from separate folders
-    colGen = CompositionDesigner()
+    config = Config("config/config.ini")
+    colGen = CompositionDesigner(config)
     colGen.generateProjectFromSubFolders()

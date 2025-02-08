@@ -12,12 +12,16 @@ class Photo:
     DATE_PATTERN_FULL = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2}))")
     DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
-    def __init__(self, file_path: str | Path):
+    def __init__(self, file_path: str | Path, locations=None):
         self.file_path: Path = Path(file_path)
+        self._locations: dict[str : tuple[float, float]] = locations
         if not self.file_path.exists():
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
     def get_location(self) -> Optional[Tuple[float, float]]:
+        return self.get_location_from_exif() or self.get_location_from_name()
+
+    def get_location_from_exif(self) -> Optional[Tuple[float, float]]:
         """Returns the GPS coordinates from EXIF data if available."""
         with open(self.file_path, "rb") as img_file:
             tags = exifread.process_file(img_file, details=False)
@@ -29,6 +33,16 @@ class Photo:
                 if tags.get("GPS GPSLongitudeRef") and tags["GPS GPSLongitudeRef"].values[0] == "W":
                     lon = -lon
                 return lat, lon
+        return None
+
+    def get_location_from_name(self) -> Optional[Tuple[float, float]]:
+        location = self._locations
+        file_name = self.file_path.name.lower()
+
+        for place in location:
+            if re.search(rf"\b{re.escape(place.lower())}\b", file_name):
+                return location[place]
+
         return None
 
     def get_date(self) -> Optional[datetime]:
@@ -74,7 +88,9 @@ class Photo:
         return datetime.max
 
 
-def get_photos_from_dir(image_folder: str | Path) -> Optional[list["Photo"]]:
+def get_photos_from_dir(
+    image_folder: str | Path, locations: dict[str : tuple[float, float]] = None
+) -> Optional[list["Photo"]]:
     """Liest alle Bilddateien aus einem Ordner ein und gibt eine Liste von Photo-Objekten zurück."""
 
     folder_path = Path(image_folder)
@@ -93,4 +109,4 @@ def get_photos_from_dir(image_folder: str | Path) -> Optional[list["Photo"]]:
         print(f"No images found in '{image_folder}'.")
         return None
 
-    return [Photo(file) for file in image_files]  # Photo-Objekte erstellen
+    return [Photo(file, locations) for file in image_files]  # Photo-Objekte erstellen

@@ -14,6 +14,41 @@ from designer.common.Anniversaries import Anniversaries
 from designer.common.Config import Config
 
 
+class MoonPhase:
+    DETAILED = False
+
+    @staticmethod
+    def get_moon_phase_symbol_light(cal_date):
+        moon_phase = moon.phase(cal_date)
+        return MoonPhase.get_moon_symbol(moon_phase)
+
+    @staticmethod
+    def get_moon_phase_symbol_dark(cal_date):
+        moon_phase = moon.phase(cal_date)
+        return MoonPhase.get_moon_symbol((moon_phase + 14) % 28)
+
+    @staticmethod
+    def get_moon_symbol(moon_phase):
+        if int(moon_phase) == 0:  # Neumond
+            return "🌑"
+        elif int(moon_phase) == 4 and MoonPhase.DETAILED:  # Zunehmende Sichel
+            return "🌒"
+        elif int(moon_phase) == 7:  # Erstes Viertel (zunehmender Halbmond)
+            return "🌓"
+        elif int(moon_phase) == 10 and MoonPhase.DETAILED:  # Fast voller zunehmender Mond
+            return "🌔"
+        elif int(moon_phase) == 14:  # Vollmond
+            return "🌕"
+        elif int(moon_phase) == 18 and MoonPhase.DETAILED:  # Fast voller abnehmender Mond
+            return "🌖"
+        elif int(moon_phase) == 21:  # Letztes Viertel (abnehmender Halbmond)
+            return "🌗"
+        elif int(moon_phase) == 25 and MoonPhase.DETAILED:  # Abnehmende Sichel
+            return "🌘"
+        else:
+            return ""  # Kein spezifisches Symbol an diesem Tag
+
+
 class CalendarGenerator:
     def __init__(self, config=None):
         self.config = config or Config()
@@ -103,7 +138,7 @@ class CalendarGenerator:
                 day_name = day_name[:2]
 
             # Moon phase
-            moon_symbol = self.get_moon_phase_symbol(day_date)
+            moon_symbol = MoonPhase.get_moon_phase_symbol_dark(day_date)
             if moon_symbol:
                 day_name = f"   {day_name} {moon_symbol}"
 
@@ -155,21 +190,6 @@ class CalendarGenerator:
         draw.text((int(width / 2), base_y), title_text, font=font_large, fill=self.config.textColor1, anchor="md")
 
         return img
-
-    @staticmethod
-    def get_moon_phase_symbol(date):
-        moon_phase = moon.phase(date)
-
-        if moon_phase <= 1:  # Neumond
-            return "○"
-        elif 7.5 <= moon_phase <= 8.5:  # Zunehmender Halbmond
-            return "🌗"
-        elif 13.5 <= moon_phase <= 14.5:  # Vollmond
-            return "●"
-        elif 20.5 <= moon_phase <= 21.5:  # Abnehmender Halbmond
-            return "🌓"
-        else:
-            return ""  # Keine spezielle Phase anzeigen
 
     @staticmethod
     def get_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
