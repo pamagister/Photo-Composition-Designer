@@ -118,7 +118,7 @@ class CompositionDesigner:
 
         # create title only once
         self.compositionTitle = None
-        composition.save(output_path, quality=self.config.jpgQuality)
+        composition.save(output_path, quality=self.config.jpgQuality, dpi=(self.config.dpi, self.config.dpi))
         print(f"Composition saved: {output_path}")
 
     def _process_images(self, photos, output_prefix, description, start_date, max_images_per_collage=36):
@@ -222,7 +222,13 @@ class CompositionDesigner:
         # First image as base, attach remaining images as additional pages
         first_image, *remaining_images = image_list
         output_path = os.path.join(collages_dir, output_pdf)
-        first_image.save(output_path, save_all=True, append_images=remaining_images, quality=self.config.jpgQuality)
+        first_image.save(
+            output_path,
+            save_all=True,
+            append_images=remaining_images,
+            quality=self.config.jpgQuality,
+            dpi=(self.config.dpi, self.config.dpi),
+        )
 
         print(f"PDF successfully created: {output_path}")
 
