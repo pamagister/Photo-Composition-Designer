@@ -47,7 +47,7 @@ def test_arrange_images(mock_open, photo_layout, mock_images, num_images):
         patch.object(Path, "exists", return_value=True),
     ):
         image_paths = [f"img{i}.jpg" for i in range(num_images)]
-        photos = [Photo(filename) for filename in image_paths]
+        photos = [Photo(Path(filename)) for filename in image_paths]
         photo_layout.arrangeImages(photos)
 
         assert mock_open.call_count == num_images

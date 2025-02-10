@@ -12,9 +12,9 @@ class Photo:
     DATE_PATTERN_FULL = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2}))")
     DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
-    def __init__(self, file_path: str | Path, locations=None):
+    def __init__(self, file_path: Path, locations=None):
         self.file_path: Path = Path(file_path)
-        self._locations: dict[str : tuple[float, float]] = locations
+        self._locations: dict[str: tuple[float, float]] = locations
         if not self.file_path.exists():
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
@@ -109,4 +109,4 @@ def get_photos_from_dir(
         print(f"No images found in '{image_folder}'.")
         return None
 
-    return [Photo(file, locations) for file in image_files]  # Photo-Objekte erstellen
+    return [Photo(Path(file), locations) for file in image_files]  # Photo-Objekte erstellen

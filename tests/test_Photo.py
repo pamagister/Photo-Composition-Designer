@@ -30,7 +30,7 @@ def test_extract_date_from_filename(filename, expected_date):
     """Testet die Extraktion von Datum aus Dateinamen mit Mocking."""
 
     with patch.object(Path, "exists", return_value=True):  # Mockt exists(), damit keine echte Datei nötig ist
-        photo = Photo("dummy_path.jpg")  # Normal initialisieren
+        photo = Photo(Path("dummy_path.jpg"))  # Normal initialisieren
 
     # Mock das file_path-Attribut direkt
     photo.file_path = MagicMock(spec=Path)
@@ -45,7 +45,7 @@ def test_extract_date_from_filename(filename, expected_date):
 def test_file_not_found():
     """Testet, ob eine Exception geworfen wird, wenn die Datei nicht existiert."""
     with pytest.raises(FileNotFoundError):
-        Photo("non_existent_image.jpg")
+        Photo(Path("non_existent_image.jpg"))
 
 
 def test_get_image():
