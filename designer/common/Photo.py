@@ -14,7 +14,7 @@ class Photo:
 
     def __init__(self, file_path: Path, locations=None):
         self.file_path: Path = Path(file_path)
-        self._locations: dict[str: tuple[float, float]] = locations
+        self._locations: dict[str, tuple[float, float]] = locations
         if not self.file_path.exists():
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
