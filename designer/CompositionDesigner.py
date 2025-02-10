@@ -1,6 +1,7 @@
 import os
 import re
 from datetime import timedelta
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
@@ -173,7 +174,7 @@ class CompositionDesigner:
 
             # Collect all image files in the current folder
             locations = Locations(self.config.locationsConfig).locations_dict
-            photos = get_photos_from_dir(folder_path, locations)
+            photos = get_photos_from_dir(Path(folder_path), locations)
 
             if not photos:
                 print(f"No images found in {folder_path}, skip...")

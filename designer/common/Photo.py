@@ -89,7 +89,7 @@ class Photo:
 
 
 def get_photos_from_dir(
-    image_folder: str | Path, locations: dict[str : tuple[float, float]] = None
+    image_folder: Path, locations: dict[str, tuple[float, float]] = None
 ) -> Optional[list["Photo"]]:
     """Liest alle Bilddateien aus einem Ordner ein und gibt eine Liste von Photo-Objekten zurück."""
 
