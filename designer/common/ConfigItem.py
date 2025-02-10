@@ -7,13 +7,27 @@ class ConfigItem:
     Represents a configuration option with type information and description.
     """
 
-    def __init__(self, category, key, value, value_type, description, base_dir=None):
+    def __init__(self, category, key, default_value, value_type, description, base_dir=None):
         self.category = category
         self.key = key
-        self.value = value
+        self._default_value = default_value  # Originaler Default-Wert
         self.value_type = value_type
         self.description = description
         self.config_base_path = base_dir
+        self._value = None  # Hier wird der tatsächliche Wert gespeichert, wenn geladen
+
+    @property
+    def value(self):
+        """Gibt den geladenen Wert oder den Default-Wert zurück."""
+        return self.value if self._value is not None else self._default_value
+
+    @value.setter
+    def value(self, new_value):
+        """Setzt den neuen Wert, konvertiert ihn zum richtigen Typ."""
+        try:
+            self.value = self.value_type(new_value)
+        except ValueError:
+            raise ValueError(f"Ungültiger Wert für {self.key}: {new_value}. Erwartet: {self.value_type.__name__}")
 
     def get_value(self, config_parser):
         """
