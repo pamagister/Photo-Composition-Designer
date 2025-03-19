@@ -58,6 +58,8 @@ class TestCollageGenerator:
         Tests different layouts with CompositionDesigner.
         """
         config = Config()
+        config.dpi = 20
+        config.jpgQuality = 20
         designer = CompositionDesigner(config)
         startDate = designer.startDate
         base_dir = os.path.join(designer.photoDirectory, "layout_orientation")
@@ -103,7 +105,11 @@ class TestCollageGenerator:
         print(f"Generate collage for layout: {layout}")
         date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
-        photos = [Photo(image_file) for image_file in selected_images]
-        designer.generate_composition(photos, date, output_path)
+        if self.WEEK_COUNTER > 1:
+            designer.compositionTitle = ''
+
+        photos = [Photo(Path(image_file)) for image_file in selected_images]
+        description = f"This is a description for all the {len(photos)} of the week {date}"
+        designer.generate_composition(photos, date, output_path, description)
 
         assert os.path.exists(output_path), f"Output file was not created: {output_path}"

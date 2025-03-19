@@ -13,7 +13,7 @@ def sample_config():
     """Erstellt eine Beispielkonfiguration für Tests."""
     config = Config()
     config.startDate = datetime(2024, 1, 1)
-    config.width = 2100  # Beispielwerte in Pixel
+    config.width = 2100
     config.calendarHeight = 300
     config.marginBottom = 20
     config.marginSides = 20

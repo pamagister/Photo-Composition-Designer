@@ -38,7 +38,7 @@ class CompositionDesigner:
     def get_available_collage_height(self):
         available_height = self.height
         if self.config.useCalendar or self.compositionTitle:
-            available_height -= self.calendar_height + self.config.marginBottom
+            available_height -= self.calendar_height + self.config.marginBottom + self.config.marginTop
         if self.config.usePhotoDescription:
             available_height -= self.descGenerator.height
         return available_height
@@ -78,7 +78,7 @@ class CompositionDesigner:
 
         # Arrange image composition
         collage = self.layoutManager.arrangeImages(photos)
-        composition.paste(collage, (1, 1))
+        composition.paste(collage, (0, self.config.marginTop))
 
         # add location map
         if self.config.usePhotoLocationMaps and not self.compositionTitle:
@@ -93,6 +93,7 @@ class CompositionDesigner:
             )
 
         # draw dates of images into lower corner of the composition
+        # TODO: Bessere Position finden, ggf. Größe mit der Karte verrechnen
         image_dates = [date for photo in photos if (date := photo.get_date()) is not None]
 
         unique_dates = set()  # Speichert bereits hinzugefügte Datumswerte
@@ -105,17 +106,17 @@ class CompositionDesigner:
                 unique_dates.add(formatted_date)
                 date_str += formatted_date
 
-            if len(unique_dates) >= 4:  # Maximal 4 verschiedene Daten
+            if len(unique_dates) >= 3:  # Maximal 3 verschiedene Daten
                 break
 
         draw = ImageDraw.Draw(composition)
-        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.marginBottom * 0.6))
+        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeSmall*0.8))
         draw.text(
-            (self.width - self.config.marginSides, self.height - font.size),
+            (self.width - self.config.marginSides, self.height - self.config.marginBottom),
             date_str,
             font=font,
             fill=self.config.textColor2,
-            anchor="rm",
+            anchor="rd",
         )
 
         # create title only once

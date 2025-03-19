@@ -66,6 +66,7 @@ DEFAULT_CONFIG = [
     ("LAYOUT", "fontSizeLarge", 0.5, float, "Font size for large text"),
     ("LAYOUT", "fontSizeSmall", 0.14, float, "Font size for small text"),
     ("LAYOUT", "fontSizeAnniversaries", 0.115, float, "Font size for anniversaries"),
+    ("LAYOUT", "marginTop", 6, int, "Top margin in mm"),
     ("LAYOUT", "marginBottom", 3, int, "Bottom margin in mm"),
     ("LAYOUT", "marginSides", 3, int, "Side margins in mm"),
     ("LAYOUT", "spacing", 2, int, "Spacing between elements in mm"),
@@ -85,6 +86,7 @@ class Config:
         self._calendarHeight = 0
         self._mapWidth = 0
         self._mapHeight = 0
+        self._marginTop = 0
         self._marginBottom = 0
         self._marginSides = 0
         self._spacing = 0
@@ -121,6 +123,7 @@ class Config:
         self._calendarHeight = self.calendarHeight
         self._mapWidth = self.mapWidth
         self._mapHeight = self.mapHeight
+        self._marginTop = self.marginBottom
         self._marginBottom = self.marginBottom
         self._marginSides = self.marginSides
         self._spacing = self.spacing
@@ -136,6 +139,7 @@ class Config:
         self.calendarHeight = int(self._calendarHeight * self.dpi / 25.4)
         self.mapWidth = int(self._mapWidth * self.dpi / 25.4)
         self.mapHeight = int(self._mapHeight * self.dpi / 25.4)
+        self.marginTop = int(self._marginTop * self.dpi / 25.4)
         self.marginBottom = int(self._marginBottom * self.dpi / 25.4)
         self.marginSides = int(self._marginSides * self.dpi / 25.4)
         self.spacing = int(self._spacing * self.dpi / 25.4)
