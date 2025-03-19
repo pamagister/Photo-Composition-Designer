@@ -110,7 +110,7 @@ class CompositionDesigner:
                 break
 
         draw = ImageDraw.Draw(composition)
-        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeSmall*0.8))
+        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", int(self.config.fontSizeSmall * 0.8))
         draw.text(
             (self.width - self.config.marginSides, self.height - self.config.marginBottom),
             date_str,

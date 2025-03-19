@@ -106,7 +106,7 @@ class TestCollageGenerator:
         date = startDate + timedelta(weeks=self.WEEK_COUNTER)  # Variiere das Datum pro Test
         self.WEEK_COUNTER += 1
         if self.WEEK_COUNTER > 1:
-            designer.compositionTitle = ''
+            designer.compositionTitle = ""
 
         photos = [Photo(Path(image_file)) for image_file in selected_images]
         description = f"This is a description for all the {len(photos)} of the week {date}"
