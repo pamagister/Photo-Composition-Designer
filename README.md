@@ -2,7 +2,7 @@
 
 # Welcome to Photo-Composition-Designer
 
-A feature-rich Python project template with with auto-generated CLI, GUI and parameterized configuration.
+A feature-rich Python project template with auto-generated CLI, GUI and parameterized configuration.
 
 [![Github CI Status](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions)
 [![GitHub release](https://img.shields.io/github/v/release/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/releases)

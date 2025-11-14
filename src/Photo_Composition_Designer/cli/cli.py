@@ -120,7 +120,9 @@ def main():
     config_manager = ConfigParameterManager()
 
     # Create CLI generator
-    cli_generator = CliGenerator(config_manager=config_manager, app_name="Photo_Composition_Designer")
+    cli_generator = CliGenerator(
+        config_manager=config_manager, app_name="Photo_Composition_Designer"
+    )
 
     # Run the CLI with our main processing function
     return cli_generator.run_cli(

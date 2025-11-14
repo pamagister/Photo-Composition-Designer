@@ -1,57 +1,16 @@
-"""Central configuration management for config-cli-gui project.
+"""
+Central configuration management for the new project.
 
 This module provides a single source of truth for all configuration parameters
-organized in categories (CLI, App, GUI). It can generate config files, CLI modules,
-and documentation from the parameter definitions.
+organized in categories (GENERAL, CALENDAR, COLORS, GEO, SIZE, LAYOUT).
+It can generate config files, CLI modules, and documentation from the parameter definitions.
 """
 
-from config_cli_gui.config import ConfigCategory, ConfigManager, ConfigParameter
+from datetime import datetime
+from pathlib import Path
+
+from config_cli_gui.config import Color, ConfigCategory, ConfigManager, ConfigParameter
 from config_cli_gui.docs import DocumentationGenerator
-
-
-class CliConfig(ConfigCategory):
-    """CLI-specific configuration parameters."""
-
-    def get_category_name(self) -> str:
-        return "cli"
-
-    # Positional argument
-    input: ConfigParameter = ConfigParameter(
-        name="input",
-        value="",
-        help="Path to input (file or folder)",
-        required=True,
-        is_cli=True,
-    )
-
-    # Optional CLI arguments
-    output: ConfigParameter = ConfigParameter(
-        name="output",
-        value="",
-        help="Path to output destination",
-        is_cli=True,
-    )
-
-    min_dist: ConfigParameter = ConfigParameter(
-        name="min_dist",
-        value=25,
-        help="Maximum distance between two waypoints",
-        is_cli=True,
-    )
-
-    extract_waypoints: ConfigParameter = ConfigParameter(
-        name="extract_waypoints",
-        value=True,
-        help="Extract starting points of each track as waypoint",
-        is_cli=True,
-    )
-
-    elevation: ConfigParameter = ConfigParameter(
-        name="elevation",
-        value=True,
-        help="Include elevation data in waypoints",
-        is_cli=True,
-    )
 
 
 class AppConfig(ConfigCategory):
@@ -60,12 +19,6 @@ class AppConfig(ConfigCategory):
     def get_category_name(self) -> str:
         return "app"
 
-    date_format: ConfigParameter = ConfigParameter(
-        name="date_format",
-        value="%Y-%m-%d",
-        help="Date format to use",
-    )
-
     log_level: ConfigParameter = ConfigParameter(
         name="log_level",
         value="INFO",
@@ -73,98 +26,274 @@ class AppConfig(ConfigCategory):
         help="Logging level for the application",
     )
 
-    log_file_max_size: ConfigParameter = ConfigParameter(
-        name="log_file_max_size",
-        value=10,
-        help="Maximum log file size in MB before rotation",
-    )
 
-    log_backup_count: ConfigParameter = ConfigParameter(
-        name="log_backup_count",
-        value=5,
-        help="Number of backup log files to keep",
-    )
-
-    log_format: ConfigParameter = ConfigParameter(
-        name="log_format",
-        value="detailed",
-        choices=["simple", "detailed", "json"],
-        help="Log message format style",
-    )
-
-    max_workers: ConfigParameter = ConfigParameter(
-        name="max_workers",
-        value=4,
-        help="Maximum number of worker threads",
-    )
-
-    enable_file_logging: ConfigParameter = ConfigParameter(
-        name="enable_file_logging",
-        value=True,
-        help="Enable logging to file",
-    )
-
-    enable_console_logging: ConfigParameter = ConfigParameter(
-        name="enable_console_logging",
-        value=True,
-        help="Enable logging to console",
-    )
-
-
-class GuiConfig(ConfigCategory):
-    """GUI-specific configuration parameters."""
+class GeneralConfig(ConfigCategory):
+    """GENERAL configuration parameters."""
 
     def get_category_name(self) -> str:
-        return "gui"
+        return "general"
 
-    theme: ConfigParameter = ConfigParameter(
-        name="theme",
-        value="light",
-        choices=["light", "dark", "auto"],
-        help="GUI theme setting",
+    photoDirectory: ConfigParameter = ConfigParameter(
+        name="photoDirectory",
+        value=Path("../../images"),
+        help="Path to the directory containing photos "
+        "(absolute, or relative to this config.ini file)",
+        is_cli=True,
+        required=True,
     )
 
-    window_width: ConfigParameter = ConfigParameter(
-        name="window_width",
-        value=800,
-        help="Default window width",
+    anniversariesConfig: ConfigParameter = ConfigParameter(
+        name="anniversariesConfig",
+        value=Path("anniversaries.ini"),
+        help="Path to anniversaries.ini file (absolute, or relative to this config.ini file)",
     )
 
-    window_height: ConfigParameter = ConfigParameter(
-        name="window_height",
-        value=600,
-        help="Default window height",
+    locationsConfig: ConfigParameter = ConfigParameter(
+        name="locationsConfig",
+        value=Path("locations_en.ini"),
+        help="Path to locations.ini file (absolute, or relative to this config.ini file)",
     )
 
-    log_window_height: ConfigParameter = ConfigParameter(
-        name="log_window_height",
-        value=200,
-        help="Height of the log window in pixels",
+    compositionTitle: ConfigParameter = ConfigParameter(
+        name="compositionTitle",
+        value="This is the title of the composition",
+        help="This is the title of the composition on the first page. Leave empty if not required.",
     )
 
-    auto_scroll_log: ConfigParameter = ConfigParameter(
-        name="auto_scroll_log",
+
+class CalendarConfig(ConfigCategory):
+    """CALENDAR configuration parameters."""
+
+    def get_category_name(self) -> str:
+        return "calendar"
+
+    useCalendar: ConfigParameter = ConfigParameter(
+        name="useCalendar",
         value=True,
-        help="Automatically scroll to the newest log entries",
+        help="True: Calendar elements are generated",
     )
 
-    max_log_lines: ConfigParameter = ConfigParameter(
-        name="max_log_lines",
-        value=1000,
-        help="Maximum number of log lines to keep in GUI",
+    language: ConfigParameter = ConfigParameter(
+        name="language",
+        value="de_DE",
+        help="Language for the calendar (e.g., de_DE, en_US)",
+    )
+
+    holidayCountries: ConfigParameter = ConfigParameter(
+        name="holidayCountries",
+        value="SN",
+        help="Country/state codes for public holidays, e.g., NY,CA",
+    )
+
+    startDate: ConfigParameter = ConfigParameter(
+        name="startDate",
+        value=datetime.fromisoformat("2025-12-31"),
+        help="Start date of the calendar",
+        is_cli=True,
+    )
+
+    collagesToGenerate: ConfigParameter = ConfigParameter(
+        name="collagesToGenerate",
+        value=11,
+        help="Number of collages to be generated (e.g. number of weeks)",
     )
 
 
-class ConfigParameterManager(ConfigManager):  # Inherit from ConfigManager
+class ColorsConfig(ConfigCategory):
+    """COLORS configuration parameters."""
+
+    def get_category_name(self) -> str:
+        return "colors"
+
+    backgroundColor: ConfigParameter = ConfigParameter(
+        name="backgroundColor",
+        value=Color(20, 20, 20),
+        help="Background color (RGB)",
+    )
+
+    textColor1: ConfigParameter = ConfigParameter(
+        name="textColor1",
+        value=Color(255, 255, 255),
+        help="Primary text color",
+    )
+
+    textColor2: ConfigParameter = ConfigParameter(
+        name="textColor2",
+        value=Color(150, 150, 150),
+        help="Secondary text color",
+    )
+
+    holidayColor: ConfigParameter = ConfigParameter(
+        name="holidayColor",
+        value=Color(255, 0, 0),
+        help="Color for holidays",
+    )
+
+
+class GeoConfig(ConfigCategory):
+    """GEO configuration parameters."""
+
+    def get_category_name(self) -> str:
+        return "geo"
+
+    usePhotoLocationMaps: ConfigParameter = ConfigParameter(
+        name="usePhotoLocationMaps",
+        value=True,
+        help="Use GPS data to generate maps",
+    )
+
+    minimalExtension: ConfigParameter = ConfigParameter(
+        name="minimalExtension",
+        value=7,
+        help="Minimum range for map display (degrees)",
+    )
+
+
+class SizeConfig(ConfigCategory):
+    """SIZE configuration parameters."""
+
+    def get_category_name(self) -> str:
+        return "size"
+
+    width: ConfigParameter = ConfigParameter(
+        name="width",
+        value=216,
+        help="Width of the collage in mm",
+        is_cli=True,
+    )
+
+    height: ConfigParameter = ConfigParameter(
+        name="height",
+        value=154,
+        help="Height of the collage in mm",
+        is_cli=True,
+    )
+
+    calendarHeight: ConfigParameter = ConfigParameter(
+        name="calendarHeight",
+        value=18,
+        help="Height of the calendar area in mm",
+    )
+
+    mapWidth: ConfigParameter = ConfigParameter(
+        name="mapWidth",
+        value=20,
+        help="Width of the locations map in mm",
+    )
+
+    mapHeight: ConfigParameter = ConfigParameter(
+        name="mapHeight",
+        value=20,
+        help="Height of the locations map in mm",
+    )
+
+    dpi: ConfigParameter = ConfigParameter(
+        name="dpi",
+        value=150,
+        help="Resolution of the image in dpi",
+    )
+
+    jpgQuality: ConfigParameter = ConfigParameter(
+        name="jpgQuality",
+        value=90,
+        help="JPG compression quality (1-100)",
+    )
+
+
+class LayoutConfig(ConfigCategory):
+    """LAYOUT configuration parameters."""
+
+    def get_category_name(self) -> str:
+        return "layout"
+
+    fontSizeLarge: ConfigParameter = ConfigParameter(
+        name="fontSizeLarge",
+        value=0.5,
+        help="Font size for large text",
+    )
+
+    fontSizeSmall: ConfigParameter = ConfigParameter(
+        name="fontSizeSmall",
+        value=0.14,
+        help="Font size for small text",
+    )
+
+    fontSizeAnniversaries: ConfigParameter = ConfigParameter(
+        name="fontSizeAnniversaries",
+        value=0.115,
+        help="Font size for anniversaries",
+    )
+
+    marginTop: ConfigParameter = ConfigParameter(
+        name="marginTop",
+        value=6,
+        help="Top margin in mm",
+    )
+
+    marginBottom: ConfigParameter = ConfigParameter(
+        name="marginBottom",
+        value=3,
+        help="Bottom margin in mm",
+    )
+
+    marginSides: ConfigParameter = ConfigParameter(
+        name="marginSides",
+        value=3,
+        help="Side margins in mm",
+    )
+
+    spacing: ConfigParameter = ConfigParameter(
+        name="spacing",
+        value=2,
+        help="Spacing between elements in mm",
+    )
+
+    useShortDayNames: ConfigParameter = ConfigParameter(
+        name="useShortDayNames",
+        value=False,
+        help="Use short weekday names (e.g., Mon, Tue)",
+    )
+
+    useShortMonthNames: ConfigParameter = ConfigParameter(
+        name="useShortMonthNames",
+        value=True,
+        help="Use short month names (e.g., Jan, Feb)",
+    )
+
+    usePhotoDescription: ConfigParameter = ConfigParameter(
+        name="usePhotoDescription",
+        value=True,
+        help="Include photo descriptions in the collage",
+    )
+
+    generatePdf: ConfigParameter = ConfigParameter(
+        name="generatePdf",
+        value=True,
+        help="Combine all generated collages into one pdf",
+    )
+
+
+class ConfigParameterManager(ConfigManager):
     """Main configuration manager that handles all parameter categories."""
 
-    cli: CliConfig
     app: AppConfig
-    gui: GuiConfig
+    general: GeneralConfig
+    calendar: CalendarConfig
+    colors: ColorsConfig
+    geo: GeoConfig
+    size: SizeConfig
+    layout: LayoutConfig
 
     def __init__(self, config_file: str | None = None, **kwargs):
-        # Erst den Parent initialisieren
-        categories = (CliConfig(), AppConfig(), GuiConfig())
+        categories = (
+            AppConfig(),
+            GeneralConfig(),
+            CalendarConfig(),
+            ColorsConfig(),
+            GeoConfig(),
+            SizeConfig(),
+            LayoutConfig(),
+        )
         super().__init__(categories, config_file, **kwargs)
 
 
@@ -173,16 +302,17 @@ def main():
     default_config: str = "config.yaml"
     default_cli_doc: str = "docs/usage/cli.md"
     default_config_doc: str = "docs/usage/config.md"
-    app_name = "Photo_Composition_Designer"
+
     config_manager = ConfigParameterManager()
-    doc_gen = DocumentationGenerator(config_manager)
-    doc_gen.generate_default_config_file(output_file=default_config)
+    docGen = DocumentationGenerator(config_manager)
+
+    docGen.generate_default_config_file(output_file=default_config)
     print(f"Generated: {default_config}")
 
-    doc_gen.generate_config_markdown_doc(output_file=default_config_doc)
+    docGen.generate_config_markdown_doc(output_file=default_config_doc)
     print(f"Generated: {default_config_doc}")
 
-    doc_gen.generate_cli_markdown_doc(output_file=default_cli_doc, app_name=app_name)
+    docGen.generate_cli_markdown_doc(output_file=default_cli_doc)
     print(f"Generated: {default_cli_doc}")
 
 

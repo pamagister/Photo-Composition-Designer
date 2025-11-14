@@ -148,9 +148,6 @@ class LoggerManager:
         """Log current configuration summary."""
         self.logger.info("=== Configuration Summary ===")
         self.logger.info(f"Log level: {self.config.app.log_level.value}")
-        self.logger.info(f"Input: {self.config.cli.input.value}")
-        self.logger.info(f"Output: {self.config.cli.output.value}")
-        self.logger.info(f"Max workers: {self.config.app.max_workers.value}")
         self.logger.info("==============================")
 
 
