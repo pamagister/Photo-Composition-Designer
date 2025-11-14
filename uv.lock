@@ -837,7 +837,7 @@ wheels = [
 ]
 
 [[package]]
-name = "python-template-project"
+name = "Photo-Composition-Designer"
 source = { editable = "." }
 dependencies = [
     { name = "config-cli-gui" },

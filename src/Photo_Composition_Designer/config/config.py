@@ -173,7 +173,7 @@ def main():
     default_config: str = "config.yaml"
     default_cli_doc: str = "docs/usage/cli.md"
     default_config_doc: str = "docs/usage/config.md"
-    app_name = "python_template_project"
+    app_name = "Photo_Composition_Designer"
     config_manager = ConfigParameterManager()
     doc_gen = DocumentationGenerator(config_manager)
     doc_gen.generate_default_config_file(output_file=default_config)

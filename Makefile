@@ -58,28 +58,28 @@ test: lint        ## Run tests and generate coverage report.
 .PHONY: build-win
 build-win:    ## Build the Windows executable.
 	echo "Building unified CLI/GUI application"
-	uv run pyinstaller --onefile src/main.py --name python-template-project --add-data "config.yaml;." --hidden-import python_template_project.cli.cli --hidden-import python_template_project.gui.gui
+	uv run pyinstaller --onefile src/main.py --name Photo-Composition-Designer --add-data "config.yaml;." --hidden-import Photo_Composition_Designer.cli.cli --hidden-import Photo_Composition_Designer.gui.gui
 	rm -rf release
 	mkdir release
-	cp dist/python-template-project.exe release
+	cp dist/Photo-Composition-Designer.exe release
 	cp config.yaml release
 	cp README.md release
 
 .PHONY: build-macos
 build-macos:    ## Build the macOS executable.
 	echo "Building unified CLI/GUI application as executable"
-	uv run pyinstaller --onefile src/main.py --name python-template-project --add-data "config.yaml:." --hidden-import python_template_project.cli.cli --hidden-import python_template_project.gui.gui
+	uv run pyinstaller --onefile src/main.py --name Photo-Composition-Designer --add-data "config.yaml:." --hidden-import Photo_Composition_Designer.cli.cli --hidden-import Photo_Composition_Designer.gui.gui
 
 	echo "Building unified CLI/GUI application as .app bundle"
 	# --windowed is important to hide the console for GUI mode
 	# The name "TemplateApp" becomes the name of the .app
-	uv run pyinstaller --windowed --name "TemplateApp" src/main.py --add-data "config.yaml:." --hidden-import python_template_project.cli.cli --hidden-import python_template_project.gui.gui
+	uv run pyinstaller --windowed --name "TemplateApp" src/main.py --add-data "config.yaml:." --hidden-import Photo_Composition_Designer.cli.cli --hidden-import Photo_Composition_Designer.gui.gui
 
 	# Prepare ZIP file for release
 	rm -rf release
 	mkdir release
 	echo "Copy the CLI/GUI executable"
-	cp dist/python-template-project release/
+	cp dist/Photo-Composition-Designer release/
 	echo "Copy the .app bundle (directory) recursively"
 	cp -R "dist/TemplateApp.app" release/
 	echo "Copy configuration and documentation"

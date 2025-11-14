@@ -194,10 +194,10 @@ cython_debug/
 .cursorindexingignore
 /.idea/misc.xml
 /.idea/modules.xml
-/.idea/python-template-project.iml
+/.idea/Photo-Composition-Designer.iml
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/inspectionProfiles/Project_Default.xml
-/src/python_template_project/_version.py
+/src/Photo_Composition_Designer/_version.py
 /release/config.yaml
-/release/python-template-project.exe
+/release/Photo-Composition-Designer.exe
 /release/README.md

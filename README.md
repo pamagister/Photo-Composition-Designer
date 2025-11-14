@@ -1,16 +1,16 @@
 <!-- This README.md is auto-generated from docs/index.md -->
 
-# Welcome to python-template-project
+# Welcome to Photo-Composition-Designer
 
 A feature-rich Python project template with with auto-generated CLI, GUI and parameterized configuration.
 
-[![Github CI Status](https://github.com/pamagister/python-template-project/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/python-template-project/actions)
-[![GitHub release](https://img.shields.io/github/v/release/pamagister/python-template-project)](https://github.com/pamagister/python-template-project/releases)
-[![Read the Docs](https://readthedocs.org/projects/python-template-project/badge/?version=stable)](https://python-template-project.readthedocs.io/en/stable/)
-[![License](https://img.shields.io/github/license/pamagister/python-template-project)](https://github.com/pamagister/python-template-project/blob/main/LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/pamagister/python-template-project)](https://github.com/pamagister/python-template-project/issues)
-[![PyPI](https://img.shields.io/pypi/v/python-template-project)](https://pypi.org/project/python-template-project/)
-[![Downloads](https://pepy.tech/badge/python-template-project)](https://pepy.tech/project/python-template-project/)
+[![Github CI Status](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions)
+[![GitHub release](https://img.shields.io/github/v/release/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/releases)
+[![Read the Docs](https://readthedocs.org/projects/Photo-Composition-Designer/badge/?version=stable)](https://Photo-Composition-Designer.readthedocs.io/en/stable/)
+[![License](https://img.shields.io/github/license/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/issues)
+[![PyPI](https://img.shields.io/pypi/v/Photo-Composition-Designer)](https://pypi.org/project/Photo-Composition-Designer/)
+[![Downloads](https://pepy.tech/badge/Photo-Composition-Designer)](https://pepy.tech/project/Photo-Composition-Designer/)
 
 
 This template provides a solid foundation for your next Python project, incorporating best practices for testing, automation, and distribution. It streamlines the development process with a comprehensive set of pre-configured tools and workflows, allowing you to focus on writing code.
@@ -22,12 +22,12 @@ This template provides a solid foundation for your next Python project, incorpor
 Getting started on developing your own project based on this template
 
 > **DO NOT FORK** 
-> This project is meant to be used from **[Use this template](https://github.com/pamagister/python-template-project/generate)** feature.
+> This project is meant to be used from **[Use this template](https://github.com/pamagister/Photo-Composition-Designer/generate)** feature.
 
 ---
 
 1. **Create a new repository using GitHub template**  
-   Click on **[Use this template](https://github.com/pamagister/python-template-project/generate)**.
+   Click on **[Use this template](https://github.com/pamagister/Photo-Composition-Designer/generate)**.
 
 2. **Give a name to your project**  
    For example: `my-python-project`  
@@ -149,23 +149,23 @@ Download from [PyPI](https://pypi.org/).
 💾 For more installation options see [install](docs/getting-started/install.md).
 
 ```bash
-pip install python-template-project
+pip install Photo-Composition-Designer
 ```
 
 Run GUI from command line
 
 ```bash
-python-template-project-gui
+Photo-Composition-Designer-gui
 ```
 
 Run application from command line using CLI
 
 ```bash
-python -m python_template_project.cli [OPTIONS] path/to/file
+python -m Photo_Composition_Designer.cli [OPTIONS] path/to/file
 ```
 
 ```bash
-python-template-project-cli [OPTIONS] path/to/file
+Photo-Composition-Designer-cli [OPTIONS] path/to/file
 ```
 
 ---

@@ -1,6 +1,6 @@
 from config_cli_gui.docs_generator import DocumentationGenerator
 
-from python_template_project.config.config import ConfigParameterManager
+from Photo_Composition_Designer.config.config import ConfigParameterManager
 
 """function to generate config file and documentation."""
 

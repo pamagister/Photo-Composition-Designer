@@ -1,4 +1,4 @@
-"""CLI interface for python-template-project using the generic config framework.
+"""CLI interface for Photo-Composition-Designer using the generic config framework.
 
 This file uses the CliGenerator from the generic config framework.
 """
@@ -7,9 +7,9 @@ from pathlib import Path
 
 from config_cli_gui.cli import CliGenerator
 
-from python_template_project.config.config import ConfigParameterManager
-from python_template_project.core.base import BaseGPXProcessor
-from python_template_project.core.logging import initialize_logging
+from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.base import BaseGPXProcessor
+from Photo_Composition_Designer.core.logging import initialize_logging
 
 
 def validate_config(config: ConfigParameterManager) -> bool:
@@ -24,7 +24,7 @@ def validate_config(config: ConfigParameterManager) -> bool:
     """
     # Initialize logging system
     logger_manager = initialize_logging(config)
-    logger = logger_manager.get_logger("python_template_project.cli")
+    logger = logger_manager.get_logger("Photo_Composition_Designer.cli")
 
     # Get CLI category and check required parameters
     cli_category = config.cli
@@ -59,11 +59,11 @@ def run_main_processing(config: ConfigParameterManager) -> int:
     """
     # Initialize logging system
     logger_manager = initialize_logging(config)
-    logger = logger_manager.get_logger("python_template_project.cli")
+    logger = logger_manager.get_logger("Photo_Composition_Designer.cli")
 
     try:
         # Log startup information
-        logger.info("Starting python_template_project CLI")
+        logger.info("Starting Photo_Composition_Designer CLI")
         logger_manager.log_config_summary()
 
         # Validate configuration
@@ -120,7 +120,7 @@ def main():
     config_manager = ConfigParameterManager()
 
     # Create CLI generator
-    cli_generator = CliGenerator(config_manager=config_manager, app_name="python_template_project")
+    cli_generator = CliGenerator(config_manager=config_manager, app_name="Photo_Composition_Designer")
 
     # Run the CLI with our main processing function
     return cli_generator.run_cli(
