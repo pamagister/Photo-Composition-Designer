@@ -130,7 +130,6 @@ def show_tree(path, prefix="", show_code=False):
 
         print(f"{prefix}{connector}{symbol} {item}")
         next_prefix = prefix + (INDENT if is_last else VERTICAL_LINE)
-
         if os.path.isdir(full_path):
             show_tree(full_path, next_prefix, show_code)
         elif show_code and item.endswith(".py"):
@@ -159,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--show-code",
         action="store_true",
-        default=True,
+        default=False,
         help="Shows functions, classes and attributes in .py files",
     )
     args = parser.parse_args()
@@ -172,4 +171,4 @@ if __name__ == "__main__":
     print(f"{CLASS_SYMBOL} - Class")
     print(f"{FUNC_SYMBOL} - Function/Method")
     print(f"{ATTR_SYMBOL} - Attribute")
-
+    print(args)
