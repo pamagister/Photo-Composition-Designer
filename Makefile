@@ -159,7 +159,7 @@ docs:             ## Build and sync the documentation.
 
 .PHONY: list
 list:            ## Show project file list (excluding ignored folders)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/show_filelist.ps1
+	@uv run ./scripts/show_filelist.py
 
 .PHONY: tree
 tree:            ## Show project tree (excluding ignored folders)
