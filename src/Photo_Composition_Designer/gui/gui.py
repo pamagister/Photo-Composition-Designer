@@ -19,14 +19,14 @@ from tkinter import filedialog, messagebox, ttk
 
 from config_cli_gui.gui import SettingsDialogGenerator
 
-from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.base import BaseGPXProcessor
-from Photo_Composition_Designer.core.logging import (
+from Photo_Composition_Designer.common.logging import (
     connect_gui_logging,
     disconnect_gui_logging,
     get_logger,
     initialize_logging,
 )
+from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.base import BaseGPXProcessor
 
 
 class GuiLogWriter:

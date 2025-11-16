@@ -4,13 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="move common into project dir">
-      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/DescriptionsFileGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/FolderGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/ImageDistributor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_DescriptionsFileGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_ImageDistributor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Photo.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Photo.py" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add PhotoLayoutManager.py">
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/GeoPlotter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_GeoPlotter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/logging.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/logging.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,9 +60,12 @@
     "Python tests.Python tests in test_gpx.py.executor": "Run",
     "Python tests.Python tests in tests.executor": "Run",
     "Python tests.pytest in test_DescriptionsFileGenerator.py.executor": "Run",
+    "Python tests.pytest in test_GeoPlotter.py.executor": "Run",
     "Python tests.pytest in test_ImageDistributor.py.executor": "Run",
     "Python tests.pytest in test_Photo.py.executor": "Run",
+    "Python tests.pytest in test_PhotoLayoutManager.py.executor": "Run",
     "Python.DescriptionsFileGenerator.executor": "Run",
+    "Python.GeoPlotter.executor": "Run",
     "Python.config-generate.executor": "Run",
     "Python.module cli.executor": "Run",
     "Python.module gui.executor": "Run",
@@ -79,17 +83,18 @@
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/tests" />
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/core" />
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
       <recent name="$PROJECT_DIR$/scripts" />
       <recent name="$PROJECT_DIR$/src" />
-      <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/common" />
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest in test_PhotoLayoutManager.py">
-    <configuration name="DescriptionsFileGenerator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python tests.pytest in test_GeoPlotter.py">
+    <configuration name="GeoPlotter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -98,11 +103,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/tools" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/DescriptionsFileGenerator.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core/GeoPlotter.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -143,7 +148,7 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_ImageDistributor.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_GeoPlotter.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -156,7 +161,7 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_ImageDistributor.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_GeoPlotter.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
@@ -179,11 +184,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.pytest in test_GeoPlotter.py" />
+        <item itemvalue="Python.GeoPlotter" />
         <item itemvalue="Python tests.pytest in test_PhotoLayoutManager.py" />
         <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
         <item itemvalue="Python tests.Python tests in tests" />
-        <item itemvalue="Python tests.pytest in test_ImageDistributor.py" />
-        <item itemvalue="Python.DescriptionsFileGenerator" />
       </list>
     </recent_temporary>
   </component>
@@ -258,7 +263,23 @@
       <option name="project" value="LOCAL" />
       <updated>1763290914787</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="add further basic functionality">
+      <option name="closed" value="true" />
+      <created>1763292202709</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1763292202709</updated>
+    </task>
+    <task id="LOCAL-00009" summary="add PhotoLayoutManager.py">
+      <option name="closed" value="true" />
+      <created>1763292498914</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1763292498914</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -269,7 +290,9 @@
     <MESSAGE value="only use on py file to show tree with or without python classes" />
     <MESSAGE value="add common functions and according tests" />
     <MESSAGE value="move common into project dir" />
-    <option name="LAST_COMMIT_MESSAGE" value="move common into project dir" />
+    <MESSAGE value="add further basic functionality" />
+    <MESSAGE value="add PhotoLayoutManager.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="add PhotoLayoutManager.py" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

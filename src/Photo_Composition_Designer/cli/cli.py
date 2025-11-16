@@ -7,9 +7,9 @@ from pathlib import Path
 
 from config_cli_gui.cli import CliGenerator
 
+from Photo_Composition_Designer.common.logging import initialize_logging
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import BaseGPXProcessor
-from Photo_Composition_Designer.core.logging import initialize_logging
 
 
 def validate_config(config: ConfigParameterManager) -> bool:
