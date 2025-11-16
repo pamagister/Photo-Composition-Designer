@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 
-from common.Locations import Locations
+from Photo_Composition_Designer.common.Locations import Locations
 
 
 class TestLocations:

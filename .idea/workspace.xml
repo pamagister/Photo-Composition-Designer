@@ -4,24 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add show_filelist.py to be able to run on linux. Add new libraries.">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/common/Anniversaries.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/common/Locations.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/common/Photo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/temp_extracted_files/zip_gpx_1.gpx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/temp_extracted_files/zip_gpx_2.gpx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/temp_extracted_files/zip_gpx_1.gpx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/temp_extracted_files/zip_gpx_2.gpx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_Locations.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_Photo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_anniversaries.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/show_filelist.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/show_tree.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/show_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/show_tree.py" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add common functions and according tests">
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/DescriptionsFileGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/FolderGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/ImageDistributor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/common/Anniversaries.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Anniversaries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/common/Locations.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Locations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/common/Photo.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Photo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_Locations.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_Locations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_Photo.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_Photo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_anniversaries.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_anniversaries.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,6 +25,13 @@
     <option name="groupingKeys">
       <option value="directory" />
       <option value="repository" />
+    </option>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
     </option>
   </component>
   <component name="Git.Settings">
@@ -73,16 +73,20 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/scripts",
+    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/src/Photo_Composition_Designer",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
       <recent name="$PROJECT_DIR$/scripts" />
       <recent name="$PROJECT_DIR$/tests" />
       <recent name="$PROJECT_DIR$/src" />
       <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
   <component name="RunManager" selected="Python tests.Python tests in tests">
@@ -130,7 +134,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Python tests in test_gpx.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+    <configuration name="Python tests in /home/paul/dev/Photo-Composition-Designer/tests/test_gpx.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -181,7 +185,7 @@
       <list>
         <item itemvalue="Python tests.Python tests in tests" />
         <item itemvalue="Python tests.pytest in test_Photo.py" />
-        <item itemvalue="Python tests.Python tests in test_gpx.py" />
+        <item itemvalue="Python tests.Python tests in /home/paul/dev/Photo-Composition-Designer/tests/test_gpx.py" />
         <item itemvalue="Python.test_Photo" />
         <item itemvalue="Python.test_Locations" />
       </list>
@@ -234,7 +238,23 @@
       <option name="project" value="LOCAL" />
       <updated>1763288702873</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="only use on py file to show tree with or without python classes">
+      <option name="closed" value="true" />
+      <created>1763290549157</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1763290549157</updated>
+    </task>
+    <task id="LOCAL-00006" summary="add common functions and according tests">
+      <option name="closed" value="true" />
+      <created>1763290667045</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1763290667045</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -242,7 +262,9 @@
     <MESSAGE value="add example images" />
     <MESSAGE value="add maps data for displaying contours" />
     <MESSAGE value="add show_filelist.py to be able to run on linux. Add new libraries." />
-    <option name="LAST_COMMIT_MESSAGE" value="add show_filelist.py to be able to run on linux. Add new libraries." />
+    <MESSAGE value="only use on py file to show tree with or without python classes" />
+    <MESSAGE value="add common functions and according tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="add common functions and according tests" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
