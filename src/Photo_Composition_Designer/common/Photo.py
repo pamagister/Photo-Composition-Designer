@@ -13,7 +13,7 @@ class Photo:
     )
     DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
-    def __init__(self, file_path: Path, locations=[]):
+    def __init__(self, file_path: Path, locations=None):
         self.file_path: Path = Path(file_path)
         self._locations: dict[str, tuple[float, float]] = locations
         if not self.file_path.exists():
