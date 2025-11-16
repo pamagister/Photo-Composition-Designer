@@ -4,14 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add PhotoLayoutManager.py">
-      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/GeoPlotter.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_GeoPlotter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/logging.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/logging.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging">
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/DescriptionGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_DescriptionGenerator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,6 +54,9 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python tests.Python tests in test_gpx.py.executor": "Run",
     "Python tests.Python tests in tests.executor": "Run",
+    "Python tests.pytest for test_GeoPlotter.test__add_layer.executor": "Run",
+    "Python tests.pytest for test_GeoPlotter.test__calculate_bounds.executor": "Run",
+    "Python tests.pytest in test_DescriptionGenerator.py.executor": "Run",
     "Python tests.pytest in test_DescriptionsFileGenerator.py.executor": "Run",
     "Python tests.pytest in test_GeoPlotter.py.executor": "Run",
     "Python tests.pytest in test_ImageDistributor.py.executor": "Run",
@@ -76,14 +74,14 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/tests",
+    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/src/Photo_Composition_Designer/core",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/tests" />
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/core" />
+      <recent name="$PROJECT_DIR$/tests" />
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
       <recent name="$PROJECT_DIR$/scripts" />
       <recent name="$PROJECT_DIR$/src" />
@@ -93,7 +91,7 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest in test_GeoPlotter.py">
+  <component name="RunManager" selected="Python tests.pytest in test_DescriptionGenerator.py">
     <configuration name="GeoPlotter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
@@ -116,22 +114,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Python tests in tests" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
-      <module name="Photo-Composition-Designer" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
-      <method v="2" />
-    </configuration>
-    <configuration name="pytest in test_DescriptionsFileGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest for test_GeoPlotter.test__add_layer" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -144,7 +127,41 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionsFileGenerator.py&quot;" />
+      <option name="_new_target" value="&quot;test_GeoPlotter.test__add_layer&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest for test_GeoPlotter.test__calculate_bounds" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="Photo-Composition-Designer" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_GeoPlotter.test__calculate_bounds&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest in test_DescriptionGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="Photo-Composition-Designer" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionGenerator.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
@@ -165,30 +182,13 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_PhotoLayoutManager.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
-      <module name="Photo-Composition-Designer" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="_new_keywords" value="&quot;&quot;" />
-      <option name="_new_parameters" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_PhotoLayoutManager.py&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.pytest in test_DescriptionGenerator.py" />
+        <item itemvalue="Python tests.pytest for test_GeoPlotter.test__add_layer" />
+        <item itemvalue="Python tests.pytest for test_GeoPlotter.test__calculate_bounds" />
         <item itemvalue="Python tests.pytest in test_GeoPlotter.py" />
         <item itemvalue="Python.GeoPlotter" />
-        <item itemvalue="Python tests.pytest in test_PhotoLayoutManager.py" />
-        <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
-        <item itemvalue="Python tests.Python tests in tests" />
       </list>
     </recent_temporary>
   </component>
@@ -279,7 +279,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763292498914</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging">
+      <option name="closed" value="true" />
+      <created>1763293281850</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1763293281850</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -292,7 +300,8 @@
     <MESSAGE value="move common into project dir" />
     <MESSAGE value="add further basic functionality" />
     <MESSAGE value="add PhotoLayoutManager.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="add PhotoLayoutManager.py" />
+    <MESSAGE value="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging" />
+    <option name="LAST_COMMIT_MESSAGE" value="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -201,3 +201,4 @@ cython_debug/
 /release/config.yaml
 /release/Photo-Composition-Designer.exe
 /release/README.md
+/temp/*
