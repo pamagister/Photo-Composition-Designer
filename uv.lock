@@ -38,6 +38,18 @@ wheels = [
 ]
 
 [[package]]
+name = "astral"
+version = "3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/04/d1/1adbf06a38dc339e41a1666f6c7135924594c20fd46e060fb263248c564d/astral-3.2.tar.gz", hash = "sha256:9b7c3b412e9e69d172cfb24be0e6addcc9f1bd01a28db8bebe66d75ccc533d88", size = 48075, upload-time = "2022-11-05T18:12:02.913Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/80/d6edd9c3259913cfe39aff2bea4da65de5ad0235a578405e37aabace5f2c/astral-3.2-py3-none-any.whl", hash = "sha256:cb7b49a3f0d4c64ae666be131276d2a3226134c598db10e672028cf8ff855f83", size = 38325, upload-time = "2022-11-05T18:12:01.164Z" },
+]
+
+[[package]]
 name = "black"
 version = "25.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -413,6 +425,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/20/ad/6f1a34e702c72cb495bb258396f237ded76c00f9fe67054a44d778d24ed9/gpxpy-1.6.2.tar.gz", hash = "sha256:a72c484b97ec42b80834353b029cc8ee1b79f0ffca1179b2210bb3baf26c01ae", size = 111695, upload-time = "2023-11-29T17:25:38.391Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/44/9f/62df6c1e52462bdd04275b36cec49efa9e8af7e7b834499eb288f73dcfbc/gpxpy-1.6.2-py3-none-any.whl", hash = "sha256:289bc2d80f116c988d0a1e763fda22838f83005573ece2bbc6521817b26fb40a", size = 42649, upload-time = "2023-11-29T17:25:35.76Z" },
+]
+
+[[package]]
+name = "holidays"
+version = "0.84"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2b/91/7301d71a49cfbb499c704615565199180676131da1a56896365bfff6df52/holidays-0.84.tar.gz", hash = "sha256:d604490717c2315e0800269d03c86bf8275e132e4bd140f19d62eb6ccddb5ddc", size = 797583, upload-time = "2025-11-03T20:34:15.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/a3/26f03449945a1cae7fbd3de10b88d9c139e20753537e4d527304b1e51dea/holidays-0.84-py3-none-any.whl", hash = "sha256:bca376e3becb36ea8e370d08268520934d8a9bd897ae5007ba51b3d7b4e34988", size = 1310662, upload-time = "2025-11-03T20:34:13.284Z" },
 ]
 
 [[package]]
@@ -844,13 +868,16 @@ wheels = [
 name = "photo-composition-designer"
 source = { editable = "." }
 dependencies = [
+    { name = "astral" },
     { name = "config-cli-gui" },
     { name = "exifread" },
     { name = "fastkml" },
     { name = "geopandas" },
     { name = "gpxpy" },
+    { name = "holidays" },
     { name = "matplotlib" },
     { name = "pillow" },
+    { name = "pytz" },
     { name = "shapely" },
     { name = "srtm-py" },
 ]
@@ -878,6 +905,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "astral", specifier = ">=3.2" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=25.1.0" },
     { name = "config-cli-gui", specifier = ">=0.2.3" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.8.2" },
@@ -887,6 +915,7 @@ requires-dist = [
     { name = "geopandas", specifier = ">=1.1.1" },
     { name = "gitchangelog", marker = "extra == 'dev'", specifier = ">=3.0.4" },
     { name = "gpxpy", specifier = ">=1.6.2" },
+    { name = "holidays", specifier = ">=0.84" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=6.0.1" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.1" },
@@ -899,6 +928,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.1.1" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.1" },
+    { name = "pytz", specifier = ">=2025.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.13" },
     { name = "shapely", specifier = ">=2.1.1" },
     { name = "srtm-py", specifier = ">=0.3.7" },

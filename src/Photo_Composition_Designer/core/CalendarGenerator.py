@@ -1,58 +1,60 @@
+from __future__ import annotations
+
 import calendar
 import locale
 import logging
-import os
-from datetime import timedelta, datetime
-from typing import Optional
+from datetime import datetime, timedelta
+from pathlib import Path
 
 import holidays
 import pytz
 from astral import LocationInfo, moon
 from astral.sun import sun
-from PIL import Image, ImageDraw, ImageFont
 from config_cli_gui.config import Color
+from PIL import Image, ImageDraw, ImageFont
 
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
-from Photo_Composition_Designer.config.config import ConfigParameterManager
 
 
 class MoonPhase:
+    """Utility class for computing Unicode moon phase symbols."""
+
     DETAILED = False
 
     @staticmethod
-    def get_moon_phase_symbol_light(cal_date):
-        moon_phase = moon.phase(cal_date)
-        return MoonPhase.get_moon_symbol(moon_phase)
+    def get_moon_phase_symbol_light(d: datetime) -> str:
+        return MoonPhase.get_moon_symbol(moon.phase(d))
 
     @staticmethod
-    def get_moon_phase_symbol_dark(cal_date):
-        moon_phase = moon.phase(cal_date)
-        return MoonPhase.get_moon_symbol((moon_phase + 14) % 28)
+    def get_moon_phase_symbol_dark(d: datetime) -> str:
+        return MoonPhase.get_moon_symbol((moon.phase(d) + 14) % 28)
 
     @staticmethod
-    def get_moon_symbol(moon_phase):
-        if int(moon_phase) == 0:  # Neumond
+    def get_moon_symbol(phase: float) -> str:
+        p = int(phase)
+        if p == 0:
             return "🌑"
-        elif int(moon_phase) == 4 and MoonPhase.DETAILED:  # Zunehmende Sichel
+        if p == 4 and MoonPhase.DETAILED:
             return "🌒"
-        elif int(moon_phase) == 7:  # Erstes Viertel (zunehmender Halbmond)
+        if p == 7:
             return "🌓"
-        elif int(moon_phase) == 10 and MoonPhase.DETAILED:  # Fast voller zunehmender Mond
+        if p == 10 and MoonPhase.DETAILED:
             return "🌔"
-        elif int(moon_phase) == 14:  # Vollmond
+        if p == 14:
             return "🌕"
-        elif int(moon_phase) == 18 and MoonPhase.DETAILED:  # Fast voller abnehmender Mond
+        if p == 18 and MoonPhase.DETAILED:
             return "🌖"
-        elif int(moon_phase) == 21:  # Letztes Viertel (abnehmender Halbmond)
+        if p == 21:
             return "🌗"
-        elif int(moon_phase) == 25 and MoonPhase.DETAILED:  # Abnehmende Sichel
+        if p == 25 and MoonPhase.DETAILED:
             return "🌘"
-        else:
-            return ""  # Kein spezifisches Symbol an diesem Tag
+        return ""
 
 
 class CalendarGenerator:
-    """Responsible for rendering a weekly calendar strip with holidays, sun times and anniversaries."""
+    """Responsible for rendering a weekly calendar strip with holidays,
+    sun times and anniversaries.
+    """
 
     def __init__(
         self,
@@ -69,16 +71,15 @@ class CalendarGenerator:
         useShortDayNames: bool,
         useShortMonthNames: bool,
         marginSides: float,
-        anniversaries: Optional[Anniversaries] = None,
+        anniversaries: Anniversaries | None = None,
     ) -> None:
-
         self.anniversaries = anniversaries or Anniversaries()
 
         # Convert colors to 0–255 int tuples used by Pillow
-        self.backgroundColor = backgroundColor.to_rgb()
-        self.textColor1 = textColor1.to_rgb()
-        self.textColor2 = textColor2.to_rgb()
-        self.holidayColor = holidayColor.to_rgb()
+        self.backgroundColor = self._color_to_pillow(backgroundColor)
+        self.textColor1 = self._color_to_pillow(textColor1)
+        self.textColor2 = self._color_to_pillow(textColor2)
+        self.holidayColor = self._color_to_pillow(holidayColor)
 
         self.fontSizeSmall = fontSizeSmall
         self.fontSizeLarge = fontSizeLarge
@@ -100,34 +101,35 @@ class CalendarGenerator:
             holidayCountries,
         )
 
-        # Retrieve public holidays for the year and the country
-        year = self.startDate.year
-        country_code = self.language.split("_")[1].upper()  # z.B. "de_DE" -> "DE"
-        self.localHolidays = self.get_combined_holidays(year, country_code, self.holidayCountries)
+    @staticmethod
+    def _color_to_pillow(color: Color) -> tuple[int, ...]:
+        """Convert Color object to Pillow-compatible RGB tuple."""
+        return tuple(int(c) for c in color.to_list())
 
-    def generateCalendar(self, date, width, height):
-        year = date.year
-        language = self.language
-        # Berechne die Daten
-        dates = [date + timedelta(days=i) for i in range(7)]
+    # -------------------------------------------------------------------------
+    # Rendering
+    # -------------------------------------------------------------------------
 
-        # Erstelle das Bild
+    def generateCalendar(self, d: datetime, width: int | float, height: int | float) -> Image.Image:
+        """Render full weekly calendar image."""
+        width = int(width)
+        height = int(height)
+        week_dates = [d + timedelta(days=i) for i in range(7)]
+
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        # Lade die Schriftarten
         font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
         font_small = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
-        font_holiday = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
+        font_ann = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
 
-        # Draw the month and year
+        # Header (month + year)
         month_name = self.get_month_name(
-            dates[0].month, language, abbreviation=self.useShortMonthNames
+            week_dates[0].month,
+            locale_name=self.language,
+            abbreviation=self.useShortMonthNames,
         )
-
-        cols_count, col_width = self.get_cols_property(width)
-        header_text = f"{month_name} {str(year)[-2:]}"
-
+        header_text = f"{month_name} {str(d.year)[-2:]}"
         draw.text(
             (0, height - self.fontSizeAnniversaries),
             header_text,
@@ -136,200 +138,154 @@ class CalendarGenerator:
             anchor="ld",
         )
 
-        # Sunrise and sunset
-        timezone = "Europe/Berlin"
-        location = LocationInfo("Dresden", timezone=timezone, latitude=51.0504, longitude=13.7373)
+        # Sun times for Europe/Berlin
+        location = LocationInfo("Dresden", "Germany", "Europe/Berlin", 51.0504, 13.7373)
+        tz = pytz.timezone("Europe/Berlin")
+        sun_times = sun(location.observer, date=d)
 
-        sun_times = sun(location.observer, date=date)
-        tz = pytz.timezone(timezone)
+        sunrise = sun_times["sunrise"].astimezone(tz).strftime("%H:%M")
+        sunset = sun_times["sunset"].astimezone(tz).strftime("%H:%M")
+        week_no = d.isocalendar().week
 
-        # Convert times to local time
-        sunrise_local = sun_times["sunrise"].astimezone(tz)
-        sunset_local = sun_times["sunset"].astimezone(tz)
-
-        # Output with correct time zone
-        calendar_week = date.isocalendar().week
-        sun_string = (
-            f"KW {calendar_week}  ● ↑: {sunrise_local.strftime('%H:%M')}  ○ ↓: "
-            f"{sunset_local.strftime('%H:%M')}"
-        )
+        sun_string = f"KW {week_no}  ● ↑ {sunrise}  ○ ↓ {sunset}"
         draw.text(
             (0, height),
             sun_string,
-            font=font_holiday,
+            font=font_ann,
             fill=self.textColor2,
             anchor="ld",
         )
 
-        # Draw days of the week and numbers
-        for day_no in range(7):
-            x_pos = self.marginSides + (day_no + cols_count + 0.5) * col_width
-            day_date = dates[day_no]
-            date_key = (day_date.day, day_date.month)  # (Tag, Monat)
-            date = dates[day_no]
-            holiday_name = self.localHolidays.get(date)  # Name des Feiertags ermitteln
+        # Day columns
+        month_cols, col_width = self.get_cols_property(width)
 
-            # Highlight holidays and weekends
-            if day_date.weekday() >= 6 or day_date in self.localHolidays:
-                name_color = self.textColor2
-                number_color = self.holidayColor
-            else:
-                name_color = self.textColor2
-                number_color = self.textColor1
+        for idx, day_date in enumerate(week_dates):
+            x = self.marginSides + (idx + month_cols + 0.5) * col_width
 
-            # Weekday and day
-            day_name = self.get_day_name(day_no, language)
+            date_key = (day_date.day, day_date.month)
+            holiday_name = self.localHolidays.get(day_date)
+
+            is_weekend = day_date.weekday() >= 5
+            is_holiday = day_date in self.localHolidays
+
+            color_day = self.holidayColor if (is_holiday or is_weekend) else self.textColor1
+
+            # Day name
+            day_name = self.get_day_name(day_date.weekday(), self.language)
             if self.useShortDayNames:
                 day_name = day_name[:2]
 
-            # Moon phase
             moon_symbol = MoonPhase.get_moon_phase_symbol_dark(day_date)
             if moon_symbol:
-                day_name = f"   {day_name} {moon_symbol}"
+                day_name = f"{day_name} {moon_symbol}"
 
             draw.text(
-                (x_pos, height - self.fontSizeAnniversaries - self.fontSizeLarge * 1.15),
+                (x, height - self.fontSizeAnniversaries - self.fontSizeLarge * 1.15),
                 day_name,
                 font=font_small,
-                fill=name_color,
-                anchor="md",
-            )
-            draw.text(
-                (x_pos, height - self.fontSizeAnniversaries),
-                str(day_date.day),
-                font=font_large,
-                fill=number_color,
+                fill=self.textColor2,
                 anchor="md",
             )
 
-            # Birthdays/Days of death
+            draw.text(
+                (x, height - self.fontSizeAnniversaries),
+                str(day_date.day),
+                font=font_large,
+                fill=color_day,
+                anchor="md",
+            )
+
+            # Anniversaries + holidays
+            label = None
             if date_key in self.anniversaries:
-                birthday_label = self.anniversaries[date_key]
+                label = self.anniversaries[date_key]
                 if holiday_name:
-                    # add holiday name because it would not be printed otherwise
-                    birthday_label += f", {holiday_name}"
-                draw.text(
-                    (x_pos, height),
-                    birthday_label,
-                    font=font_holiday,
-                    fill=self.textColor1,
-                    anchor="md",
-                )
-            # Holidays
+                    label += f", {holiday_name}"
+                draw.fill = self.textColor1
             elif holiday_name:
+                label = holiday_name
+
+            if label:
                 draw.text(
-                    (x_pos, height),
-                    holiday_name,
-                    font=font_holiday,
+                    (x, height),
+                    label,
+                    font=font_ann,
                     fill=self.holidayColor,
                     anchor="md",
                 )
 
         return img
 
-    def generateTitle(self, title_text, width, height):
-        # Erstelle das Bild
+    def generateTitle(self, title: str, width: int | float, height: int | float) -> Image.Image:
+        width = int(width)
+        height = int(height)
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
         font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        base_y = height - self.fontSizeAnniversaries
+
         draw.text(
-            (int(width / 2), base_y),
-            title_text,
+            (width // 2, height - self.fontSizeAnniversaries),
+            title,
             font=font_large,
             fill=self.textColor1,
             anchor="md",
         )
-
         return img
 
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+
     @staticmethod
-    def get_font(font_type: str = "DejaVuSans.ttf", font_size: int = 12):
-        """
-        Load font. Fallback to system default font
-        """
-        font = None
+    def get_font(font_name: str, size: int) -> ImageFont.FreeTypeFont:
         try:
-            font = ImageFont.truetype(font_type, font_size)
-        except FileNotFoundError as e:
-            print(f"Font file not found: {e}")
-        except OSError as e:
-            print(f"Unable to read font file: {e}")
-        except ValueError as e:
-            print(f"Invalid font size: {e}")
-        except AttributeError as e:
-            print(f"Missing attribute: {e}")
-        except TypeError as e:
-            print(f"Invalid type for font size: {e}")
-        except ImportError as e:
-            print(f"Pillow library not installed or imported correctly: {e}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-        finally:
-            if not font:
-                font = ImageFont.load_default()
-        return font
+            return ImageFont.truetype(font_name, size)
+        except Exception:
+            return ImageFont.load_default()
 
-    def get_cols_property(self, width):
-        if self.useShortMonthNames:
-            cols_month_name = 1.5
-        else:
-            cols_month_name = 4.0
-        col_width = (width - 3 * self.marginSides) // (7.0 + cols_month_name)
-        return cols_month_name, col_width
+    def get_cols_property(self, width: int) -> tuple[float, float]:
+        month_cols = 1.5 if self.useShortMonthNames else 4.0
+        col_width = (width - 3 * self.marginSides) / (7.0 + month_cols)
+        return month_cols, col_width
 
     @staticmethod
-    def get_month_name(month_no, locale_name="en_US.UTF-8", abbreviation=False):
+    def get_month_name(month: int, locale_name: str, abbreviation: bool = False) -> str:
         try:
             locale.setlocale(locale.LC_TIME, locale_name)
-            return calendar.month_abbr[month_no] if abbreviation else calendar.month_name[month_no]
+            return calendar.month_abbr[month] if abbreviation else calendar.month_name[month]
         except locale.Error:
-            return calendar.month_abbr[month_no] if abbreviation else calendar.month_name[month_no]
+            return calendar.month_abbr[month] if abbreviation else calendar.month_name[month]
         finally:
             locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
-    def get_day_name(day_no, locale_name="en_US.UTF-8"):
+    def get_day_name(day: int, locale_name: str) -> str:
         try:
             locale.setlocale(locale.LC_TIME, locale_name)
-            return calendar.day_name[day_no]
+            return calendar.day_name[day]
         except locale.Error:
-            return calendar.day_name[day_no]
+            return calendar.day_name[day]
         finally:
             locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
-    def get_combined_holidays(year, country="EN", subdivs=None):
-        """
-        Combines holidays from several countries or subdivisions.
-
-        Args:
-            year (int): The year for which public holidays are to be retrieved.
-            country (str): The country e.g. EN or DE
-            subdivs (list): A list of country or subdivision codes, e.g. ['SN', 'BY'].
-
-        Returns:
-            holidays.HolidayBase: An object with all combined holidays.
-        """
+    def get_combined_holidays(year: int, country: str, subdivs: list[str]) -> holidays.HolidayBase:
         years = (year, year + 1)
-        combined_holidays = holidays.HolidayBase()
-        combined_holidays.update(holidays.country_holidays(country, years=years))
+        combined = holidays.HolidayBase()
+        combined.update(holidays.country_holidays(country, years=years))
         try:
-            for subdiv in subdivs:
-                # Loading holidays for the country/subdivision
-                local_holidays = holidays.country_holidays(country, years=years, subdiv=subdiv)
-                # Combine with the previous holidays
-                combined_holidays.update(local_holidays)
-        except Exception as err:
-            logging.warning(
-                f'Unable to determine holidays for country "{country}" in region "{subdiv}": {err}'
-            )
+            for sub in subdivs:
+                combined.update(holidays.country_holidays(country, years=years, subdiv=sub))
+        except Exception as e:
+            logging.warning(f"Unable to load holiday subdivision {sub}: {e}")
 
-        return combined_holidays
+        return combined
+
 
 # -----------------------------------------------------------------------------
 # Main helpers for production use
 # -----------------------------------------------------------------------------
+
 
 def create_calendar_generator_from_config(config) -> CalendarGenerator:
     """Factory function to create CalendarGenerator using the config manager."""
@@ -341,43 +297,67 @@ def create_calendar_generator_from_config(config) -> CalendarGenerator:
         language=config.calendar.language.value,
         startDate=config.calendar.startDate.value,
         holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
-        fontSizeSmall=config.layout.fontSizeSmall.value * config.size.calendarHeight.value,
-        fontSizeLarge=config.layout.fontSizeLarge.value * config.size.calendarHeight.value,
-        fontSizeAnniversaries=config.layout.fontSizeAnniversaries.value * config.size.calendarHeight.value,
+        fontSizeSmall=int(
+            config.layout.fontSizeSmall.value
+            * config.size.calendarHeight.value
+            * config.size.dpi.value
+            / 25.4
+        ),
+        fontSizeLarge=int(
+            config.layout.fontSizeLarge.value
+            * config.size.calendarHeight.value
+            * config.size.dpi.value
+            / 25.4
+        ),
+        fontSizeAnniversaries=int(
+            config.layout.fontSizeAnniversaries.value
+            * config.size.calendarHeight.value
+            * config.size.dpi.value
+            / 25.4
+        ),
         useShortDayNames=config.layout.useShortDayNames.value,
         useShortMonthNames=config.layout.useShortMonthNames.value,
         marginSides=int(config.layout.marginSides.value * config.size.dpi.value / 25.4),
         anniversaries=None,  # use default
     )
 
-def main():
-    # Config aus Datei laden
+
+def main() -> None:
+    import os
+
+    from Photo_Composition_Designer.config.config import ConfigParameterManager
+
     config = ConfigParameterManager()
+    cg = create_calendar_generator_from_config(config)
 
-    calendar_gen = create_calendar_generator_from_config(config)
+    # Create temp directory
+    project_root = Path(__file__).resolve().parents[3]
+    temp_dir = project_root / "temp"
+    temp_dir.mkdir(exist_ok=True)
 
-    temp_dir = "../../collages/calendar"
-    os.makedirs(temp_dir, exist_ok=True)
-    startDate = config.calendar.startDate.value
-    first_collage = True
-    title = "This is the title of the composition 2025"
-    for week in range(0, 52):
-        date = startDate + timedelta(weeks=week)
-        if first_collage:
-            image = calendar_gen.generateTitle(
-                title, width=config.size.width.value, height=config.size.calendarHeight.value
+    title = config.general.compositionTitle.value + " " + str(config.calendar.startDate.value.year)
+    first = True
+
+    for w in range(config.calendar.collagesToGenerate.value):
+        dt = config.calendar.startDate.value + timedelta(weeks=w - 2)
+
+        if first:
+            img = cg.generateTitle(
+                title,
+                width=int(config.size.width.value * config.size.dpi.value / 25.4),
+                height=int(config.size.calendarHeight.value * config.size.dpi.value / 25.4),
             )
-            first_collage = False
+            first = False
         else:
-            image = calendar_gen.generateCalendar(
-                date, width=config.size.width.value, height=config.size.calendarHeight.value
+            img = cg.generateCalendar(
+                dt,
+                width=int(config.size.width.value * config.size.dpi.value / 25.4),
+                height=config.size.calendarHeight.value * config.size.dpi.value / 25.4,
             )
-        image_path = os.path.join(
-            temp_dir,
-            f"calendar_{date.year}-{str(date.month).zfill(2)}-{str(date.day).zfill(2)}.jpg",
-        )
-        image.save(image_path)
-        print(f"Generated: {image_path}")
+
+        path = os.path.join(temp_dir, f"calendar_{dt.year}-{dt.month:02d}-{dt.day:02d}.jpg")
+        img.save(path)
+        print("Generated:", path)
 
 
 if __name__ == "__main__":
