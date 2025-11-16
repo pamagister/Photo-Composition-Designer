@@ -4,9 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging">
-      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/DescriptionGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_DescriptionGenerator.py" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add DescriptionGenerator.py">
+      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/MapGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_MapGenerator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,10 +63,12 @@
     "Python tests.pytest in test_DescriptionsFileGenerator.py.executor": "Run",
     "Python tests.pytest in test_GeoPlotter.py.executor": "Run",
     "Python tests.pytest in test_ImageDistributor.py.executor": "Run",
+    "Python tests.pytest in test_MapGenerator.py.executor": "Run",
     "Python tests.pytest in test_Photo.py.executor": "Run",
     "Python tests.pytest in test_PhotoLayoutManager.py.executor": "Run",
     "Python.DescriptionsFileGenerator.executor": "Run",
     "Python.GeoPlotter.executor": "Run",
+    "Python.MapGenerator.executor": "Run",
     "Python.config-generate.executor": "Run",
     "Python.module cli.executor": "Run",
     "Python.module gui.executor": "Run",
@@ -91,8 +96,8 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest in test_DescriptionGenerator.py">
-    <configuration name="GeoPlotter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python tests.pytest in test_MapGenerator.py">
+    <configuration name="MapGenerator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -105,7 +110,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core/GeoPlotter.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core/MapGenerator.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -165,7 +170,7 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_GeoPlotter.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_MapGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -178,17 +183,17 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_GeoPlotter.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_MapGenerator.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.pytest in test_MapGenerator.py" />
+        <item itemvalue="Python.MapGenerator" />
         <item itemvalue="Python tests.pytest in test_DescriptionGenerator.py" />
         <item itemvalue="Python tests.pytest for test_GeoPlotter.test__add_layer" />
         <item itemvalue="Python tests.pytest for test_GeoPlotter.test__calculate_bounds" />
-        <item itemvalue="Python tests.pytest in test_GeoPlotter.py" />
-        <item itemvalue="Python.GeoPlotter" />
       </list>
     </recent_temporary>
   </component>
@@ -287,7 +292,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763293281850</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="add DescriptionGenerator.py">
+      <option name="closed" value="true" />
+      <created>1763307863354</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1763307863354</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -301,7 +314,8 @@
     <MESSAGE value="add further basic functionality" />
     <MESSAGE value="add PhotoLayoutManager.py" />
     <MESSAGE value="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging" />
-    <option name="LAST_COMMIT_MESSAGE" value="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging" />
+    <MESSAGE value="add DescriptionGenerator.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="add DescriptionGenerator.py" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -325,6 +339,16 @@
           <url>file://$PROJECT_DIR$/tests/test_Photo.py</url>
           <line>61</line>
           <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tests/test_DescriptionGenerator.py</url>
+          <line>17</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/GeoPlotter.py</url>
+          <line>147</line>
+          <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
