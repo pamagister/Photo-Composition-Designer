@@ -88,7 +88,7 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest in test_DescriptionsFileGenerator.py">
+  <component name="RunManager" selected="Python tests.pytest in test_PhotoLayoutManager.py">
     <configuration name="DescriptionsFileGenerator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
@@ -160,7 +160,7 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_Photo.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_PhotoLayoutManager.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -173,17 +173,17 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_Photo.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_PhotoLayoutManager.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.pytest in test_PhotoLayoutManager.py" />
         <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
         <item itemvalue="Python tests.Python tests in tests" />
         <item itemvalue="Python tests.pytest in test_ImageDistributor.py" />
         <item itemvalue="Python.DescriptionsFileGenerator" />
-        <item itemvalue="Python tests.pytest in test_Photo.py" />
       </list>
     </recent_temporary>
   </component>
