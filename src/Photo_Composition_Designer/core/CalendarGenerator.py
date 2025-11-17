@@ -10,7 +10,6 @@ import holidays
 import pytz
 from astral import LocationInfo, moon
 from astral.sun import sun
-from config_cli_gui.config import Color
 from PIL import Image, ImageDraw, ImageFont
 
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
@@ -58,10 +57,10 @@ class CalendarGenerator:
 
     def __init__(
         self,
-        backgroundColor: Color,
-        textColor1: Color,
-        textColor2: Color,
-        holidayColor: Color,
+        backgroundColor: tuple[int],
+        textColor1: tuple[int],
+        textColor2: tuple[int],
+        holidayColor: tuple[int],
         language: str,
         startDate: datetime,
         holidayCountries: list[str],
@@ -76,10 +75,10 @@ class CalendarGenerator:
         self.anniversaries = anniversaries or Anniversaries()
 
         # Convert colors to 0–255 int tuples used by Pillow
-        self.backgroundColor = self._color_to_pillow(backgroundColor)
-        self.textColor1 = self._color_to_pillow(textColor1)
-        self.textColor2 = self._color_to_pillow(textColor2)
-        self.holidayColor = self._color_to_pillow(holidayColor)
+        self.backgroundColor = backgroundColor
+        self.textColor1 = textColor1
+        self.textColor2 = textColor2
+        self.holidayColor = holidayColor
 
         self.fontSizeSmall = fontSizeSmall
         self.fontSizeLarge = fontSizeLarge
@@ -100,11 +99,6 @@ class CalendarGenerator:
             country_code,
             holidayCountries,
         )
-
-    @staticmethod
-    def _color_to_pillow(color: Color) -> tuple[int, ...]:
-        """Convert Color object to Pillow-compatible RGB tuple."""
-        return tuple(int(c) for c in color.to_list())
 
     # -------------------------------------------------------------------------
     # Rendering
@@ -290,10 +284,10 @@ class CalendarGenerator:
 def create_calendar_generator_from_config(config) -> CalendarGenerator:
     """Factory function to create CalendarGenerator using the config manager."""
     return CalendarGenerator(
-        backgroundColor=config.colors.backgroundColor.value,
-        textColor1=config.colors.textColor1.value,
-        textColor2=config.colors.textColor2.value,
-        holidayColor=config.colors.holidayColor.value,
+        backgroundColor=config.colors.backgroundColor.value.to_pil(),
+        textColor1=config.colors.textColor1.value.to_pil(),
+        textColor2=config.colors.textColor2.value.to_pil(),
+        holidayColor=config.colors.holidayColor.value.to_pil(),
         language=config.calendar.language.value,
         startDate=config.calendar.startDate.value,
         holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
