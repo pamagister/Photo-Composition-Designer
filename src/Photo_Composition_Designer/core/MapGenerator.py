@@ -14,8 +14,8 @@ class MapGenerator:
         mapHeight=100,
         mapWidth=100,
         minimalExtension=7,
-        backgroundColor=(0.100, 0.100, 0.100),
-        textColor1=(0.5, 0.6, 0.7),
+        backgroundColor=(30, 30, 30),
+        textColor1=(150, 250, 150),
         locations: Locations = None,
     ):
         self.height = mapHeight

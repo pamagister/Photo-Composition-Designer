@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add CalendarGenerator.py and">
-      <change afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/CompositionDesigner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="original version of CompositionDesigner.py">
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/CompositionDesigner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/CompositionDesigner.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/MapGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/MapGenerator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,39 +49,40 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python tests.Python tests in test_gpx.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.Python tests in tests.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest for test_GeoPlotter.test__add_layer.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest for test_GeoPlotter.test__calculate_bounds.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_CalendarGenerator.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_DescriptionGenerator.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_DescriptionsFileGenerator.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_GeoPlotter.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_ImageDistributor.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_MapGenerator.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_Photo.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.pytest in test_PhotoLayoutManager.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python.CalendarGenerator.executor&quot;: &quot;Run&quot;,
-    &quot;Python.DescriptionsFileGenerator.executor&quot;: &quot;Run&quot;,
-    &quot;Python.GeoPlotter.executor&quot;: &quot;Run&quot;,
-    &quot;Python.MapGenerator.executor&quot;: &quot;Run&quot;,
-    &quot;Python.config-generate.executor&quot;: &quot;Run&quot;,
-    &quot;Python.module cli.executor&quot;: &quot;Run&quot;,
-    &quot;Python.module gui.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_Locations.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.test_Photo.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_anniversaries.executor&quot;: &quot;Debug&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/paul/dev/Photo-Composition-Designer/src/Photo_Composition_Designer&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python tests.Python tests in test_gpx.py.executor": "Run",
+    "Python tests.Python tests in tests.executor": "Run",
+    "Python tests.pytest for test_GeoPlotter.test__add_layer.executor": "Run",
+    "Python tests.pytest for test_GeoPlotter.test__calculate_bounds.executor": "Run",
+    "Python tests.pytest in test_CalendarGenerator.py.executor": "Run",
+    "Python tests.pytest in test_DescriptionGenerator.py.executor": "Run",
+    "Python tests.pytest in test_DescriptionsFileGenerator.py.executor": "Run",
+    "Python tests.pytest in test_GeoPlotter.py.executor": "Run",
+    "Python tests.pytest in test_ImageDistributor.py.executor": "Run",
+    "Python tests.pytest in test_MapGenerator.py.executor": "Run",
+    "Python tests.pytest in test_Photo.py.executor": "Run",
+    "Python tests.pytest in test_PhotoLayoutManager.py.executor": "Run",
+    "Python.CalendarGenerator.executor": "Run",
+    "Python.CompositionDesigner.executor": "Debug",
+    "Python.DescriptionsFileGenerator.executor": "Run",
+    "Python.GeoPlotter.executor": "Run",
+    "Python.MapGenerator.executor": "Run",
+    "Python.config-generate.executor": "Run",
+    "Python.module cli.executor": "Run",
+    "Python.module gui.executor": "Run",
+    "Python.test_Locations.executor": "Debug",
+    "Python.test_Photo.executor": "Run",
+    "Python.test_anniversaries.executor": "Debug",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/src/Photo_Composition_Designer",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
@@ -98,7 +96,7 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.CalendarGenerator">
+  <component name="RunManager" selected="Python.MapGenerator">
     <configuration name="CalendarGenerator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
@@ -113,6 +111,28 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="CompositionDesigner" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Photo-Composition-Designer" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/CompositionDesigner.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -160,23 +180,6 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_DescriptionGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
-      <module name="Photo-Composition-Designer" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="_new_keywords" value="&quot;&quot;" />
-      <option name="_new_parameters" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionGenerator.py&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
-      <method v="2" />
-    </configuration>
     <configuration name="pytest in test_MapGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
@@ -196,11 +199,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.MapGenerator" />
+        <item itemvalue="Python.CompositionDesigner" />
         <item itemvalue="Python.CalendarGenerator" />
         <item itemvalue="Python tests.pytest in test_CalendarGenerator.py" />
         <item itemvalue="Python tests.pytest in test_MapGenerator.py" />
-        <item itemvalue="Python.MapGenerator" />
-        <item itemvalue="Python tests.pytest in test_DescriptionGenerator.py" />
       </list>
     </recent_temporary>
   </component>
@@ -331,7 +334,23 @@
       <option name="project" value="LOCAL" />
       <updated>1763314470360</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="use to_pil function of new cli_config_gui">
+      <option name="closed" value="true" />
+      <created>1763412942969</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1763412942969</updated>
+    </task>
+    <task id="LOCAL-00016" summary="original version of CompositionDesigner.py">
+      <option name="closed" value="true" />
+      <created>1763413222566</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1763413222566</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -349,7 +368,9 @@
     <MESSAGE value="add MapGenerator.py" />
     <MESSAGE value="add CalendarGenerator.py" />
     <MESSAGE value="add CalendarGenerator.py and" />
-    <option name="LAST_COMMIT_MESSAGE" value="add CalendarGenerator.py and" />
+    <MESSAGE value="use to_pil function of new cli_config_gui" />
+    <MESSAGE value="original version of CompositionDesigner.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="original version of CompositionDesigner.py" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -380,14 +401,9 @@
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/GeoPlotter.py</url>
-          <line>147</line>
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py</url>
-          <line>292</line>
-          <option name="timeStamp" value="10" />
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/DescriptionGenerator.py</url>
+          <line>10</line>
+          <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
