@@ -189,7 +189,7 @@ class SizeConfig(ConfigCategory):
 
     dpi: ConfigParameter = ConfigParameter(
         name="dpi",
-        value=150,
+        value=100,
         help="Resolution of the image in dpi",
     )
 

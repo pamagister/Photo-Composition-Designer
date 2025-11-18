@@ -114,8 +114,8 @@ class CalendarGenerator:
         draw = ImageDraw.Draw(img)
 
         font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        font_small = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeSmall))
-        font_ann = self.get_font("DejaVuSansCondensed.ttf", int(self.fontSizeAnniversaries))
+        font_small = self.get_font("DejaVuSans.ttf", int(self.fontSizeSmall))
+        font_ann = self.get_font("DejaVuSans.ttf", int(self.fontSizeAnniversaries))
 
         # Header (month + year)
         month_name = self.get_month_name(

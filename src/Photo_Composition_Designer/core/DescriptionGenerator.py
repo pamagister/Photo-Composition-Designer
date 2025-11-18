@@ -27,7 +27,7 @@ class DescriptionGenerator:
 
         # Schrift laden (Standard oder konfiguriert)
         try:
-            font = ImageFont.truetype("DejaVuSansCondensed.ttf", int(self.fontSize))
+            font = ImageFont.truetype("DejaVuSans.ttf", int(self.fontSize))
         except Exception as e:
             print(f"Fehler beim Laden der Schriftart: {e}")
             font = ImageFont.load_default()

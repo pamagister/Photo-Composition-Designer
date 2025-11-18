@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Locations import Locations
-from Photo_Composition_Designer.common.Photo import get_photos_from_dir
+from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.CalendarGenerator import (
     CalendarGenerator,
@@ -137,7 +137,7 @@ class CompositionDesigner:
     # ---------------------------------------------------------------------
     def generate_composition(
         self,
-        photos: Sequence,
+        photos: list[Photo],
         date,
         output_path: str | Path,
         photo_description: str = "",
@@ -234,7 +234,7 @@ class CompositionDesigner:
         if font_small_px <= 0:
             font_small_px = max(10, int(self.dpi * 0.04))
 
-        font = CalendarGenerator.get_font("DejaVuSansCondensed.ttf", font_small_px)
+        font = CalendarGenerator.get_font("DejaVuSans.ttf", font_small_px)
 
         # Anchor rd expects coordinates relative to lower-right;
         # to put text inside margins we shift left/up
