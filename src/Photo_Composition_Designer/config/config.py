@@ -39,7 +39,7 @@ class GeneralConfig(ConfigCategory):
         help="Path to the directory containing photos "
         "(absolute, or relative to this config.ini file)",
         is_cli=True,
-        required=True,
+        required=False,
     )
 
     anniversariesConfig: ConfigParameter = ConfigParameter(
@@ -94,7 +94,7 @@ class CalendarConfig(ConfigCategory):
 
     collagesToGenerate: ConfigParameter = ConfigParameter(
         name="collagesToGenerate",
-        value=11,
+        value=5,
         help="Number of collages to be generated (e.g. number of weeks)",
     )
 

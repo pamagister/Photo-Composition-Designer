@@ -7,12 +7,14 @@ run gui: python -m Photo_Composition_Designer.gui
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import threading
 import tkinter as tk
 import traceback
 import webbrowser
+from datetime import timedelta
 from functools import partial
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -25,8 +27,9 @@ from Photo_Composition_Designer.common.logging import (
     get_logger,
     initialize_logging,
 )
+from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.base import BaseGPXProcessor
+from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor
 
 
 class GuiLogWriter:
@@ -104,10 +107,10 @@ class GuiLogWriter:
 class MainGui:
     """Main GUI application class."""
 
-    processing_modes = [
-        ("compress_files", "Compress"),
-        ("merge_files", "Merge"),
-        ("extract_pois", "Extract POIs"),
+    distribution_modes = [
+        ("distribute_equally", "Distribute photos equally"),
+        ("distribute_randomly", "Distribute photos randomly"),
+        ("distribute_group_matching_dates", "Distribute photos by date"),
     ]
 
     def __init__(self, root):
@@ -184,17 +187,14 @@ class MainGui:
         button_frame = ttk.Frame(top_frame)
         button_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
 
-        open_button = ttk.Button(button_frame, text="Open Files", command=self._open_files)
-        open_button.pack(pady=8, fill=tk.X)
-
-        remove_selected_button = ttk.Button(
-            button_frame, text="Remove Selected", command=self._remove_selected_input_files
+        open_button = ttk.Button(
+            button_frame, text="Select photos directory", command=self._open_files
         )
-        remove_selected_button.pack(pady=1, fill=tk.X)
+        open_button.pack(pady=8, fill=tk.X)
 
         # Create buttons dynamically
         self.run_buttons = {}
-        for mode, label in self.processing_modes:
+        for mode, label in self.distribution_modes:
             button = ttk.Button(
                 button_frame, text=label, command=partial(self._run_processing, mode=mode)
             )
@@ -204,12 +204,12 @@ class MainGui:
 
         # Clear files button
         self.clear_input_button = ttk.Button(
-            button_frame, text="Clear Input Files", command=self._clear_input_files
+            button_frame, text="Generate Preview", command=self._generate_preview
         )
         self.clear_input_button.pack(pady=8, fill=tk.X)
 
         self.clear_output_button = ttk.Button(
-            button_frame, text="Clear Generated Files", command=self._clear_output_files
+            button_frame, text="Generate Compositions", command=self._generate_compositions
         )
         self.clear_output_button.pack(pady=1, fill=tk.X)
 
@@ -265,7 +265,7 @@ class MainGui:
         file_menu.add_separator()
 
         # Create Run menu options dynamically
-        for mode, label in self.processing_modes:
+        for mode, label in self.distribution_modes:
             file_menu.add_command(label=label, command=partial(self._run_processing, mode=mode))
 
         file_menu.add_separator()
@@ -302,30 +302,17 @@ class MainGui:
         self.log_text.delete(1.0, tk.END)
         self.logger.debug("Log display cleared")
 
-    def _clear_input_files(self):
+    def _generate_preview(self):
         """Clear the input file list."""
         self.input_files.clear()
         self.input_file_listbox.delete(0, tk.END)
         self.logger.info("Input file list cleared")
 
-    def _clear_output_files(self):
+    def _generate_compositions(self):
         """Clear the output file list."""
         self.output_files.clear()
         self.output_file_listbox.delete(0, tk.END)
         self.logger.info("Generated file list cleared")
-
-    def _remove_selected_input_files(self):
-        """Remove selected files from the input file list."""
-        selected_indices = self.input_file_listbox.curselection()
-        if not selected_indices:
-            messagebox.showwarning("Warning", "No files selected to remove!")
-            return
-
-        # Delete from listbox from end to start to avoid index issues
-        for i in reversed(selected_indices):
-            self.input_file_listbox.delete(i)
-            del self.input_files[i]
-        self.logger.info(f"Removed {len(selected_indices)} selected input files.")
 
     def _open_selected_file(self, event, file_list_source):
         """Opens the selected file in the system's default application or explorer."""
@@ -355,35 +342,14 @@ class MainGui:
 
     def _open_files(self):
         """Open file dialog and add files to list."""
-        files = filedialog.askopenfilenames(
-            title="Select input files",
-            filetypes=[
-                ("GPX/KML files", "*.gpx *.kml *.zip"),  # Added KML support
-                ("GPX files", "*.gpx"),
-                ("KML files", "*.kml"),
-                ("ZIP files", "*.zip"),
-                ("All files", "*.*"),
-            ],
+        folder = filedialog.askdirectory(
+            title="Select folder with photos",
         )
 
-        new_files = 0
-        for file_path_str in files:
-            file_path = Path(file_path_str)
-            if file_path_str not in [f["path"] for f in self.input_files]:
-                try:
-                    file_size_kb = file_path.stat().st_size / 1024
-                    self.input_files.append({"path": file_path_str, "size": file_size_kb})
-                    self.input_file_listbox.insert(
-                        tk.END, f"{file_path.name} ({file_size_kb:.2f} KB)"
-                    )
-                    new_files += 1
-                except Exception as e:
-                    self.logger.warning(f"Could not get size for {file_path_str}: {e}")
-                    self.input_files.append({"path": file_path_str, "size": 0})
-                    self.input_file_listbox.insert(tk.END, f"{file_path.name} (N/A KB)")
+        self.input_files = folder
 
-        if new_files > 0:
-            self.logger.info(f"Added {new_files} new files to processing list")
+        if folder > 0:
+            self.logger.info(f"Added {folder} new files to processing list")
         else:
             self.logger.debug("No new files selected")
 
@@ -406,23 +372,10 @@ class MainGui:
             output_dir = Path(generated_files_info[0]).parent
             self.logger.info(f"Generated files saved in: {output_dir}")  # Log directory
 
-    def _run_processing(self, mode="compress_files"):
+    def _run_processing(self, mode="distribute_group_matching_dates"):
         """Run the processing in a separate thread."""
-        selected_indices = self.input_file_listbox.curselection()
-        files_to_process = []
 
-        if selected_indices:
-            for i in selected_indices:
-                files_to_process.append(self.input_files[i]["path"])
-        else:
-            files_to_process = [f["path"] for f in self.input_files]
-
-        if not files_to_process:
-            self.logger.warning("No input files selected or all are deselected.")
-            messagebox.showwarning("Warning", "No input files selected or all are deselected!")
-            return
-
-        self.logger.info(f"Starting processing of {len(files_to_process)} files in mode: {mode}")
+        self.logger.info(f"Starting distribution of in mode: {mode}")
 
         # Disable all buttons during processing
         for button in self.run_buttons.values():
@@ -433,48 +386,62 @@ class MainGui:
 
         # Run in separate thread to avoid blocking GUI
         thread = threading.Thread(
-            target=self._process_files,
-            args=(
-                mode,
-                files_to_process,
-            ),
+            target=self._distribute_images,
+            args=(mode,),
             daemon=True,
         )
         thread.start()
 
-    def _process_files(self, mode="compress_files", files_to_process=None):
+    def _distribute_images(self, mode="compress_files"):
         """Process the selected files."""
-        generated_files_paths = []
+        grouped_images = []
         try:
             self.logger.info("=== Processing Started ===")
             self.logger.info("Processing files...")
 
-            if files_to_process is None:
-                files_to_process = []  # Should not happen with the check in _run_processing
-
-            # Create and run project
-            project = BaseGPXProcessor(
-                files_to_process,  # Pass selected files
-                self.config_manager.cli.output.value,
-                self.config_manager.cli.min_dist.value,
-                self.config_manager.app.date_format.value,
-                self.config_manager.cli.elevation.value,
-                self.logger,
+            # prepare image sorting:
+            photo_dir = (
+                Path(self.config_manager.general.photoDirectory.value).expanduser().resolve()
             )
+            photos: list[Photo] = get_photos_from_dir(photo_dir)
+
+            # prepare image distribution
+            collages_to_generate = self.config_manager.calendar.collagesToGenerate.value
+            image_distributor = ImageDistributor(photos, collages_to_generate)
             # implement switch case for different processing modes
-            if mode == "compress_files":
-                generated_files_paths = project.compress_files()
-            elif mode == "merge_files":
-                generated_files_paths = project.merge_files()
-            elif mode == "extract_pois":
-                generated_files_paths = project.extract_pois()
+            if mode == "distribute_equally":
+                grouped_images = image_distributor.distribute_equally()
+            elif mode == "distribute_randomly":
+                grouped_images = image_distributor.distribute_randomly()
+            elif mode == "distribute_group_matching_dates":
+                grouped_images = image_distributor.distribute_group_matching_dates()
             else:
                 self.logger.warning(f"Unknown mode: {mode}")
 
-            self.logger.info(f"Completed: {len(files_to_process)} files processed")
+            start_date = self.config_manager.calendar.startDate.value
+            output_dir = photo_dir
+            for week in range(collages_to_generate):
+                week_start = start_date + timedelta(weeks=week)
+                folder_name = f"{week:02d}_{week_start.strftime('%b-%d')}"
+                folder_path = os.path.join(output_dir, folder_name)
+                os.makedirs(folder_path, exist_ok=True)
+                self.logger.info(f"Folder created: {folder_path}")
+
+                if not grouped_images:
+                    continue
+                images_in_group = grouped_images.pop(0)
+                for photo in images_in_group:
+                    image_file_name = photo.file_path.name
+                    destination_path = os.path.join(folder_path, image_file_name)
+                    shutil.copy2(photo.file_path, destination_path)
+                    self.logger.info(
+                        f"  --> Image {photo.file_path.name} sorted into {folder_name}"
+                    )
+
+            self.logger.info(f"Completed: {len(grouped_images)} files processed")
             self.logger.info("=== All files processed successfully! ===")
 
-            self.root.after(0, self._update_output_listbox, generated_files_paths)
+            # self.root.after(0, self._update_output_listbox, generated_files_paths)
 
         except Exception as err:
             self.logger.error(f"Processing failed: {err}", exc_info=True)
