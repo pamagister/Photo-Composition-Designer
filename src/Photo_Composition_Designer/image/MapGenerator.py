@@ -25,7 +25,7 @@ class MapGenerator:
         self.textColor1 = textColor1
         self.locations = locations or Locations()
 
-    def generate_map(self, coordinates: tuple[int, int]) -> Image.Image:
+    def generate_map(self, coordinates: list[tuple[float, float]]) -> Image.Image:
         """
         Generiert eine Karte als Bild mit den GPS-Koordinaten.
         :param coordinates: Liste von (Breitengrad, Längengrad)-Tupeln.

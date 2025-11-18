@@ -7,9 +7,9 @@ from PIL import Image
 
 from Photo_Composition_Designer.common.Photo import Photo
 
-EXAMPLE_IMAGE_1 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape1.jpg"
-EXAMPLE_IMAGE_2 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape2.jpg"
-EXAMPLE_IMAGE_5 = Path(__file__).parent.parent / "images" / "layout_orientation" / "landscape5.jpg"
+EXAMPLE_IMAGE_1 = Path(__file__).parent.parent / "images" / "week_4" / "image_08.jpg"
+EXAMPLE_IMAGE_2 = Path(__file__).parent.parent / "images" / "week_4" / "image_09.jpg"
+EXAMPLE_IMAGE_5 = Path(__file__).parent.parent / "images" / "week_4" / "image_10.jpg"
 TEST_DATE = datetime(2023, 5, 17, 14, 30, 25)
 TEST_DATE_NO_TIME = datetime(2023, 5, 17, 12, 0, 0)
 

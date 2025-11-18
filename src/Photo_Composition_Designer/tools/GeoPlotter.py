@@ -53,7 +53,7 @@ class GeoPlotter:
         return color
 
     @staticmethod
-    def _create_geodataframe(coordinates: tuple[int, int]):
+    def _create_geodataframe(coordinates: list[tuple[float, float]]):
         """
         Creates a GeoDataFrame from GPS coordinates.
         :param coordinates: List of (latitude, longitude) tuples.
@@ -122,7 +122,7 @@ class GeoPlotter:
             "alpha": alpha,
         }
 
-    def renderMap(self, coordinates: tuple[int, int]):
+    def renderMap(self, coordinates: list[tuple[float, float]]):
         """
         Creates a map section as a plotable object.
         :param coordinates: List of (latitude, longitude) tuples.

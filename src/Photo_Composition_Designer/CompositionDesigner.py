@@ -139,13 +139,11 @@ class CompositionDesigner:
         self,
         photos: list[Photo],
         date,
-        output_path: str | Path,
         photo_description: str = "",
-    ) -> None:
+    ) -> Image.Image:
         """
         Creates a composition with pictures, a calendar and a map of Europe with photo locations.
         """
-        output_path = str(output_path)
         background_color = self.config.colors.backgroundColor.value.to_pil()
         text_color2 = self.config.colors.textColor2.value.to_pil()
 
@@ -245,18 +243,14 @@ class CompositionDesigner:
         # create title only once
         self.compositionTitle = None
 
-        # save with configured quality/dpi
-        jpg_quality = int(self.config.size.jpgQuality.value)
-        dpi_tuple = (self.dpi, self.dpi)
-        composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
-        print(f"Composition saved: {output_path}")
+        return composition
 
     # ---------------------------------------------------------------------
     # Batch processing helpers
     # ---------------------------------------------------------------------
     def _process_images(
         self,
-        photos: Sequence,
+        photos: list[Photo],
         output_prefix: str,
         description: str | Sequence[str],
         start_date,
@@ -279,7 +273,13 @@ class CompositionDesigner:
             else:
                 collage_description = description if isinstance(description, str) else ""
 
-            self.generate_composition(photos_for_collage, date, output_path, collage_description)
+            composition = self.generate_composition(photos_for_collage, date, collage_description)
+
+            # save with configured quality/dpi
+            jpg_quality = int(self.config.size.jpgQuality.value)
+            dpi_tuple = (self.dpi, self.dpi)
+            composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
+            print(f"Composition saved: {output_path}")
 
     @staticmethod
     def _get_description(folder_path: Path, fallback_to_foldername: bool = False):
