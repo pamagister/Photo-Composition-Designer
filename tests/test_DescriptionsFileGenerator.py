@@ -1,12 +1,23 @@
+import shutil
+
 from Photo_Composition_Designer.tools.DescriptionsFileGenerator import DescriptionsFileGenerator
 
+from .TestHelper import temp_dir
 
-def test_generate_description_file_creates_real_file(tmp_path):
+print(f"Use temp dir: {temp_dir}")
+
+
+def test_generate_description_file_creates_real_file(temp_dir):
     # Create a fake photo directory inside the pytest temp directory
-    photo_dir = tmp_path / "photos"
-    photo_dir.mkdir()
+    photo_dir = temp_dir / "photos"
+    output_dir = temp_dir / "output"
+
+    # cleanup
+    shutil.rmtree(output_dir, ignore_errors=True)
+    shutil.rmtree(photo_dir, ignore_errors=True)
 
     # Create some folder structure in the photo directory
+    photo_dir.mkdir()
     (photo_dir / "set1").mkdir()
     (photo_dir / "set2").mkdir()
 
@@ -14,7 +25,6 @@ def test_generate_description_file_creates_real_file(tmp_path):
     (photo_dir / "not_a_dir.txt").write_text("ignore me")
 
     # Create output directory
-    output_dir = tmp_path / "output"
     output_dir.mkdir()
 
     # Run the generator
