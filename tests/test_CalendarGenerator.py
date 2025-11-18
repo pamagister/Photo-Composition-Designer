@@ -1,17 +1,14 @@
-from pathlib import Path
-
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.image.CalendarGenerator import (
     create_calendar_generator_from_config,
 )
 
+from .TestHelper import temp_dir
 
-def test_CalendarGenerator_proper_name():
-    # Create temp directory
-    project_root = Path(__file__).resolve().parents[1]
-    temp_dir = project_root / "temp"
-    temp_dir.mkdir(exist_ok=True)
+print(f"Use temp dir: {temp_dir}")
 
+
+def test_CalendarGenerator_proper_name(temp_dir):
     # Load default config
     config = ConfigParameterManager()
 

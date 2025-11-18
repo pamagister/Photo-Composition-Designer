@@ -16,7 +16,7 @@ from Photo_Composition_Designer.image.CalendarGenerator import (
     CalendarGenerator,
     create_calendar_generator_from_config,
 )
-from Photo_Composition_Designer.image.CollageGenerator import PhotoLayoutGenerator
+from Photo_Composition_Designer.image.CollageGenerator import CollageGenerator
 from Photo_Composition_Designer.image.DescriptionGenerator import DescriptionGenerator
 from Photo_Composition_Designer.image.MapGenerator import MapGenerator
 
@@ -97,7 +97,7 @@ class CompositionDesigner:
 
         # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
         collage_height_px = self.get_available_collage_height_px()
-        self.layoutManager: PhotoLayoutGenerator = PhotoLayoutGenerator(
+        self.layoutManager: CollageGenerator = CollageGenerator(
             self.width_px, collage_height_px, self.spacing_px, background_color
         )
         start_date_cfg = self.config.calendar.startDate.value
@@ -191,7 +191,7 @@ class CompositionDesigner:
             return
 
         # Arrange image composition
-        collage = self.layoutManager.generate_collage(photos)
+        collage = self.layoutManager.generate_collage([photo.get_image() for photo in photos])
         composition.paste(collage, (0, self.margin_top_px))
 
         # add location map (if configured and not the title page)

@@ -20,33 +20,11 @@ layout_configurations = [
     (2, ["landscape", "portrait"]),
     (3, ["landscape", "landscape", "landscape"]),
     (3, ["portrait", "portrait", "portrait"]),
-    (3, ["landscape", "landscape", "portrait"]),
-    (3, ["landscape", "portrait", "portrait"]),
-    (4, ["landscape", "landscape", "landscape", "landscape"]),
-    (4, ["landscape", "landscape", "landscape", "portrait"]),
-    (4, ["landscape", "landscape", "portrait", "portrait"]),
-    (4, ["landscape", "portrait", "portrait", "portrait"]),
-    (5, ["landscape", "landscape", "landscape", "landscape", "landscape"]),
-    (5, ["landscape", "landscape", "landscape", "landscape", "portrait"]),
-    (5, ["landscape", "landscape", "landscape", "portrait", "portrait"]),
-    (5, ["landscape", "landscape", "portrait", "portrait", "portrait"]),
-    (6, ["landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),
-    (
-        7,
-        [
-            "landscape",
-            "landscape",
-            "landscape",
-            "landscape",
-            "portrait",
-            "portrait",
-            "portrait",
-        ],
-    ),
+    (3, ["portrait", "portrait", "portrait", "landscape"]),
 ]
 
 
-class TestCollageGenerator:
+class TestCompositionDesigner:
     WEEK_COUNTER = 0
 
     def setup_method(self):

@@ -2,22 +2,19 @@ import random
 
 from PIL import Image, UnidentifiedImageError
 
-from Photo_Composition_Designer.common.Photo import Photo
 
-
-class PhotoLayoutGenerator:
+class CollageGenerator:
     def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
 
-    def generate_collage(self, photos: list[Photo]) -> Image.Image:
+    def generate_collage(self, images: list[Image.Image]) -> Image.Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
         # Bilder nach Seitenverhältnis sortieren
-        images = [img.get_image() for img in photos]
         collage: Image.Image = Image.new(
             mode="RGB", size=(self.width, self.height), color=self.color
         )
@@ -41,7 +38,7 @@ class PhotoLayoutGenerator:
         except (UnidentifiedImageError, OSError) as e:
             print(f"Error in the arrangement of images: {e}")
             # Entferne ungültige Bilder und versuche es erneut
-            photos = self.remove_invalid_images(photos)
+            photos = self.remove_invalid_images(images)
             if photos:
                 print("Invalid images removed, try again...")
                 self.generate_collage(photos)
@@ -52,19 +49,18 @@ class PhotoLayoutGenerator:
         return collage
 
     @staticmethod
-    def remove_invalid_images(photos: list[Photo]):
+    def remove_invalid_images(photos: list[Image.Image]):
         """
         Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
         """
         valid_images = []
-        for photo in photos:
+        for img in photos:
             try:
                 # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
-                img = Image.open(photo.file_path)
                 img.crop((0, 2, 3, 3))
-                valid_images.append(photo)
+                valid_images.append(img)
             except (UnidentifiedImageError, OSError) as e:
-                print(f"Invalid image skipped: {photo.file_path} - {e}")
+                print(f"Invalid image skipped: {img.info} - {e}")
 
         # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
         return valid_images
