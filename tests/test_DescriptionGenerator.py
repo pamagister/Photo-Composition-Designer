@@ -25,7 +25,7 @@ def test_generate_description_creates_image_in_temp():
     )
 
     # Generate an image
-    img = generator.generateDescription("Test123")
+    img = generator.generate_description("Test123")
 
     # Save image for manual inspection later
     img.save(output_image_path)

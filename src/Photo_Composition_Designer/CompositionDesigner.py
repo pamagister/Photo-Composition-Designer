@@ -16,9 +16,9 @@ from Photo_Composition_Designer.image.CalendarGenerator import (
     CalendarGenerator,
     create_calendar_generator_from_config,
 )
+from Photo_Composition_Designer.image.CollageGenerator import PhotoLayoutGenerator
 from Photo_Composition_Designer.image.DescriptionGenerator import DescriptionGenerator
 from Photo_Composition_Designer.image.MapGenerator import MapGenerator
-from Photo_Composition_Designer.image.PhotoLayoutGenerator import PhotoLayoutGenerator
 
 
 class CompositionDesigner:
@@ -163,7 +163,7 @@ class CompositionDesigner:
         elif self.config.calendar.useCalendar.value and not self.compositionTitle:
             if self.config.geo.usePhotoLocationMaps.value:
                 available_cal_width -= self.map_width_px + self.margin_sides_px
-            calendar_img = self.calendarObj.generateCalendar(
+            calendar_img = self.calendarObj.generate_calendar(
                 date, available_cal_width, self.calendar_height_px
             )
             composition.paste(
@@ -176,7 +176,7 @@ class CompositionDesigner:
 
         # description area
         if self.config.layout.usePhotoDescription.value:
-            description_img = self.descGenerator.generateDescription(photo_description)
+            description_img = self.descGenerator.generate_description(photo_description)
             desc_h = getattr(self.descGenerator, "height", description_img.size[1])
             composition.paste(
                 description_img,
@@ -191,7 +191,7 @@ class CompositionDesigner:
             return
 
         # Arrange image composition
-        collage = self.layoutManager.arrangeImages(photos)
+        collage = self.layoutManager.generate_collage(photos)
         composition.paste(collage, (0, self.margin_top_px))
 
         # add location map (if configured and not the title page)

@@ -13,7 +13,7 @@ class DescriptionGenerator:
         self.textColor2 = textColor2
         self.backgroundColor = backgroundColor
 
-    def generateDescription(self, text) -> Image.Image:
+    def generate_description(self, text) -> Image.Image:
         """
         Erzeugt ein Bild mit dem angegebenen Text.
         :param text: Der darzustellende Text.

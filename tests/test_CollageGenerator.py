@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 from Photo_Composition_Designer.common.Photo import Photo
-from Photo_Composition_Designer.image.PhotoLayoutGenerator import PhotoLayoutGenerator
+from Photo_Composition_Designer.image.CollageGenerator import PhotoLayoutGenerator
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def test_arrange_images(mock_open, photo_layout, mock_images, num_images):
     ):
         image_paths = [f"img{i}.jpg" for i in range(num_images)]
         photos = [Photo(Path(filename)) for filename in image_paths]
-        photo_layout.arrangeImages(photos)
+        photo_layout.generate_collage(photos)
 
         assert mock_open.call_count == num_images
 

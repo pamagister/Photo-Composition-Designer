@@ -12,25 +12,7 @@ class PhotoLayoutGenerator:
         self.height: int = height
         self.spacing: int = spacing
 
-    @staticmethod
-    def filterInvalidImages(photos: list[Photo]):
-        """
-        Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
-        """
-        valid_images = []
-        for photo in photos:
-            try:
-                # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
-                img = Image.open(photo.file_path)
-                img.crop((0, 2, 3, 3))
-                valid_images.append(photo)
-            except (UnidentifiedImageError, OSError) as e:
-                print(f"Invalid image skipped: {photo.file_path} - {e}")
-
-        # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
-        return valid_images
-
-    def arrangeImages(self, photos: list[Photo]) -> Image.Image:
+    def generate_collage(self, photos: list[Photo]) -> Image.Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
@@ -59,15 +41,33 @@ class PhotoLayoutGenerator:
         except (UnidentifiedImageError, OSError) as e:
             print(f"Error in the arrangement of images: {e}")
             # Entferne ungültige Bilder und versuche es erneut
-            photos = self.filterInvalidImages(photos)
+            photos = self.remove_invalid_images(photos)
             if photos:
                 print("Invalid images removed, try again...")
-                self.arrangeImages(photos)
+                self.generate_collage(photos)
             else:
                 # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
                 print("No more valid images available.")
                 raise e
         return collage
+
+    @staticmethod
+    def remove_invalid_images(photos: list[Photo]):
+        """
+        Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
+        """
+        valid_images = []
+        for photo in photos:
+            try:
+                # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
+                img = Image.open(photo.file_path)
+                img.crop((0, 2, 3, 3))
+                valid_images.append(photo)
+            except (UnidentifiedImageError, OSError) as e:
+                print(f"Invalid image skipped: {photo.file_path} - {e}")
+
+        # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
+        return valid_images
 
     @staticmethod
     def analyzeImages(images):

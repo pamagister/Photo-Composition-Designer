@@ -32,7 +32,7 @@ def test_CalendarGenerator_proper_name():
 
     # Weekly calendar
     dt = config.calendar.startDate.value
-    cal_img = cg.generateCalendar(
+    cal_img = cg.generate_calendar(
         dt,
         width=config.size.width.value * config.size.dpi.value / 25.4,
         height=config.size.calendarHeight.value * config.size.dpi.value / 25.4,

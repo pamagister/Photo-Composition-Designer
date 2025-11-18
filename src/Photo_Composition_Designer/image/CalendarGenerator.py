@@ -70,7 +70,9 @@ class CalendarGenerator:
     # Rendering
     # -------------------------------------------------------------------------
 
-    def generateCalendar(self, d: datetime, width: int | float, height: int | float) -> Image.Image:
+    def generate_calendar(
+        self, d: datetime, width: int | float, height: int | float
+    ) -> Image.Image:
         """Render full weekly calendar image."""
         width = int(width)
         height = int(height)
@@ -309,7 +311,7 @@ def main() -> None:
             )
             first = False
         else:
-            img = cg.generateCalendar(
+            img = cg.generate_calendar(
                 dt,
                 width=int(config.size.width.value * config.size.dpi.value / 25.4),
                 height=config.size.calendarHeight.value * config.size.dpi.value / 25.4,
