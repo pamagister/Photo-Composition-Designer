@@ -5,7 +5,7 @@ from PIL import Image, UnidentifiedImageError
 from Photo_Composition_Designer.common.Photo import Photo
 
 
-class PhotoLayoutManager:
+class PhotoLayoutGenerator:
     def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
         self.color = color
         self.width: int = width
@@ -30,13 +30,15 @@ class PhotoLayoutManager:
         # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
         return valid_images
 
-    def arrangeImages(self, photos: list[Photo]) -> Image:
+    def arrangeImages(self, photos: list[Photo]) -> Image.Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
         # Bilder nach Seitenverhältnis sortieren
         images = [img.get_image() for img in photos]
-        collage: Image = Image.new(mode="RGB", size=(self.width, self.height), color=self.color)
+        collage: Image.Image = Image.new(
+            mode="RGB", size=(self.width, self.height), color=self.color
+        )
         images = self.sortByAspectRatio(images)
         formats = self.analyzeImages(images)
 

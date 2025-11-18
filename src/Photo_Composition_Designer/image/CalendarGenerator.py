@@ -8,46 +8,12 @@ from pathlib import Path
 
 import holidays
 import pytz
-from astral import LocationInfo, moon
+from astral import LocationInfo
 from astral.sun import sun
 from PIL import Image, ImageDraw, ImageFont
 
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
-
-
-class MoonPhase:
-    """Utility class for computing Unicode moon phase symbols."""
-
-    DETAILED = False
-
-    @staticmethod
-    def get_moon_phase_symbol_light(d: datetime) -> str:
-        return MoonPhase.get_moon_symbol(moon.phase(d))
-
-    @staticmethod
-    def get_moon_phase_symbol_dark(d: datetime) -> str:
-        return MoonPhase.get_moon_symbol((moon.phase(d) + 14) % 28)
-
-    @staticmethod
-    def get_moon_symbol(phase: float) -> str:
-        p = int(phase)
-        if p == 0:
-            return "🌑"
-        if p == 4 and MoonPhase.DETAILED:
-            return "🌒"
-        if p == 7:
-            return "🌓"
-        if p == 10 and MoonPhase.DETAILED:
-            return "🌔"
-        if p == 14:
-            return "🌕"
-        if p == 18 and MoonPhase.DETAILED:
-            return "🌖"
-        if p == 21:
-            return "🌗"
-        if p == 25 and MoonPhase.DETAILED:
-            return "🌘"
-        return ""
+from Photo_Composition_Designer.common.MoonPhase import MoonPhase
 
 
 class CalendarGenerator:

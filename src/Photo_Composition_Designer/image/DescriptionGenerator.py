@@ -13,14 +13,16 @@ class DescriptionGenerator:
         self.textColor2 = textColor2
         self.backgroundColor = backgroundColor
 
-    def generateDescription(self, text):
+    def generateDescription(self, text) -> Image.Image:
         """
         Erzeugt ein Bild mit dem angegebenen Text.
         :param text: Der darzustellende Text.
         :return: Ein PIL Image-Objekt mit dem gerenderten Text.
         """
         # Erstelle ein neues Bild mit der Hintergrundfarbe aus der Konfiguration
-        description_image = Image.new("RGB", (self.width, self.height), self.backgroundColor)
+        description_image: Image.Image = Image.new(
+            "RGB", (self.width, self.height), self.backgroundColor
+        )
 
         # Zeichnungsobjekt initialisieren
         draw = ImageDraw.Draw(description_image)

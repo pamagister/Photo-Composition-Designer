@@ -5,7 +5,7 @@ import exifread
 from PIL import Image
 
 from Photo_Composition_Designer.common.Locations import Locations
-from Photo_Composition_Designer.core.GeoPlotter import GeoPlotter
+from Photo_Composition_Designer.tools.GeoPlotter import GeoPlotter
 
 
 class MapGenerator:
@@ -25,15 +25,10 @@ class MapGenerator:
         self.textColor1 = textColor1
         self.locations = locations or Locations()
 
-    def generateImageLocationMap(self, coordinates_list):
-        map_image = self.generate_map(coordinates_list)
-
-        return map_image
-
-    def generate_map(self, gps_coords):
+    def generate_map(self, coordinates: tuple[int, int]) -> Image.Image:
         """
         Generiert eine Karte als Bild mit den GPS-Koordinaten.
-        :param gps_coords: Liste von (Breitengrad, Längengrad)-Tupeln.
+        :param coordinates: Liste von (Breitengrad, Längengrad)-Tupeln.
         :return: PIL.Image-Objekt mit der Karte.
         """
         # Plotter initialisieren
@@ -46,7 +41,7 @@ class MapGenerator:
         )
 
         # GeoDataFrame aus Koordinaten erstellen
-        plt = plotter.renderMap(gps_coords)
+        plt = plotter.renderMap(coordinates)
 
         # In einen BytesIO-Puffer speichern
         buf = BytesIO()
@@ -54,7 +49,7 @@ class MapGenerator:
         plt.close()  # Speicher freigeben
         buf.seek(0)
 
-        map_image = Image.open(buf)
+        map_image: Image.Image = Image.open(buf)
         map_image = map_image.resize((self.width + 2 * border, self.height + 2 * border))
         map_image = map_image.crop((border, border, self.width + border, self.height + border))
 
@@ -77,7 +72,8 @@ class MapGenerator:
                 return lat, lon
         return None
 
-    def convert_to_decimal(self, dms):
+    @staticmethod
+    def convert_to_decimal(dms: list[int]) -> float:
         """
         Konvertiert Grad, Minuten und Sekunden in Dezimalgrad.
         """

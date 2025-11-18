@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from Photo_Composition_Designer.core.DescriptionGenerator import DescriptionGenerator
+from Photo_Composition_Designer.image.DescriptionGenerator import DescriptionGenerator
 
 
 def test_generate_description_creates_image_in_temp():

@@ -53,15 +53,15 @@ class GeoPlotter:
         return color
 
     @staticmethod
-    def _create_geodataframe(coords):
+    def _create_geodataframe(coordinates: tuple[int, int]):
         """
         Creates a GeoDataFrame from GPS coordinates.
-        :param coords: List of (latitude, longitude) tuples.
+        :param coordinates: List of (latitude, longitude) tuples.
         :return: GeoDataFrame with points.
         """
 
         gdf = gpd.GeoDataFrame(
-            {"geometry": [Point(lon, lat) for lat, lon in coords]},
+            {"geometry": [Point(lon, lat) for lat, lon in coordinates]},
             crs="EPSG:4326",
         )
         return gdf
@@ -122,10 +122,10 @@ class GeoPlotter:
             "alpha": alpha,
         }
 
-    def renderMap(self, coords):
+    def renderMap(self, coordinates: tuple[int, int]):
         """
         Creates a map section as a plotable object.
-        :param coords: List of (latitude, longitude) tuples.
+        :param coordinates: List of (latitude, longitude) tuples.
         :return: Plottable matplotlib.pyplot object.
         """
         # Shapefile für Ländergrenzen laden
@@ -133,14 +133,14 @@ class GeoPlotter:
         size_marker = self.size_marker
 
         # Kartengrenzen berechnen
-        if not coords:
+        if not coordinates:
             points_gdf = self._create_geodataframe([(51.0504, 13.7373)])
             self.minimalExtension = 25
             bounds = self._calculate_bounds(points_gdf)
             size_marker = 0
         else:
             # GeoDataFrame für GPS-Punkte erstellen
-            points_gdf = self._create_geodataframe(coords)
+            points_gdf = self._create_geodataframe(coordinates)
             bounds = self._calculate_bounds(points_gdf)
 
         # Karte plotten
@@ -165,7 +165,7 @@ class GeoPlotter:
         )
 
         # Zusätzliche Layer plotten - außer im großen Europa-Plot
-        if coords:
+        if coordinates:
             for layer_name, layer_data in self.layers.items():
                 layer_data["gdf"].plot(
                     ax=ax,

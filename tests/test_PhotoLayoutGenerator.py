@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 from Photo_Composition_Designer.common.Photo import Photo
-from Photo_Composition_Designer.core.PhotoLayoutManager import PhotoLayoutManager
+from Photo_Composition_Designer.image.PhotoLayoutGenerator import PhotoLayoutGenerator
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def mock_images():
 def photo_layout():
     """Erstellt eine PhotoLayoutManager-Instanz mit einem Mock-Collage-Bild."""
     # mock_collage = MagicMock(spec=Image.Image)
-    return PhotoLayoutManager()
+    return PhotoLayoutGenerator()
 
 
 @pytest.mark.parametrize("num_images", [1, 2, 3, 4, 5, 6, 7, 8])
@@ -36,14 +36,14 @@ def test_arrange_images(mock_open, photo_layout, mock_images, num_images):
     orientations = ["landscape"] * num_images
 
     with (
-        patch.object(PhotoLayoutManager, "sortByAspectRatio", return_value=mock_img_list),
-        patch.object(PhotoLayoutManager, "analyzeImages", return_value=orientations),
-        patch.object(PhotoLayoutManager, "arrangeOneImage") as mock_arrange_one,
-        patch.object(PhotoLayoutManager, "arrangeTwoImages") as mock_arrange_two,
-        patch.object(PhotoLayoutManager, "arrangeThreeImages") as mock_arrange_three,
-        patch.object(PhotoLayoutManager, "arrangeFourImages") as mock_arrange_four,
-        patch.object(PhotoLayoutManager, "arrangeFiveImages") as mock_arrange_five,
-        patch.object(PhotoLayoutManager, "arrangeMultipleImages") as mock_arrange_multiple,
+        patch.object(PhotoLayoutGenerator, "sortByAspectRatio", return_value=mock_img_list),
+        patch.object(PhotoLayoutGenerator, "analyzeImages", return_value=orientations),
+        patch.object(PhotoLayoutGenerator, "arrangeOneImage") as mock_arrange_one,
+        patch.object(PhotoLayoutGenerator, "arrangeTwoImages") as mock_arrange_two,
+        patch.object(PhotoLayoutGenerator, "arrangeThreeImages") as mock_arrange_three,
+        patch.object(PhotoLayoutGenerator, "arrangeFourImages") as mock_arrange_four,
+        patch.object(PhotoLayoutGenerator, "arrangeFiveImages") as mock_arrange_five,
+        patch.object(PhotoLayoutGenerator, "arrangeMultipleImages") as mock_arrange_multiple,
         patch.object(Path, "exists", return_value=True),
     ):
         image_paths = [f"img{i}.jpg" for i in range(num_images)]

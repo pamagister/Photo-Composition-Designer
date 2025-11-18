@@ -12,13 +12,13 @@ from PIL import Image, ImageDraw
 from Photo_Composition_Designer.common.Locations import Locations
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.CalendarGenerator import (
+from Photo_Composition_Designer.image.CalendarGenerator import (
     CalendarGenerator,
     create_calendar_generator_from_config,
 )
-from Photo_Composition_Designer.core.DescriptionGenerator import DescriptionGenerator
-from Photo_Composition_Designer.core.MapGenerator import MapGenerator
-from Photo_Composition_Designer.core.PhotoLayoutManager import PhotoLayoutManager
+from Photo_Composition_Designer.image.DescriptionGenerator import DescriptionGenerator
+from Photo_Composition_Designer.image.MapGenerator import MapGenerator
+from Photo_Composition_Designer.image.PhotoLayoutGenerator import PhotoLayoutGenerator
 
 
 class CompositionDesigner:
@@ -97,7 +97,7 @@ class CompositionDesigner:
 
         # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
         collage_height_px = self.get_available_collage_height_px()
-        self.layoutManager: PhotoLayoutManager = PhotoLayoutManager(
+        self.layoutManager: PhotoLayoutGenerator = PhotoLayoutGenerator(
             self.width_px, collage_height_px, self.spacing_px, background_color
         )
         start_date_cfg = self.config.calendar.startDate.value
@@ -197,7 +197,7 @@ class CompositionDesigner:
         # add location map (if configured and not the title page)
         if self.config.geo.usePhotoLocationMaps.value and not self.compositionTitle:
             coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
-            imgMap = self.mapGenerator.generateImageLocationMap(coordinates)
+            imgMap = self.mapGenerator.generate_map(coordinates)
             composition.paste(
                 imgMap,
                 (

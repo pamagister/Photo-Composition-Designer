@@ -3,7 +3,7 @@ import pytest
 from pyogrio.errors import DataSourceError
 from shapely.geometry import Point
 
-from Photo_Composition_Designer.core.GeoPlotter import GeoPlotter
+from Photo_Composition_Designer.tools.GeoPlotter import GeoPlotter
 
 
 @pytest.fixture
@@ -25,8 +25,8 @@ def test__normalize_color(geo_plotter):
 
 def test__create_geodataframe(geo_plotter):
     """Testet die Erstellung eines GeoDataFrame aus GPS-Koordinaten."""
-    coords = [(51.0504, 13.7373), (52.5200, 13.4050)]  # Dresden, Berlin
-    gdf = geo_plotter._create_geodataframe(coords)
+    coordinates = [(51.0504, 13.7373), (52.5200, 13.4050)]  # Dresden, Berlin
+    gdf = geo_plotter._create_geodataframe(coordinates)
 
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 2
@@ -36,8 +36,8 @@ def test__create_geodataframe(geo_plotter):
 
 def test__calculate_bounds(geo_plotter):
     """Testet die Berechnung der Kartengrenzen."""
-    coords = [(51.0504, 13.7373), (52.5200, 13.4050)]  # Dresden, Berlin
-    gdf = geo_plotter._create_geodataframe(coords)
+    coordinates = [(51.0504, 13.7373), (52.5200, 13.4050)]  # Dresden, Berlin
+    gdf = geo_plotter._create_geodataframe(coordinates)
     bounds = geo_plotter._calculate_bounds(gdf)
 
     assert len(bounds) == 4
@@ -56,7 +56,7 @@ def test__add_layer(geo_plotter):
 
 def test_render_map(geo_plotter):
     """Testet die Generierung einer Karte mit Matplotlib."""
-    coords = [(51.0504, 13.7373), (52.5200, 13.4050)]
-    plt_obj = geo_plotter.renderMap(coords)
+    coordinates = [(51.0504, 13.7373), (52.5200, 13.4050)]
+    plt_obj = geo_plotter.renderMap(coordinates)
 
     assert plt_obj.figure().dpi == 100  # Prüft, ob eine matplotlib-Figur zurückgegeben wird

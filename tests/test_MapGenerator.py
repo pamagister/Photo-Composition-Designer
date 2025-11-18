@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from Photo_Composition_Designer.core.MapGenerator import MapGenerator
+from Photo_Composition_Designer.image.MapGenerator import MapGenerator
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def test_generate_map_creates_image_file(temp_dir):
 
     map_gen = MapGenerator(mapHeight=200, mapWidth=200)
 
-    img = map_gen.generateImageLocationMap(gps_coordinates)
+    img = map_gen.generate_map(gps_coordinates)
 
     # Save image to temp for verification
     output_path = temp_dir / "test_map_output.png"

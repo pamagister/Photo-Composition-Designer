@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.CalendarGenerator import (
+from Photo_Composition_Designer.image.CalendarGenerator import (
     create_calendar_generator_from_config,
 )
 

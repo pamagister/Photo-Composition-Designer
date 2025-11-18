@@ -353,7 +353,7 @@ class BaseGPXProcessor:
                     gpx_track = gpxpy.gpx.GPXTrack()
                     gpx_track.name = feature.name
                     gpx_segment = gpxpy.gpx.GPXTrackSegment()
-                    for coord in feature.geometry.coords:
+                    for coord in feature.geometry.coordinates:
                         point = gpxpy.gpx.GPXTrackPoint(
                             latitude=coord[1],
                             longitude=coord[0],
