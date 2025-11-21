@@ -33,6 +33,9 @@ class CompositionDesigner:
     def __init__(self, config: ConfigParameterManager | None = None):
         self.config = config or ConfigParameterManager()
         self.dpi: int = int(self.config.size.dpi.value)
+        # load locations config path and create Locations instance
+        locations_cfg_path = Path(self.config.general.locationsConfig.value)
+        self.locations = Locations(locations_cfg_path).locations_dict
 
         # mm-based -> pixel helper bound to this instance
         self._mm_to_px = lambda mm: int(round(float(mm) * self.dpi / 25.4))
@@ -50,6 +53,7 @@ class CompositionDesigner:
         )
         self.outputDir: Path = (self.photoDirectory.parent / "collages").resolve()
         os.makedirs(self.outputDir, exist_ok=True)
+        self.descriptions = self._get_description(self.photoDirectory) or []
 
         # size in pixels
         self.width_px = self._mm_to_px(self.config.size.width.value)
@@ -246,12 +250,12 @@ class CompositionDesigner:
         return composition
 
     @staticmethod
-    def _get_description(folder_path: Path, fallback_to_foldername: bool = False):
+    def _get_description(folder_path: Path) -> list[str]:
         """
         Search for a .txt file in the folder and return list(lines) without leading 'Label: ' parts.
         Returns empty string or list when none found.
         """
-        photo_description = ""
+        photo_description = [""]
         text_files = [
             folder_path / file
             for file in sorted(os.listdir(folder_path))
@@ -262,7 +266,7 @@ class CompositionDesigner:
             with open(text_file, "r", encoding="utf-8") as f:
                 lines = [line.strip() for line in f.readlines() if line.strip()]
                 photo_description = [re.sub(r"^[^:]*:\s*", "", line) for line in lines]
-            if not photo_description and fallback_to_foldername:
+            if not photo_description:
                 photo_description = [text_file.stem]
         return photo_description
 
@@ -270,52 +274,44 @@ class CompositionDesigner:
         """
         Generates collages for all weeks from the specified folder.
         """
-        descriptions = self._get_description(self.photoDirectory) or []
-        weekIndex = 0
+        week_index = 0
 
-        # load locations config path and create Locations instance
-        locations_cfg_path = Path(self.config.general.locationsConfig.value)
-        locations = Locations(locations_cfg_path).locations_dict
-
-        for element in sorted(os.listdir(self.photoDirectory)):
-            folder_path = self.photoDirectory / element
+        for folder_name in sorted(os.listdir(self.photoDirectory)):
+            folder_path = self.photoDirectory / folder_name
             if not folder_path.is_dir():
                 continue
 
-            photos = get_photos_from_dir(folder_path, locations)
+            photos = get_photos_from_dir(folder_path, self.locations)
+
             if not photos:
                 print(f"No images found in {folder_path}, skip...")
                 continue
 
             # description precedence: per-folder text overrides global descriptions list
-            description = descriptions[weekIndex] if weekIndex < len(descriptions) else ""
-            folder_desc = self._get_description(folder_path, fallback_to_foldername=True)
-            if folder_desc:
-                description = folder_desc
+            global_description = (
+                self.descriptions[week_index] if week_index < len(self.descriptions) else ""
+            )
+            collage_description: str = self._get_description(folder_path)[0] or global_description
 
-            start_date = self.startDate + timedelta(weeks=weekIndex)
-
-            # choose description (list support)
-            if isinstance(description, (list, tuple)):
-                collage_description = description[0] if 0 < len(description) else ""
-            else:
-                collage_description = description if isinstance(description, str) else ""
-
+            start_date = self.startDate + timedelta(weeks=week_index)
             composition = self.generate_composition(photos, start_date, collage_description)
 
-            # save with configured quality/dpi
-            output_prefix = f"collage_{element}"
-            output_file_name = f"{output_prefix}.jpg"
-            output_path = self.outputDir / output_file_name
-            jpg_quality = int(self.config.size.jpgQuality.value)
-            dpi_tuple = (self.dpi, self.dpi)
-            composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
-            print(f"Composition saved: {output_path}")
+            self.save(composition, folder_name)
 
-            weekIndex += 1
+            week_index += 1
 
         if self.config.layout.generatePdf.value:
             self.generate_pdf(self.outputDir)
+
+    def save(self, composition: Image, element: str):
+        # save with configured quality/dpi
+        output_prefix = f"collage_{element}"
+        output_file_name = f"{output_prefix}.jpg"
+        output_path = self.outputDir / output_file_name
+        jpg_quality = int(self.config.size.jpgQuality.value)
+        dpi_tuple = (self.dpi, self.dpi)
+        composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
+        print(f"Composition saved: {output_path}")
 
     def generate_pdf(self, collages_dir: Path | str, output_pdf: str = "output.pdf"):
         """
