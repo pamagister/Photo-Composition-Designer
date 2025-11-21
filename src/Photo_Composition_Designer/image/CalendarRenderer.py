@@ -10,13 +10,15 @@ import holidays
 import pytz
 from astral import LocationInfo
 from astral.sun import sun
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
 from Photo_Composition_Designer.common.MoonPhase import MoonPhase
+from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.tools.Helpers import load_font
 
 
-class CalendarGenerator:
+class CalendarRenderer:
     """Responsible for rendering a weekly calendar strip with holidays,
     sun times and anniversaries.
     """
@@ -70,9 +72,7 @@ class CalendarGenerator:
     # Rendering
     # -------------------------------------------------------------------------
 
-    def generate_calendar(
-        self, d: datetime, width: int | float, height: int | float
-    ) -> Image.Image:
+    def generate(self, d: datetime, width: int | float, height: int | float) -> Image.Image:
         """Render full weekly calendar image."""
         width = int(width)
         height = int(height)
@@ -81,9 +81,9 @@ class CalendarGenerator:
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        font_small = self.get_font("DejaVuSans.ttf", int(self.fontSizeSmall))
-        font_ann = self.get_font("DejaVuSans.ttf", int(self.fontSizeAnniversaries))
+        font_large = load_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_small = load_font("DejaVuSans.ttf", int(self.fontSizeSmall))
+        font_ann = load_font("DejaVuSans.ttf", int(self.fontSizeAnniversaries))
 
         # Header (month + year)
         month_name = self.get_month_name(
@@ -183,7 +183,7 @@ class CalendarGenerator:
         height = int(height)
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
-        font_large = self.get_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_large = load_font("DejaVuSans.ttf", int(self.fontSizeLarge))
 
         draw.text(
             (width // 2, height - self.fontSizeAnniversaries),
@@ -197,13 +197,6 @@ class CalendarGenerator:
     # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
-
-    @staticmethod
-    def get_font(font_name: str, size: int) -> ImageFont.FreeTypeFont:
-        try:
-            return ImageFont.truetype(font_name, size)
-        except Exception:
-            return ImageFont.load_default()
 
     def get_cols_property(self, width: int) -> tuple[float, float]:
         month_cols = 1.5 if self.useShortMonthNames else 4.0
@@ -249,9 +242,9 @@ class CalendarGenerator:
 # -----------------------------------------------------------------------------
 
 
-def create_calendar_generator_from_config(config) -> CalendarGenerator:
+def from_config(config: ConfigParameterManager) -> CalendarRenderer:
     """Factory function to create CalendarGenerator using the config manager."""
-    return CalendarGenerator(
+    return CalendarRenderer(
         backgroundColor=config.colors.backgroundColor.value.to_pil(),
         textColor1=config.colors.textColor1.value.to_pil(),
         textColor2=config.colors.textColor2.value.to_pil(),
@@ -290,7 +283,7 @@ def main() -> None:
     from Photo_Composition_Designer.config.config import ConfigParameterManager
 
     config = ConfigParameterManager()
-    cg = create_calendar_generator_from_config(config)
+    cg = from_config(config)
 
     # Create temp directory
     project_root = Path(__file__).resolve().parents[3]
@@ -311,7 +304,7 @@ def main() -> None:
             )
             first = False
         else:
-            img = cg.generate_calendar(
+            img = cg.generate(
                 dt,
                 width=int(config.size.width.value * config.size.dpi.value / 25.4),
                 height=config.size.calendarHeight.value * config.size.dpi.value / 25.4,

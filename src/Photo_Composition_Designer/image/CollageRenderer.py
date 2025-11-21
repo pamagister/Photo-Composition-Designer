@@ -3,14 +3,14 @@ import random
 from PIL import Image, UnidentifiedImageError
 
 
-class CollageGenerator:
+class CollageRenderer:
     def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
 
-    def generate_collage(self, images: list[Image.Image]) -> Image.Image:
+    def generate(self, images: list[Image.Image]) -> Image.Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
@@ -41,7 +41,7 @@ class CollageGenerator:
             photos = self.remove_invalid_images(images)
             if photos:
                 print("Invalid images removed, try again...")
-                self.generate_collage(photos)
+                self.generate(photos)
             else:
                 # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
                 print("No more valid images available.")

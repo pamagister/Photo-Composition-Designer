@@ -1,6 +1,6 @@
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.image.CalendarGenerator import (
-    create_calendar_generator_from_config,
+from Photo_Composition_Designer.image.CalendarRenderer import (
+    from_config,
 )
 
 from .TestHelper import temp_dir
@@ -13,7 +13,7 @@ def test_CalendarGenerator_proper_name(temp_dir):
     config = ConfigParameterManager()
 
     # Build generator from config
-    cg = create_calendar_generator_from_config(config)
+    cg = from_config(config)
 
     # Generate one title + one week
     title_img = cg.generateTitle(
@@ -29,7 +29,7 @@ def test_CalendarGenerator_proper_name(temp_dir):
 
     # Weekly calendar
     dt = config.calendar.startDate.value
-    cal_img = cg.generate_calendar(
+    cal_img = cg.generate(
         dt,
         width=config.size.width.value * config.size.dpi.value / 25.4,
         height=config.size.calendarHeight.value * config.size.dpi.value / 25.4,

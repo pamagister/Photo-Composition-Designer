@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from Photo_Composition_Designer.image.DescriptionGenerator import DescriptionGenerator
+from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
 
 
 def test_generate_description_creates_image_in_temp():
@@ -15,17 +15,17 @@ def test_generate_description_creates_image_in_temp():
     output_image_path = temp_dir / "test_description_output.png"
 
     # Prepare the generator
-    generator = DescriptionGenerator(
-        width=300,
-        fontSizeSmall=20,
-        spacing=5,
-        marginSides=10,
-        backgroundColor=(200, 255, 255),
-        textColor2=(0, 0, 0),
+    generator = DescriptionRenderer(
+        width_px=300,
+        font_size=20,
+        spacing_px=5,
+        margin_side_px=10,
+        background_color=(200, 255, 255),
+        text_color=(0, 0, 0),
     )
 
     # Generate an image
-    img = generator.generate_description("Test123")
+    img = generator.generate("Test123")
 
     # Save image for manual inspection later
     img.save(output_image_path)

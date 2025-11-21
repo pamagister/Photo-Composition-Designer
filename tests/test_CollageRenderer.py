@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image, ImageDraw, ImageFont
 
-from Photo_Composition_Designer.image.CollageGenerator import CollageGenerator
+from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
 
 from .TestHelper import temp_dir
 
@@ -107,10 +107,10 @@ def test_generate_different_layouts(num_images, layout, temp_dir):
 
     assert len(selected_images) == num_images
 
-    generator = CollageGenerator(width=500, height=300, spacing=10, color=(30, 30, 30))
+    generator = CollageRenderer(width=500, height=300, spacing=10, color=(30, 30, 30))
 
     # RUN THE COLLAGE GENERATOR
-    collage = generator.generate_collage(selected_images)
+    collage = generator.generate(selected_images)
 
     # Basic validation
     assert collage is not None

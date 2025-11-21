@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import os
 import re
-from collections.abc import Sequence
 from datetime import timedelta
 from pathlib import Path
 
@@ -12,13 +11,14 @@ from PIL import Image, ImageDraw
 from Photo_Composition_Designer.common.Locations import Locations
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.image.CalendarGenerator import (
-    CalendarGenerator,
-    create_calendar_generator_from_config,
+from Photo_Composition_Designer.image.CalendarRenderer import (
+    CalendarRenderer,
+    from_config,
 )
-from Photo_Composition_Designer.image.CollageGenerator import CollageGenerator
-from Photo_Composition_Designer.image.DescriptionGenerator import DescriptionGenerator
-from Photo_Composition_Designer.image.MapGenerator import MapGenerator
+from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
+from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
+from Photo_Composition_Designer.image.MapRenderer import MapRenderer
+from Photo_Composition_Designer.tools.Helpers import load_font
 
 
 class CompositionDesigner:
@@ -68,7 +68,7 @@ class CompositionDesigner:
 
         # colors (Color objects have .to_pil() in your calendar factory)
         # Use the calendar factory which expects the full config object
-        self.calendarObj: CalendarGenerator = create_calendar_generator_from_config(self.config)
+        self.calendarObj: CalendarRenderer = from_config(self.config)
 
         # colors
         background_color = self.config.colors.backgroundColor.value.to_pil()
@@ -77,14 +77,14 @@ class CompositionDesigner:
 
         # Create other helpers/generators — pass config object for them to pull values from.
         # If their constructors changed, update these lines accordingly.
-        self.mapGenerator: MapGenerator = MapGenerator(
+        self.mapGenerator: MapRenderer = MapRenderer(
             self.map_height_px,
             self.map_width_px,
             self.config.geo.minimalExtension.value,
             background_color,
             text_color1,
         )
-        self.descGenerator: DescriptionGenerator = DescriptionGenerator(
+        self.descGenerator: DescriptionRenderer = DescriptionRenderer(
             self.width_px,
             self.fontSizeSmall,
             self.spacing_px,
@@ -97,7 +97,7 @@ class CompositionDesigner:
 
         # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
         collage_height_px = self.get_available_collage_height_px()
-        self.layoutManager: CollageGenerator = CollageGenerator(
+        self.layoutManager: CollageRenderer = CollageRenderer(
             self.width_px, collage_height_px, self.spacing_px, background_color
         )
         start_date_cfg = self.config.calendar.startDate.value
@@ -161,7 +161,7 @@ class CompositionDesigner:
         elif self.config.calendar.useCalendar.value and not self.compositionTitle:
             if self.config.geo.usePhotoLocationMaps.value:
                 available_cal_width -= self.map_width_px + self.margin_sides_px
-            calendar_img = self.calendarObj.generate_calendar(
+            calendar_img = self.calendarObj.generate(
                 date, available_cal_width, self.calendar_height_px
             )
             composition.paste(
@@ -174,7 +174,7 @@ class CompositionDesigner:
 
         # description area
         if self.config.layout.usePhotoDescription.value:
-            description_img = self.descGenerator.generate_description(photo_description)
+            description_img = self.descGenerator.generate(photo_description)
             desc_h = getattr(self.descGenerator, "height", description_img.size[1])
             composition.paste(
                 description_img,
@@ -186,16 +186,16 @@ class CompositionDesigner:
 
         if len(photos) == 0:
             print("No pictures found.")
-            return
+            return composition
 
         # Arrange image composition
-        collage = self.layoutManager.generate_collage([photo.get_image() for photo in photos])
+        collage = self.layoutManager.generate([photo.get_image() for photo in photos])
         composition.paste(collage, (0, self.margin_top_px))
 
         # add location map (if configured and not the title page)
         if self.config.geo.usePhotoLocationMaps.value and not self.compositionTitle:
             coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
-            imgMap = self.mapGenerator.generate_map(coordinates)
+            imgMap = self.mapGenerator.generate(coordinates)
             composition.paste(
                 imgMap,
                 (
@@ -232,7 +232,7 @@ class CompositionDesigner:
         if font_small_px <= 0:
             font_small_px = max(10, int(self.dpi * 0.04))
 
-        font = CalendarGenerator.get_font("DejaVuSans.ttf", font_small_px)
+        font = load_font("DejaVuSans.ttf", font_small_px)
 
         # Anchor rd expects coordinates relative to lower-right;
         # to put text inside margins we shift left/up
@@ -244,42 +244,6 @@ class CompositionDesigner:
         self.compositionTitle = None
 
         return composition
-
-    # ---------------------------------------------------------------------
-    # Batch processing helpers
-    # ---------------------------------------------------------------------
-    def _process_images(
-        self,
-        photos: list[Photo],
-        output_prefix: str,
-        description: str | Sequence[str],
-        start_date,
-        max_images_per_collage: int = 36,
-    ) -> None:
-        """
-        Internal method for processing images in groups and creating collages.
-        """
-        for index, i in enumerate(range(0, len(photos), max_images_per_collage)):
-            photos_for_collage = photos[i : i + max_images_per_collage]
-            output_file_name = f"{output_prefix}_part_{index + 1}.jpg"
-            output_path = self.outputDir / output_file_name
-
-            # calculate date by week offset
-            date = start_date + timedelta(weeks=index)
-
-            # choose description (list support)
-            if isinstance(description, (list, tuple)):
-                collage_description = description[index] if index < len(description) else ""
-            else:
-                collage_description = description if isinstance(description, str) else ""
-
-            composition = self.generate_composition(photos_for_collage, date, collage_description)
-
-            # save with configured quality/dpi
-            jpg_quality = int(self.config.size.jpgQuality.value)
-            dpi_tuple = (self.dpi, self.dpi)
-            composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
-            print(f"Composition saved: {output_path}")
 
     @staticmethod
     def _get_description(folder_path: Path, fallback_to_foldername: bool = False):
@@ -302,7 +266,7 @@ class CompositionDesigner:
                 photo_description = [text_file.stem]
         return photo_description
 
-    def generateProjectFromSubFolders(self):
+    def generate_compositions_from_folders(self):
         """
         Generates collages for all weeks from the specified folder.
         """
@@ -329,9 +293,24 @@ class CompositionDesigner:
             if folder_desc:
                 description = folder_desc
 
-            output_prefix = f"collage_{element}"
             start_date = self.startDate + timedelta(weeks=weekIndex)
-            self._process_images(photos, output_prefix, description, start_date)
+
+            # choose description (list support)
+            if isinstance(description, (list, tuple)):
+                collage_description = description[0] if 0 < len(description) else ""
+            else:
+                collage_description = description if isinstance(description, str) else ""
+
+            composition = self.generate_composition(photos, start_date, collage_description)
+
+            # save with configured quality/dpi
+            output_prefix = f"collage_{element}"
+            output_file_name = f"{output_prefix}.jpg"
+            output_path = self.outputDir / output_file_name
+            jpg_quality = int(self.config.size.jpgQuality.value)
+            dpi_tuple = (self.dpi, self.dpi)
+            composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
+            print(f"Composition saved: {output_path}")
 
             weekIndex += 1
 
@@ -382,4 +361,4 @@ if __name__ == "__main__":
     cfg = ConfigParameterManager(cfg_file)
     # cfg.general.photoDirectory =
     cd = CompositionDesigner(cfg)
-    cd.generateProjectFromSubFolders()
+    cd.generate_compositions_from_folders()

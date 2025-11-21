@@ -30,4 +30,4 @@ class TestCompositionDesigner:
         # -----------------------------
         designer = CompositionDesigner(config)
 
-        designer.generateProjectFromSubFolders()
+        designer.generate_compositions_from_folders()

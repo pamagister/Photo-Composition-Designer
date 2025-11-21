@@ -8,7 +8,7 @@ from Photo_Composition_Designer.common.Locations import Locations
 from Photo_Composition_Designer.tools.GeoPlotter import GeoPlotter
 
 
-class MapGenerator:
+class MapRenderer:
     def __init__(
         self,
         mapHeight=100,
@@ -25,7 +25,7 @@ class MapGenerator:
         self.textColor1 = textColor1
         self.locations = locations or Locations()
 
-    def generate_map(self, coordinates: list[tuple[float, float]]) -> Image.Image:
+    def generate(self, coordinates: list[tuple[float, float]]) -> Image.Image:
         """
         Generiert eine Karte als Bild mit den GPS-Koordinaten.
         :param coordinates: Liste von (Breitengrad, Längengrad)-Tupeln.
@@ -91,11 +91,11 @@ if __name__ == "__main__":
             (51.1079, 17.0441),  # Breslau
             (52.5200, 13.5156),  # Berlin
         ]
-        map_generator = MapGenerator()
+        map_generator = MapRenderer()
         map_generator.height = size
         map_generator.width = size
 
-        img = map_generator.generate_map(gps_coordinates)
+        img = map_generator.generate(gps_coordinates)
 
         map_plt.paste(img)
         map_plt.save(output_dir / f"map_{size}.jpg")
