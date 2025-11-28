@@ -118,11 +118,13 @@ class MainGui:
         # -------------------------------------------------------------
         # CENTER — Preview panel
         # -------------------------------------------------------------
-        image_frame = ttk.LabelFrame(top_paned, text="Preview")
-        top_paned.add(image_frame, weight=3)
+        self.image_frame = ttk.LabelFrame(top_paned, text="Preview")
+        top_paned.add(self.image_frame, weight=3)
 
-        self.preview_label = ttk.Label(image_frame)
+        self.preview_label = ttk.Label(self.image_frame)
         self.preview_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.preview_label.bind("<Configure>", self._refresh_preview)
+        self.image_frame.bind("<Configure>", self._refresh_preview)
         self.preview_label.bind("<Configure>", self._refresh_preview)
 
         # -------------------------------------------------------------
@@ -150,6 +152,8 @@ class MainGui:
             )
             button.pack(pady=1, fill=tk.X)
             self.run_buttons[mode] = button
+
+        #
 
         # compositions button
         self.generate_compositions_button = ttk.Button(
@@ -236,23 +240,25 @@ class MainGui:
         preview_image: Image.Image = self.composition_designer.generate_compositions_from_folder(
             folder_name
         )
-        self.preview_image_original = preview_image  # store before scaling
 
-        # Bild skalieren auf Größe der Preview-Box
-        frame_width = self.preview_label.winfo_width()
-        frame_height = self.preview_label.winfo_height()
+        # Save original unscaled image
+        if not preview_image:
+            self.logger.info(f"Empty folder '{folder_name}'. No preview available.")
+            return
+        img = preview_image.copy()
+        self.preview_image_original = img
 
-        if frame_width > 0 and frame_height > 0:
-            preview_image = preview_image.copy()
-            preview_image.thumbnail((frame_width, frame_height))
+        # Scale to current preview widget
+        w = self.preview_label.winfo_width()
+        h = self.preview_label.winfo_height()
 
-        # Tk-kompatibel machen
-        self.preview_photo = ImageTk.PhotoImage(preview_image)
+        if w > 0 and h > 0:
+            img.thumbnail((w, h))
 
-        # Im Label anzeigen
+        self.preview_photo = ImageTk.PhotoImage(img)
         self.preview_label.configure(image=self.preview_photo)
 
-        self.logger.info("Preview generated")
+        self.logger.info(f"Preview generated for folder {folder_name}")
 
     def _load_photo_folders(self):
         """Scan self.photo_dir for subfolders and populate the listbox and internal list."""
@@ -461,11 +467,20 @@ class MainGui:
         self.root.destroy()
 
     def _refresh_preview(self, event):
-        if hasattr(self, "preview_image_original"):
-            img = self.preview_image_original.copy()
-            img.thumbnail((event.width, event.height))
-            self.preview_photo = ImageTk.PhotoImage(img)
-            self.preview_label.configure(image=self.preview_photo)
+        if not hasattr(self, "preview_image_original"):
+            return
+
+        if not self.preview_image_original:
+            return
+
+        margin = 30  # extra padding around the preview
+        if event.width <= margin or event.height <= margin:
+            return
+
+        img = self.preview_image_original.copy()
+        img.thumbnail((event.width - margin, event.height - margin))
+        self.preview_photo = ImageTk.PhotoImage(img)
+        self.preview_label.configure(image=self.preview_photo, anchor="center", compound="")
 
 
 def main():

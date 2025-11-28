@@ -10,9 +10,6 @@ class DescriptionsFileGenerator:
     def __init__(self, photo_dir: Path, output_dir: Path):
         self.photo_dir: Path = photo_dir
         self.output_dir: Path = output_dir
-        self.move_files = False
-        self.distribute_images = True
-        self.generateLocationFile = False
 
     def generateDescriptionFile(self):
         global_description_text: list[str] = []

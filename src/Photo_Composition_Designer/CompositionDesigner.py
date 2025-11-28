@@ -139,11 +139,12 @@ class CompositionDesigner:
     # ---------------------------------------------------------------------
     # Composition rendering
     # ---------------------------------------------------------------------
-    def generate_composition(
+    def _generate_composition(
         self,
         photos: list[Photo],
         date,
         photo_description: str = "",
+        is_title=False,
     ) -> Image.Image:
         """
         Creates a composition with pictures, a calendar and a map of Europe with photo locations.
@@ -155,14 +156,14 @@ class CompositionDesigner:
         available_cal_width = self.width_px
 
         # add title or calendar
-        if self.compositionTitle:
+        if is_title and self.compositionTitle:
             title_img = self.calendarObj.generateTitle(
                 self.compositionTitle, available_cal_width, self.calendar_height_px
             )
             composition.paste(
                 title_img, (self.margin_sides_px, self.height_px - self.calendar_height_px)
             )
-        elif self.config.calendar.useCalendar.value and not self.compositionTitle:
+        elif self.config.calendar.useCalendar.value:
             if self.config.geo.usePhotoLocationMaps.value:
                 available_cal_width -= self.map_width_px + self.margin_sides_px
             calendar_img = self.calendarObj.generate(
@@ -197,7 +198,7 @@ class CompositionDesigner:
         composition.paste(collage, (0, self.margin_top_px))
 
         # add location map (if configured and not the title page)
-        if self.config.geo.usePhotoLocationMaps.value and not self.compositionTitle:
+        if self.config.geo.usePhotoLocationMaps.value and not is_title:
             coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
             imgMap = self.mapGenerator.generate(coordinates)
             composition.paste(
@@ -243,9 +244,6 @@ class CompositionDesigner:
         x = self.width_px - self.margin_sides_px
         y = self.height_px - self.margin_bottom_px
         draw.text((x, y), date_str, font=font, fill=text_color2, anchor="rd")
-
-        # create title only once
-        self.compositionTitle = None
 
         return composition
 
@@ -305,7 +303,9 @@ class CompositionDesigner:
 
         start_date = self.startDate + timedelta(weeks=week_index)
 
-        composition = self.generate_composition(photos, start_date, collage_description)
+        composition = self._generate_composition(
+            photos, start_date, collage_description, is_title=week_index == 0
+        )
 
         return composition
 
