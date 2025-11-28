@@ -9,7 +9,6 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Locations import Locations
-from Photo_Composition_Designer.common.logging import get_logger
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.image.CalendarRenderer import (
@@ -37,7 +36,6 @@ class CompositionDesigner:
         # load locations config path and create Locations instance
         locations_cfg_path = Path(self.config.general.locationsConfig.value)
         self.locations = Locations(locations_cfg_path).locations_dict
-        self.logger = get_logger("gui.main")
 
         # mm-based -> pixel helper bound to this instance
         self._mm_to_px = lambda mm: int(round(float(mm) * self.dpi / 25.4))
@@ -297,8 +295,6 @@ class CompositionDesigner:
         except ValueError:
             print(f"Folder '{folder_name}' not found in photoDirectory (unexpected).")
             return None
-
-        self.logger.info(f'Generate composition {week_index} for folder "{folder_name}"')
 
         global_description = (
             self.descriptions[week_index] if week_index < len(self.descriptions) else ""
