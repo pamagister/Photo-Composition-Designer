@@ -118,6 +118,8 @@ class MainGui:
         self.photo_dir_listbox.bind(
             "<Button-1>", lambda event: self._generate_preview_callback(event)
         )
+        self.photo_dir_listbox.bind("<Up>", lambda event: self._generate_preview_callback())
+        self.photo_dir_listbox.bind("<Down>", lambda event: self._generate_preview_callback())
 
         # -------------------------------------------------------------
         # CENTER — Preview panel
@@ -250,10 +252,16 @@ class MainGui:
         help_menu.add_separator()
         help_menu.add_command(label="About", command=self._show_about)
 
-    def _generate_preview_callback(self, event):
-        selection_index = event.widget.nearest(event.y)
-        if selection_index == -1:
-            return
+    def _generate_preview_callback(self, event=None):
+        if event:
+            selection_index = event.widget.nearest(event.y)
+            if selection_index == -1:
+                return
+        else:
+            selection = self.photo_dir_listbox.curselection()
+            if not selection:
+                return
+            selection_index = selection[0]
         self._generate_preview(selection_index)
 
     def _generate_preview(self, selection_index):
