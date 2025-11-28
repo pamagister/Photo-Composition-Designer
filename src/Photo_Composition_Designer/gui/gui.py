@@ -20,6 +20,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from config_cli_gui.gui import SettingsDialogGenerator
+from PIL import Image, ImageTk
 
 from Photo_Composition_Designer.common.logging import (
     connect_gui_logging,
@@ -28,80 +29,10 @@ from Photo_Composition_Designer.common.logging import (
     initialize_logging,
 )
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
+from Photo_Composition_Designer.CompositionDesigner import CompositionDesigner
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.gui.GuiLogWriter import GuiLogWriter
 from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor
-
-
-class GuiLogWriter:
-    """Log writer that handles GUI text widget updates in a thread-safe way."""
-
-    def __init__(self, text_widget):
-        self.text_widget = text_widget
-        self.root = text_widget.winfo_toplevel()
-        self.hyperlink_tags = {}  # To store clickable links
-
-    def write(self, text):
-        """Write text to the widget in a thread-safe manner."""
-        # Schedule the GUI update in the main thread
-        self.root.after(0, self._update_text, text)
-
-    def _update_text(self, text):
-        """Update the text widget (must be called from main thread)."""
-        try:
-            current_end = self.text_widget.index(tk.END)
-            self.text_widget.insert(tk.END, text)
-
-            # Check for a directory path (simplified regex for common path formats)
-            # This regex looks for paths that start with a drive letter (C:\), a forward slash (/)
-            # or a backslash (\) followed by word characters, and ends with a word character.
-            # This is a basic approach; more robust path detection might be needed for edge cases.
-            import re
-
-            path_match = re.search(
-                r"([A-Za-z]:[\\/][\S ]*|[\\][\\/][\S ]*|[\w/.-]+[/][\S ]*)\b", text
-            )
-            if path_match:
-                path = path_match.group(0).strip()
-                # Ensure the path exists and is a directory to make it clickable
-                if Path(path).is_dir():
-                    start_index = self.text_widget.search(path, current_end, tk.END)
-                    if start_index:
-                        end_index = f"{start_index}+{len(path)}c"
-                        tag_name = f"link_{len(self.hyperlink_tags)}"
-                        self.text_widget.tag_config(tag_name, foreground="blue", underline=True)
-                        self.text_widget.tag_bind(
-                            tag_name, "<Button-1>", lambda e, p=path: self._open_path_in_explorer(p)
-                        )
-                        self.text_widget.tag_bind(
-                            tag_name, "<Enter>", lambda e: self.text_widget.config(cursor="hand2")
-                        )
-                        self.text_widget.tag_bind(
-                            tag_name, "<Leave>", lambda e: self.text_widget.config(cursor="")
-                        )
-                        self.text_widget.tag_add(tag_name, start_index, end_index)
-                        self.hyperlink_tags[tag_name] = path
-
-            self.text_widget.see(tk.END)
-            self.text_widget.update_idletasks()
-        except tk.TclError:
-            # Widget might be destroyed
-            pass
-
-    def _open_path_in_explorer(self, path):
-        """Opens the given path in the file explorer."""
-        try:
-            if sys.platform == "win32":
-                os.startfile(path)
-            elif sys.platform == "darwin":
-                subprocess.Popen(["open", path])
-            else:
-                subprocess.Popen(["xdg-open", path])
-        except Exception as e:
-            get_logger("gui.main").error(f"Failed to open path {path}: {e}")
-
-    def flush(self):
-        """Flush method for compatibility."""
-        pass
 
 
 class MainGui:
@@ -117,20 +48,25 @@ class MainGui:
         self.root = root
         self.root.title("Photo-Composition-Designer")
         self.root.geometry("1200x600")  # Increased width for new layout
+        self.root.update_idletasks()
 
         # Initialize configuration
         self.config_manager = ConfigParameterManager("config.yaml")
+        self.composition_designer = CompositionDesigner(self.config_manager)
 
         # Initialize logging system
         self.logger_manager = initialize_logging(self.config_manager)
         self.logger = get_logger("gui.main")
 
         # File lists
-        self.input_files = []
-        self.output_files = []
+        self.photo_folders = []
+        self.generated_compositions = []
 
         self._build_widgets()
         self._create_menu()
+
+        # Load initial folder list
+        self._load_photo_folders()
 
         # Setup GUI logging after widgets are created
         self._setup_gui_logging()
@@ -139,6 +75,7 @@ class MainGui:
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
 
         self.logger.info("GUI application started")
+        self.logger.info(f"Photo directory: {self.composition_designer.photoDirectory}")
         self.logger_manager.log_config_summary()
 
     def _build_widgets(self):
@@ -151,46 +88,41 @@ class MainGui:
         top_frame = ttk.Frame(main_frame)
         top_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Left side - Input File list
-        input_file_frame = ttk.LabelFrame(top_frame, text="Input Files")
-        input_file_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        # Left side - photoDirectory
+        photo_dir_frame = ttk.LabelFrame(top_frame, text="Input Files")
+        photo_dir_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
 
-        self.input_file_listbox = tk.Listbox(input_file_frame, selectmode=tk.EXTENDED)
+        self.photo_dir_listbox = tk.Listbox(photo_dir_frame, selectmode=tk.EXTENDED)
         input_file_scrollbar = ttk.Scrollbar(
-            input_file_frame, orient="vertical", command=self.input_file_listbox.yview
+            photo_dir_frame, orient="vertical", command=self.photo_dir_listbox.yview
         )
-        self.input_file_listbox.configure(yscrollcommand=input_file_scrollbar.set)
+        self.photo_dir_listbox.configure(yscrollcommand=input_file_scrollbar.set)
 
-        self.input_file_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        self.photo_dir_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         input_file_scrollbar.pack(side="right", fill="y", pady=5)
-        self.input_file_listbox.bind(
-            "<Double-Button-1>", lambda event: self._open_selected_file(event, self.input_files)
+        self.photo_dir_listbox.bind(
+            "<Double-Button-1>", lambda event: self._open_selected_file(event, self.photo_folders)
+        )
+        self.photo_dir_listbox.bind(
+            "<Button-1>", lambda event: self._generate_preview(event, self.photo_folders)
         )
 
-        # Middle - Output File list
-        output_file_frame = ttk.LabelFrame(top_frame, text="Generated Files")
-        output_file_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 5))
+        # Image Frame for preview
+        self.image_frame = ttk.LabelFrame(top_frame, text="Preview")
+        self.image_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
 
-        self.output_file_listbox = tk.Listbox(output_file_frame)
-        output_file_scrollbar = ttk.Scrollbar(
-            output_file_frame, orient="vertical", command=self.output_file_listbox.yview
-        )
-        self.output_file_listbox.configure(yscrollcommand=output_file_scrollbar.set)
-
-        self.output_file_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        output_file_scrollbar.pack(side="right", fill="y", pady=5)
-        self.output_file_listbox.bind(
-            "<Double-Button-1>", lambda event: self._open_selected_file(event, self.output_files)
-        )
+        self.preview_label = ttk.Label(self.image_frame)
+        self.preview_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.preview_label.bind("<Configure>", self._refresh_preview)
 
         # Right side - Buttons
         button_frame = ttk.Frame(top_frame)
         button_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
 
-        open_button = ttk.Button(
-            button_frame, text="Select photos directory", command=self._open_files
+        select_folder_button = ttk.Button(
+            button_frame, text="Select photos directory", command=self._select_folder
         )
-        open_button.pack(pady=8, fill=tk.X)
+        select_folder_button.pack(pady=8, fill=tk.X)
 
         # Create buttons dynamically
         self.run_buttons = {}
@@ -202,16 +134,10 @@ class MainGui:
             # Save buttons in dictionary for later access
             self.run_buttons[mode] = button
 
-        # Clear files button
-        self.clear_input_button = ttk.Button(
-            button_frame, text="Generate Preview", command=self._generate_preview
-        )
-        self.clear_input_button.pack(pady=8, fill=tk.X)
-
-        self.clear_output_button = ttk.Button(
+        self.generate_compositions_button = ttk.Button(
             button_frame, text="Generate Compositions", command=self._generate_compositions
         )
-        self.clear_output_button.pack(pady=1, fill=tk.X)
+        self.generate_compositions_button.pack(pady=1, fill=tk.X)
 
         # Progress bar
         self.progress = ttk.Progressbar(button_frame, mode="indeterminate")
@@ -261,7 +187,7 @@ class MainGui:
         # File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open...", command=self._open_files)
+        file_menu.add_command(label="Open...", command=self._select_folder)
         file_menu.add_separator()
 
         # Create Run menu options dynamically
@@ -283,6 +209,61 @@ class MainGui:
         help_menu.add_separator()
         help_menu.add_command(label="About", command=self._show_about)
 
+    def _generate_preview(self, event, file_list_source):
+        selection_index = event.widget.nearest(event.y)
+        if selection_index == -1:
+            return
+
+        folder_name = file_list_source[selection_index].name
+        preview_image: Image.Image = self.composition_designer.generate_compositions_from_folder(
+            folder_name
+        )
+
+        # Bild skalieren auf Größe der Preview-Box
+        frame_width = self.preview_label.winfo_width()
+        frame_height = self.preview_label.winfo_height()
+
+        if frame_width > 0 and frame_height > 0:
+            preview_image = preview_image.copy()
+            preview_image.thumbnail((frame_width, frame_height))
+
+        # Tk-kompatibel machen
+        self.preview_photo = ImageTk.PhotoImage(preview_image)
+
+        # Im Label anzeigen
+        self.preview_label.configure(image=self.preview_photo)
+
+        self.logger.info("Preview generated")
+
+    def _load_photo_folders(self):
+        """Scan self.photo_dir for subfolders and populate the listbox and internal list."""
+
+        # Clear previous content
+        self.photo_dir_listbox.delete(0, tk.END)
+        self.photo_folders = []
+
+        if (
+            not self.composition_designer.photoDirectory.exists()
+            or not self.composition_designer.photoDirectory.is_dir()
+        ):
+            self.logger.warning(
+                f"Photo directory '{self.composition_designer.photoDirectory}' does not exist."
+            )
+            return
+
+        # Collect subfolder names, sorted alphabetically
+        subfolders = sorted(
+            [item for item in self.composition_designer.photoDirectory.iterdir() if item.is_dir()],
+            key=lambda p: p.name.lower(),
+        )
+
+        # Populate internal list AND the listbox
+        for folder in subfolders:
+            self.photo_folders.append(folder)
+            self.photo_dir_listbox.insert(tk.END, folder.name)
+
+        self.logger.info(f"Loaded {len(self.photo_folders)} photo subfolders.")
+
     def _setup_gui_logging(self):
         """Setup GUI logging integration."""
         # Create GUI log writer
@@ -302,17 +283,10 @@ class MainGui:
         self.log_text.delete(1.0, tk.END)
         self.logger.debug("Log display cleared")
 
-    def _generate_preview(self):
-        """Clear the input file list."""
-        self.input_files.clear()
-        self.input_file_listbox.delete(0, tk.END)
-        self.logger.info("Input file list cleared")
-
     def _generate_compositions(self):
-        """Clear the output file list."""
-        self.output_files.clear()
-        self.output_file_listbox.delete(0, tk.END)
-        self.logger.info("Generated file list cleared")
+        """Generate all compositions"""
+        pass
+        self.logger.info("Generate all compositions...")
 
     def _open_selected_file(self, event, file_list_source):
         """Opens the selected file in the system's default application or explorer."""
@@ -340,37 +314,18 @@ class MainGui:
             self.logger.error(f"Could not open file {file_path}: {e}")
             messagebox.showerror("Error", f"Could not open file {file_path}: {e}")
 
-    def _open_files(self):
+    def _select_folder(self):
         """Open file dialog and add files to list."""
         folder = filedialog.askdirectory(
             title="Select folder with photos",
         )
 
-        self.input_files = folder
+        self.photo_folders = folder
 
         if folder > 0:
             self.logger.info(f"Added {folder} new files to processing list")
         else:
             self.logger.debug("No new files selected")
-
-    def _update_output_listbox(self, generated_files_info):
-        """Updates the output file listbox with newly generated files."""
-        self.output_file_listbox.delete(0, tk.END)  # Clear current list
-        self.output_files.clear()  # Clear internal list
-        for file_path_str in generated_files_info:
-            file_path = Path(file_path_str)
-            try:
-                file_size_kb = file_path.stat().st_size / 1024
-                self.output_files.append({"path": file_path_str, "size": file_size_kb})
-                self.output_file_listbox.insert(tk.END, f"{file_path.name} ({file_size_kb:.2f} KB)")
-            except Exception as e:
-                self.logger.warning(f"Could not get size for generated file {file_path_str}: {e}")
-                self.output_files.append({"path": file_path_str, "size": 0})
-                self.output_file_listbox.insert(tk.END, f"{file_path.name} (N/A KB)")
-
-        if generated_files_info:
-            output_dir = Path(generated_files_info[0]).parent
-            self.logger.info(f"Generated files saved in: {output_dir}")  # Log directory
 
     def _run_processing(self, mode="distribute_group_matching_dates"):
         """Run the processing in a separate thread."""
@@ -380,8 +335,8 @@ class MainGui:
         # Disable all buttons during processing
         for button in self.run_buttons.values():
             button.config(state="disabled")
-        self.clear_input_button.config(state="disabled")
-        self.clear_output_button.config(state="disabled")
+
+        self.generate_compositions_button.config(state="disabled")
         self.progress.start()
 
         # Run in separate thread to avoid blocking GUI
@@ -400,10 +355,7 @@ class MainGui:
             self.logger.info("Processing files...")
 
             # prepare image sorting:
-            photo_dir = (
-                Path(self.config_manager.general.photoDirectory.value).expanduser().resolve()
-            )
-            photos: list[Photo] = get_photos_from_dir(photo_dir)
+            photos: list[Photo] = get_photos_from_dir(self.composition_designer.photoDirectory)
 
             # prepare image distribution
             collages_to_generate = self.config_manager.calendar.collagesToGenerate.value
@@ -419,7 +371,7 @@ class MainGui:
                 self.logger.warning(f"Unknown mode: {mode}")
 
             start_date = self.config_manager.calendar.startDate.value
-            output_dir = photo_dir
+            output_dir = self.composition_designer.photoDirectory
             for week in range(collages_to_generate):
                 week_start = start_date + timedelta(weeks=week)
                 folder_name = f"{week:02d}_{week_start.strftime('%b-%d')}"
@@ -441,8 +393,6 @@ class MainGui:
             self.logger.info(f"Completed: {len(grouped_images)} files processed")
             self.logger.info("=== All files processed successfully! ===")
 
-            # self.root.after(0, self._update_output_listbox, generated_files_paths)
-
         except Exception as err:
             self.logger.error(f"Processing failed: {err}", exc_info=True)
             # Show error dialog in main thread
@@ -458,8 +408,8 @@ class MainGui:
         """Re-enable controls after processing is finished."""
         for button in self.run_buttons.values():
             button.config(state="normal")
-        self.clear_input_button.config(state="normal")
-        self.clear_output_button.config(state="normal")
+
+        self.generate_compositions_button.config(state="normal")
         self.progress.stop()
 
     def _open_settings(self):
@@ -490,6 +440,13 @@ class MainGui:
         disconnect_gui_logging()
         self.root.quit()
         self.root.destroy()
+
+    def _refresh_preview(self, event):
+        if hasattr(self, "preview_image_original"):
+            img = self.preview_image_original.copy()
+            img.thumbnail((event.width, event.height))
+            self.preview_photo = ImageTk.PhotoImage(img)
+            self.preview_label.configure(image=self.preview_photo)
 
 
 def main():

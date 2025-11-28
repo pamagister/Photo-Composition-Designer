@@ -270,40 +270,63 @@ class CompositionDesigner:
                 photo_description = [text_file.stem]
         return photo_description
 
+    def generate_compositions_from_folder(self, folder_name: str) -> Image.Image | None:
+        """
+        Generates a single collage for the given folder name.
+        Returns True if a composition was generated, False if skipped.
+        """
+        folder_path = self.photoDirectory / folder_name
+
+        if not folder_path.is_dir():
+            print(f"{folder_path} is not a valid directory. Skipping...")
+            return None
+
+        # Extract photos
+        photos = get_photos_from_dir(folder_path, self.locations)
+        if not photos:
+            print(f"No images found in {folder_path}, skipping...")
+            return None
+
+        # Determine description (folder-level overrides global)
+        # Week index must be inferred from folder ordering
+        sorted_folders = sorted(
+            [f for f in os.listdir(self.photoDirectory) if (self.photoDirectory / f).is_dir()]
+        )
+        try:
+            week_index = sorted_folders.index(folder_name)
+        except ValueError:
+            print(f"Folder '{folder_name}' not found in photoDirectory (unexpected).")
+            return None
+
+        global_description = (
+            self.descriptions[week_index] if week_index < len(self.descriptions) else ""
+        )
+        collage_description: str = self._get_description(folder_path)[0] or global_description
+
+        start_date = self.startDate + timedelta(weeks=week_index)
+
+        composition = self.generate_composition(photos, start_date, collage_description)
+
+        return composition
+
     def generate_compositions_from_folders(self):
         """
         Generates collages for all weeks from the specified folder.
         """
-        week_index = 0
+        # Precompute folder order for consistent week indexing
+        sorted_folders = sorted(
+            [f for f in os.listdir(self.photoDirectory) if (self.photoDirectory / f).is_dir()]
+        )
 
-        for folder_name in sorted(os.listdir(self.photoDirectory)):
-            folder_path = self.photoDirectory / folder_name
-            if not folder_path.is_dir():
-                continue
-
-            photos = get_photos_from_dir(folder_path, self.locations)
-
-            if not photos:
-                print(f"No images found in {folder_path}, skip...")
-                continue
-
-            # description precedence: per-folder text overrides global descriptions list
-            global_description = (
-                self.descriptions[week_index] if week_index < len(self.descriptions) else ""
-            )
-            collage_description: str = self._get_description(folder_path)[0] or global_description
-
-            start_date = self.startDate + timedelta(weeks=week_index)
-            composition = self.generate_composition(photos, start_date, collage_description)
-
+        for folder_name in sorted_folders:
+            # We call the new method, which handles everything
+            composition = self.generate_compositions_from_folder(folder_name)
             self.save(composition, folder_name)
-
-            week_index += 1
 
         if self.config.layout.generatePdf.value:
             self.generate_pdf(self.outputDir)
 
-    def save(self, composition: Image, element: str):
+    def save(self, composition: Image.Image, element: str):
         # save with configured quality/dpi
         output_prefix = f"collage_{element}"
         output_file_name = f"{output_prefix}.jpg"
