@@ -4,6 +4,13 @@ Changelog
 
 (unreleased)
 ------------
+- Step to every image with arrows. [Paul Magister]
+- Tooltips, generate preview immediately. [Paul Magister]
+
+
+0.0.1 (2025-11-28)
+------------------
+- Docs: Update HISTORY.md for release 0.0.1. [Paul Magister]
 - Remove logger from CompositionDesigner.py. [Paul Magister]
 - Remove unused module. [Paul Magister]
 - Generate all compositions from gui. [Paul Magister]
