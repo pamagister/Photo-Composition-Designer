@@ -29,7 +29,7 @@ def test_generate_description_file_creates_real_file(temp_dir):
 
     # Run the generator
     generator = DescriptionsFileGenerator(photo_dir, output_dir)
-    generator.generate_description_file()
+    generator.generate_description_file(overwrite=True)
 
     # Verify file was actually created
     desc_file = output_dir / "descriptions.txt"
@@ -41,8 +41,8 @@ def test_generate_description_file_creates_real_file(temp_dir):
     # Expected lines (sorted lexicographically by folder name)
     # Based on the generator: `element: `
     expected = [
-        "set1: ",
-        "set2: ",
+        "set1: Description text for week set1",
+        "set2: Description text for week set2",
     ]
 
     assert content == expected

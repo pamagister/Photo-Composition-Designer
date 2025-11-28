@@ -19,7 +19,7 @@ from functools import partial
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-from config_cli_gui.gui import SettingsDialogGenerator
+from config_cli_gui.gui import SettingsDialogGenerator, ToolTip
 from PIL import Image, ImageTk
 
 from Photo_Composition_Designer.common.logging import (
@@ -80,6 +80,8 @@ class MainGui:
         self.logger.info("GUI application started")
         self.logger.info(f"Photo directory: {self.composition_designer.photoDirectory}")
         self.logger_manager.log_config_summary()
+        self._generate_preview(1)
+        self._generate_preview(0)
 
     def _build_widgets(self):
         """Build the main GUI widgets using paned windows for full resize behavior."""
@@ -114,14 +116,14 @@ class MainGui:
             "<Double-Button-1>", lambda event: self._open_selected_file(event, self.photo_folders)
         )
         self.photo_dir_listbox.bind(
-            "<Button-1>", lambda event: self._generate_preview(event, self.photo_folders)
+            "<Button-1>", lambda event: self._generate_preview_callback(event)
         )
 
         # -------------------------------------------------------------
         # CENTER — Preview panel
         # -------------------------------------------------------------
         self.image_frame = ttk.LabelFrame(top_paned, text="Preview")
-        top_paned.add(self.image_frame, weight=3)
+        top_paned.add(self.image_frame, weight=4)
 
         self.preview_label = ttk.Label(self.image_frame)
         self.preview_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -144,7 +146,7 @@ class MainGui:
         select_folder_button = ttk.Button(
             button_frame, text="Select photos directory", command=self._select_folder
         )
-        select_folder_button.pack(pady=8, fill=tk.X)
+        select_folder_button.pack(pady=10, fill=tk.X)
 
         # dynamic run buttons
         self.run_buttons = {}
@@ -152,7 +154,8 @@ class MainGui:
             button = ttk.Button(
                 button_frame, text=label, command=partial(self._run_processing, mode=mode)
             )
-            button.pack(pady=1, fill=tk.X)
+            ToolTip(button, f"Distribute all images into folders using \nthe method '{label}'")
+            button.pack(pady=2, fill=tk.X)
             self.run_buttons[mode] = button
 
         # description file button
@@ -161,17 +164,25 @@ class MainGui:
             text="Generate Description File",
             command=self._generate_template_description_file,
         )
-        self.generate_description_file_button.pack(pady=1, fill=tk.X)
+        ToolTip(
+            self.generate_description_file_button,
+            "Generate a template description file for all collages \n"
+            "based on the generated photo directories",
+        )
+        self.generate_description_file_button.pack(pady=20, fill=tk.X)
 
         # compositions button
         self.generate_compositions_button = ttk.Button(
             button_frame, text="Generate Compositions", command=self._generate_compositions
         )
-        self.generate_compositions_button.pack(pady=1, fill=tk.X)
+        self.generate_compositions_button.pack(pady=0, fill=tk.X)
 
         # progress bar
         self.progress = ttk.Progressbar(button_frame, mode="indeterminate")
-        self.progress.pack(pady=5, fill=tk.X)
+        self.progress.pack(
+            pady=10,
+            fill=tk.X,
+        )
 
         # === LOWER AREA — Log Output ===
         log_frame = ttk.LabelFrame(vertical_paned, text="Log Output")
@@ -239,20 +250,22 @@ class MainGui:
         help_menu.add_separator()
         help_menu.add_command(label="About", command=self._show_about)
 
-    def _generate_preview(self, event, file_list_source):
+    def _generate_preview_callback(self, event):
         selection_index = event.widget.nearest(event.y)
         if selection_index == -1:
             return
+        self._generate_preview(selection_index)
 
-        folder_name = file_list_source[selection_index].name
+    def _generate_preview(self, selection_index):
+        folder_name = self.photo_folders[selection_index].name
         preview_image: Image.Image = self.composition_designer.generate_compositions_from_folder(
             folder_name
         )
 
-        # Save original unscaled image
         if not preview_image:
             self.logger.info(f"Empty folder '{folder_name}'. No preview available.")
             return
+        # Save original unscaled image
         img = preview_image.copy()
         self.preview_image_original = img
 
@@ -267,6 +280,8 @@ class MainGui:
         self.preview_label.configure(image=self.preview_photo)
 
         self.logger.info(f"Preview generated for folder {folder_name}")
+
+        # self.preview_label.after(10, lambda: self._refresh_preview(tk.Event()))
 
     def _load_photo_folders(self):
         """Scan self.photo_dir for subfolders and populate the listbox and internal list."""
@@ -361,6 +376,7 @@ class MainGui:
             self.logger.info(f"Added {folder} new files to processing list")
         else:
             self.logger.debug("No new files selected")
+        self._generate_preview(0)
 
     def _run_processing(self, mode="distribute_group_matching_dates"):
         """Run the processing in a separate thread."""
@@ -478,7 +494,8 @@ class MainGui:
 
     def _generate_template_description_file(self):
         description_file_gen = DescriptionsFileGenerator(
-            self.config_manager.general.photoDirectory.value,
+            self.composition_designer.photoDirectory,
+            self.composition_designer.outputDir,
         )
 
         if description_file_gen.description_file_exists():
@@ -493,19 +510,30 @@ class MainGui:
         description_file = description_file_gen.generate_description_file(overwrite=True)
         self.logger.info(f"Template description file generated: {description_file}")
 
-    def _refresh_preview(self, event):
+    def _refresh_preview(self, event=None):
         if not hasattr(self, "preview_image_original"):
             return
 
         if not self.preview_image_original:
             return
 
+        height = (
+            event.height
+            if event is not None and hasattr(event, "height")
+            else self.preview_label.winfo_height()
+        )
+        width = (
+            event.width
+            if event is not None and hasattr(event, "width")
+            else self.preview_label.winfo_width()
+        )
+
         margin = 30  # extra padding around the preview
-        if event.width <= margin or event.height <= margin:
+        if width <= margin or height <= margin:
             return
 
         img = self.preview_image_original.copy()
-        img.thumbnail((event.width - margin, event.height - margin))
+        img.thumbnail((width - margin, height - margin))
         self.preview_photo = ImageTk.PhotoImage(img)
         self.preview_label.configure(image=self.preview_photo, anchor="center", compound="")
 
