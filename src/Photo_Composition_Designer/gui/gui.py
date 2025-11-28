@@ -32,6 +32,7 @@ from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.CompositionDesigner import CompositionDesigner
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.gui.GuiLogWriter import GuiLogWriter
+from Photo_Composition_Designer.tools.DescriptionsFileGenerator import DescriptionsFileGenerator
 from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor
 
 
@@ -52,14 +53,15 @@ class MainGui:
 
         # Initialize configuration
         self.config_manager = ConfigParameterManager("config.yaml")
-        self.composition_designer = CompositionDesigner(self.config_manager)
-        self.preview_image_original = None
 
         # Initialize logging system
         self.logger_manager = initialize_logging(self.config_manager)
         self.logger = get_logger("gui.main")
 
         # File lists
+        self.composition_designer = CompositionDesigner(self.config_manager)
+        self.preview_image_original = None
+
         self.photo_folders = []
         self.generated_compositions = []
 
@@ -153,7 +155,13 @@ class MainGui:
             button.pack(pady=1, fill=tk.X)
             self.run_buttons[mode] = button
 
-        #
+        # description file button
+        self.generate_description_file_button = ttk.Button(
+            button_frame,
+            text="Generate Description File",
+            command=self._generate_template_description_file,
+        )
+        self.generate_description_file_button.pack(pady=1, fill=tk.X)
 
         # compositions button
         self.generate_compositions_button = ttk.Button(
@@ -312,6 +320,8 @@ class MainGui:
         """Generate all compositions"""
         pass
         self.logger.info("Generate all compositions...")
+        self.composition_designer.generate_compositions_from_folders()
+        self.logger.info("Compositions generated")
 
     def _open_selected_file(self, event, file_list_source):
         """Opens the selected file in the system's default application or explorer."""
@@ -465,6 +475,23 @@ class MainGui:
         disconnect_gui_logging()
         self.root.quit()
         self.root.destroy()
+
+    def _generate_template_description_file(self):
+        description_file_gen = DescriptionsFileGenerator(
+            self.config_manager.general.photoDirectory.value,
+        )
+
+        if description_file_gen.description_file_exists():
+            # ask user for overwrite permission
+            overwrite = messagebox.askyesno(
+                "Overwrite?", "A description file already exists. Do you want to overwrite it?"
+            )
+
+            if not overwrite:
+                return
+
+        description_file = description_file_gen.generate_description_file(overwrite=True)
+        self.logger.info(f"Template description file generated: {description_file}")
 
     def _refresh_preview(self, event):
         if not hasattr(self, "preview_image_original"):

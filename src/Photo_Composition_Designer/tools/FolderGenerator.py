@@ -75,7 +75,7 @@ class FolderGenerator:
                         shutil.copy2(photo.file_path, destination_path)
                     print(f"  --> Image {photo.file_path.name} sorted into {folder_name}")
         # Generate descriptions text file
-        DescriptionsFileGenerator(self.config).generateDescriptionFile()
+        DescriptionsFileGenerator(self.config).generate_description_file()
 
 
 if __name__ == "__main__":

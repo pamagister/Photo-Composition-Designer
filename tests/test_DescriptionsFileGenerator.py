@@ -29,7 +29,7 @@ def test_generate_description_file_creates_real_file(temp_dir):
 
     # Run the generator
     generator = DescriptionsFileGenerator(photo_dir, output_dir)
-    generator.generateDescriptionFile()
+    generator.generate_description_file()
 
     # Verify file was actually created
     desc_file = output_dir / "descriptions.txt"
