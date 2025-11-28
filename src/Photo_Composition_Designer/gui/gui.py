@@ -53,6 +53,7 @@ class MainGui:
         # Initialize configuration
         self.config_manager = ConfigParameterManager("config.yaml")
         self.composition_designer = CompositionDesigner(self.config_manager)
+        self.preview_image_original = None
 
         # Initialize logging system
         self.logger_manager = initialize_logging(self.config_manager)
@@ -79,18 +80,24 @@ class MainGui:
         self.logger_manager.log_config_summary()
 
     def _build_widgets(self):
-        """Build the main GUI widgets."""
+        """Build the main GUI widgets using paned windows for full resize behavior."""
         # Main container
         main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Top frame for file lists and buttons
-        top_frame = ttk.Frame(main_frame)
-        top_frame.pack(fill=tk.BOTH, expand=True)
+        # === TOP-LEVEL PANED WINDOW (vertical: top area + log area) ===
+        vertical_paned = ttk.PanedWindow(main_frame, orient=tk.VERTICAL)
+        vertical_paned.pack(fill=tk.BOTH, expand=True)
 
-        # Left side - photoDirectory
-        photo_dir_frame = ttk.LabelFrame(top_frame, text="Input Files")
-        photo_dir_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        # === UPPER PANED (horizontal: file list + preview + fixed button panel) ===
+        top_paned = ttk.PanedWindow(vertical_paned, orient=tk.HORIZONTAL)
+        vertical_paned.add(top_paned, weight=3)
+
+        # -------------------------------------------------------------
+        # LEFT SIDE — Input File List
+        # -------------------------------------------------------------
+        photo_dir_frame = ttk.LabelFrame(top_paned, text="Input Files")
+        top_paned.add(photo_dir_frame, weight=1)
 
         self.photo_dir_listbox = tk.Listbox(photo_dir_frame, selectmode=tk.EXTENDED)
         input_file_scrollbar = ttk.Scrollbar(
@@ -100,6 +107,7 @@ class MainGui:
 
         self.photo_dir_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         input_file_scrollbar.pack(side="right", fill="y", pady=5)
+
         self.photo_dir_listbox.bind(
             "<Double-Button-1>", lambda event: self._open_selected_file(event, self.photo_folders)
         )
@@ -107,47 +115,57 @@ class MainGui:
             "<Button-1>", lambda event: self._generate_preview(event, self.photo_folders)
         )
 
-        # Image Frame for preview
-        self.image_frame = ttk.LabelFrame(top_frame, text="Preview")
-        self.image_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
+        # -------------------------------------------------------------
+        # CENTER — Preview panel
+        # -------------------------------------------------------------
+        image_frame = ttk.LabelFrame(top_paned, text="Preview")
+        top_paned.add(image_frame, weight=3)
 
-        self.preview_label = ttk.Label(self.image_frame)
+        self.preview_label = ttk.Label(image_frame)
         self.preview_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.preview_label.bind("<Configure>", self._refresh_preview)
 
-        # Right side - Buttons
-        button_frame = ttk.Frame(top_frame)
-        button_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
+        # -------------------------------------------------------------
+        # RIGHT SIDE — FIXED-WIDTH BUTTON PANEL
+        # -------------------------------------------------------------
+        button_outer_frame = ttk.Frame(top_paned)
+        # Add with weight=0 to keep fixed width
+        top_paned.add(button_outer_frame, weight=0)
 
+        # inner frame for padding
+        button_frame = ttk.Frame(button_outer_frame)
+        button_frame.pack(fill=tk.Y, padx=5, pady=5)
+
+        # folder selection
         select_folder_button = ttk.Button(
             button_frame, text="Select photos directory", command=self._select_folder
         )
         select_folder_button.pack(pady=8, fill=tk.X)
 
-        # Create buttons dynamically
+        # dynamic run buttons
         self.run_buttons = {}
         for mode, label in self.distribution_modes:
             button = ttk.Button(
                 button_frame, text=label, command=partial(self._run_processing, mode=mode)
             )
             button.pack(pady=1, fill=tk.X)
-            # Save buttons in dictionary for later access
             self.run_buttons[mode] = button
 
+        # compositions button
         self.generate_compositions_button = ttk.Button(
             button_frame, text="Generate Compositions", command=self._generate_compositions
         )
         self.generate_compositions_button.pack(pady=1, fill=tk.X)
 
-        # Progress bar
+        # progress bar
         self.progress = ttk.Progressbar(button_frame, mode="indeterminate")
         self.progress.pack(pady=5, fill=tk.X)
 
-        # Bottom frame - Log output
-        log_frame = ttk.LabelFrame(main_frame, text="Log Output")
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
+        # === LOWER AREA — Log Output ===
+        log_frame = ttk.LabelFrame(vertical_paned, text="Log Output")
+        vertical_paned.add(log_frame, weight=1)
 
-        # Log text widget with scrollbar
+        # log text area with scrollbar
         log_text_frame = ttk.Frame(log_frame)
         log_text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -160,15 +178,15 @@ class MainGui:
         self.log_text.pack(side="left", fill="both", expand=True)
         log_text_scrollbar.pack(side="right", fill="y")
 
-        # Log controls
+        # log controls
         log_controls = ttk.Frame(log_frame)
         log_controls.pack(fill=tk.X, padx=5, pady=(0, 5))
 
         ttk.Button(log_controls, text="Clear Log", command=self._clear_log).pack(side=tk.LEFT)
 
-        # Log level selector
         ttk.Label(log_controls, text="Log Level:").pack(side=tk.LEFT, padx=(10, 5))
         self.log_level_var = tk.StringVar(value=self.config_manager.app.log_level.value)
+
         log_level_combo = ttk.Combobox(
             log_controls,
             textvariable=self.log_level_var,
@@ -218,6 +236,7 @@ class MainGui:
         preview_image: Image.Image = self.composition_designer.generate_compositions_from_folder(
             folder_name
         )
+        self.preview_image_original = preview_image  # store before scaling
 
         # Bild skalieren auf Größe der Preview-Box
         frame_width = self.preview_label.winfo_width()
