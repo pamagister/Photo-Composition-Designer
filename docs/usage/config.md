@@ -13,7 +13,7 @@ The parameters in the cli category can be accessed via the command line interfac
 
 | Name                | Type      | Description                                                                             | Default                                | Choices |
 |---------------------|-----------|-----------------------------------------------------------------------------------------|----------------------------------------|---------|
-| photoDirectory      | PosixPath | Path to the directory containing photos (absolute, or relative to this config.ini file) | PosixPath('../../images')              | -       |
+| photoDirectory      | PosixPath | Path to the directory containing photos (absolute, or relative to this config.ini file) | PosixPath('images')                    | -       |
 | anniversariesConfig | PosixPath | Path to anniversaries.ini file (absolute, or relative to this config.ini file)          | PosixPath('anniversaries.ini')         | -       |
 | locationsConfig     | PosixPath | Path to locations.ini file (absolute, or relative to this config.ini file)              | PosixPath('locations_en.ini')          | -       |
 | compositionTitle    | str       | This is the title of the composition on the first page. Leave empty if not required.    | 'This is the title of the composition' | -       |
@@ -26,7 +26,7 @@ The parameters in the cli category can be accessed via the command line interfac
 | language           | str      | Language for the calendar (e.g., de_DE, en_US)            | 'de_DE'                               | -             |
 | holidayCountries   | str      | Country/state codes for public holidays, e.g., NY,CA      | 'SN'                                  | -             |
 | startDate          | datetime | Start date of the calendar                                | datetime.datetime(2025, 12, 31, 0, 0) | -             |
-| collagesToGenerate | int      | Number of collages to be generated (e.g. number of weeks) | 11                                    | -             |
+| collagesToGenerate | int      | Number of collages to be generated (e.g. number of weeks) | 5                                     | -             |
 
 ## Category "colors"
 

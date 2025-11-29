@@ -2,8 +2,8 @@ app:
   # Logging level for the application | type=str, default=INFO
   log_level: INFO
 calendar:
-  # Number of collages to be generated (e.g. number of weeks) | type=int, default=11
-  collagesToGenerate: 11
+  # Number of collages to be generated (e.g. number of weeks) | type=int, default=5
+  collagesToGenerate: 5
   # Country/state codes for public holidays, e.g., NY,CA | type=str, default=SN
   holidayCountries: SN
   # Language for the calendar (e.g., de_DE, en_US) | type=str, default=de_DE
@@ -22,14 +22,14 @@ colors:
   # Secondary text color | type=Color, default=#969696
   textColor2: '#969696'
 general:
-  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=str, default=anniversaries.ini
+  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath, default=anniversaries.ini
   anniversariesConfig: anniversaries.ini
   # This is the title of the composition on the first page. Leave empty if not required. | type=str, default=This is the title of the composition
   compositionTitle: This is the title of the composition
-  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=str, default=locations_en.ini
+  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=PosixPath, default=locations_en.ini
   locationsConfig: locations_en.ini
-  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=str, default=../../images [CLI]
-  photoDirectory: ../../images
+  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath, default=images [CLI]
+  photoDirectory: images
 geo:
   # Minimum range for map display (degrees) | type=int, default=7
   minimalExtension: 7

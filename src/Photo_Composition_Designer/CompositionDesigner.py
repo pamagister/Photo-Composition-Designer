@@ -48,12 +48,10 @@ class CompositionDesigner:
 
         # basic properties
         self.compositionTitle: str | None = self.config.general.compositionTitle.value or ""
-        self.photoDirectory: Path = (
-            Path(self.config.general.photoDirectory.value).expanduser().resolve()
-        )
-        self.outputDir: Path = (self.photoDirectory.parent / "collages").resolve()
+        self.photoDir: Path = Path(self.config.general.photoDirectory.value).expanduser().resolve()
+        self.outputDir: Path = (self.photoDir.parent / "collages").resolve()
         os.makedirs(self.outputDir, exist_ok=True)
-        self.descriptions = self._get_description(self.photoDirectory) or []
+        self.descriptions = self._get_description(self.photoDir) or []
 
         # size in pixels
         self.width_px = self._mm_to_px(self.config.size.width.value)
@@ -273,7 +271,7 @@ class CompositionDesigner:
         Generates a single collage for the given folder name.
         Returns True if a composition was generated, False if skipped.
         """
-        folder_path = self.photoDirectory / folder_name
+        folder_path = self.photoDir / folder_name
 
         if not folder_path.is_dir():
             print(f"{folder_path} is not a valid directory. Skipping...")
@@ -288,7 +286,7 @@ class CompositionDesigner:
         # Determine description (folder-level overrides global)
         # Week index must be inferred from folder ordering
         sorted_folders = sorted(
-            [f for f in os.listdir(self.photoDirectory) if (self.photoDirectory / f).is_dir()]
+            [f for f in os.listdir(self.photoDir) if (self.photoDir / f).is_dir()]
         )
         try:
             week_index = sorted_folders.index(folder_name)
@@ -315,7 +313,7 @@ class CompositionDesigner:
         """
         # Precompute folder order for consistent week indexing
         sorted_folders = sorted(
-            [f for f in os.listdir(self.photoDirectory) if (self.photoDirectory / f).is_dir()]
+            [f for f in os.listdir(self.photoDir) if (self.photoDir / f).is_dir()]
         )
 
         for folder_name in sorted_folders:
@@ -379,6 +377,5 @@ if __name__ == "__main__":
     cfg_file = None
     # If you want to use a specific config file, you can set cfg_file = "config/config.yaml"
     cfg = ConfigParameterManager(cfg_file)
-    # cfg.general.photoDirectory =
     cd = CompositionDesigner(cfg)
     cd.generate_compositions_from_folders()

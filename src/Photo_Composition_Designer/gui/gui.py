@@ -48,15 +48,24 @@ class MainGui:
     def __init__(self, root):
         self.root = root
         self.root.title("Photo-Composition-Designer")
-        self.root.geometry("1200x600")  # Increased width for new layout
+        self.root.geometry("1200x800")  # Increased width for new layout
         self.root.update_idletasks()
 
         # Initialize configuration
-        try:
-            self.config_manager = ConfigParameterManager("config.yaml")
-        except Exception:
-            self.config_manager = ConfigParameterManager()
+        self.config_manager = ConfigParameterManager()
 
+        self._build_widgets()
+        self._create_menu()
+        self._reload_config()
+
+        # Setup GUI logging after widgets are created
+        self._setup_gui_logging()
+
+        # Handle window closing
+        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
+        self.logger.info("GUI application started")
+
+    def _reload_config(self):
         # Initialize logging system
         self.logger_manager = initialize_logging(self.config_manager)
         self.logger = get_logger("gui.main")
@@ -68,20 +77,10 @@ class MainGui:
         self.photo_folders = []
         self.generated_compositions = []
 
-        self._build_widgets()
-        self._create_menu()
-
         # Load initial folder list
         self._load_photo_folders()
 
-        # Setup GUI logging after widgets are created
-        self._setup_gui_logging()
-
-        # Handle window closing
-        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
-
-        self.logger.info("GUI application started")
-        self.logger.info(f"Photo directory: {self.composition_designer.photoDirectory}")
+        self.logger.info(f"Photo directory: {self.composition_designer.photoDir}")
         self.logger_manager.log_config_summary()
         self._generate_preview(1)
         self._generate_preview(0)
@@ -98,12 +97,12 @@ class MainGui:
 
         # === UPPER PANED (horizontal: file list + preview + fixed button panel) ===
         top_paned = ttk.PanedWindow(vertical_paned, orient=tk.HORIZONTAL)
-        vertical_paned.add(top_paned, weight=3)
+        vertical_paned.add(top_paned, weight=4)
 
         # -------------------------------------------------------------
-        # LEFT SIDE — Input File List
+        # LEFT SIDE — Photo Folder List
         # -------------------------------------------------------------
-        photo_dir_frame = ttk.LabelFrame(top_paned, text="Input Files")
+        photo_dir_frame = ttk.LabelFrame(top_paned, text="Photo Folders")
         top_paned.add(photo_dir_frame, weight=1)
 
         self.photo_dir_listbox = tk.Listbox(photo_dir_frame, selectmode=tk.EXTENDED)
@@ -128,7 +127,7 @@ class MainGui:
         # CENTER — Preview panel
         # -------------------------------------------------------------
         self.image_frame = ttk.LabelFrame(top_paned, text="Preview")
-        top_paned.add(self.image_frame, weight=4)
+        top_paned.add(self.image_frame, weight=6)
 
         self.preview_label = ttk.Label(self.image_frame)
         self.preview_label.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -148,10 +147,10 @@ class MainGui:
         button_frame.pack(fill=tk.Y, padx=5, pady=5)
 
         # folder selection
-        select_folder_button = ttk.Button(
-            button_frame, text="Select photos directory", command=self._select_folder
+        select_config_button = ttk.Button(
+            button_frame, text="Select config file", command=self._select_config
         )
-        select_folder_button.pack(pady=10, fill=tk.X)
+        select_config_button.pack(pady=10, fill=tk.X)
 
         # dynamic run buttons
         self.run_buttons = {}
@@ -233,7 +232,7 @@ class MainGui:
         # File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open...", command=self._select_folder)
+        file_menu.add_command(label="Open...", command=self._select_config)
         file_menu.add_separator()
 
         # Create Run menu options dynamically
@@ -302,17 +301,17 @@ class MainGui:
         self.photo_folders = []
 
         if (
-            not self.composition_designer.photoDirectory.exists()
-            or not self.composition_designer.photoDirectory.is_dir()
+            not self.composition_designer.photoDir.exists()
+            or not self.composition_designer.photoDir.is_dir()
         ):
             self.logger.warning(
-                f"Photo directory '{self.composition_designer.photoDirectory}' does not exist."
+                f"Photo directory '{self.composition_designer.photoDir}' does not exist."
             )
             return
 
         # Collect subfolder names, sorted alphabetically
         subfolders = sorted(
-            [item for item in self.composition_designer.photoDirectory.iterdir() if item.is_dir()],
+            [item for item in self.composition_designer.photoDir.iterdir() if item.is_dir()],
             key=lambda p: p.name.lower(),
         )
 
@@ -375,18 +374,18 @@ class MainGui:
             self.logger.error(f"Could not open file {file_path}: {e}")
             messagebox.showerror("Error", f"Could not open file {file_path}: {e}")
 
-    def _select_folder(self):
-        """Open file dialog and add files to list."""
-        folder = filedialog.askdirectory(
-            title="Select folder with photos",
+    def _select_config(self):
+        """Open file dialog open config file."""
+        config_file = filedialog.askopenfilename(
+            title="Select config file",
+            filetypes=[("YAML files", "*.yaml")],
         )
-
-        self.photo_folders = folder
-
-        if folder > 0:
-            self.logger.info(f"Added {folder} new files to processing list")
+        if config_file:
+            self.logger.info(f"Load {config_file} as new base config")
+            self.config_manager = ConfigParameterManager(config_file)
+            self._reload_config()
         else:
-            self.logger.debug("No new files selected")
+            self.logger.debug("No valid config file selected")
         self._generate_preview(0)
 
     def _run_processing(self, mode="distribute_group_matching_dates"):
@@ -417,7 +416,7 @@ class MainGui:
             self.logger.info("Processing files...")
 
             # prepare image sorting:
-            photos: list[Photo] = get_photos_from_dir(self.composition_designer.photoDirectory)
+            photos: list[Photo] = get_photos_from_dir(self.composition_designer.photoDir)
 
             # prepare image distribution
             collages_to_generate = self.config_manager.calendar.collagesToGenerate.value
@@ -433,7 +432,7 @@ class MainGui:
                 self.logger.warning(f"Unknown mode: {mode}")
 
             start_date = self.config_manager.calendar.startDate.value
-            output_dir = self.composition_designer.photoDirectory
+            output_dir = self.composition_designer.photoDir
             for week in range(collages_to_generate):
                 week_start = start_date + timedelta(weeks=week)
                 folder_name = f"{week:02d}_{week_start.strftime('%b-%d')}"
@@ -485,6 +484,7 @@ class MainGui:
             self.logger.info("Settings updated successfully")
             # Update log level selector if it changed
             self.log_level_var.set(self.config_manager.app.log_level.value)
+            self._reload_config()
 
     def _open_help(self):
         """Open help documentation in browser."""
@@ -505,7 +505,7 @@ class MainGui:
 
     def _generate_template_description_file(self):
         description_file_gen = DescriptionsFileGenerator(
-            self.composition_designer.photoDirectory,
+            self.composition_designer.photoDir,
             self.composition_designer.outputDir,
         )
 

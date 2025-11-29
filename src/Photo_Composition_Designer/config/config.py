@@ -35,7 +35,7 @@ class GeneralConfig(ConfigCategory):
 
     photoDirectory: ConfigParameter = ConfigParameter(
         name="photoDirectory",
-        value=Path("../../images"),
+        value=Path("images"),
         help="Path to the directory containing photos "
         "(absolute, or relative to this config.ini file)",
         is_cli=True,
@@ -189,7 +189,7 @@ class SizeConfig(ConfigCategory):
 
     dpi: ConfigParameter = ConfigParameter(
         name="dpi",
-        value=100,
+        value=150,
         help="Resolution of the image in dpi",
     )
 
