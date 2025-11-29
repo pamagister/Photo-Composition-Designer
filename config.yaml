@@ -1,75 +1,75 @@
 app:
-  # Logging level for the application | type=str, default=INFO
+  # Logging level for the application | type=str | choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
   log_level: INFO
 calendar:
-  # Number of collages to be generated (e.g. number of weeks) | type=int, default=5
+  # Number of collages to be generated (e.g. number of weeks) | type=int
   collagesToGenerate: 5
-  # Country/state codes for public holidays, e.g., NY,CA | type=str, default=SN
+  # Country/state codes for public holidays, e.g., NY,CA | type=str
   holidayCountries: SN
-  # Language for the calendar (e.g., de_DE, en_US) | type=str, default=de_DE
+  # Language for the calendar (e.g., de_DE, en_US) | type=str
   language: de_DE
-  # Start date of the calendar | type=datetime, default=2025-12-31 00:00:00 [CLI]
+  # Start date of the calendar | type=datetime [CLI]
   startDate: '2025-12-31T00:00:00'
-  # True: Calendar elements are generated | type=bool, default=True
+  # True: Calendar elements are generated | type=bool | choices=[True, False]
   useCalendar: true
 colors:
-  # Background color (RGB) | type=Color, default=#141414
+  # Background color (RGB) | type=Color
   backgroundColor: '#141414'
-  # Color for holidays | type=Color, default=#ff0000
+  # Color for holidays | type=Color
   holidayColor: '#ff0000'
-  # Primary text color | type=Color, default=#ffffff
+  # Primary text color | type=Color
   textColor1: '#ffffff'
-  # Secondary text color | type=Color, default=#969696
+  # Secondary text color | type=Color
   textColor2: '#969696'
 general:
-  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath, default=anniversaries.ini
+  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   anniversariesConfig: anniversaries.ini
-  # This is the title of the composition on the first page. Leave empty if not required. | type=str, default=This is the title of the composition
+  # This is the title of the composition on the first page. Leave empty if not required. | type=str
   compositionTitle: This is the title of the composition
-  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=PosixPath, default=locations_en.ini
+  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   locationsConfig: locations_en.ini
-  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath, default=images [CLI]
+  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath [CLI]
   photoDirectory: images
 geo:
-  # Minimum range for map display (degrees) | type=int, default=7
+  # Minimum range for map display (degrees) | type=int
   minimalExtension: 7
-  # Use GPS data to generate maps | type=bool, default=True
+  # Use GPS data to generate maps | type=bool | choices=[True, False]
   usePhotoLocationMaps: true
 layout:
-  # Font size for anniversaries | type=float, default=0.115
+  # Font size for anniversaries | type=float
   fontSizeAnniversaries: 0.115
-  # Font size for large text | type=float, default=0.5
+  # Font size for large text | type=float
   fontSizeLarge: 0.5
-  # Font size for small text | type=float, default=0.14
+  # Font size for small text | type=float
   fontSizeSmall: 0.14
-  # Combine all generated collages into one pdf | type=bool, default=True
+  # Combine all generated collages into one pdf | type=bool | choices=[True, False]
   generatePdf: true
-  # Bottom margin in mm | type=int, default=3
+  # Bottom margin in mm | type=int
   marginBottom: 3
-  # Side margins in mm | type=int, default=3
+  # Side margins in mm | type=int
   marginSides: 3
-  # Top margin in mm | type=int, default=6
+  # Top margin in mm | type=int
   marginTop: 6
-  # Spacing between elements in mm | type=int, default=2
+  # Spacing between elements in mm | type=int
   spacing: 2
-  # Include photo descriptions in the collage | type=bool, default=True
+  # Include photo descriptions in the collage | type=bool | choices=[True, False]
   usePhotoDescription: true
-  # Use short weekday names (e.g., Mon, Tue) | type=bool, default=False
+  # Use short weekday names (e.g., Mon, Tue) | type=bool | choices=[True, False]
   useShortDayNames: false
-  # Use short month names (e.g., Jan, Feb) | type=bool, default=True
+  # Use short month names (e.g., Jan, Feb) | type=bool | choices=[True, False]
   useShortMonthNames: true
 size:
-  # Height of the calendar area in mm | type=int, default=18
+  # Height of the calendar area in mm | type=int
   calendarHeight: 18
-  # Resolution of the image in dpi | type=int, default=150 [CLI]
+  # Resolution of the image in dpi | type=int [CLI]
   dpi: 150
-  # Height of the collage in mm | type=int, default=154 [CLI]
+  # Height of the collage in mm | type=int [CLI]
   height: 154
-  # JPG compression quality (1-100) | type=int, default=90
+  # JPG compression quality (1-100) | type=int
   jpgQuality: 90
-  # Height of the locations map in mm | type=int, default=20
+  # Height of the locations map in mm | type=int
   mapHeight: 20
-  # Width of the locations map in mm | type=int, default=20
+  # Width of the locations map in mm | type=int
   mapWidth: 20
-  # Width of the collage in mm | type=int, default=216 [CLI]
+  # Width of the collage in mm | type=int [CLI]
   width: 216

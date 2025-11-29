@@ -69,15 +69,20 @@ VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
 RELEASE_DIR := release
 DIST_DIR := dist
 
+# Alle *.ini im Top-Level auflisten und mit zum Release packen
+INI_FILES := $(wildcard *.ini)
+
 # Gemeinsame PyInstaller-Optionen
 COMMON_PYI_OPTS = \
 	--add-data "config.yaml:." \
 	--add-data "res:res" \
 	--add-data "docs:docs" \
+	--add-data "images:images" \
 	--hidden-import Photo_Composition_Designer.cli.cli \
 	--hidden-import Photo_Composition_Designer.gui.gui \
 	--exclude-module pkg_resources \
-    --exclude-module setuptools
+    --exclude-module setuptools \
+	$(foreach f,$(INI_FILES),--add-data "$(f);.")
 
 
 # ==========================

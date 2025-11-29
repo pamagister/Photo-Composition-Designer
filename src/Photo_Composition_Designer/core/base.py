@@ -51,7 +51,7 @@ class CompositionDesigner:
         self.photoDir: Path = Path(self.config.general.photoDirectory.value).expanduser().resolve()
         self.outputDir: Path = (self.photoDir.parent / "collages").resolve()
         os.makedirs(self.outputDir, exist_ok=True)
-        self.descriptions = self._get_description(self.photoDir) or []
+        self.descriptions = self._get_description(self.photoDir)
 
         # size in pixels
         self.width_px = self._mm_to_px(self.config.size.width.value)
@@ -251,7 +251,9 @@ class CompositionDesigner:
         Search for a .txt file in the folder and return list(lines) without leading 'Label: ' parts.
         Returns empty string or list when none found.
         """
-        photo_description = [""]
+        photo_description: list[str] = [""]
+        if not folder_path.exists():
+            return photo_description
         text_files = [
             folder_path / file
             for file in sorted(os.listdir(folder_path))

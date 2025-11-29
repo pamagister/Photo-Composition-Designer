@@ -6,8 +6,8 @@ from pathlib import Path
 class Anniversaries:
     def __init__(self, anniversaries_file=None):
         if not anniversaries_file:
-            base_path = Path(__file__).parent.parent
-            anniversaries_file = base_path / "config" / "anniversaries.ini"
+            base_path = Path(__file__).parent.parent.parent.parent
+            anniversaries_file = base_path / "anniversaries.ini"
 
         self.anniversary_dict = defaultdict(str)  # Dictionary für die Anniversaries
 
