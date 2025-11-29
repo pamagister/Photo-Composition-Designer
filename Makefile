@@ -70,11 +70,13 @@ RELEASE_DIR := release
 DIST_DIR := dist
 
 # Alle *.ini im Top-Level auflisten und mit zum Release packen
-INI_FILES := $(wildcard *.ini)
 
 # Gemeinsame PyInstaller-Optionen
 COMMON_PYI_OPTS = \
 	--add-data "config.yaml:." \
+	--add-data "anniversaries.ini:." \
+	--add-data "locations_en.ini:." \
+	--add-data "locations_de.ini:." \
 	--add-data "res:res" \
 	--add-data "docs:docs" \
 	--add-data "images:images" \
@@ -82,7 +84,6 @@ COMMON_PYI_OPTS = \
 	--hidden-import Photo_Composition_Designer.gui.gui \
 	--exclude-module pkg_resources \
     --exclude-module setuptools \
-	$(foreach f,$(INI_FILES),--add-data "$(f);.")
 
 
 # ==========================
