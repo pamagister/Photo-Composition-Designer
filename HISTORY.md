@@ -4,6 +4,16 @@ Changelog
 
 (unreleased)
 ------------
+- Remove duplicated clean from Makefile. [Paul Magister]
+- Fix main.py startup. [Paul Magister]
+- Exclude some more folders. [Paul Magister]
+- Build stage for linux. [Paul Magister]
+- Add docs and res folders to build artifacts. [Paul Magister]
+
+
+0.0.2 (2025-11-28)
+------------------
+- Docs: Update HISTORY.md for release 0.0.2. [Paul Magister]
 - Step to every image with arrows. [Paul Magister]
 - Tooltips, generate preview immediately. [Paul Magister]
 
