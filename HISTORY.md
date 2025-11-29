@@ -4,6 +4,18 @@ Changelog
 
 (unreleased)
 ------------
+- Add ini files individually. [Paul Magister]
+- Move all ini files top-level so that the user can find them
+  immediately. [Paul Magister]
+- Cli tests. [Paul Magister]
+- Fix cli, update requirements. [Paul Magister]
+- Button to open alternative config, reload config functionality. [Paul
+  Magister]
+
+
+0.0.3 (2025-11-29)
+------------------
+- Docs: Update HISTORY.md for release 0.0.3. [Paul Magister]
 - Remove duplicated clean from Makefile. [Paul Magister]
 - Fix main.py startup. [Paul Magister]
 - Exclude some more folders. [Paul Magister]
