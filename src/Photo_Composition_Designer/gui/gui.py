@@ -29,8 +29,8 @@ from Photo_Composition_Designer.common.logging import (
     initialize_logging,
 )
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
-from Photo_Composition_Designer.CompositionDesigner import CompositionDesigner
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.base import CompositionDesigner
 from Photo_Composition_Designer.gui.GuiLogWriter import GuiLogWriter
 from Photo_Composition_Designer.tools.DescriptionsFileGenerator import DescriptionsFileGenerator
 from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor

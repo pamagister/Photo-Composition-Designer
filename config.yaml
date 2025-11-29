@@ -61,7 +61,7 @@ layout:
 size:
   # Height of the calendar area in mm | type=int, default=18
   calendarHeight: 18
-  # Resolution of the image in dpi | type=int, default=150
+  # Resolution of the image in dpi | type=int, default=150 [CLI]
   dpi: 150
   # Height of the collage in mm | type=int, default=154 [CLI]
   height: 154

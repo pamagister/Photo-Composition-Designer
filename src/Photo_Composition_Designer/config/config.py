@@ -39,7 +39,7 @@ class GeneralConfig(ConfigCategory):
         help="Path to the directory containing photos "
         "(absolute, or relative to this config.ini file)",
         is_cli=True,
-        required=False,
+        required=True,
     )
 
     anniversariesConfig: ConfigParameter = ConfigParameter(
@@ -191,6 +191,7 @@ class SizeConfig(ConfigCategory):
         name="dpi",
         value=150,
         help="Resolution of the image in dpi",
+        is_cli=True,
     )
 
     jpgQuality: ConfigParameter = ConfigParameter(

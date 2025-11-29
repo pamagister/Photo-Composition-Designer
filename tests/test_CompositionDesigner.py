@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from Photo_Composition_Designer.CompositionDesigner import CompositionDesigner
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.base import CompositionDesigner
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
