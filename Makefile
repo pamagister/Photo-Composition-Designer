@@ -84,11 +84,6 @@ COMMON_PYI_OPTS = \
 #   UTILS
 # ==========================
 
-.PHONY: clean
-clean:
-	rm -rf $(DIST_DIR) $(RELEASE_DIR)
-
-
 .PHONY: prepare-release
 prepare-release:
 	rm -rf $(RELEASE_DIR)
@@ -199,6 +194,7 @@ clean:            ## Clean unused files.
 	@rm -rf htmlcov
 	@rm -rf .tox/
 	@rm -rf docs/_build
+	rm -rf $(DIST_DIR) $(RELEASE_DIR)
 
 .PHONY: deptry
 deptry:            ## Check for unused dependencies.
