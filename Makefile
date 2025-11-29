@@ -55,61 +55,128 @@ test: lint        ## Run tests and generate coverage report.
 	uv run coverage xml
 	uv run coverage html
 
+# ==========================
+#   PROJECT SETTINGS
+# ==========================
+
+# Projektname
+NAME := Photo-Composition-Designer
+
+# Version automatisch aus git extrahieren
+VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+
+# Release-Verzeichnis
+RELEASE_DIR := release
+DIST_DIR := dist
+
+# Gemeinsame PyInstaller-Optionen
+COMMON_PYI_OPTS = \
+	--add-data "config.yaml:." \
+	--add-data "res:res" \
+	--add-data "docs:docs" \
+	--hidden-import Photo_Composition_Designer.cli.cli \
+	--hidden-import Photo_Composition_Designer.gui.gui \
+	--exclude-module pkg_resources \
+    --exclude-module setuptools
+
+
+# ==========================
+#   UTILS
+# ==========================
+
+.PHONY: clean
+clean:
+	rm -rf $(DIST_DIR) $(RELEASE_DIR)
+
+
+.PHONY: prepare-release
+prepare-release:
+	rm -rf $(RELEASE_DIR)
+	mkdir -p $(RELEASE_DIR)
+	cp config.yaml $(RELEASE_DIR)/
+	cp README.md $(RELEASE_DIR)/
+	cp -R res $(RELEASE_DIR)/
+	cp -R docs $(RELEASE_DIR)/
+
+
+# ==========================
+#   WINDOWS BUILD
+# ==========================
+
 .PHONY: build-win
-build-win:    ## Build the Windows executable.
-	echo "Building unified CLI/GUI application"
+build-win: clean
+	echo "Building Windows executable"
 	uv run pyinstaller --onefile src/main.py \
-		--name Photo-Composition-Designer \
-		--add-data "config.yaml;." \
-		--hidden-import Photo_Composition_Designer.cli.cli \
-		--hidden-import Photo_Composition_Designer.gui.gui
+		--name $(NAME) \
+		$(COMMON_PYI_OPTS)
 
-	rm -rf release
-	mkdir release
+	$(MAKE) prepare-release
+	cp $(DIST_DIR)/$(NAME).exe $(RELEASE_DIR)/
 
-	echo "Copy binaries and config"
-	cp dist/Photo-Composition-Designer.exe release/
-	cp config.yaml release/
-	cp README.md release/
+	$(MAKE) zip-win
 
-	echo "Copy resource directories"
-	cp -R res release/
-	cp -R docs release/
 
+.PHONY: zip-win
+zip-win:
+	cd $(RELEASE_DIR) && zip -r "../$(NAME)-win-$(VERSION).zip" .
+
+
+# ==========================
+#   MACOS BUILD
+# ==========================
 
 .PHONY: build-macos
-build-macos:    ## Build the macOS executable.
-	echo "Building unified CLI/GUI application as executable"
+build-macos: clean
+	echo "Building macOS CLI/GUI executable"
 	uv run pyinstaller --onefile src/main.py \
-		--name Photo-Composition-Designer \
-		--add-data "config.yaml:." \
-		--hidden-import Photo_Composition_Designer.cli.cli \
-		--hidden-import Photo_Composition_Designer.gui.gui
+		--name $(NAME) \
+		$(COMMON_PYI_OPTS)
 
-	echo "Building unified CLI/GUI application as .app bundle"
-	uv run pyinstaller --windowed \
+	echo "Building macOS .app bundle (GUI)"
+	uv run pyinstaller --windowed src/main.py \
 		--name "TemplateApp" \
-		src/main.py \
-		--add-data "config.yaml:." \
-		--hidden-import Photo_Composition_Designer.cli.cli \
-		--hidden-import Photo_Composition_Designer.gui.gui
+		$(COMMON_PYI_OPTS)
 
-	rm -rf release
-	mkdir release
+	$(MAKE) prepare-release
+	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
+	cp -R $(DIST_DIR)/TemplateApp.app $(RELEASE_DIR)/
 
-	echo "Copy CLI/GUI executable"
-	cp dist/Photo-Composition-Designer release/
+	$(MAKE) zip-macos
 
-	echo "Copy .app bundle"
-	cp -R dist/TemplateApp.app release/
 
-	echo "Copy config and docs"
-	cp config.yaml release/
-	cp README.md release/
+.PHONY: zip-macos
+zip-macos:
+	cd $(RELEASE_DIR) && zip -r "../$(NAME)-macos-$(VERSION).zip" .
 
-	echo "Copy resource directories"
-	cp -R res release/
-	cp -R docs release/
+
+# ==========================
+#   LINUX BUILD
+# ==========================
+
+.PHONY: build-linux
+build-linux: clean
+	echo "Building Linux executable"
+	uv run pyinstaller --onefile src/main.py \
+		--name $(NAME) \
+		$(COMMON_PYI_OPTS)
+
+	$(MAKE) prepare-release
+	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
+
+	$(MAKE) zip-linux
+
+
+.PHONY: zip-linux
+zip-linux:
+	cd $(RELEASE_DIR) && zip -r "../$(NAME)-linux-$(VERSION).zip" .
+
+
+# ==========================
+#   META TARGETS
+# ==========================
+
+.PHONY: build-all
+build-all: build-win build-macos build-linux
 
 
 .PHONY: watch

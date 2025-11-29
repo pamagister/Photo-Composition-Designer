@@ -22,13 +22,13 @@ colors:
   # Secondary text color | type=Color, default=#969696
   textColor2: '#969696'
 general:
-  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath, default=anniversaries.ini
+  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=str, default=anniversaries.ini
   anniversariesConfig: anniversaries.ini
   # This is the title of the composition on the first page. Leave empty if not required. | type=str, default=This is the title of the composition
   compositionTitle: This is the title of the composition
-  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=PosixPath, default=locations_en.ini
+  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=str, default=locations_en.ini
   locationsConfig: locations_en.ini
-  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath, default=../../images [CLI]
+  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=str, default=../../images [CLI]
   photoDirectory: ../../images
 geo:
   # Minimum range for map display (degrees) | type=int, default=7
