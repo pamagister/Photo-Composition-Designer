@@ -7,6 +7,9 @@ Automatically detects whether to run CLI or GUI based on how the application is 
 import os
 import sys
 
+import Photo_Composition_Designer.cli.cli as _force_cli_import
+import Photo_Composition_Designer.gui.gui as _force_gui_import
+
 
 def is_console_attached():
     """
@@ -97,9 +100,7 @@ def main():
 def run_cli():
     """Launch the CLI interface."""
     try:
-        from Photo_Composition_Designer.cli.cli import main as cli_main
-
-        cli_main()
+        _force_cli_import.main()
     except ImportError as e:
         print(f"Error importing CLI module: {e}")
         sys.exit(1)
@@ -109,16 +110,8 @@ def run_cli():
 
 
 def run_gui():
-    """Launch the GUI interface."""
     try:
-        from Photo_Composition_Designer.gui.gui import main as gui_main
-
-        gui_main()
-    except ImportError as e:
-        print(f"Error importing GUI module: {e}")
-        # If GUI fails, fallback to CLI
-        print("Falling back to CLI interface...")
-        run_cli()
+        _force_gui_import.main()
     except Exception as e:
         print(f"Error running GUI: {e}")
         print("Falling back to CLI interface...")

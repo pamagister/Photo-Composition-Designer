@@ -3,7 +3,7 @@
 This file uses the CliGenerator from the generic config framework.
 """
 
-from pathlib import Path
+import os.path
 
 from config_cli_gui.cli import CliGenerator
 
@@ -27,25 +27,20 @@ def validate_config(config: ConfigParameterManager) -> bool:
     logger = logger_manager.get_logger("Photo_Composition_Designer.cli")
 
     # Get CLI category and check required parameters
-    cli_category = config.cli
-    if not cli_category:
+    cli_parameters = config.get_cli_parameters()
+    if not cli_parameters:
         logger.error("No CLI configuration found")
-        return False
 
-    # Check if input parameter exists and has a value
-    input_param = getattr(cli_category, "input")
-    if not input_param or not input_param.value:
-        logger.error("Input is required")
-        return False
+    for param in cli_parameters:
+        if param.name == "photoDirectory":
+            photo_dir = param.value
+            if os.path.exists(photo_dir):
+                logger.debug(f"Input file validation passed: {photo_dir}")
+                return True
+            else:
+                logger.debug(f"Input file not found: {photo_dir}")
 
-    # Check if input file exists
-    input_path = Path(input_param.value)
-    if not input_path.exists():
-        logger.error(f"File not found: {input_path}")
-        return False
-
-    logger.debug(f"Input file validation passed: {input_path}")
-    return True
+    return False
 
 
 def run_main_processing(config: ConfigParameterManager) -> int:

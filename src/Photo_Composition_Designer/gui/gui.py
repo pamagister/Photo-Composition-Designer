@@ -52,7 +52,10 @@ class MainGui:
         self.root.update_idletasks()
 
         # Initialize configuration
-        self.config_manager = ConfigParameterManager("config.yaml")
+        try:
+            self.config_manager = ConfigParameterManager("config.yaml")
+        except Exception:
+            self.config_manager = ConfigParameterManager()
 
         # Initialize logging system
         self.logger_manager = initialize_logging(self.config_manager)
