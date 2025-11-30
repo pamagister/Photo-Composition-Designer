@@ -136,7 +136,7 @@ build-win: clean
 # ==========================
 
 .PHONY: build-macos
-build-macos: clean
+build-macos:
 	echo "Building macOS CLI/GUI executable"
 	uv run pyinstaller --onefile src/main.py \
 		--name $(NAME) \

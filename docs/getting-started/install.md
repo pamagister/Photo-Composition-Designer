@@ -26,6 +26,7 @@ Photo-Composition-Designer-gui
 Download the latest executable:
 
 - [⬇️ Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/installer-win.zip)
+- [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/package-linux.zip)
 - [⬇️ Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/package-macos.zip)
 
 

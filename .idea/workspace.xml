@@ -4,9 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="improve path issue with relative paths to res/ini files">
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="remove zip">
+      <change afterPath="$PROJECT_DIR$/docs/_static/img/gui_main.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/develop/contributing.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/develop/make_windows.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/develop/naming_convention.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/develop/pypi_release.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/getting-started/install.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/getting-started/install.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -88,17 +95,17 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/docs/_static/img",
+    "settings.editor.selected.configurable": "com.android.studio.ml.bot.mainConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/docs/_static/img" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/.github/workflows" />
       <recent name="$PROJECT_DIR$/images" />
       <recent name="$PROJECT_DIR$/tests" />
-      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/config" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -213,9 +220,9 @@
       <item itemvalue="Python.config-generate" />
       <item itemvalue="Python.module cli" />
       <item itemvalue="Python.module gui" />
-      <item itemvalue="Python.show_tree" />
       <item itemvalue="Python.cli" />
       <item itemvalue="Python.main" />
+      <item itemvalue="Python.show_tree" />
       <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
       <item itemvalue="Python tests.pytest in test_cli.py" />
     </list>
@@ -232,7 +239,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-1f77c24022e5-d902c0275401-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.26830.99" />
+        <option value="bundled-python-sdk-7bb8055f9097-cbfc7b97e6b2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.28238.29" />
       </set>
     </attachedChunks>
   </component>
@@ -581,7 +588,23 @@
       <option name="project" value="LOCAL" />
       <updated>1764495033316</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="fix more import errors">
+      <option name="closed" value="true" />
+      <created>1764496058584</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1764496058584</updated>
+    </task>
+    <task id="LOCAL-00044" summary="fix zip linux">
+      <option name="closed" value="true" />
+      <created>1764496556213</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1764496556213</updated>
+    </task>
+    <option name="localTasksCounter" value="45" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -596,8 +619,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add tests for CompositionDesigner.py" />
-    <MESSAGE value="add tests for CompositionDesigner.py, fix issue with font" />
     <MESSAGE value="* move all generators that create images to image&#10;* typings&#10;* refactorings" />
     <MESSAGE value="consistently rename core methods" />
     <MESSAGE value="only use Image.Image in CollageGenerator.py" />
@@ -621,7 +642,9 @@
     <MESSAGE value="move all ini files top-level so that the user can find them immediately" />
     <MESSAGE value="add ini files individually, fix test_cli.py for windows" />
     <MESSAGE value="improve path issue with relative paths to res/ini files" />
-    <option name="LAST_COMMIT_MESSAGE" value="improve path issue with relative paths to res/ini files" />
+    <MESSAGE value="fix more import errors" />
+    <MESSAGE value="fix zip linux" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix zip linux" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -673,12 +696,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
-          <line>424</line>
+          <line>432</line>
           <option name="timeStamp" value="31" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
-          <line>429</line>
+          <line>437</line>
           <option name="timeStamp" value="32" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -693,7 +716,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
-          <line>269</line>
+          <line>277</line>
           <option name="timeStamp" value="51" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -715,11 +738,6 @@
           <url>file://$PROJECT_DIR$/.venv/lib/python3.11/site-packages/config_cli_gui/cli.py</url>
           <line>110</line>
           <option name="timeStamp" value="56" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/common/Anniversaries.py</url>
-          <line>10</line>
-          <option name="timeStamp" value="57" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
