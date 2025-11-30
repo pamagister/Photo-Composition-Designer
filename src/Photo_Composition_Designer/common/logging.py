@@ -3,7 +3,7 @@
 This module provides a unified logging setup that supports:
 - File logging with rotation
 - GUI integration via custom handler
-- Configurable log levels from config
+- Configurable log levels
 - Structured logging with consistent formatting
 """
 
@@ -11,8 +11,6 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-
-from Photo_Composition_Designer.config.config import ConfigParameterManager
 
 
 class GuiLogHandler(logging.Handler):
@@ -39,21 +37,20 @@ class GuiLogHandler(logging.Handler):
 class LoggerManager:
     """Manages all logging configuration and handlers."""
 
-    def __init__(self, config: ConfigParameterManager):
-        self.config = config
+    def __init__(self, log_level="INFO"):
         self.logger = logging.getLogger("Photo_Composition_Designer")
         self.gui_handler = None
         self.file_handler = None
         self.console_handler = None
-        self._setup_logging()
+        self.log_level = log_level
+        self._setup_logging(log_level)
 
-    def _setup_logging(self):
+    def _setup_logging(self, log_level):
         """Configure all logging handlers and formatters."""
         # Clear any existing handlers
         self.logger.handlers.clear()
 
-        # Set log level from config
-        log_level = getattr(logging, self.config.app.log_level.value.upper())
+        # Set log level
         self.logger.setLevel(log_level)
 
         # Create formatters
@@ -141,13 +138,12 @@ class LoggerManager:
         log_level = getattr(logging, level.upper())
         self.logger.setLevel(log_level)
 
-        # Update config
-        self.config.app.log_level.value = level.upper()
+        self.log_level = level.upper()
 
     def log_config_summary(self):
         """Log current configuration summary."""
         self.logger.info("=== Configuration Summary ===")
-        self.logger.info(f"Log level: {self.config.app.log_level.value}")
+        self.logger.info(f"Log level: {self.log_level}")
         self.logger.info("==============================")
 
 
@@ -155,17 +151,17 @@ class LoggerManager:
 _logger_manager = None
 
 
-def initialize_logging(config: ConfigParameterManager) -> LoggerManager:
+def initialize_logging(log_level="INFO") -> LoggerManager:
     """Initialize the global logging system.
 
     Args:
-        config: Configuration manager instance
+        log_level: logging level
 
     Returns:
         LoggerManager instance
     """
     global _logger_manager
-    _logger_manager = LoggerManager(config)
+    _logger_manager = LoggerManager(log_level)
     return _logger_manager
 
 

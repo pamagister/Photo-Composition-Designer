@@ -13,12 +13,13 @@ Photo-Composition-Designer is a tool designed to automate the creation of beauti
 
 
 ## 🛠️ Features
-✅ **Automated Calendar Generation** – Generates a full image-based calendar.
-✅ **Configurable Settings** – Modify sizes, layouts, and text via `config.yaml`.
-✅ **Anniversaries & Events** – Load anniversaries and special dates using `anniversaries.ini`.
-✅ **Location-Based Maps** – Integrate maps showing image locations using gps meta-data or image names and `locations.ini`.
-✅ **GUI Configuration Tool** – Easily modify configurations via a dynamic UI.
-✅ **Folder Management** – Automatically structures and organizes images into necessary folders.
+
+* ✅ **Automated Calendar Generation** – Generates a full image-based calendar.
+* ✅ **Configurable Settings** – Modify sizes, layouts, and text via `config.yaml`.
+* ✅ **Anniversaries & Events** – Load anniversaries and special dates using `anniversaries.ini`.
+* ✅ **Location-Based Maps** – Integrate maps showing image locations using gps meta-data or image names and `locations.ini`.
+* ✅ **GUI Configuration Tool** – Easily modify configurations via a dynamic UI.
+* ✅ **Folder Management** – Automatically structures and organizes images into necessary folders.
 
 ![Main GUI](_static/img/gui_main.png)
 
@@ -53,18 +54,12 @@ Photo-Composition-Designer
 
 ---
 
-## Configuration parameters
-
-You can adjust the result by setting up your own parameters like size, margins and colors.
-For more details, see [Configuration Parameters](usage/config.md).
-
---- 
-
 
 ## 🔄 Workflow
 
-
-### 1️⃣ **Configuring the Settings**
+### 1️⃣ **Configuring the parameters**
+You can adjust the result by setting up your own parameters like size, margins and colors.
+For more details, see [Configuration Parameters](usage/config.md).
 Modify your settings inside the `config.yaml` or using the GUI:
 - Image sizes (mm converted to pixels internally)
 - Calendar layout

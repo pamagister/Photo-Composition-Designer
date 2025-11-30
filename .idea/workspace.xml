@@ -4,16 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="remove zip">
-      <change afterPath="$PROJECT_DIR$/docs/_static/img/gui_main.png" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="set up nice documentation">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/develop/contributing.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/develop/make_windows.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/develop/naming_convention.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/develop/pypi_release.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/getting-started/install.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/getting-started/install.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/logging.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/logging.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/GeoPlotter.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/GeoPlotter.py" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -604,7 +602,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764496556213</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="set up nice documentation">
+      <option name="closed" value="true" />
+      <created>1764540117905</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1764540117905</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -619,7 +625,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="* move all generators that create images to image&#10;* typings&#10;* refactorings" />
     <MESSAGE value="consistently rename core methods" />
     <MESSAGE value="only use Image.Image in CollageGenerator.py" />
     <MESSAGE value="remove unused images, restructure test" />
@@ -644,7 +649,8 @@
     <MESSAGE value="improve path issue with relative paths to res/ini files" />
     <MESSAGE value="fix more import errors" />
     <MESSAGE value="fix zip linux" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix zip linux" />
+    <MESSAGE value="set up nice documentation" />
+    <option name="LAST_COMMIT_MESSAGE" value="set up nice documentation" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -696,12 +702,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
-          <line>432</line>
+          <line>442</line>
           <option name="timeStamp" value="31" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
-          <line>437</line>
+          <line>447</line>
           <option name="timeStamp" value="32" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -716,12 +722,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
-          <line>277</line>
+          <line>278</line>
           <option name="timeStamp" value="51" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py</url>
-          <line>51</line>
+          <line>60</line>
           <option name="timeStamp" value="53" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

@@ -6,6 +6,7 @@ with settings dialog, file management, and centralized logging capabilities.
 run gui: python -m Photo_Composition_Designer.gui
 """
 
+import logging
 import os
 import shutil
 import subprocess
@@ -54,6 +55,10 @@ class MainGui:
         # Initialize configuration
         self.config_manager = ConfigParameterManager()
 
+        # Initialize logging system
+        self.logger_manager = initialize_logging(self.config_manager.app.log_level.value)
+        self.logger: logging.Logger = get_logger("gui.main")
+
         self._build_widgets()
         self._create_menu()
         self._reload_config()
@@ -66,12 +71,8 @@ class MainGui:
         self.logger.info("GUI application started")
 
     def _reload_config(self):
-        # Initialize logging system
-        self.logger_manager = initialize_logging(self.config_manager)
-        self.logger = get_logger("gui.main")
-
         # File lists
-        self.composition_designer = CompositionDesigner(self.config_manager)
+        self.composition_designer = CompositionDesigner(self.config_manager, self.logger)
         self.preview_image_original = None
 
         self.photo_folders = []
@@ -342,11 +343,20 @@ class MainGui:
         self.logger.debug("Log display cleared")
 
     def _generate_compositions(self):
-        """Generate all compositions"""
-        pass
-        self.logger.info("Generate all compositions...")
-        self.composition_designer.generate_compositions_from_folders()
-        self.logger.info("Compositions generated")
+        """Generate all compositions in a background thread."""
+        self.logger.info("Generate all compositions. This may take a while...")
+
+        # Thread starten
+        thread = threading.Thread(target=self._run_generation_thread, daemon=True)
+        thread.start()
+
+    def _run_generation_thread(self):
+        """Threaded backend call."""
+        try:
+            self.composition_designer.generate_compositions_from_folders()
+            self.logger.info("Compositions generated")
+        except Exception as e:
+            self.logger.error(f"Error while generating compositions: {e}")
 
     def _open_selected_file(self, event, file_list_source):
         """Opens the selected file in the system's default application or explorer."""

@@ -4,11 +4,13 @@ from __future__ import annotations
 import os
 import re
 from datetime import timedelta
+from logging import Logger
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Locations import Locations
+from Photo_Composition_Designer.common.logging import get_logger, initialize_logging
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.image.CalendarRenderer import (
@@ -30,8 +32,14 @@ class CompositionDesigner:
     - Accesses parameters through config.<category>.<param>.value
     """
 
-    def __init__(self, config: ConfigParameterManager | None = None):
+    def __init__(self, config: ConfigParameterManager | None, logger: Logger = None):
         self.config = config or ConfigParameterManager()
+        if logger:
+            self.logger: Logger = logger
+        else:
+            initialize_logging()
+            self.logger: Logger = get_logger("base")
+
         self.dpi: int = int(self.config.size.dpi.value)
         # load locations config path and create Locations instance
         locations_cfg_path = Path(self.config.general.locationsConfig.value)
@@ -188,7 +196,7 @@ class CompositionDesigner:
             )
 
         if len(photos) == 0:
-            print("No pictures found.")
+            self.logger.info("No pictures found.")
             return composition
 
         # Arrange image composition
@@ -276,13 +284,13 @@ class CompositionDesigner:
         folder_path = self.photoDir / folder_name
 
         if not folder_path.is_dir():
-            print(f"{folder_path} is not a valid directory. Skipping...")
+            self.logger.info(f"{folder_path} is not a valid directory. Skipping...")
             return None
 
         # Extract photos
         photos = get_photos_from_dir(folder_path, self.locations)
         if not photos:
-            print(f"No images found in {folder_path}, skipping...")
+            self.logger.info(f"No images found in {folder_path}, skipping...")
             return None
 
         # Determine description (folder-level overrides global)
@@ -293,7 +301,7 @@ class CompositionDesigner:
         try:
             week_index = sorted_folders.index(folder_name)
         except ValueError:
-            print(f"Folder '{folder_name}' not found in photoDirectory (unexpected).")
+            self.logger.info(f"Folder '{folder_name}' not found in photoDirectory (unexpected).")
             return None
 
         global_description = (
@@ -313,16 +321,27 @@ class CompositionDesigner:
         """
         Generates collages for all weeks from the specified folder.
         """
-        # Precompute folder order for consistent week indexing
+
         sorted_folders = sorted(
             [f for f in os.listdir(self.photoDir) if (self.photoDir / f).is_dir()]
         )
 
-        for folder_name in sorted_folders:
-            # We call the new method, which handles everything
+        total = len(sorted_folders)
+
+        # Falls die GUI eine Progressbar bereitstellt:
+        if hasattr(self, "progress_callback") and callable(self.progress_callback):
+            self.progress_callback(0, total)
+
+        for idx, folder_name in enumerate(sorted_folders, start=1):
+            self.logger.info(f"Processing folder: {folder_name}")
+
             composition = self.generate_compositions_from_folder(folder_name)
             if composition:
                 self.save(composition, folder_name)
+
+            # Progress-Update an die GUI
+            if hasattr(self, "progress_callback") and callable(self.progress_callback):
+                self.progress_callback(idx, total)
 
         if self.config.layout.generatePdf.value:
             self.generate_pdf(self.outputDir)
@@ -335,7 +354,7 @@ class CompositionDesigner:
         jpg_quality = int(self.config.size.jpgQuality.value)
         dpi_tuple = (self.dpi, self.dpi)
         composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
-        print(f"Composition saved: {output_path}")
+        self.logger.info(f"Composition saved: {output_path}")
 
     def generate_pdf(self, collages_dir: Path | str, output_pdf: str = "output.pdf"):
         """
@@ -353,7 +372,7 @@ class CompositionDesigner:
         )
 
         if not image_files:
-            print("No images found in the directory.")
+            self.logger.info("No images found in the directory.")
             return
 
         image_list: list[Image.Image] = []
@@ -371,7 +390,7 @@ class CompositionDesigner:
             quality=int(self.config.size.jpgQuality.value),
             dpi=(self.dpi, self.dpi),
         )
-        print(f"PDF successfully created: {output_path}")
+        self.logger.info(f"PDF successfully created: {output_path}")
 
 
 if __name__ == "__main__":

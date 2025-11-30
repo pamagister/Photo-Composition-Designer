@@ -23,7 +23,7 @@ def validate_config(config_manager: ConfigParameterManager) -> bool:
         True if configuration is valid, False otherwise
     """
     # Initialize logging system
-    logger_manager = initialize_logging(config_manager)
+    logger_manager = initialize_logging(config_manager.app.log_level.value)
     logger = logger_manager.get_logger("Photo_Composition_Designer.cli")
 
     # Get CLI category and check required parameters
@@ -53,7 +53,7 @@ def run_main_processing(config_manager: ConfigParameterManager) -> int:
         Exit code (0 for success, non-zero for error)
     """
     # Initialize logging system
-    logger_manager = initialize_logging(config_manager)
+    logger_manager = initialize_logging(config_manager.app.log_level.value)
     logger = logger_manager.get_logger("Photo_Composition_Designer.cli")
 
     try:
