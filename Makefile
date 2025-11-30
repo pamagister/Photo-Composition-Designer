@@ -69,11 +69,6 @@ VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
 RELEASE_DIR := release
 DIST_DIR := dist
 
-ZIP ?= zip
-
-ifeq ($(OS),Windows_NT)
-    ZIP = powershell Compress-Archive -Path * -DestinationPath
-endif
 
 # Alle *.ini im Top-Level auflisten und mit zum Release packen
 
@@ -134,12 +129,6 @@ build-win: clean
 	$(MAKE) prepare-release
 	cp $(DIST_DIR)/$(NAME).exe $(RELEASE_DIR)/
 
-	$(MAKE) zip-win
-
-
-.PHONY: zip-win
-zip-win:
-	cd $(RELEASE_DIR) && $(ZIP) "../$(NAME)-win-$(VERSION).zip"
 
 
 # ==========================
@@ -162,12 +151,6 @@ build-macos: clean
 	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
 	cp -R $(DIST_DIR)/TemplateApp.app $(RELEASE_DIR)/
 
-	$(MAKE) zip-macos
-
-
-.PHONY: zip-macos
-zip-macos:
-	cd $(RELEASE_DIR) && zip -r "../$(NAME)-macos-$(VERSION).zip" .
 
 
 # ==========================
@@ -183,13 +166,6 @@ build-linux: clean
 
 	$(MAKE) prepare-release
 	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
-
-	$(MAKE) zip-linux
-
-
-.PHONY: zip-linux
-zip-linux:
-	cd $(RELEASE_DIR) && zip -r "../$(NAME)-linux-$(VERSION).zip" .
 
 
 # ==========================
