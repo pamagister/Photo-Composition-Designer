@@ -85,9 +85,13 @@ COMMON_PYI_OPTS = \
 	--collect-all=holidays \
     --hidden-import=holidays.countries \
     --hidden-import=holidays.countries.* \
+    --hidden-import=PIL._tkinter_finder \
+    --hidden-import=PIL.ImageTk \
     --collect-all=geopandas \
     --collect-all=shapely \
     --collect-all=pyogrio \
+    --collect-all=PIL \
+    --collect-submodules=PIL \
 	--exclude-module pkg_resources \
     --exclude-module setuptools \
 
