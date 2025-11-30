@@ -2,7 +2,7 @@
 
 # Welcome to Photo-Composition-Designer
 
-A feature-rich Python project template with auto-generated CLI, GUI and parameterized configuration.
+Photo-Composition-Designer is a tool designed to automate the creation of beautiful image-based calendars. The system sorts images, generates collages, adds descriptions and maps, and formats everything into a structured calendar layout.
 
 [![Github CI Status](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions)
 [![GitHub release](https://img.shields.io/github/v/release/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/releases)
@@ -13,10 +13,29 @@ A feature-rich Python project template with auto-generated CLI, GUI and paramete
 [![Downloads](https://pepy.tech/badge/Photo-Composition-Designer)](https://pepy.tech/project/Photo-Composition-Designer/)
 
 
+
+## 🛠️ Features
+✅ **Automated Calendar Generation** – Generates a full image-based calendar.
+✅ **Configurable Settings** – Modify sizes, layouts, and text via `config.yaml`.
+✅ **Anniversaries & Events** – Load anniversaries and special dates using `anniversaries.ini`.
+✅ **Location-Based Maps** – Integrate maps showing image locations using gps meta-data or image names and `locations.ini`.
+✅ **GUI Configuration Tool** – Easily modify configurations via a dynamic UI.
+✅ **Folder Management** – Automatically structures and organizes images into necessary folders.
+
+![Main GUI](_static/img/gui_main.png)
+
 ---
 
+## Installation via executable:
 
-## Installation
+Download the latest executable:
+
+- [⬇️ Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/installer-win.zip)
+- [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/package-linux.zip)
+- [⬇️ Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/package-macos.zip)
+
+
+## Installation via pypi
 
 Get an impression of how your own project could be installed and look like.
 
@@ -31,32 +50,52 @@ pip install Photo-Composition-Designer
 Run GUI from command line
 
 ```bash
-Photo-Composition-Designer-gui
-```
-
-Run application from command line using CLI
-
-```bash
-python -m Photo_Composition_Designer.cli [OPTIONS] path/to/file
-```
-
-```bash
-Photo-Composition-Designer-cli [OPTIONS] path/to/file
+Photo-Composition-Designer
 ```
 
 ---
 
-## Troubleshooting
+## Configuration parameters
 
-### Problems with release pipeline
+You can adjust the result by setting up your own parameters like size, margins and colors.
+For more details, see [Configuration Parameters](usage/config.md).
 
-If you get this error below:
-```bash
-/home/runner/work/_temp/xxxx_xxx.sh: line 1: .github/release_message.sh: Permission denied
+--- 
+
+
+## 🔄 Workflow
+
+
+### 1️⃣ **Configuring the Settings**
+Modify your settings inside the `config.yaml` or using the GUI:
+- Image sizes (mm converted to pixels internally)
+- Calendar layout
+- Paths to `anniversaries.ini` and `locations.ini`
+
+### 2️⃣ **Sorting Images into Folders**
+Organize your images in the `images/` directory before running the generator.
+You can use one of the distribution methods to distribute your plain images inside this directory
+into sub-folders that represent your weekly collage content.
+
+```plaintext
+📁 images/
+├── 📁 0-Title/
+    ├── 2024-01-01_ski_trip.jpg
+├── 📁 Week 1/
+    ├── 2024-02-14_valentines_dinner in London.jpg
 ```
 
-You have to run these commands in your IDE Terminal or the git bash and then push the changes.
-```bash
-git update-index --chmod=+x ./.github/release_message.sh
-```
+### 3️⃣ **Provide Descriptions** 🖥️
+Provide descriptions for every week to describe the events.
+You can use one single `description.txt` file that can be generated using the GUI
+or you can put individual txt files into every single weekly sub folder.
 
+### 4️⃣ **Setting up the birthday dates** 🎂📅
+Provide the birthday information of your friends and family by using the `anniversaries.ini`
+
+### **Generating the Calendar** 🖼️
+Use **Generate Composition** to generate all collages and one PDF file containing all your compositions.
+
+---
+
+If you find this app helpful, [Funding](funding/funding.md) is highly appreciated 🧡.
