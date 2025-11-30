@@ -6,6 +6,8 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
+from path_handler import get_base_path
+
 
 class GeoPlotter:
     """
@@ -20,7 +22,7 @@ class GeoPlotter:
         border_color="white",
         line_width=0.4,
     ):
-        base_path = Path(__file__).parent.parent.parent.parent / "res/maps"
+        base_path = get_base_path() / "res/maps"
 
         countries_shp = base_path / "ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp"
         lakes_shp = (

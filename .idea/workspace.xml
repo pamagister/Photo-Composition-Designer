@@ -4,16 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="step to every image with arrows">
-      <change afterPath="$PROJECT_DIR$/.github/workflows/build-linux.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/build-macos.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/build-macos.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/build.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/build-win.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config.yaml" afterDir="false" />
-    </list>
-    <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="">
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="add ini files individually, fix test_cli.py for windows">
+      <change afterPath="$PROJECT_DIR$/src/path_handler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/show_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/show_tree.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Anniversaries.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Anniversaries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Locations.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Locations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/GeoPlotter.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/GeoPlotter.py" afterDir="false" />
     </list>
+    <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -73,15 +73,19 @@
     "Python tests.pytest in test_MoonPhase.py.executor": "Run",
     "Python tests.pytest in test_Photo.py.executor": "Run",
     "Python tests.pytest in test_PhotoLayoutManager.py.executor": "Run",
+    "Python tests.pytest in test_cli.py.executor": "Run",
     "Python.Anniversaries.executor": "Debug",
     "Python.CalendarGenerator.executor": "Run",
     "Python.CompositionDesigner.executor": "Debug",
     "Python.DescriptionsFileGenerator.executor": "Run",
     "Python.GeoPlotter.executor": "Run",
     "Python.MapGenerator.executor": "Debug",
+    "Python.cli.executor": "Debug",
     "Python.config-generate.executor": "Run",
+    "Python.main.executor": "Run",
     "Python.module cli.executor": "Run",
     "Python.module gui.executor": "Run",
+    "Python.show_tree.executor": "Debug",
     "Python.test_Locations.executor": "Debug",
     "Python.test_Photo.executor": "Run",
     "Python.test_anniversaries.executor": "Debug",
@@ -89,26 +93,28 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer/.github/workflows",
+    "last_opened_file_path": "/home/paul/dev/Photo-Composition-Designer",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/.github/workflows" />
       <recent name="$PROJECT_DIR$/images" />
       <recent name="$PROJECT_DIR$/tests" />
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/config" />
-      <recent name="$PROJECT_DIR$/tests" />
-      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/core" />
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/tools" />
+      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/common" />
-      <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.CalendarGenerator">
-    <configuration name="Anniversaries" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.module gui">
+    <configuration name="cli" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -117,11 +123,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/common" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/cli" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Anniversaries.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -130,7 +136,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="CalendarGenerator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -139,11 +145,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -152,7 +158,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="MapGenerator" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="show_tree" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -161,11 +167,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/core/MapGenerator.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/show_tree.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -174,7 +180,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_CalendarGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_DescriptionsFileGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -187,11 +193,11 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_CalendarGenerator.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionsFileGenerator.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_CompositionDesigner.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_cli.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -204,17 +210,27 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_CompositionDesigner.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_cli.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Python.config-generate" />
+      <item itemvalue="Python.module cli" />
+      <item itemvalue="Python.module gui" />
+      <item itemvalue="Python.show_tree" />
+      <item itemvalue="Python.cli" />
+      <item itemvalue="Python.main" />
+      <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
+      <item itemvalue="Python tests.pytest in test_cli.py" />
+    </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.CalendarGenerator" />
-        <item itemvalue="Python tests.pytest in test_CalendarGenerator.py" />
-        <item itemvalue="Python.Anniversaries" />
-        <item itemvalue="Python tests.pytest in test_CompositionDesigner.py" />
-        <item itemvalue="Python.MapGenerator" />
+        <item itemvalue="Python.show_tree" />
+        <item itemvalue="Python tests.pytest in test_cli.py" />
+        <item itemvalue="Python.main" />
+        <item itemvalue="Python.cli" />
+        <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
       </list>
     </recent_temporary>
   </component>
@@ -228,6 +244,7 @@
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="" />
+      <changelist id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
       <created>1763156815611</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
@@ -377,30 +394,231 @@
       <option name="project" value="LOCAL" />
       <updated>1763418671032</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="add tests for CompositionDesigner.py, fix issue with font">
+      <option name="closed" value="true" />
+      <created>1763448805377</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1763448805378</updated>
+    </task>
+    <task id="LOCAL-00020" summary="* move all generators that create images to image&#10;* typings&#10;* refactorings">
+      <option name="closed" value="true" />
+      <created>1763487945809</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1763487945809</updated>
+    </task>
+    <task id="LOCAL-00021" summary="consistently rename core methods">
+      <option name="closed" value="true" />
+      <created>1763488381436</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1763488381436</updated>
+    </task>
+    <task id="LOCAL-00022" summary="only use Image.Image in CollageGenerator.py">
+      <option name="closed" value="true" />
+      <created>1763494215042</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1763494215042</updated>
+    </task>
+    <task id="LOCAL-00023" summary="remove unused images, restructure test">
+      <option name="closed" value="true" />
+      <created>1763495762624</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1763495762624</updated>
+    </task>
+    <task id="LOCAL-00024" summary="correct typing, CompositionDesigner.py generate_composition returns image object">
+      <option name="closed" value="true" />
+      <created>1763497003262</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1763497003262</updated>
+    </task>
+    <task id="LOCAL-00025" summary="first gui adaption">
+      <option name="closed" value="true" />
+      <created>1763502313116</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1763502313116</updated>
+    </task>
+    <task id="LOCAL-00026" summary="consistent renaming of the render modules">
+      <option name="closed" value="true" />
+      <created>1763738672477</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1763738672477</updated>
+    </task>
+    <task id="LOCAL-00027" summary="refactor generate_composition method">
+      <option name="closed" value="true" />
+      <created>1763740804006</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1763740804006</updated>
+    </task>
+    <task id="LOCAL-00028" summary="update config-cli-gui">
+      <option name="closed" value="true" />
+      <created>1763931321835</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1763931321835</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Show preview image in gui">
+      <option name="closed" value="true" />
+      <created>1764348671931</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1764348671931</updated>
+    </task>
+    <task id="LOCAL-00030" summary="gui elements do resize">
+      <option name="closed" value="true" />
+      <created>1764350158117</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1764350158117</updated>
+    </task>
+    <task id="LOCAL-00031" summary="generate all compositions from gui">
+      <option name="closed" value="true" />
+      <created>1764354370937</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1764354370937</updated>
+    </task>
+    <task id="LOCAL-00032" summary="remove unused module">
+      <option name="closed" value="true" />
+      <created>1764354411213</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1764354411213</updated>
+    </task>
+    <task id="LOCAL-00033" summary="remove logger from CompositionDesigner.py">
+      <option name="closed" value="true" />
+      <created>1764354513307</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1764354513307</updated>
+    </task>
+    <task id="LOCAL-00034" summary="tooltips, generate preview immediately">
+      <option name="closed" value="true" />
+      <created>1764363432721</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1764363432722</updated>
+    </task>
+    <task id="LOCAL-00035" summary="step to every image with arrows">
+      <option name="closed" value="true" />
+      <created>1764364523364</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1764364523364</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Button to open alternative config, reload config functionality">
+      <option name="closed" value="true" />
+      <created>1764452674815</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1764452674815</updated>
+    </task>
+    <task id="LOCAL-00037" summary="fix cli, update requirements">
+      <option name="closed" value="true" />
+      <created>1764454547554</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1764454547554</updated>
+    </task>
+    <task id="LOCAL-00038" summary="cli tests">
+      <option name="closed" value="true" />
+      <created>1764455129125</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1764455129125</updated>
+    </task>
+    <task id="LOCAL-00039" summary="move all ini files top-level so that the user can find them immediately">
+      <option name="closed" value="true" />
+      <created>1764457289650</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1764457289650</updated>
+    </task>
+    <task id="LOCAL-00040" summary="add ini files individually, fix test_cli.py for windows">
+      <option name="closed" value="true" />
+      <created>1764461967291</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1764461967291</updated>
+    </task>
+    <task id="LOCAL-00041" summary="fix test_cli.py for windows">
+      <option name="closed" value="true" />
+      <created>1764493355711</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1764493355711</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Use new updated config_cli_gui. Adjust parameters to the calendar project." />
-    <MESSAGE value="add example images" />
-    <MESSAGE value="add maps data for displaying contours" />
-    <MESSAGE value="add show_filelist.py to be able to run on linux. Add new libraries." />
-    <MESSAGE value="only use on py file to show tree with or without python classes" />
-    <MESSAGE value="add common functions and according tests" />
-    <MESSAGE value="move common into project dir" />
-    <MESSAGE value="add further basic functionality" />
-    <MESSAGE value="add PhotoLayoutManager.py" />
-    <MESSAGE value="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging" />
-    <MESSAGE value="add DescriptionGenerator.py" />
-    <MESSAGE value="add MapGenerator.py" />
-    <MESSAGE value="add CalendarGenerator.py" />
-    <MESSAGE value="add CalendarGenerator.py and" />
-    <MESSAGE value="use to_pil function of new cli_config_gui" />
-    <MESSAGE value="original version of CompositionDesigner.py" />
-    <MESSAGE value="adjusted version of CompositionDesigner.py" />
     <MESSAGE value="add anniversaries.ini and locations_de.ini" />
     <MESSAGE value="add tests for CompositionDesigner.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="add tests for CompositionDesigner.py" />
+    <MESSAGE value="add tests for CompositionDesigner.py, fix issue with font" />
+    <MESSAGE value="* move all generators that create images to image&#10;* typings&#10;* refactorings" />
+    <MESSAGE value="consistently rename core methods" />
+    <MESSAGE value="only use Image.Image in CollageGenerator.py" />
+    <MESSAGE value="remove unused images, restructure test" />
+    <MESSAGE value="correct typing, CompositionDesigner.py generate_composition returns image object" />
+    <MESSAGE value="first gui adaption" />
+    <MESSAGE value="consistent renaming of the render modules" />
+    <MESSAGE value="refactor generate_composition method" />
+    <MESSAGE value="update config-cli-gui" />
+    <MESSAGE value="Show preview image in gui" />
+    <MESSAGE value="gui elements do resize" />
+    <MESSAGE value="generate all compositions from gui" />
+    <MESSAGE value="remove unused module" />
+    <MESSAGE value="remove logger from CompositionDesigner.py" />
+    <MESSAGE value="tooltips, generate preview immediately" />
+    <MESSAGE value="step to every image with arrows" />
+    <MESSAGE value="Button to open alternative config, reload config functionality" />
+    <MESSAGE value="fix cli" />
+    <MESSAGE value="fix cli, update requirements" />
+    <MESSAGE value="cli tests" />
+    <MESSAGE value="move all ini files top-level so that the user can find them immediately" />
+    <MESSAGE value="add ini files individually, fix test_cli.py for windows" />
+    <option name="LAST_COMMIT_MESSAGE" value="add ini files individually, fix test_cli.py for windows" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -431,29 +649,84 @@
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/CompositionDesigner.py</url>
-          <line>147</line>
-          <option name="timeStamp" value="12" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/CompositionDesigner.py</url>
-          <line>193</line>
-          <option name="timeStamp" value="13" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/common/Photo.py</url>
-          <line>22</line>
-          <option name="timeStamp" value="15" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py</url>
-          <line>327</line>
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/image/CalendarRenderer.py</url>
+          <line>292</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/CalendarGenerator.py</url>
-          <line>235</line>
-          <option name="timeStamp" value="26" />
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/image/MapRenderer.py</url>
+          <line>79</line>
+          <option name="timeStamp" value="27" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tests/test_CollageGenerator.py</url>
+          <line>33</line>
+          <option name="timeStamp" value="28" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tests/test_DescriptionsFileGenerator.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="29" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
+          <line>424</line>
+          <option name="timeStamp" value="31" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
+          <line>429</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tests/test_DescriptionsFileGenerator.py</url>
+          <line>31</line>
+          <option name="timeStamp" value="49" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/tools/DescriptionsFileGenerator.py</url>
+          <line>30</line>
+          <option name="timeStamp" value="50" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py</url>
+          <line>269</line>
+          <option name="timeStamp" value="51" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py</url>
+          <line>52</line>
+          <option name="timeStamp" value="53" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py</url>
+          <line>25</line>
+          <option name="timeStamp" value="54" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py</url>
+          <line>94</line>
+          <option name="timeStamp" value="55" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/.venv/lib/python3.11/site-packages/config_cli_gui/cli.py</url>
+          <line>110</line>
+          <option name="timeStamp" value="56" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/common/Anniversaries.py</url>
+          <line>11</line>
+          <option name="timeStamp" value="57" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
+          <line>138</line>
+          <option name="timeStamp" value="61" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
+          <line>128</line>
+          <option name="timeStamp" value="62" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
-from pathlib import Path
+
+from path_handler import get_base_path
 
 
 class Locations:
@@ -21,7 +22,7 @@ class Locations:
 
     def __init__(self, locations_file=None):
         if not locations_file:
-            base_path = Path(__file__).parent.parent.parent.parent
+            base_path = get_base_path()
             locations_file = base_path / "locations_en.ini"
 
         self.locations_dict = defaultdict(tuple)  # Dictionary for the locations
