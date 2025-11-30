@@ -4,6 +4,13 @@ Changelog
 
 (unreleased)
 ------------
+- Fix zip linux. [Paul Magister]
+- Fix more import errors. [Paul Magister]
+
+
+0.0.5 (2025-11-30)
+------------------
+- Docs: Update HISTORY.md for release 0.0.5. [Paul Magister]
 - Improve path issue with relative paths to res/ini files. [Paul
   Magister]
 - Fix test_cli.py for windows. [Paul Magister]
