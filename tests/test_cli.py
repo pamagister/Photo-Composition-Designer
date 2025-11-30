@@ -17,7 +17,7 @@ def test_cli_generates_collages():
     cli_cmd = [
         "python3",
         "-m",
-        "Photo_Composition_Designer.cli",
+        "Photo_Composition_Designer",
         "--dpi",
         "50",
         str(images_dir),

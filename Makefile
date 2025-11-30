@@ -82,6 +82,12 @@ COMMON_PYI_OPTS = \
 	--add-data "images:images" \
 	--hidden-import Photo_Composition_Designer.cli.cli \
 	--hidden-import Photo_Composition_Designer.gui.gui \
+	--collect-all=holidays \
+    --hidden-import=holidays.countries \
+    --hidden-import=holidays.countries.* \
+    --collect-all=geopandas \
+    --collect-all=shapely \
+    --collect-all=pyogrio \
 	--exclude-module pkg_resources \
     --exclude-module setuptools \
 
@@ -95,9 +101,13 @@ prepare-release:
 	rm -rf $(RELEASE_DIR)
 	mkdir -p $(RELEASE_DIR)
 	cp config.yaml $(RELEASE_DIR)/
+	cp anniversaries.ini $(RELEASE_DIR)/
+	cp locations_en.ini $(RELEASE_DIR)/
+	cp locations_de.ini $(RELEASE_DIR)/
 	cp README.md $(RELEASE_DIR)/
 	cp -R res $(RELEASE_DIR)/
 	cp -R docs $(RELEASE_DIR)/
+	cp -R images $(RELEASE_DIR)/
 
 
 # ==========================
