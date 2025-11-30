@@ -4,6 +4,12 @@ Changelog
 
 (unreleased)
 ------------
+- Remove zip function from makefile. [Paul Magister]
+
+
+0.0.6 (2025-11-30)
+------------------
+- Docs: Update HISTORY.md for release 0.0.6. [Paul Magister]
 - Fix zip linux. [Paul Magister]
 - Fix more import errors. [Paul Magister]
 
