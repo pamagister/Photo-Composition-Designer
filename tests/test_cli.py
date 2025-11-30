@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -15,7 +16,7 @@ def test_cli_generates_collages():
 
     # 2. CLI ausführen
     cli_cmd = [
-        "python3",
+        sys.executable,
         "-m",
         "Photo_Composition_Designer",
         "--dpi",
