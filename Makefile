@@ -69,6 +69,12 @@ VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
 RELEASE_DIR := release
 DIST_DIR := dist
 
+ZIP ?= zip
+
+ifeq ($(OS),Windows_NT)
+    ZIP = powershell Compress-Archive -Path * -DestinationPath
+endif
+
 # Alle *.ini im Top-Level auflisten und mit zum Release packen
 
 # Gemeinsame PyInstaller-Optionen
@@ -133,7 +139,7 @@ build-win: clean
 
 .PHONY: zip-win
 zip-win:
-	cd $(RELEASE_DIR) && zip -r "../$(NAME)-win-$(VERSION).zip" .
+	cd $(RELEASE_DIR) && $(ZIP) "../$(NAME)-win-$(VERSION).zip"
 
 
 # ==========================
