@@ -4,6 +4,16 @@ Changelog
 
 (unreleased)
 ------------
+- Improve path issue with relative paths to res/ini files. [Paul
+  Magister]
+- Fix test_cli.py for windows. [Paul Magister]
+- Add ini files individually, fix test_cli.py for windows. [Paul
+  Magister]
+
+
+0.0.4 (2025-11-29)
+------------------
+- Docs: Update HISTORY.md for release 0.0.4. [Paul Magister]
 - Add ini files individually. [Paul Magister]
 - Move all ini files top-level so that the user can find them
   immediately. [Paul Magister]
