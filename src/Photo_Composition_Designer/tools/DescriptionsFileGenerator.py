@@ -34,7 +34,7 @@ class DescriptionsFileGenerator:
         return os.path.exists(self._descriptions_file_path())
 
     def _descriptions_file_path(self) -> str:
-        return os.path.join(self.output_dir, "descriptions.txt")  # type: ignore
+        return os.path.join(self.photo_dir, "descriptions.txt")  # type: ignore
 
 
 if __name__ == "__main__":

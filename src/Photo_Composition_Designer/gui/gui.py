@@ -73,6 +73,8 @@ class MainGui:
     def _reload_config(self):
         # File lists
         self.composition_designer = CompositionDesigner(self.config_manager, self.logger)
+        self.composition_designer.progress_callback = self._progress_update
+
         self.preview_image_original = None
 
         self.photo_folders = []
@@ -83,6 +85,7 @@ class MainGui:
 
         self.logger.info(f"Photo directory: {self.composition_designer.photoDir}")
         self.logger_manager.log_config_summary()
+
         self._generate_preview(1)
         self._generate_preview(0)
 
@@ -157,7 +160,9 @@ class MainGui:
         self.run_buttons = {}
         for mode, label in self.distribution_modes:
             button = ttk.Button(
-                button_frame, text=label, command=partial(self._run_processing, mode=mode)
+                button_frame,
+                text=label,
+                command=partial(self._run_processing_image_distribution, mode=mode),
             )
             ToolTip(button, f"Distribute all images into folders using \nthe method '{label}'")
             button.pack(pady=2, fill=tk.X)
@@ -183,7 +188,7 @@ class MainGui:
         self.generate_compositions_button.pack(pady=0, fill=tk.X)
 
         # progress bar
-        self.progress = ttk.Progressbar(button_frame, mode="indeterminate")
+        self.progress = ttk.Progressbar(button_frame, mode="determinate")
         self.progress.pack(
             pady=10,
             fill=tk.X,
@@ -238,7 +243,9 @@ class MainGui:
 
         # Create Run menu options dynamically
         for mode, label in self.distribution_modes:
-            file_menu.add_command(label=label, command=partial(self._run_processing, mode=mode))
+            file_menu.add_command(
+                label=label, command=partial(self._run_processing_image_distribution, mode=mode)
+            )
 
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self._on_closing)
@@ -268,6 +275,11 @@ class MainGui:
         self._generate_preview(selection_index)
 
     def _generate_preview(self, selection_index):
+        if not self.photo_folders:
+            self.logger.warning(
+                f"No photo folders available in directory {self.composition_designer.photoDir}"
+            )
+            return
         folder_name = self.photo_folders[selection_index].name
         preview_image: Image.Image = self.composition_designer.generate_compositions_from_folder(
             folder_name
@@ -347,6 +359,7 @@ class MainGui:
         self.logger.info("Generate all compositions. This may take a while...")
 
         # Thread starten
+        self._start_processing()
         thread = threading.Thread(target=self._run_generation_thread, daemon=True)
         thread.start()
 
@@ -357,6 +370,9 @@ class MainGui:
             self.logger.info("Compositions generated")
         except Exception as e:
             self.logger.error(f"Error while generating compositions: {e}")
+        finally:
+            # Re-enable controls in main thread
+            self.root.after(0, self._processing_finished)
 
     def _open_selected_file(self, event, file_list_source):
         """Opens the selected file in the system's default application or explorer."""
@@ -398,17 +414,12 @@ class MainGui:
             self.logger.debug("No valid config file selected")
         self._generate_preview(0)
 
-    def _run_processing(self, mode="distribute_group_matching_dates"):
+    def _run_processing_image_distribution(self, mode="distribute_group_matching_dates"):
         """Run the processing in a separate thread."""
 
         self.logger.info(f"Starting distribution of in mode: {mode}")
 
-        # Disable all buttons during processing
-        for button in self.run_buttons.values():
-            button.config(state="disabled")
-
-        self.generate_compositions_button.config(state="disabled")
-        self.progress.start()
+        self._start_processing()
 
         # Run in separate thread to avoid blocking GUI
         thread = threading.Thread(
@@ -427,7 +438,11 @@ class MainGui:
 
             # prepare image sorting:
             photos: list[Photo] = get_photos_from_dir(self.composition_designer.photoDir)
-
+            if not photos:
+                self.logger.warning(
+                    f"No photos found in directory {self.composition_designer.photoDir}"
+                )
+                return
             # prepare image distribution
             collages_to_generate = self.config_manager.calendar.collagesToGenerate.value
             image_distributor = ImageDistributor(photos, collages_to_generate)
@@ -463,6 +478,7 @@ class MainGui:
 
             self.logger.info(f"Completed: {len(grouped_images)} files processed")
             self.logger.info("=== All files processed successfully! ===")
+            self._reload_config()
 
         except Exception as err:
             self.logger.error(f"Processing failed: {err}", exc_info=True)
@@ -475,6 +491,15 @@ class MainGui:
             # Re-enable controls in main thread
             self.root.after(0, self._processing_finished)
 
+    def _start_processing(self):
+        # Disable all buttons during processing
+        for button in self.run_buttons.values():
+            button.config(state="disabled")
+
+        self.generate_compositions_button.config(state="disabled")
+        self.progress.configure(value=0, maximum=100)
+        # self.progress.start()
+
     def _processing_finished(self):
         """Re-enable controls after processing is finished."""
         for button in self.run_buttons.values():
@@ -482,6 +507,11 @@ class MainGui:
 
         self.generate_compositions_button.config(state="normal")
         self.progress.stop()
+        self.progress.configure(value=0)
+
+    def _progress_update(self, value, total):
+        percent = int((value / total) * 100)
+        self.root.after(0, lambda: self.progress.configure(value=percent))
 
     def _open_settings(self):
         """Open the settings dialog."""

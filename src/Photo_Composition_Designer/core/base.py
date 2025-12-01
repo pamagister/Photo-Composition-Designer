@@ -318,18 +318,14 @@ class CompositionDesigner:
         return composition
 
     def generate_compositions_from_folders(self):
-        """
-        Generates collages for all weeks from the specified folder.
-        """
-
         sorted_folders = sorted(
             [f for f in os.listdir(self.photoDir) if (self.photoDir / f).is_dir()]
         )
 
         total = len(sorted_folders)
 
-        # Falls die GUI eine Progressbar bereitstellt:
-        if hasattr(self, "progress_callback") and callable(self.progress_callback):
+        # Initialer Fortschritt
+        if hasattr(self, "progress_callback"):
             self.progress_callback(0, total)
 
         for idx, folder_name in enumerate(sorted_folders, start=1):
@@ -339,8 +335,8 @@ class CompositionDesigner:
             if composition:
                 self.save(composition, folder_name)
 
-            # Progress-Update an die GUI
-            if hasattr(self, "progress_callback") and callable(self.progress_callback):
+            # Fortschritt melden
+            if hasattr(self, "progress_callback"):
                 self.progress_callback(idx, total)
 
         if self.config.layout.generatePdf.value:
