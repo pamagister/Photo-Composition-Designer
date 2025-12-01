@@ -4,6 +4,16 @@ Changelog
 
 (unreleased)
 ------------
+- Fix test. [Paul Magister]
+- Progress bar, logger in base.py, lifecycle fixes. [Paul Magister]
+- Improved logging. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+- Set up nice documentation. [Paul Magister]
+
+
+0.0.7 (2025-11-30)
+------------------
+- Docs: Update HISTORY.md for release 0.0.7. [Paul Magister]
 - Remove zip function from makefile. [Paul Magister]
 
 
