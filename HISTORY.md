@@ -4,6 +4,12 @@ Changelog
 
 (unreleased)
 ------------
+- Make font configurable. [Paul Magister]
+
+
+0.1.0 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.1.0. [Paul Magister]
 - Gitignore. [Paul Magister]
 - Docs: Update HISTORY.md for release 0.0.9. [Paul Magister]
 - Docs: Update HISTORY.md for release 0.0.8. [Paul Magister]
