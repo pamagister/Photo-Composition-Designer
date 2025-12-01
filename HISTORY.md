@@ -2,8 +2,9 @@ Changelog
 =========
 
 
-(unreleased)
-------------
+0.0.8 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.0.8. [Paul Magister]
 - Fix test. [Paul Magister]
 - Progress bar, logger in base.py, lifecycle fixes. [Paul Magister]
 - Improved logging. [Paul Magister]
