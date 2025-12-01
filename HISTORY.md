@@ -2,6 +2,20 @@ Changelog
 =========
 
 
+(unreleased)
+------------
+- Gitignore. [Paul Magister]
+- Docs: Update HISTORY.md for release 0.0.9. [Paul Magister]
+- Docs: Update HISTORY.md for release 0.0.8. [Paul Magister]
+- Fix test. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+
+
+0.0.9 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.0.9. [Paul Magister]
+
+
 0.0.8 (2025-12-01)
 ------------------
 - Docs: Update HISTORY.md for release 0.0.8. [Paul Magister]
