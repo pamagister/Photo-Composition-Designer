@@ -32,7 +32,7 @@ def test_generate_description_file_creates_real_file(temp_dir):
     generator.generate_description_file(overwrite=True)
 
     # Verify file was actually created
-    desc_file = output_dir / "descriptions.txt"
+    desc_file = photo_dir / "descriptions.txt"
     assert desc_file.exists(), "descriptions.txt was not created"
 
     # Read the file contents
