@@ -42,6 +42,8 @@ layout:
   fontSizeLarge: 0.5
   # Font size for small text | type=float
   fontSizeSmall: 0.14
+  # Font type for large text | type=str
+  fontTypeLarge: DejaVuSans.ttf
   # Combine all generated collages into one pdf | type=bool | choices=[True, False]
   generatePdf: true
   # Bottom margin in mm | type=int

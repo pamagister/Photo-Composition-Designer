@@ -213,6 +213,12 @@ class LayoutConfig(ConfigCategory):
         help="Font size for large text",
     )
 
+    fontTypeLarge: ConfigParameter = ConfigParameter(
+        name="fontTypeLarge",
+        value="DejaVuSans.ttf",
+        help="Font type for large text",
+    )
+
     fontSizeSmall: ConfigParameter = ConfigParameter(
         name="fontSizeSmall",
         value=0.14,

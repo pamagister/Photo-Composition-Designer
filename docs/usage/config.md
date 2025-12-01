@@ -58,17 +58,18 @@ The parameters in the cli category can be accessed via the command line interfac
 
 ## Category "layout"
 
-| Name                  | Type  | Description                                 | Default | Choices       |
-|-----------------------|-------|---------------------------------------------|---------|---------------|
-| fontSizeLarge         | float | Font size for large text                    | 0.5     | -             |
-| fontSizeSmall         | float | Font size for small text                    | 0.14    | -             |
-| fontSizeAnniversaries | float | Font size for anniversaries                 | 0.115   | -             |
-| marginTop             | int   | Top margin in mm                            | 6       | -             |
-| marginBottom          | int   | Bottom margin in mm                         | 3       | -             |
-| marginSides           | int   | Side margins in mm                          | 3       | -             |
-| spacing               | int   | Spacing between elements in mm              | 2       | -             |
-| useShortDayNames      | bool  | Use short weekday names (e.g., Mon, Tue)    | False   | [True, False] |
-| useShortMonthNames    | bool  | Use short month names (e.g., Jan, Feb)      | True    | [True, False] |
-| usePhotoDescription   | bool  | Include photo descriptions in the collage   | True    | [True, False] |
-| generatePdf           | bool  | Combine all generated collages into one pdf | True    | [True, False] |
+| Name                  | Type  | Description                                 | Default          | Choices       |
+|-----------------------|-------|---------------------------------------------|------------------|---------------|
+| fontSizeLarge         | float | Font size for large text                    | 0.5              | -             |
+| fontTypeLarge         | str   | Font type for large text                    | 'DejaVuSans.ttf' | -             |
+| fontSizeSmall         | float | Font size for small text                    | 0.14             | -             |
+| fontSizeAnniversaries | float | Font size for anniversaries                 | 0.115            | -             |
+| marginTop             | int   | Top margin in mm                            | 6                | -             |
+| marginBottom          | int   | Bottom margin in mm                         | 3                | -             |
+| marginSides           | int   | Side margins in mm                          | 3                | -             |
+| spacing               | int   | Spacing between elements in mm              | 2                | -             |
+| useShortDayNames      | bool  | Use short weekday names (e.g., Mon, Tue)    | False            | [True, False] |
+| useShortMonthNames    | bool  | Use short month names (e.g., Jan, Feb)      | True             | [True, False] |
+| usePhotoDescription   | bool  | Include photo descriptions in the collage   | True             | [True, False] |
+| generatePdf           | bool  | Combine all generated collages into one pdf | True             | [True, False] |
 

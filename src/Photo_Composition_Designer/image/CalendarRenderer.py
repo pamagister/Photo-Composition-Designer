@@ -35,6 +35,7 @@ class CalendarRenderer:
         fontSizeSmall: float,
         fontSizeLarge: float,
         fontSizeAnniversaries: float,
+        fontTypeLarge: str,
         useShortDayNames: bool,
         useShortMonthNames: bool,
         marginSides: float,
@@ -51,6 +52,8 @@ class CalendarRenderer:
         self.fontSizeSmall = fontSizeSmall
         self.fontSizeLarge = fontSizeLarge
         self.fontSizeAnniversaries = fontSizeAnniversaries
+
+        self.fontTypeLarge = fontTypeLarge
 
         self.language = language
         self.startDate = startDate
@@ -81,7 +84,7 @@ class CalendarRenderer:
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        font_large = load_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+        font_large = load_font(self.fontTypeLarge, int(self.fontSizeLarge))
         font_small = load_font("DejaVuSans.ttf", int(self.fontSizeSmall))
         font_ann = load_font("DejaVuSans.ttf", int(self.fontSizeAnniversaries))
 
@@ -270,6 +273,7 @@ def from_config(config: ConfigParameterManager) -> CalendarRenderer:
             * config.size.dpi.value
             / 25.4
         ),
+        fontTypeLarge=config.layout.fontTypeLarge.value,
         useShortDayNames=config.layout.useShortDayNames.value,
         useShortMonthNames=config.layout.useShortMonthNames.value,
         marginSides=int(config.layout.marginSides.value * config.size.dpi.value / 25.4),
