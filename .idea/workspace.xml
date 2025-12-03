@@ -4,13 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="code structure refactorings, &#10;new config_cli_gui version with preserved config order and logger">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/logging.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/GuiLogWriter.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/GuiLogWriter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/gui/gui.py" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="use logging module from lib">
+      <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -243,14 +238,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763156815611</updated>
-    </task>
-    <task id="LOCAL-00003" summary="add maps data for displaying contours">
-      <option name="closed" value="true" />
-      <created>1763287231851</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1763287231851</updated>
     </task>
     <task id="LOCAL-00004" summary="add show_filelist.py to be able to run on linux. Add new libraries.">
       <option name="closed" value="true" />
@@ -636,7 +623,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764801954095</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="use logging module from lib">
+      <option name="closed" value="true" />
+      <created>1764804380353</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1764804380353</updated>
+    </task>
+    <option name="localTasksCounter" value="53" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -651,7 +646,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="refactor generate_composition method" />
     <MESSAGE value="update config-cli-gui" />
     <MESSAGE value="Show preview image in gui" />
     <MESSAGE value="gui elements do resize" />
@@ -676,7 +670,8 @@
     <MESSAGE value="use new Font class, use dpi awareness so that the fonts do not change in size relatively if dpi is changed" />
     <MESSAGE value="remove unused helpers" />
     <MESSAGE value="code structure refactorings, &#10;new config_cli_gui version with preserved config order and logger" />
-    <option name="LAST_COMMIT_MESSAGE" value="code structure refactorings, &#10;new config_cli_gui version with preserved config order and logger" />
+    <MESSAGE value="use logging module from lib" />
+    <option name="LAST_COMMIT_MESSAGE" value="use logging module from lib" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
