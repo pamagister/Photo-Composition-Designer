@@ -15,15 +15,17 @@ class DescriptionRenderer:
         spacing_px: int,
         margin_side_px: int,
         background_color,
+        dpi: int,
     ):
         self.width_px = int(width_px)
         self.spacing_px = int(spacing_px)
         self.font = font
         self.margin_side_px = int(margin_side_px)
         self.background_color = background_color
+        self.dpi = dpi
 
         # Height includes bottom spacing from your original code
-        self.height_px = self.font.size + self.spacing_px
+        self.height_px = int(self.font.size * self.dpi / 25.4 + self.spacing_px)
 
     # -------------------------------------------------------------------------
 
@@ -32,7 +34,7 @@ class DescriptionRenderer:
         width_px = mm_to_px(config.size.width.value, config.size.dpi.value)
         spacing_px = mm_to_px(config.layout.spacing.value, config.size.dpi.value)
         margin_side_px = mm_to_px(config.layout.marginSides.value, config.size.dpi.value)
-        font = config.style.fontSmall.value
+        font = config.style.fontDescription.value
 
         bg = config.style.backgroundColor.value.to_pil()
 
@@ -42,6 +44,7 @@ class DescriptionRenderer:
             spacing_px=spacing_px,
             margin_side_px=margin_side_px,
             background_color=bg,
+            dpi=config.size.dpi.value,
         )
 
     # -------------------------------------------------------------------------
@@ -56,7 +59,7 @@ class DescriptionRenderer:
             (self.margin_side_px, self.height_px),
             text,
             fill=self.font.color.to_pil(),
-            font=self.font.get_image_font(),
+            font=self.font.get_image_font(self.dpi),
             anchor="lb",
         )
 

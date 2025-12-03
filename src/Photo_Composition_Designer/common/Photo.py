@@ -111,3 +111,20 @@ def get_photos_from_dir(
         return None
 
     return [Photo(Path(file), locations) for file in image_files]  # Photo-Objekte erstellen
+
+
+def get_photo_dates(photos: list[Photo]) -> str:
+    """
+    Get a string of at most 3 unique dates from a list of photos
+    """
+    image_dates = [d for photo in photos if (d := photo.get_date()) is not None]
+    unique_dates = set()
+    date_str = ""
+    for d in image_dates:
+        formatted = d.strftime("%d. %b ")
+        if formatted not in unique_dates:
+            unique_dates.add(formatted)
+            date_str += formatted
+        if len(unique_dates) >= 3:
+            break
+    return date_str

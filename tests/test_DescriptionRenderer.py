@@ -23,6 +23,7 @@ def test_generate_description_creates_image_in_temp():
         spacing_px=5,
         margin_side_px=10,
         background_color=(200, 255, 255),
+        dpi=254,
     )
 
     # Generate an image
@@ -39,6 +40,6 @@ def test_generate_description_creates_image_in_temp():
     loaded_img.verify()  # raises exception if corrupted
 
     # Verify expected dimensions based on constructor logic
-    expected_height = int(20 + 5)
+    expected_height = int(200 + 5)
     assert loaded_img.width == 300
     assert loaded_img.height == expected_height

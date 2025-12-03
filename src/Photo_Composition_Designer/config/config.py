@@ -115,25 +115,25 @@ class StyleConfig(ConfigCategory):
 
     fontLarge: ConfigParameter = ConfigParameter(
         name="fontLarge",
-        value=Font("DejaVuSans.ttf", 10, Color(255, 255, 255)),
+        value=Font("DejaVuSans.ttf", 9, Color(255, 255, 255)),
         help="Font size for large text like the title and the weekday numbers",
     )
 
     fontSmall: ConfigParameter = ConfigParameter(
         name="fontSmall",
-        value=Font("DejaVuSans.ttf", 6, Color(150, 150, 150)),
+        value=Font("DejaVuSans.ttf", 2.5, Color(150, 150, 150)),
         help="Font size for small text like the weekday names",
     )
 
     fontDescription: ConfigParameter = ConfigParameter(
         name="fontDescription",
-        value=Font("DejaVuSans.ttf", 6, Color(255, 255, 255)),
+        value=Font("DejaVuSans.ttf", 2.5, Color(150, 150, 150)),
         help="Font for the description texts",
     )
 
     fontAnniversaries: ConfigParameter = ConfigParameter(
         name="fontAnniversaries",
-        value=Font("DejaVuSans.ttf", 5, Color(255, 0, 0)),
+        value=Font("DejaVuSans.ttf", 2.0, Color(255, 0, 0)),
         help="Font size for anniversaries: Text with anniversaries and holiday names",
     )
 
@@ -197,7 +197,7 @@ class SizeConfig(ConfigCategory):
 
     dpi: ConfigParameter = ConfigParameter(
         name="dpi",
-        value=150,
+        value=300,
         help="Resolution of the image in dpi",
         is_cli=True,
     )

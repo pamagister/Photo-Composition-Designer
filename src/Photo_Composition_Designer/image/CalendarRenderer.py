@@ -36,6 +36,7 @@ class CalendarRenderer:
         useShortMonthNames: bool,
         marginSides: float,
         anniversaries: Anniversaries | None = None,
+        dpi: int = 300,
     ) -> None:
         self.anniversaries = anniversaries or Anniversaries()
 
@@ -50,6 +51,7 @@ class CalendarRenderer:
         self.useShortDayNames = useShortDayNames
         self.useShortMonthNames = useShortMonthNames
         self.marginSides = marginSides
+        self.dpi = dpi
 
         # Extract country code from locale ("de_DE" → "DE")
         country_code = language.split("_")[1].upper()
@@ -81,9 +83,9 @@ class CalendarRenderer:
         )
         header_text = f"{month_name} {str(d.year)[-2:]}"
         draw.text(
-            (0, height - self.font_holiday.size),
+            (0, height - self.font_holiday.size * self.dpi / 25.4),
             header_text,
-            font=self.font_large.get_image_font(),
+            font=self.font_large.get_image_font(self.dpi),
             fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
@@ -101,7 +103,7 @@ class CalendarRenderer:
         draw.text(
             (0, height),
             sun_string,
-            font=self.font_holiday.get_image_font(),
+            font=self.font_holiday.get_image_font(self.dpi),
             fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
@@ -134,17 +136,22 @@ class CalendarRenderer:
                 day_name = f"{day_name} {moon_symbol}"
 
             draw.text(
-                (x, height - self.font_holiday.size - self.font_large.size * 1.15),
+                (
+                    x,
+                    height
+                    - self.font_holiday.size * self.dpi / 25.4
+                    - self.font_large.size * self.dpi / 25.4 * 1.15,
+                ),
                 day_name,
-                font=self.font_small.get_image_font(),
+                font=self.font_small.get_image_font(self.dpi),
                 fill=self.font_small.color.to_pil(),
                 anchor="md",
             )
 
             draw.text(
-                (x, height - self.font_holiday.size),
+                (x, height - self.font_holiday.size * self.dpi / 25.4),
                 str(day_date.day),
-                font=self.font_large.get_image_font(),
+                font=self.font_large.get_image_font(self.dpi),
                 fill=color_day,
                 anchor="md",
             )
@@ -163,7 +170,7 @@ class CalendarRenderer:
                 draw.text(
                     (x, height),
                     label,
-                    font=self.font_holiday.get_image_font(),
+                    font=self.font_holiday.get_image_font(self.dpi),
                     fill=self.font_holiday.color.to_pil(),
                     anchor="md",
                 )
@@ -177,9 +184,9 @@ class CalendarRenderer:
         draw = ImageDraw.Draw(img)
 
         draw.text(
-            (width // 2, height - self.font_holiday.size),
+            (width // 2, height - self.font_holiday.size * self.dpi / 25.4),
             title,
-            font=self.font_large.get_image_font(),
+            font=self.font_large.get_image_font(self.dpi),
             fill=self.font_large.color.to_pil(),
             anchor="md",
         )
@@ -247,6 +254,7 @@ def from_config(config: ConfigParameterManager) -> CalendarRenderer:
         useShortMonthNames=config.layout.useShortMonthNames.value,
         marginSides=int(config.layout.marginSides.value * config.size.dpi.value / 25.4),
         anniversaries=None,  # use default
+        dpi=config.size.dpi.value,
     )
 
 

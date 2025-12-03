@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Locations import Locations
 from Photo_Composition_Designer.common.logging import get_logger, initialize_logging
-from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
+from Photo_Composition_Designer.common.Photo import Photo, get_photo_dates, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.image.CalendarRenderer import (
     CalendarRenderer,
@@ -92,6 +92,7 @@ class CompositionDesigner:
             self.spacing_px,
             self.margin_sides_px,
             background_color,
+            self.dpi,
         )
 
         # startDate: if title present we keep the previous behavior (shift -7 days)
@@ -206,24 +207,10 @@ class CompositionDesigner:
                 ),
             )
 
-        # draw dates of images into lower-right corner (max 3 unique dates)
-        image_dates = [d for photo in photos if (d := photo.get_date()) is not None]
-        unique_dates = set()
-        date_str = ""
-        for d in image_dates:
-            formatted = d.strftime("%d. %b ")
-            if formatted not in unique_dates:
-                unique_dates.add(formatted)
-                date_str += formatted
-            if len(unique_dates) >= 3:
-                break
-
+        # draw the image dates in
+        date_str = get_photo_dates(photos)
         draw = ImageDraw.Draw(composition)
-
-        # Build small font size in px:
-        # In CalendarGenerator factory you used:
-
-        font = self.config.style.fontAnniversaries.value.get_image_font()
+        font = self.config.style.fontAnniversaries.value.get_image_font(self.dpi)
 
         # Anchor rd expects coordinates relative to lower-right;
         # to put text inside margins we shift left/up
