@@ -13,13 +13,11 @@ from Photo_Composition_Designer.common.Locations import Locations
 from Photo_Composition_Designer.common.logging import get_logger, initialize_logging
 from Photo_Composition_Designer.common.Photo import Photo, get_photo_dates, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.image.CalendarRenderer import (
-    CalendarRenderer,
-    from_config,
-)
+from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
 from Photo_Composition_Designer.image.MapRenderer import MapRenderer
+from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
 class CompositionDesigner:
@@ -45,7 +43,7 @@ class CompositionDesigner:
         self.locations = Locations(locations_cfg_path).locations_dict
 
         # mm-based -> pixel helper bound to this instance
-        self._mm_to_px = lambda mm: int(round(float(mm) * self.dpi / 25.4))
+        self._mm_to_px = lambda mm: mm_to_px(mm, self.dpi)
 
         # basic properties
         self.compositionTitle: str | None = self.config.general.compositionTitle.value or ""
@@ -66,34 +64,17 @@ class CompositionDesigner:
 
         # calendar sizes
         self.calendar_height_px = self._mm_to_px(self.config.size.calendarHeight.value)
-        self.map_width_px = self._mm_to_px(self.config.size.mapWidth.value)
-        self.map_height_px = self._mm_to_px(self.config.size.mapHeight.value)
 
         # colors (Color objects have .to_pil() in your calendar factory)
         # Use the calendar factory which expects the full config object
-        self.calendarObj: CalendarRenderer = from_config(self.config)
+        self.calendarObj: CalendarRenderer = CalendarRenderer.from_config(self.config)
 
         # colors
         background_color = self.config.style.backgroundColor.value.to_pil()
-        text_color1 = self.config.style.fontLarge.value.color.to_pil()
 
         # Create other helpers/generators — pass config object for them to pull values from.
-        # If their constructors changed, update these lines accordingly.
-        self.mapGenerator: MapRenderer = MapRenderer(
-            self.map_height_px,
-            self.map_width_px,
-            self.config.geo.minimalExtension.value,
-            background_color,
-            text_color1,
-        )
-        self.descGenerator: DescriptionRenderer = DescriptionRenderer(
-            self.width_px,
-            self.config.style.fontDescription.value,
-            self.spacing_px,
-            self.margin_sides_px,
-            background_color,
-            self.dpi,
-        )
+        self.mapGenerator: MapRenderer = MapRenderer.from_config(self.config)
+        self.descGenerator: DescriptionRenderer = DescriptionRenderer.from_config(self.config)
 
         # startDate: if title present we keep the previous behavior (shift -7 days)
 
@@ -163,7 +144,7 @@ class CompositionDesigner:
             )
         elif self.config.calendar.useCalendar.value:
             if self.config.geo.usePhotoLocationMaps.value:
-                available_cal_width -= self.map_width_px + self.margin_sides_px
+                available_cal_width -= self.mapGenerator.width + self.margin_sides_px
             calendar_img = self.calendarObj.generate(
                 date, available_cal_width, self.calendar_height_px
             )
@@ -202,8 +183,8 @@ class CompositionDesigner:
             composition.paste(
                 imgMap,
                 (
-                    self.width_px - self.map_width_px - self.margin_sides_px,
-                    self.height_px - self.map_height_px - self.margin_bottom_px,
+                    self.width_px - self.mapGenerator.width - self.margin_sides_px,
+                    self.height_px - self.mapGenerator.height - self.margin_bottom_px,
                 ),
             )
 

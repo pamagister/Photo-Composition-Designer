@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
 from Photo_Composition_Designer.common.MoonPhase import MoonPhase
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
 class CalendarRenderer:
@@ -60,6 +61,26 @@ class CalendarRenderer:
             startDate.year,
             country_code,
             holidayCountries,
+        )
+
+    @classmethod
+    def from_config(cls, config: ConfigParameterManager) -> CalendarRenderer:
+        """Factory function to create CalendarGenerator using the config manager."""
+        margin_sides_px = mm_to_px(config.layout.marginSides.value, config.size.dpi.value)
+
+        return cls(
+            backgroundColor=config.style.backgroundColor.value.to_pil(),
+            fontLarge=config.style.fontLarge.value,
+            fontSmall=config.style.fontSmall.value,
+            fontHoliday=config.style.fontAnniversaries.value,
+            language=config.calendar.language.value,
+            startDate=config.calendar.startDate.value,
+            holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
+            useShortDayNames=config.layout.useShortDayNames.value,
+            useShortMonthNames=config.layout.useShortMonthNames.value,
+            marginSides=margin_sides_px,
+            anniversaries=None,  # use default
+            dpi=config.size.dpi.value,
         )
 
     # -------------------------------------------------------------------------
@@ -240,31 +261,13 @@ class CalendarRenderer:
 # -----------------------------------------------------------------------------
 
 
-def from_config(config: ConfigParameterManager) -> CalendarRenderer:
-    """Factory function to create CalendarGenerator using the config manager."""
-    return CalendarRenderer(
-        backgroundColor=config.style.backgroundColor.value.to_pil(),
-        fontLarge=config.style.fontLarge.value,
-        fontSmall=config.style.fontSmall.value,
-        fontHoliday=config.style.fontAnniversaries.value,
-        language=config.calendar.language.value,
-        startDate=config.calendar.startDate.value,
-        holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
-        useShortDayNames=config.layout.useShortDayNames.value,
-        useShortMonthNames=config.layout.useShortMonthNames.value,
-        marginSides=int(config.layout.marginSides.value * config.size.dpi.value / 25.4),
-        anniversaries=None,  # use default
-        dpi=config.size.dpi.value,
-    )
-
-
 def main() -> None:
     import os
 
     from Photo_Composition_Designer.config.config import ConfigParameterManager
 
     config = ConfigParameterManager()
-    cg = from_config(config)
+    cg = CalendarRenderer.from_config(config)
 
     # Create temp directory
     project_root = Path(__file__).resolve().parents[3]

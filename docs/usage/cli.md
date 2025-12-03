@@ -14,7 +14,7 @@ python -m app [OPTIONS] photoDirectory
 | `--startDate`    | datetime  | Start date of the calendar                                                              | datetime.datetime(2025, 12, 29, 0, 0) | - |
 | `--width`        | int       | Width of the collage in mm                                                              | 216                                   | - |
 | `--height`       | int       | Height of the collage in mm                                                             | 154                                   | - |
-| `--dpi`          | int       | Resolution of the image in dpi                                                          | 150                                   | - |
+| `--dpi`          | int       | Resolution of the image in dpi                                                          | 300                                   | - |
 
 
 ## Examples

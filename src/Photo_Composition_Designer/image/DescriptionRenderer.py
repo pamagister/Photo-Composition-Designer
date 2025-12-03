@@ -31,19 +31,17 @@ class DescriptionRenderer:
 
     @classmethod
     def from_config(cls, config: ConfigParameterManager) -> DescriptionRenderer:
+        """Creates a DescriptionRenderer from a ConfigParameterManager instance."""
         width_px = mm_to_px(config.size.width.value, config.size.dpi.value)
         spacing_px = mm_to_px(config.layout.spacing.value, config.size.dpi.value)
         margin_side_px = mm_to_px(config.layout.marginSides.value, config.size.dpi.value)
-        font = config.style.fontDescription.value
-
-        bg = config.style.backgroundColor.value.to_pil()
 
         return cls(
             width_px=width_px,
-            font=font,
+            font=config.style.fontDescription.value,
             spacing_px=spacing_px,
             margin_side_px=margin_side_px,
-            background_color=bg,
+            background_color=config.style.backgroundColor.value.to_pil(),
             dpi=config.size.dpi.value,
         )
 

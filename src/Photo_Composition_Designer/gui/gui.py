@@ -401,18 +401,23 @@ class MainGui:
             messagebox.showerror("Error", f"Could not open file {file_path}: {e}")
 
     def _select_config(self):
-        """Open file dialog open config file."""
+        """Open file dialog to select and load a new config file."""
         config_file = filedialog.askopenfilename(
             title="Select config file",
-            filetypes=[("YAML files", "*.yaml")],
+            filetypes=[("YAML files", "*.yaml"), ("All files", "*.*")],
         )
-        if config_file:
-            self.logger.info(f"Load {config_file} as new base config")
+        if not config_file:
+            self.logger.debug("No config file selected.")
+            return
+
+        self.logger.info(f"Loading new configuration from: {config_file}")
+        try:
             self.config_manager = ConfigParameterManager(config_file)
             self._reload_config()
-        else:
-            self.logger.debug("No valid config file selected")
-        self._generate_preview(0)
+            self._generate_preview(0)
+        except Exception as e:
+            self.logger.error(f"Failed to load config file: {e}", exc_info=True)
+            messagebox.showerror("Config Error", f"Failed to load configuration: {e}")
 
     def _run_processing_image_distribution(self, mode="distribute_group_matching_dates"):
         """Run the processing in a separate thread."""

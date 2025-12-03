@@ -1,29 +1,43 @@
+from __future__ import annotations
+
 from io import BytesIO
 from pathlib import Path
 
-import exifread
 from PIL import Image
 
-from Photo_Composition_Designer.common.Locations import Locations
+from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.tools.GeoPlotter import GeoPlotter
+from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
 class MapRenderer:
     def __init__(
         self,
-        mapHeight=100,
-        mapWidth=100,
-        minimalExtension=7,
-        backgroundColor=(30, 30, 30),
-        textColor1=(150, 250, 150),
-        locations: Locations = None,
+        mapHeight: int,
+        mapWidth: int,
+        minimalExtension: int,
+        backgroundColor: tuple[int, int, int],
+        textColor1: tuple[int, int, int],
     ):
         self.height = mapHeight
         self.width = mapWidth
         self.minimalExtension = minimalExtension
         self.backgroundColor = backgroundColor
         self.textColor1 = textColor1
-        self.locations = locations or Locations()
+
+    @classmethod
+    def from_config(cls, config: ConfigParameterManager) -> MapRenderer:
+        """Creates a MapRenderer from a ConfigParameterManager instance."""
+        map_height_px = mm_to_px(config.size.mapHeight.value, config.size.dpi.value)
+        map_width_px = mm_to_px(config.size.mapWidth.value, config.size.dpi.value)
+
+        return cls(
+            mapHeight=map_height_px,
+            mapWidth=map_width_px,
+            minimalExtension=config.geo.minimalExtension.value,
+            backgroundColor=config.style.backgroundColor.value.to_pil(),
+            textColor1=config.style.fontLarge.value.color.to_pil(),
+        )
 
     def generate(self, coordinates: list[tuple[float, float]]) -> Image.Image:
         """
@@ -56,29 +70,6 @@ class MapRenderer:
         # Puffer als PIL.Image öffnen und zurückgeben
         return map_image
 
-    def extract_gps_coordinates(self, img_path):
-        """
-        Liest die GPS-Koordinaten aus den EXIF-Daten eines Bildes.
-        """
-        with open(img_path, "rb") as img_file:
-            tags = exifread.process_file(img_file, details=False)
-            if "GPS GPSLatitude" in tags and "GPS GPSLongitude" in tags:
-                lat = self.convert_to_decimal(tags["GPS GPSLatitude"].values)
-                lon = self.convert_to_decimal(tags["GPS GPSLongitude"].values)
-                if tags.get("GPS GPSLatitudeRef") == "S":
-                    lat = -lat
-                if tags.get("GPS GPSLongitudeRef") == "W":
-                    lon = -lon
-                return lat, lon
-        return None
-
-    @staticmethod
-    def convert_to_decimal(dms: list[int]) -> float:
-        """
-        Konvertiert Grad, Minuten und Sekunden in Dezimalgrad.
-        """
-        return dms[0] + dms[1] / 60 + dms[2] / 3600
-
 
 if __name__ == "__main__":
     for size in range(100, 900, 200):
@@ -95,9 +86,7 @@ if __name__ == "__main__":
             (51.1079, 17.0441),  # Breslau
             (52.5200, 13.5156),  # Berlin
         ]
-        map_generator = MapRenderer()
-        map_generator.height = size
-        map_generator.width = size
+        map_generator = MapRenderer(size, size, 7, (30, 30, 30), (150, 250, 150))
 
         img = map_generator.generate(gps_coordinates)
 

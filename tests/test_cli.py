@@ -20,7 +20,7 @@ def test_cli_generates_collages():
         "-m",
         "Photo_Composition_Designer",
         "--dpi",
-        "50",
+        "150",
         str(images_dir),
     ]
 

@@ -30,13 +30,13 @@ The parameters in the cli category can be accessed via the command line interfac
 
 ## Category "style"
 
-| Name              | Type  | Description                                                            | Default                                                          | Choices |
-|-------------------|-------|------------------------------------------------------------------------|------------------------------------------------------------------|---------|
-| backgroundColor   | Color | Background color (RGB)                                                 | Color(20, 20, 20)                                                | -       |
-| fontLarge         | Font  | Font size for large text like the title and the weekday numbers        | Font(type='DejaVuSans.ttf', size=10, color=Color(255, 255, 255)) | -       |
-| fontSmall         | Font  | Font size for small text like the weekday names                        | Font(type='DejaVuSans.ttf', size=6, color=Color(150, 150, 150))  | -       |
-| fontDescription   | Font  | Font for the description texts                                         | Font(type='DejaVuSans.ttf', size=6, color=Color(255, 255, 255))  | -       |
-| fontAnniversaries | Font  | Font size for anniversaries: Text with anniversaries and holiday names | Font(type='DejaVuSans.ttf', size=5, color=Color(255, 0, 0))      | -       |
+| Name              | Type  | Description                                                            | Default                                                           | Choices |
+|-------------------|-------|------------------------------------------------------------------------|-------------------------------------------------------------------|---------|
+| backgroundColor   | Color | Background color (RGB)                                                 | Color(20, 20, 20)                                                 | -       |
+| fontLarge         | Font  | Font size for large text like the title and the weekday numbers        | Font(type='DejaVuSans.ttf', size=9, color=Color(255, 255, 255))   | -       |
+| fontSmall         | Font  | Font size for small text like the weekday names                        | Font(type='DejaVuSans.ttf', size=2.5, color=Color(150, 150, 150)) | -       |
+| fontDescription   | Font  | Font for the description texts                                         | Font(type='DejaVuSans.ttf', size=2.5, color=Color(150, 150, 150)) | -       |
+| fontAnniversaries | Font  | Font size for anniversaries: Text with anniversaries and holiday names | Font(type='DejaVuSans.ttf', size=2.0, color=Color(255, 0, 0))     | -       |
 
 ## Category "geo"
 
@@ -54,7 +54,7 @@ The parameters in the cli category can be accessed via the command line interfac
 | calendarHeight | int  | Height of the calendar area in mm | 18      | -       |
 | mapWidth       | int  | Width of the locations map in mm  | 20      | -       |
 | mapHeight      | int  | Height of the locations map in mm | 20      | -       |
-| dpi            | int  | Resolution of the image in dpi    | 150     | -       |
+| dpi            | int  | Resolution of the image in dpi    | 300     | -       |
 | jpgQuality     | int  | JPG compression quality (1-100)   | 90      | -       |
 
 ## Category "layout"

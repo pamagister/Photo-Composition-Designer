@@ -1,7 +1,5 @@
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.image.CalendarRenderer import (
-    from_config,
-)
+from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 
 from .TestHelper import temp_dir
 
@@ -13,7 +11,7 @@ def test_CalendarGenerator_proper_name(temp_dir):
     config = ConfigParameterManager()
 
     # Build generator from config
-    cg = from_config(config)
+    cg = CalendarRenderer.from_config(config)
 
     # Generate one title + one week
     title_img = cg.generateTitle(
