@@ -7,8 +7,8 @@ import os.path
 from logging import Logger
 
 from config_cli_gui.cli import CliGenerator
+from config_cli_gui.logging import initialize_logging
 
-from Photo_Composition_Designer.common.logging import initialize_logging
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import CompositionDesigner
 

@@ -21,14 +21,14 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from config_cli_gui.gui import SettingsDialogGenerator, ToolTip
-from PIL import Image, ImageTk
-
-from Photo_Composition_Designer.common.logging import (
+from config_cli_gui.logging import (
     connect_gui_logging,
     disconnect_gui_logging,
     get_logger,
     initialize_logging,
 )
+from PIL import Image, ImageTk
+
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import CompositionDesigner
@@ -333,7 +333,7 @@ class MainGui:
         self.gui_log_writer = GuiLogWriter(self.log_text)
 
         # Connect to logging system
-        connect_gui_logging(self.gui_log_writer)
+        connect_gui_logging(self.gui_log_writer.write)
 
     def _on_log_level_changed(self, event=None):
         """Handle log level change."""

@@ -4,7 +4,7 @@ import sys
 import tkinter as tk
 from pathlib import Path
 
-from Photo_Composition_Designer.common.logging import get_logger
+from config_cli_gui.logging import get_logger
 
 
 class GuiLogWriter:
@@ -76,4 +76,4 @@ class GuiLogWriter:
 
     def flush(self):
         """Flush method for compatibility."""
-        pass
+        self.root.update_idletasks()

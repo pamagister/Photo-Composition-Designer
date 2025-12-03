@@ -7,10 +7,10 @@ from datetime import timedelta
 from logging import Logger
 from pathlib import Path
 
+from config_cli_gui.logging import get_logger, initialize_logging
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Locations import Locations
-from Photo_Composition_Designer.common.logging import get_logger, initialize_logging
 from Photo_Composition_Designer.common.Photo import Photo, get_photo_dates, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
