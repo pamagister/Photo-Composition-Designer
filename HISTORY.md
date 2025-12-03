@@ -4,6 +4,24 @@ Changelog
 
 (unreleased)
 ------------
+- Improve doc. [Paul Magister]
+- Use logging module from lib. [Paul Magister]
+- Selection and preview issue fixed, remove tight layout parameter.
+  [Paul Magister]
+- Code structure refactorings, new config_cli_gui version with preserved
+  config order and logger. [Paul Magister]
+- Code structure refactorings, new config_cli_gui version with preserved
+  config order and logger. [Paul Magister]
+- Remove unused helpers. [Paul Magister]
+- Use new Font class, use dpi awareness so that the fonts do not change
+  in size relatively if dpi is changed. [Paul Magister]
+- Use new Font class. [Paul Magister]
+- Update config_cli_gui. [Paul Magister]
+
+
+0.1.1 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.1.1. [Paul Magister]
 - Make font configurable. [Paul Magister]
 
 
