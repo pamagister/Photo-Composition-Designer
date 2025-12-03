@@ -96,7 +96,7 @@ class CalendarConfig(ConfigCategory):
 
     collagesToGenerate: ConfigParameter = ConfigParameter(
         name="collagesToGenerate",
-        value=5,
+        value=53,
         help="Number of collages to be generated (e.g. number of weeks)",
     )
 

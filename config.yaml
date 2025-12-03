@@ -2,11 +2,11 @@ app:
   # Logging level for the application | type=str | choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
   log_level: INFO
 general:
-  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=str | [CLI]
-  photoDirectory: /home/paul/Bilder/Geile Fotos/
-  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=str
+  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath | [CLI]
+  photoDirectory: images
+  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   anniversariesConfig: anniversaries.ini
-  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=str
+  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   locationsConfig: locations_en.ini
   # This is the title of the composition on the first page. Leave empty if not required. | type=str
   compositionTitle: This is the title of the composition
@@ -20,12 +20,12 @@ calendar:
   # Start date of the calendar | type=datetime | [CLI]
   startDate: '2025-12-29T00:00:00'
   # Number of collages to be generated (e.g. number of weeks) | type=int
-  collagesToGenerate: 54
+  collagesToGenerate: 53
 style:
   # Background color (RGB) | type=Color
   backgroundColor: '#141414'
   # Font size for large text like the title and the weekday numbers | type=Font
-  fontLarge: 'DejaVuSans.ttf, 9.0, #ffffff'
+  fontLarge: 'DejaVuSans.ttf, 9, #ffffff'
   # Font size for small text like the weekday names | type=Font
   fontSmall: 'DejaVuSans.ttf, 2.5, #969696'
   # Font for the description texts | type=Font
