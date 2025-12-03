@@ -83,7 +83,11 @@ class MapRenderer:
 if __name__ == "__main__":
     for size in range(100, 900, 200):
         map_plt = Image.new(mode="RGB", size=(size, size))
-        output_dir = Path.cwd()
+
+        project_root = Path(__file__).resolve().parents[3]
+        temp_dir = project_root / "temp"
+        temp_dir.mkdir(exist_ok=True)
+
         gps_coordinates = [
             (51.0504, 13.7373),  # Dresden
             (51.3397, 12.3731),  # Leipzig
@@ -98,4 +102,4 @@ if __name__ == "__main__":
         img = map_generator.generate(gps_coordinates)
 
         map_plt.paste(img)
-        map_plt.save(output_dir / f"map_{size}.jpg")
+        map_plt.save(temp_dir / f"map_{size}.jpg")

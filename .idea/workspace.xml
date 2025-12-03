@@ -4,12 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="set up nice documentation">
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="use new Font class">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/usage/cli.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/usage/cli.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/usage/config.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/usage/config.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/config/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/image/CalendarRenderer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/image/CalendarRenderer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/image/DescriptionRenderer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/image/DescriptionRenderer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/image/MapRenderer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/image/MapRenderer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/Helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/tools/Helpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_CompositionDesigner.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_CompositionDesigner.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_DescriptionRenderer.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_DescriptionRenderer.py" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -64,6 +71,7 @@
     "Python tests.pytest in test_CollageGenerator.py.executor": "Run",
     "Python tests.pytest in test_CompositionDesigner.py.executor": "Run",
     "Python tests.pytest in test_DescriptionGenerator.py.executor": "Run",
+    "Python tests.pytest in test_DescriptionRenderer.py.executor": "Run",
     "Python tests.pytest in test_DescriptionsFileGenerator.py.executor": "Run",
     "Python tests.pytest in test_GeoPlotter.py.executor": "Run",
     "Python tests.pytest in test_ImageDistributor.py.executor": "Run",
@@ -74,10 +82,12 @@
     "Python tests.pytest in test_cli.py.executor": "Run",
     "Python.Anniversaries.executor": "Debug",
     "Python.CalendarGenerator.executor": "Run",
+    "Python.CalendarRenderer.executor": "Run",
     "Python.CompositionDesigner.executor": "Debug",
     "Python.DescriptionsFileGenerator.executor": "Run",
     "Python.GeoPlotter.executor": "Run",
     "Python.MapGenerator.executor": "Debug",
+    "Python.MapRenderer.executor": "Run",
     "Python.cli.executor": "Debug",
     "Python.config-generate.executor": "Run",
     "Python.main.executor": "Run",
@@ -111,8 +121,8 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/common" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.config-generate">
-    <configuration name="cli" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python tests.pytest in test_CompositionDesigner.py">
+    <configuration name="CalendarRenderer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -121,11 +131,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/cli" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/cli/cli.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/image/CalendarRenderer.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -134,7 +144,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="MapRenderer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -143,11 +153,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/main.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/image/MapRenderer.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -178,7 +188,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_DescriptionsFileGenerator.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_CompositionDesigner.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -191,11 +201,11 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionsFileGenerator.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_CompositionDesigner.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest in test_cli.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+    <configuration name="pytest in test_DescriptionRenderer.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -208,7 +218,7 @@
       <option name="_new_keywords" value="&quot;&quot;" />
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_cli.py&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionRenderer.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
@@ -216,19 +226,19 @@
       <item itemvalue="Python.config-generate" />
       <item itemvalue="Python.module cli" />
       <item itemvalue="Python.module gui" />
-      <item itemvalue="Python.cli" />
-      <item itemvalue="Python.main" />
+      <item itemvalue="Python.CalendarRenderer" />
+      <item itemvalue="Python.MapRenderer" />
       <item itemvalue="Python.show_tree" />
-      <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
-      <item itemvalue="Python tests.pytest in test_cli.py" />
+      <item itemvalue="Python tests.pytest in test_CompositionDesigner.py" />
+      <item itemvalue="Python tests.pytest in test_DescriptionRenderer.py" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.pytest in test_CompositionDesigner.py" />
+        <item itemvalue="Python tests.pytest in test_DescriptionRenderer.py" />
+        <item itemvalue="Python.MapRenderer" />
+        <item itemvalue="Python.CalendarRenderer" />
         <item itemvalue="Python.show_tree" />
-        <item itemvalue="Python tests.pytest in test_cli.py" />
-        <item itemvalue="Python.main" />
-        <item itemvalue="Python.cli" />
-        <item itemvalue="Python tests.pytest in test_DescriptionsFileGenerator.py" />
       </list>
     </recent_temporary>
   </component>
@@ -608,7 +618,23 @@
       <option name="project" value="LOCAL" />
       <updated>1764540117905</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL-00046" summary="make font configurable">
+      <option name="closed" value="true" />
+      <created>1764609047898</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1764609047898</updated>
+    </task>
+    <task id="LOCAL-00047" summary="update config_cli_gui">
+      <option name="closed" value="true" />
+      <created>1764713506098</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1764713506098</updated>
+    </task>
+    <option name="localTasksCounter" value="48" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -623,9 +649,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="consistently rename core methods" />
-    <MESSAGE value="only use Image.Image in CollageGenerator.py" />
-    <MESSAGE value="remove unused images, restructure test" />
     <MESSAGE value="correct typing, CompositionDesigner.py generate_composition returns image object" />
     <MESSAGE value="first gui adaption" />
     <MESSAGE value="consistent renaming of the render modules" />
@@ -648,7 +671,10 @@
     <MESSAGE value="fix more import errors" />
     <MESSAGE value="fix zip linux" />
     <MESSAGE value="set up nice documentation" />
-    <option name="LAST_COMMIT_MESSAGE" value="set up nice documentation" />
+    <MESSAGE value="make font configurable" />
+    <MESSAGE value="update config_cli_gui" />
+    <MESSAGE value="use new Font class" />
+    <option name="LAST_COMMIT_MESSAGE" value="use new Font class" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -680,7 +706,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/image/CalendarRenderer.py</url>
-          <line>296</line>
+          <line>265</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -725,7 +751,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/core/base.py</url>
-          <line>60</line>
+          <line>53</line>
           <option name="timeStamp" value="53" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

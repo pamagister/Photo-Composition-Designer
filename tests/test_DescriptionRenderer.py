@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from config_cli_gui.configtypes.color import Color
+from config_cli_gui.configtypes.font import Font
 from PIL import Image
 
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
@@ -13,15 +15,14 @@ def test_generate_description_creates_image_in_temp():
 
     # File path for manual inspection
     output_image_path = temp_dir / "test_description_output.png"
-
+    font: Font = Font("DejaVuSans.ttf", 20, Color(111, 111, 111))
     # Prepare the generator
     generator = DescriptionRenderer(
         width_px=300,
-        font_size=20,
+        font=font,
         spacing_px=5,
         margin_side_px=10,
         background_color=(200, 255, 255),
-        text_color=(0, 0, 0),
     )
 
     # Generate an image

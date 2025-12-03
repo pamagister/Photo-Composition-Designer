@@ -13,7 +13,7 @@ def mm_to_px(mm: float | int, dpi: float | int = 300) -> int:
 # --- font helpers ---------------------------------------------------------
 
 
-def list_system_fonts():
+def list_system_fonts() -> list[str]:
     font_dirs = [
         "/usr/share/fonts",  # Linux allgemein
         "/usr/local/share/fonts",  # Linux lokal

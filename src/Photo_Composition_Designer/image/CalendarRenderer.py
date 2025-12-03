@@ -10,12 +10,12 @@ import holidays
 import pytz
 from astral import LocationInfo
 from astral.sun import sun
+from config_cli_gui.configtypes.font import Font
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
 from Photo_Composition_Designer.common.MoonPhase import MoonPhase
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.tools.Helpers import load_font
 
 
 class CalendarRenderer:
@@ -26,16 +26,12 @@ class CalendarRenderer:
     def __init__(
         self,
         backgroundColor: tuple[int],
-        textColor1: tuple[int],
-        textColor2: tuple[int],
-        holidayColor: tuple[int],
+        fontLarge: Font,
+        fontSmall: Font,
+        fontHoliday: Font,
         language: str,
         startDate: datetime,
         holidayCountries: list[str],
-        fontSizeSmall: float,
-        fontSizeLarge: float,
-        fontSizeAnniversaries: float,
-        fontTypeLarge: str,
         useShortDayNames: bool,
         useShortMonthNames: bool,
         marginSides: float,
@@ -43,17 +39,10 @@ class CalendarRenderer:
     ) -> None:
         self.anniversaries = anniversaries or Anniversaries()
 
-        # Convert colors to 0–255 int tuples used by Pillow
         self.backgroundColor = backgroundColor
-        self.textColor1 = textColor1
-        self.textColor2 = textColor2
-        self.holidayColor = holidayColor
-
-        self.fontSizeSmall = fontSizeSmall
-        self.fontSizeLarge = fontSizeLarge
-        self.fontSizeAnniversaries = fontSizeAnniversaries
-
-        self.fontTypeLarge = fontTypeLarge
+        self.font_large: Font = fontLarge
+        self.font_small: Font = fontSmall
+        self.font_holiday: Font = fontHoliday
 
         self.language = language
         self.startDate = startDate
@@ -84,10 +73,6 @@ class CalendarRenderer:
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        font_large = load_font(self.fontTypeLarge, int(self.fontSizeLarge))
-        font_small = load_font("DejaVuSans.ttf", int(self.fontSizeSmall))
-        font_ann = load_font("DejaVuSans.ttf", int(self.fontSizeAnniversaries))
-
         # Header (month + year)
         month_name = self.get_month_name(
             week_dates[0].month,
@@ -96,10 +81,10 @@ class CalendarRenderer:
         )
         header_text = f"{month_name} {str(d.year)[-2:]}"
         draw.text(
-            (0, height - self.fontSizeAnniversaries),
+            (0, height - self.font_holiday.size),
             header_text,
-            font=font_large,
-            fill=self.textColor2,
+            font=self.font_large.get_image_font(),
+            fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
 
@@ -116,8 +101,8 @@ class CalendarRenderer:
         draw.text(
             (0, height),
             sun_string,
-            font=font_ann,
-            fill=self.textColor2,
+            font=self.font_holiday.get_image_font(),
+            fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
 
@@ -133,7 +118,11 @@ class CalendarRenderer:
             is_weekend = day_date.weekday() >= 5
             is_holiday = day_date in self.localHolidays
 
-            color_day = self.holidayColor if (is_holiday or is_weekend) else self.textColor1
+            color_day = (
+                self.font_holiday.color.to_pil()
+                if (is_holiday or is_weekend)
+                else self.font_large.color.to_pil()
+            )
 
             # Day name
             day_name = self.get_day_name(day_date.weekday(), self.language)
@@ -145,17 +134,17 @@ class CalendarRenderer:
                 day_name = f"{day_name} {moon_symbol}"
 
             draw.text(
-                (x, height - self.fontSizeAnniversaries - self.fontSizeLarge * 1.15),
+                (x, height - self.font_holiday.size - self.font_large.size * 1.15),
                 day_name,
-                font=font_small,
-                fill=self.textColor2,
+                font=self.font_small.get_image_font(),
+                fill=self.font_small.color.to_pil(),
                 anchor="md",
             )
 
             draw.text(
-                (x, height - self.fontSizeAnniversaries),
+                (x, height - self.font_holiday.size),
                 str(day_date.day),
-                font=font_large,
+                font=self.font_large.get_image_font(),
                 fill=color_day,
                 anchor="md",
             )
@@ -166,7 +155,7 @@ class CalendarRenderer:
                 label = self.anniversaries[date_key]
                 if holiday_name:
                     label += f", {holiday_name}"
-                draw.fill = self.textColor1
+                draw.fill = self.font_large
             elif holiday_name:
                 label = holiday_name
 
@@ -174,8 +163,8 @@ class CalendarRenderer:
                 draw.text(
                     (x, height),
                     label,
-                    font=font_ann,
-                    fill=self.holidayColor,
+                    font=self.font_holiday.get_image_font(),
+                    fill=self.font_holiday.color.to_pil(),
                     anchor="md",
                 )
 
@@ -186,13 +175,12 @@ class CalendarRenderer:
         height = int(height)
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
-        font_large = load_font("DejaVuSans.ttf", int(self.fontSizeLarge))
 
         draw.text(
-            (width // 2, height - self.fontSizeAnniversaries),
+            (width // 2, height - self.font_holiday.size),
             title,
-            font=font_large,
-            fill=self.textColor1,
+            font=self.font_large.get_image_font(),
+            fill=self.font_large.color.to_pil(),
             anchor="md",
         )
         return img
@@ -248,32 +236,13 @@ class CalendarRenderer:
 def from_config(config: ConfigParameterManager) -> CalendarRenderer:
     """Factory function to create CalendarGenerator using the config manager."""
     return CalendarRenderer(
-        backgroundColor=config.colors.backgroundColor.value.to_pil(),
-        textColor1=config.colors.textColor1.value.to_pil(),
-        textColor2=config.colors.textColor2.value.to_pil(),
-        holidayColor=config.colors.holidayColor.value.to_pil(),
+        backgroundColor=config.style.backgroundColor.value.to_pil(),
+        fontLarge=config.style.fontLarge.value,
+        fontSmall=config.style.fontSmall.value,
+        fontHoliday=config.style.fontAnniversaries.value,
         language=config.calendar.language.value,
         startDate=config.calendar.startDate.value,
         holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
-        fontSizeSmall=int(
-            config.layout.fontSizeSmall.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        ),
-        fontSizeLarge=int(
-            config.layout.fontSizeLarge.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        ),
-        fontSizeAnniversaries=int(
-            config.layout.fontSizeAnniversaries.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        ),
-        fontTypeLarge=config.layout.fontTypeLarge.value,
         useShortDayNames=config.layout.useShortDayNames.value,
         useShortMonthNames=config.layout.useShortMonthNames.value,
         marginSides=int(config.layout.marginSides.value * config.size.dpi.value / 25.4),

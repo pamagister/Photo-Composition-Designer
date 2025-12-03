@@ -20,7 +20,6 @@ from Photo_Composition_Designer.image.CalendarRenderer import (
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
 from Photo_Composition_Designer.image.MapRenderer import MapRenderer
-from Photo_Composition_Designer.tools.Helpers import load_font
 
 
 class CompositionDesigner:
@@ -47,12 +46,6 @@ class CompositionDesigner:
 
         # mm-based -> pixel helper bound to this instance
         self._mm_to_px = lambda mm: int(round(float(mm) * self.dpi / 25.4))
-        self.fontSizeSmall = int(
-            config.layout.fontSizeSmall.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        )
 
         # basic properties
         self.compositionTitle: str | None = self.config.general.compositionTitle.value or ""
@@ -81,9 +74,8 @@ class CompositionDesigner:
         self.calendarObj: CalendarRenderer = from_config(self.config)
 
         # colors
-        background_color = self.config.colors.backgroundColor.value.to_pil()
-        text_color1 = self.config.colors.textColor1.value.to_pil()
-        text_color2 = self.config.colors.textColor2.value.to_pil()
+        background_color = self.config.style.backgroundColor.value.to_pil()
+        text_color1 = self.config.style.fontLarge.value.color.to_pil()
 
         # Create other helpers/generators — pass config object for them to pull values from.
         # If their constructors changed, update these lines accordingly.
@@ -96,11 +88,10 @@ class CompositionDesigner:
         )
         self.descGenerator: DescriptionRenderer = DescriptionRenderer(
             self.width_px,
-            self.fontSizeSmall,
+            self.config.style.fontDescription.value,
             self.spacing_px,
             self.margin_sides_px,
             background_color,
-            text_color2,
         )
 
         # startDate: if title present we keep the previous behavior (shift -7 days)
@@ -155,8 +146,8 @@ class CompositionDesigner:
         """
         Creates a composition with pictures, a calendar and a map of Europe with photo locations.
         """
-        background_color = self.config.colors.backgroundColor.value.to_pil()
-        text_color2 = self.config.colors.textColor2.value.to_pil()
+        background_color = self.config.style.backgroundColor.value.to_pil()
+        text_color2 = self.config.style.fontSmall.value.color.to_pil()
 
         composition = Image.new("RGB", (self.width_px, self.height_px), background_color)
         available_cal_width = self.width_px
@@ -231,19 +222,8 @@ class CompositionDesigner:
 
         # Build small font size in px:
         # In CalendarGenerator factory you used:
-        # font_px = layout.fontSizeSmall.value * size.calendarHeight.value * dpi / 25.4
-        font_small_px = int(
-            float(self.config.layout.fontSizeSmall.value)
-            * float(self.config.size.calendarHeight.value)
-            * self.dpi
-            / 25.4
-            * 0.8
-        )
-        # fallback
-        if font_small_px <= 0:
-            font_small_px = max(10, int(self.dpi * 0.04))
 
-        font = load_font("DejaVuSans.ttf", font_small_px)
+        font = self.config.style.fontAnniversaries.value.get_image_font()
 
         # Anchor rd expects coordinates relative to lower-right;
         # to put text inside margins we shift left/up

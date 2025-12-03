@@ -9,18 +9,9 @@ calendar:
   # Language for the calendar (e.g., de_DE, en_US) | type=str
   language: de_DE
   # Start date of the calendar | type=datetime [CLI]
-  startDate: '2025-12-31T00:00:00'
+  startDate: '2025-12-29T00:00:00'
   # True: Calendar elements are generated | type=bool | choices=[True, False]
   useCalendar: true
-colors:
-  # Background color (RGB) | type=Color
-  backgroundColor: '#141414'
-  # Color for holidays | type=Color
-  holidayColor: '#ff0000'
-  # Primary text color | type=Color
-  textColor1: '#ffffff'
-  # Secondary text color | type=Color
-  textColor2: '#969696'
 general:
   # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   anniversariesConfig: anniversaries.ini
@@ -36,14 +27,6 @@ geo:
   # Use GPS data to generate maps | type=bool | choices=[True, False]
   usePhotoLocationMaps: true
 layout:
-  # Font size for anniversaries | type=float
-  fontSizeAnniversaries: 0.115
-  # Font size for large text | type=float
-  fontSizeLarge: 0.5
-  # Font size for small text | type=float
-  fontSizeSmall: 0.14
-  # Font type for large text | type=str
-  fontTypeLarge: DejaVuSans.ttf
   # Combine all generated collages into one pdf | type=bool | choices=[True, False]
   generatePdf: true
   # Bottom margin in mm | type=int
@@ -75,3 +58,26 @@ size:
   mapWidth: 20
   # Width of the collage in mm | type=int [CLI]
   width: 216
+style:
+  # Background color (RGB) | type=Color
+  backgroundColor: '#141414'
+  # Font size for anniversaries: Text with anniversaries and holiday names | type=Font
+  fontAnniversaries:
+  - DejaVuSans.ttf
+  - 5
+  - '#ff0000'
+  # Font for the description texts | type=Font
+  fontDescription:
+  - DejaVuSans.ttf
+  - 6
+  - '#ffffff'
+  # Font size for large text like the title and the weekday numbers | type=Font
+  fontLarge:
+  - DejaVuSans.ttf
+  - 10
+  - '#ffffff'
+  # Font size for small text like the weekday names | type=Font
+  fontSmall:
+  - DejaVuSans.ttf
+  - 6
+  - '#969696'

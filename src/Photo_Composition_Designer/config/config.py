@@ -9,7 +9,9 @@ It can generate config files, CLI modules, and documentation from the parameter 
 from datetime import datetime
 from pathlib import Path
 
-from config_cli_gui.config import Color, ConfigCategory, ConfigManager, ConfigParameter
+from config_cli_gui.config import ConfigCategory, ConfigManager, ConfigParameter
+from config_cli_gui.configtypes.color import Color
+from config_cli_gui.configtypes.font import Font
 from config_cli_gui.docs import DocumentationGenerator
 
 
@@ -87,7 +89,7 @@ class CalendarConfig(ConfigCategory):
 
     startDate: ConfigParameter = ConfigParameter(
         name="startDate",
-        value=datetime.fromisoformat("2025-12-31"),
+        value=datetime.fromisoformat("2025-12-29"),
         help="Start date of the calendar",
         is_cli=True,
     )
@@ -99,11 +101,11 @@ class CalendarConfig(ConfigCategory):
     )
 
 
-class ColorsConfig(ConfigCategory):
-    """COLORS configuration parameters."""
+class StyleConfig(ConfigCategory):
+    """Style configuration parameters."""
 
     def get_category_name(self) -> str:
-        return "colors"
+        return "style"
 
     backgroundColor: ConfigParameter = ConfigParameter(
         name="backgroundColor",
@@ -111,22 +113,28 @@ class ColorsConfig(ConfigCategory):
         help="Background color (RGB)",
     )
 
-    textColor1: ConfigParameter = ConfigParameter(
-        name="textColor1",
-        value=Color(255, 255, 255),
-        help="Primary text color",
+    fontLarge: ConfigParameter = ConfigParameter(
+        name="fontLarge",
+        value=Font("DejaVuSans.ttf", 10, Color(255, 255, 255)),
+        help="Font size for large text like the title and the weekday numbers",
     )
 
-    textColor2: ConfigParameter = ConfigParameter(
-        name="textColor2",
-        value=Color(150, 150, 150),
-        help="Secondary text color",
+    fontSmall: ConfigParameter = ConfigParameter(
+        name="fontSmall",
+        value=Font("DejaVuSans.ttf", 6, Color(150, 150, 150)),
+        help="Font size for small text like the weekday names",
     )
 
-    holidayColor: ConfigParameter = ConfigParameter(
-        name="holidayColor",
-        value=Color(255, 0, 0),
-        help="Color for holidays",
+    fontDescription: ConfigParameter = ConfigParameter(
+        name="fontDescription",
+        value=Font("DejaVuSans.ttf", 6, Color(255, 255, 255)),
+        help="Font for the description texts",
+    )
+
+    fontAnniversaries: ConfigParameter = ConfigParameter(
+        name="fontAnniversaries",
+        value=Font("DejaVuSans.ttf", 5, Color(255, 0, 0)),
+        help="Font size for anniversaries: Text with anniversaries and holiday names",
     )
 
 
@@ -207,30 +215,6 @@ class LayoutConfig(ConfigCategory):
     def get_category_name(self) -> str:
         return "layout"
 
-    fontSizeLarge: ConfigParameter = ConfigParameter(
-        name="fontSizeLarge",
-        value=0.5,
-        help="Font size for large text",
-    )
-
-    fontTypeLarge: ConfigParameter = ConfigParameter(
-        name="fontTypeLarge",
-        value="DejaVuSans.ttf",
-        help="Font type for large text",
-    )
-
-    fontSizeSmall: ConfigParameter = ConfigParameter(
-        name="fontSizeSmall",
-        value=0.14,
-        help="Font size for small text",
-    )
-
-    fontSizeAnniversaries: ConfigParameter = ConfigParameter(
-        name="fontSizeAnniversaries",
-        value=0.115,
-        help="Font size for anniversaries",
-    )
-
     marginTop: ConfigParameter = ConfigParameter(
         name="marginTop",
         value=6,
@@ -286,7 +270,7 @@ class ConfigParameterManager(ConfigManager):
     app: AppConfig
     general: GeneralConfig
     calendar: CalendarConfig
-    colors: ColorsConfig
+    style: StyleConfig
     geo: GeoConfig
     size: SizeConfig
     layout: LayoutConfig
@@ -296,7 +280,7 @@ class ConfigParameterManager(ConfigManager):
             AppConfig(),
             GeneralConfig(),
             CalendarConfig(),
-            ColorsConfig(),
+            StyleConfig(),
             GeoConfig(),
             SizeConfig(),
             LayoutConfig(),

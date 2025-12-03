@@ -11,7 +11,7 @@ python -m app [OPTIONS] photoDirectory
 | Option           | Type      | Description                                                                             | Default                               | Choices |
 |------------------|-----------|-----------------------------------------------------------------------------------------|---------------------------------------|---|
 | `photoDirectory` | PosixPath | Path to the directory containing photos (absolute, or relative to this config.ini file) | *required*                            | - |
-| `--startDate`    | datetime  | Start date of the calendar                                                              | datetime.datetime(2025, 12, 31, 0, 0) | - |
+| `--startDate`    | datetime  | Start date of the calendar                                                              | datetime.datetime(2025, 12, 29, 0, 0) | - |
 | `--width`        | int       | Width of the collage in mm                                                              | 216                                   | - |
 | `--height`       | int       | Height of the collage in mm                                                             | 154                                   | - |
 | `--dpi`          | int       | Resolution of the image in dpi                                                          | 150                                   | - |
@@ -43,7 +43,7 @@ python -m app --quiet photoDirectory
 ### 4. With startDate parameter
 
 ```bash
-python -m app --startDate 2025-12-31 00:00:00 photoDirectory
+python -m app --startDate 2025-12-29 00:00:00 photoDirectory
 ```
 
 ### 5. With width parameter

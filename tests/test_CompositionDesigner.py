@@ -18,8 +18,8 @@ class TestCompositionDesigner:
         config = ConfigParameterManager()
 
         # Override required values
-        config.size.dpi.value = 150
-        config.size.jpgQuality.value = 60
+        config.size.dpi.value = 30
+        config.size.jpgQuality.value = 20
 
         # Photo input directory should be set in config
         base_photos_dir = PROJECT_ROOT / "images"
