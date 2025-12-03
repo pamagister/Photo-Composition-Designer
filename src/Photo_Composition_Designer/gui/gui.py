@@ -86,8 +86,9 @@ class MainGui:
         self.logger.info(f"Photo directory: {self.composition_designer.photoDir}")
         self.logger_manager.log_config_summary()
 
-        self._generate_preview(1)
-        self._generate_preview(0)
+        if self.photo_folders:
+            self.photo_dir_listbox.selection_set(0)
+            self._generate_preview(0)
 
     def _build_widgets(self):
         """Build the main GUI widgets using paned windows for full resize behavior."""
@@ -121,11 +122,7 @@ class MainGui:
         self.photo_dir_listbox.bind(
             "<Double-Button-1>", lambda event: self._open_selected_file(event, self.photo_folders)
         )
-        self.photo_dir_listbox.bind(
-            "<Button-1>", lambda event: self._generate_preview_callback(event)
-        )
-        self.photo_dir_listbox.bind("<Up>", lambda event: self._generate_preview_callback())
-        self.photo_dir_listbox.bind("<Down>", lambda event: self._generate_preview_callback())
+        self.photo_dir_listbox.bind("<<ListboxSelect>>", self._generate_preview_callback)
 
         # -------------------------------------------------------------
         # CENTER — Preview panel
@@ -263,15 +260,10 @@ class MainGui:
         help_menu.add_command(label="About", command=self._show_about)
 
     def _generate_preview_callback(self, event=None):
-        if event:
-            selection_index = event.widget.nearest(event.y)
-            if selection_index == -1:
-                return
-        else:
-            selection = self.photo_dir_listbox.curselection()
-            if not selection:
-                return
-            selection_index = selection[0]
+        selection = self.photo_dir_listbox.curselection()
+        if not selection:
+            return
+        selection_index = selection[0]
         self._generate_preview(selection_index)
 
     def _generate_preview(self, selection_index):
@@ -565,6 +557,15 @@ class MainGui:
 
         description_file = description_file_gen.generate_description_file(overwrite=True)
         self.logger.info(f"Template description file generated: {description_file}")
+
+        # Re-initialize the composition designer to recognize the new file
+        self.composition_designer = CompositionDesigner(self.config_manager, self.logger)
+        self.composition_designer.progress_callback = self._progress_update
+
+        # Refresh the preview for the currently selected folder
+        selection = self.photo_dir_listbox.curselection()
+        if selection:
+            self._generate_preview(selection[0])
 
     def _refresh_preview(self, event=None):
         if not hasattr(self, "preview_image_original"):

@@ -149,7 +149,7 @@ class GeoPlotter:
             bounds = self._calculate_bounds(points_gdf)
 
         # Karte plotten
-        fig, ax = plt.subplots(figsize=(self.size[0] / 100, self.size[1] / 100), tight_layout=True)
+        fig, ax = plt.subplots(figsize=(self.size[0] / 100, self.size[1] / 100))
         fig.patch.set_facecolor(self.background_color)
         ax.set_facecolor(self.background_color)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
