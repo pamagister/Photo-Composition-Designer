@@ -66,6 +66,10 @@ Modify your settings inside the `config.yaml` or using the GUI:
 - Image sizes (mm converted to pixels internally)
 - Calendar layout
 - Paths to `anniversaries.ini` and `locations.ini`
+- Fonts and Colors
+
+![Settings GUI](_static/img/gui_settings.png)
+
 
 ### 2️⃣ **Sorting Images into Folders**
 Organize your images in the `images/` directory before running the generator.
@@ -87,6 +91,18 @@ or you can put individual txt files into every single weekly sub folder.
 
 ### 4️⃣ **Setting up the birthday dates** 🎂📅
 Provide the birthday information of your friends and family by using the `anniversaries.ini`
+
+```plaintext
+[Birthdays]
+
+Paul = 6.1.1984
+Peter = 08.01.99
+Liz = 09.01.
+Anna = 10.01.
+
+[Weddings]
+Mary & Josh = 02.01.2021    ; ⚭ Symbol is used for Weddings
+```
 
 ### **Generating the Calendar** 🖼️
 Use **Generate Composition** to generate all collages and one PDF file containing all your compositions.
