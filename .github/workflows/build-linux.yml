@@ -37,12 +37,12 @@ jobs:
         run: |
           echo "Create the ZIP archive from the contents of the release folder"
           cd release
-          zip -r ../package-linux.zip .
+          zip -r ../photo-composition-designer-linux.zip .
 
       - name: Upload ZIP to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: package-linux.zip
+          files: photo-composition-designer-linux.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -31,9 +31,9 @@ Photo-Composition-Designer is a tool designed to automate the creation of beauti
 
 Download the latest executable:
 
-- [⬇️ Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/installer-win.zip)
-- [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/package-linux.zip)
-- [⬇️ Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/package-macos.zip)
+- [⬇️ Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-win.zip)
+- [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
+- [⬇️ Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-macos.zip)
 
 
 ## Installation via pypi
