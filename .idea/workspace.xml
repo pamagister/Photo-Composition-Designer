@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="improve doc">
-      <change afterPath="$PROJECT_DIR$/docs/_static/img/collages.png" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="rename installer download zip">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/_static/img/gui_settings.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_static/img/gui_settings.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/_static/img/collages.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_static/img/collages.png" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -119,7 +118,7 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.module gui">
+  <component name="RunManager" selected="Python.config-generate">
     <configuration name="MapRenderer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
@@ -245,22 +244,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763156815611</updated>
-    </task>
-    <task id="LOCAL-00005" summary="only use on py file to show tree with or without python classes">
-      <option name="closed" value="true" />
-      <created>1763290549157</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1763290549157</updated>
-    </task>
-    <task id="LOCAL-00006" summary="add common functions and according tests">
-      <option name="closed" value="true" />
-      <created>1763290667045</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1763290667045</updated>
     </task>
     <task id="LOCAL-00007" summary="move common into project dir">
       <option name="closed" value="true" />
@@ -638,7 +621,23 @@
       <option name="project" value="LOCAL" />
       <updated>1764804873578</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="improve doc, add collages.png example image">
+      <option name="closed" value="true" />
+      <created>1764868728576</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1764868728576</updated>
+    </task>
+    <task id="LOCAL-00055" summary="rename installer download zip">
+      <option name="closed" value="true" />
+      <created>1764868921701</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1764868921701</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -653,8 +652,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Show preview image in gui" />
-    <MESSAGE value="gui elements do resize" />
     <MESSAGE value="generate all compositions from gui" />
     <MESSAGE value="remove unused module" />
     <MESSAGE value="remove logger from CompositionDesigner.py" />
@@ -678,7 +675,9 @@
     <MESSAGE value="code structure refactorings, &#10;new config_cli_gui version with preserved config order and logger" />
     <MESSAGE value="use logging module from lib" />
     <MESSAGE value="improve doc" />
-    <option name="LAST_COMMIT_MESSAGE" value="improve doc" />
+    <MESSAGE value="improve doc, add collages.png example image" />
+    <MESSAGE value="rename installer download zip" />
+    <option name="LAST_COMMIT_MESSAGE" value="rename installer download zip" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
