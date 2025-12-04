@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="rename installer download zip">
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="fix doc: start app from pypi">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/_static/img/collages.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_static/img/collages.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -621,21 +620,21 @@
       <option name="project" value="LOCAL" />
       <updated>1764804873578</updated>
     </task>
-    <task id="LOCAL-00054" summary="improve doc, add collages.png example image">
+    <task id="LOCAL-00054" summary="update lib, probably fix windows font issue">
       <option name="closed" value="true" />
-      <created>1764868728576</created>
+      <created>1764865407663</created>
       <option name="number" value="00054" />
       <option name="presentableId" value="LOCAL-00054" />
       <option name="project" value="LOCAL" />
-      <updated>1764868728576</updated>
+      <updated>1764865407664</updated>
     </task>
-    <task id="LOCAL-00055" summary="rename installer download zip">
+    <task id="LOCAL-00055" summary="fix doc: start app from pypi">
       <option name="closed" value="true" />
-      <created>1764868921701</created>
+      <created>1764871428475</created>
       <option name="number" value="00055" />
       <option name="presentableId" value="LOCAL-00055" />
       <option name="project" value="LOCAL" />
-      <updated>1764868921701</updated>
+      <updated>1764871428475</updated>
     </task>
     <option name="localTasksCounter" value="56" />
     <servers />
@@ -675,9 +674,9 @@
     <MESSAGE value="code structure refactorings, &#10;new config_cli_gui version with preserved config order and logger" />
     <MESSAGE value="use logging module from lib" />
     <MESSAGE value="improve doc" />
-    <MESSAGE value="improve doc, add collages.png example image" />
-    <MESSAGE value="rename installer download zip" />
-    <option name="LAST_COMMIT_MESSAGE" value="rename installer download zip" />
+    <MESSAGE value="update lib, probably fix windows font issue" />
+    <MESSAGE value="fix doc: start app from pypi" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix doc: start app from pypi" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
