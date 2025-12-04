@@ -76,14 +76,23 @@ into sub-folders that represent your weekly collage content.
 
 ```plaintext
 📁 images/
-├── 📁 0-Title/
-    ├── 2024-01-01_ski_trip.jpg
-├── 📁 Week 1/
-    ├── 2024-02-14_valentines_dinner in London.jpg
+├── 📁 title/
+│   └── 🖼️ title_image.jpg
+├── 📁 week_1/
+│   ├── 🖼️ valentines_dinner_in_London.jpg
+│   └── 🖼️ ski_trip.jpg
+├── 📁 week_2/
+│   ├── 🖼️ new_year_hike.jpg
+│   ├── 🖼️ cooking_class.jpg
+│   ├── 🖼️ first_snowfall.jpg
+│   └── ...
+└── 📄 descriptions.txt
+
 ```
 
 ### 3️⃣ **Provide Descriptions** 🖥️
 Provide descriptions for every week to describe the events.
+
 You can use one single `description.txt` file that can be generated using the GUI
 or you can put individual txt files into every single weekly sub folder.
 
@@ -102,8 +111,15 @@ Anna = 10.01.
 Mary & Josh = 02.01.2021    ; ⚭ Symbol is used for Weddings
 ```
 
-### **Generating the Calendar** 🖼️
+### 5️⃣ **Generating the Calendar** 🖼️
 Use **Generate Composition** to generate all collages and one PDF file containing all your compositions.
+
+![collages.png](_static/img/collages.png)
+
+### 6️⃣ **Printing the Calendar** 🖨️
+Send the generated PDF to your printer or local print shop for high-quality printing.
+
+A very good print shop for Germany is [WIRmachenDRUCK ](https://www.wir-machen-druck.de/).
 
 ---
 
