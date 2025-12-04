@@ -4,6 +4,12 @@ Changelog
 
 (unreleased)
 ------------
+- Update lib, probably fix windows font issue. [Paul Magister]
+
+
+0.1.3 (2025-12-03)
+------------------
+- Docs: Update HISTORY.md for release 0.1.3. [Paul Magister]
 - Docs: Update HISTORY.md for release 0.1.2. [Paul Magister]
 - Update README.md from docs/index.md. [github-actions]
 
