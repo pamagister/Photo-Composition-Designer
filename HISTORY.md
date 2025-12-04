@@ -4,6 +4,21 @@ Changelog
 
 (unreleased)
 ------------
+- Upgrade libs. [Paul Magister]
+- Fix doc: start app from pypi. [Paul Magister]
+
+
+0.1.5 (2025-12-04)
+------------------
+- Add collages with transparency. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+- Rename installer download zip. [Paul Magister]
+- Improve doc, add collages.png example image. [Paul Magister]
+
+
+0.1.4 (2025-12-04)
+------------------
+- Docs: Update HISTORY.md for release 0.1.4. [Paul Magister]
 - Update lib, probably fix windows font issue. [Paul Magister]
 
 
