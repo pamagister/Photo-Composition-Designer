@@ -49,7 +49,7 @@ pip install Photo-Composition-Designer
 Run GUI from command line
 
 ```bash
-Photo-Composition-Designer
+Photo-Composition-Designer-gui
 ```
 
 ---

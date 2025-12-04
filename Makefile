@@ -36,6 +36,9 @@ precommit: ## Format, test and check dependencies.
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
+	@echo "sync documentation ..."
+	@uv run ./scripts/generate_config_docs.py
+	@uv run ./scripts/update_readme.py
 	uv run ruff format src/
 	uv run ruff format tests/
 	uv run ruff check src/ --fix
