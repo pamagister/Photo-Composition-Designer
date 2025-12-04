@@ -9,7 +9,7 @@ readme = "docs/index.md"
 requires-python = ">=3.10,<3.12"
 dependencies = [
     "astral>=3.2",
-    "config-cli-gui>=0.3.0",
+    "config-cli-gui>=0.3.1",
     "exifread>=3.5.1",
     "geopandas>=1.1.1",
     "holidays>=0.84",

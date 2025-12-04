@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="use logging module from lib">
-      <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="improve doc">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -28,6 +31,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -45,6 +49,9 @@
   &quot;associatedIndex&quot;: 4
 }</component>
   <component name="ProjectId" id="35UFbMjGcTg6FE1yUVKgAsPWhpi" />
+  <component name="ProjectLevelVcsManager">
+    <OptionsSetting value="false" id="Update" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -238,14 +245,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763156815611</updated>
-    </task>
-    <task id="LOCAL-00004" summary="add show_filelist.py to be able to run on linux. Add new libraries.">
-      <option name="closed" value="true" />
-      <created>1763288702873</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1763288702873</updated>
     </task>
     <task id="LOCAL-00005" summary="only use on py file to show tree with or without python classes">
       <option name="closed" value="true" />
@@ -631,7 +630,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764804380353</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="improve doc">
+      <option name="closed" value="true" />
+      <created>1764804873578</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1764804873578</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -646,7 +653,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update config-cli-gui" />
     <MESSAGE value="Show preview image in gui" />
     <MESSAGE value="gui elements do resize" />
     <MESSAGE value="generate all compositions from gui" />
@@ -671,7 +677,8 @@
     <MESSAGE value="remove unused helpers" />
     <MESSAGE value="code structure refactorings, &#10;new config_cli_gui version with preserved config order and logger" />
     <MESSAGE value="use logging module from lib" />
-    <option name="LAST_COMMIT_MESSAGE" value="use logging module from lib" />
+    <MESSAGE value="improve doc" />
+    <option name="LAST_COMMIT_MESSAGE" value="improve doc" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

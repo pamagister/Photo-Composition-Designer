@@ -209,6 +209,7 @@ virtualenv:       ## Create a virtual environment.
 
 .PHONY: release
 release:          ## Create a new tag for release.
+	git pull origin HEAD
 	$(MAKE) precommit
 	@echo "WARNING: This operation will create a version tag and push to GitHub"
 
