@@ -6,7 +6,7 @@ authors = [
     {name = "pamagister"}
 ]
 readme = "docs/index.md"
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10,<4.0"
 dependencies = [
     "astral>=3.2",
     "config-cli-gui>=0.3.2",

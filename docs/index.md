@@ -45,6 +45,10 @@ Download from [PyPI](https://pypi.org/).
 ```bash
 pip install Photo-Composition-Designer
 ```
+or
+```bash
+pipx install Photo-Composition-Designer
+```
 
 Run GUI from command line
 
