@@ -8,10 +8,10 @@ from PIL import Image
 
 
 class Photo:
-    DATE_PATTERN_FULL = re.compile(
+    DATE_PATTERN_FULL: re.Pattern = re.compile(
         r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2}))"
     )
-    DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
+    DATE_PATTERN_NO_TIME: re.Pattern = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
     def __init__(self, file_path: Path, locations=None):
         self.file_path: Path = Path(file_path)
