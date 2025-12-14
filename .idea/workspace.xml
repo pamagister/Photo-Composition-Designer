@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="make pytree: improvements on show_tree.py: bild compact llm understandable json, consider functions">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/show_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/show_tree.py" afterDir="false" />
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="make pytree: improvements on show_tree.py: doc external tool">
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/show_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/project_structure.py" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -121,7 +121,7 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.show_tree">
+  <component name="RunManager" selected="Python.project_structure">
     <configuration name="generate_plantuml" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
@@ -144,7 +144,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="show_tree" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="project_structure" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -157,7 +157,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/show_tree.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/project_structure.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -221,7 +221,7 @@
       <item itemvalue="Python.config-generate" />
       <item itemvalue="Python.module cli" />
       <item itemvalue="Python.module gui" />
-      <item itemvalue="Python.show_tree" />
+      <item itemvalue="Python.project_structure" />
       <item itemvalue="Python.generate_plantuml" />
       <item itemvalue="Python tests.pytest in test_CompositionDesigner.py" />
       <item itemvalue="Python tests.pytest in test_MapRenderer.py" />
@@ -229,7 +229,7 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.show_tree" />
+        <item itemvalue="Python.project_structure" />
         <item itemvalue="Python.generate_plantuml" />
         <item itemvalue="Python tests.pytest in test_cli.py" />
         <item itemvalue="Python tests.pytest in test_MapRenderer.py" />
@@ -252,14 +252,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763156815611</updated>
-    </task>
-    <task id="LOCAL-00017" summary="adjusted version of CompositionDesigner.py">
-      <option name="closed" value="true" />
-      <created>1763416410685</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1763416410685</updated>
     </task>
     <task id="LOCAL-00018" summary="add anniversaries.ini and locations_de.ini">
       <option name="closed" value="true" />
@@ -645,7 +637,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765752962585</updated>
     </task>
-    <option name="localTasksCounter" value="66" />
+    <task id="LOCAL-00066" summary="make pytree: improvements on show_tree.py: doc external tool">
+      <option name="closed" value="true" />
+      <created>1765755096730</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1765755096730</updated>
+    </task>
+    <option name="localTasksCounter" value="67" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -660,7 +660,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fix cli, update requirements" />
     <MESSAGE value="cli tests" />
     <MESSAGE value="move all ini files top-level so that the user can find them immediately" />
     <MESSAGE value="add ini files individually, fix test_cli.py for windows" />
@@ -685,7 +684,8 @@
     <MESSAGE value="make pytree: improvements on show_tree.py: &#10;- back to before, good formatting" />
     <MESSAGE value="make pytree: improvements on show_tree.py: schlanke Variante mit besserem Datenmodell" />
     <MESSAGE value="make pytree: improvements on show_tree.py: bild compact llm understandable json, consider functions" />
-    <option name="LAST_COMMIT_MESSAGE" value="make pytree: improvements on show_tree.py: bild compact llm understandable json, consider functions" />
+    <MESSAGE value="make pytree: improvements on show_tree.py: doc external tool" />
+    <option name="LAST_COMMIT_MESSAGE" value="make pytree: improvements on show_tree.py: doc external tool" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -796,8 +796,8 @@
           <option name="timeStamp" value="67" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
-          <line>213</line>
+          <url>file://$PROJECT_DIR$/scripts/project_structure.py</url>
+          <line>218</line>
           <option name="timeStamp" value="73" />
         </line-breakpoint>
       </breakpoints>

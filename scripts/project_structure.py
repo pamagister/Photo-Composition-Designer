@@ -5,7 +5,7 @@ import json
 
 # Usage with Pycharm External Tools:
 # Program:     $PyInterpreterDirectory$/python
-# Arguments:   $ProjectFileDir$/scripts/show_tree.py $FilePath$ --json --md --llm
+# Arguments:   $ProjectFileDir$/scripts/project_structure.py $FilePath$ --json --md --llm
 # Working dir: $ProjectFileDir$
 
 # ─────────────────────────────────────────────────────────────
