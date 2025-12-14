@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="upgrade libs">
+    <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="make pytree: improvements on show_tree.py: schlanke Variante mit besserem Datenmodell">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/show_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/show_tree.py" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -46,6 +44,9 @@
     &quot;accountId&quot;: &quot;beb7c4bb-5f16-4132-bb50-7bd4cee01add&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/re/__init__.py" root0="SKIP_INSPECTION" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -89,6 +90,7 @@
     &quot;Python.MapRenderer.executor&quot;: &quot;Run&quot;,
     &quot;Python.cli.executor&quot;: &quot;Debug&quot;,
     &quot;Python.config-generate.executor&quot;: &quot;Run&quot;,
+    &quot;Python.generate_plantuml.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.module cli.executor&quot;: &quot;Run&quot;,
     &quot;Python.module gui.executor&quot;: &quot;Run&quot;,
@@ -101,7 +103,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/dev/Photo-Composition-Designer&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -120,8 +122,8 @@
       <recent name="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.config-generate">
-    <configuration name="MapRenderer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.show_tree">
+    <configuration name="generate_plantuml" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Photo-Composition-Designer" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -130,11 +132,33 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Photo_Composition_Designer/image" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Photo_Composition_Designer/image/MapRenderer.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/generate_plantuml.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="show_tree" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Photo-Composition-Designer" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/show_tree.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -157,23 +181,6 @@
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_CompositionDesigner.py&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
-      <method v="2" />
-    </configuration>
-    <configuration name="pytest in test_DescriptionRenderer.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
-      <module name="Photo-Composition-Designer" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="_new_keywords" value="&quot;&quot;" />
-      <option name="_new_parameters" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_DescriptionRenderer.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
@@ -215,19 +222,19 @@
       <item itemvalue="Python.config-generate" />
       <item itemvalue="Python.module cli" />
       <item itemvalue="Python.module gui" />
-      <item itemvalue="Python.MapRenderer" />
+      <item itemvalue="Python.show_tree" />
+      <item itemvalue="Python.generate_plantuml" />
       <item itemvalue="Python tests.pytest in test_CompositionDesigner.py" />
-      <item itemvalue="Python tests.pytest in test_DescriptionRenderer.py" />
       <item itemvalue="Python tests.pytest in test_MapRenderer.py" />
       <item itemvalue="Python tests.pytest in test_cli.py" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.show_tree" />
+        <item itemvalue="Python.generate_plantuml" />
         <item itemvalue="Python tests.pytest in test_cli.py" />
         <item itemvalue="Python tests.pytest in test_MapRenderer.py" />
         <item itemvalue="Python tests.pytest in test_CompositionDesigner.py" />
-        <item itemvalue="Python tests.pytest in test_DescriptionRenderer.py" />
-        <item itemvalue="Python.MapRenderer" />
       </list>
     </recent_temporary>
   </component>
@@ -246,54 +253,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763156815611</updated>
-    </task>
-    <task id="LOCAL-00008" summary="add further basic functionality">
-      <option name="closed" value="true" />
-      <created>1763292202709</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1763292202709</updated>
-    </task>
-    <task id="LOCAL-00009" summary="add PhotoLayoutManager.py">
-      <option name="closed" value="true" />
-      <created>1763292498914</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1763292498914</updated>
-    </task>
-    <task id="LOCAL-00010" summary="add GeoPlotter.py, move logging.py so that it does not interfere with general built-in logging">
-      <option name="closed" value="true" />
-      <created>1763293281850</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1763293281850</updated>
-    </task>
-    <task id="LOCAL-00011" summary="add DescriptionGenerator.py">
-      <option name="closed" value="true" />
-      <created>1763307863354</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1763307863354</updated>
-    </task>
-    <task id="LOCAL-00012" summary="add MapGenerator.py">
-      <option name="closed" value="true" />
-      <created>1763310670493</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1763310670493</updated>
-    </task>
-    <task id="LOCAL-00013" summary="add CalendarGenerator.py">
-      <option name="closed" value="true" />
-      <created>1763313214950</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1763313214950</updated>
     </task>
     <task id="LOCAL-00014" summary="add CalendarGenerator.py and">
       <option name="closed" value="true" />
@@ -639,7 +598,55 @@
       <option name="project" value="LOCAL" />
       <updated>1764871831890</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="pipx in doc, support python until &lt;4.0">
+      <option name="closed" value="true" />
+      <created>1764968004684</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1764968004685</updated>
+    </task>
+    <task id="LOCAL-00058" summary="make pytree: improvements on show_tree.py: &#10;- class attributes, instance attributes">
+      <option name="closed" value="true" />
+      <created>1765721675751</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1765721675754</updated>
+    </task>
+    <task id="LOCAL-00059" summary="make pytree: improvements on show_tree.py: &#10;- mermaid diagram">
+      <option name="closed" value="true" />
+      <created>1765723451400</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1765723451400</updated>
+    </task>
+    <task id="LOCAL-00060" summary="make pytree: improvements on show_tree.py: &#10;- back to before, good formatting">
+      <option name="closed" value="true" />
+      <created>1765747755699</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1765747755699</updated>
+    </task>
+    <task id="LOCAL-00061" summary="make pytree: improvements on show_tree.py: schlanke Variante mit besserem Datenmodell">
+      <option name="closed" value="true" />
+      <created>1765748716968</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1765748716968</updated>
+    </task>
+    <task id="LOCAL-00062" summary="make pytree: improvements on show_tree.py: schlanke Variante mit besserem Datenmodell">
+      <option name="closed" value="true" />
+      <created>1765750003447</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1765750003447</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -654,11 +661,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="remove unused module" />
-    <MESSAGE value="remove logger from CompositionDesigner.py" />
-    <MESSAGE value="tooltips, generate preview immediately" />
-    <MESSAGE value="step to every image with arrows" />
-    <MESSAGE value="Button to open alternative config, reload config functionality" />
     <MESSAGE value="fix cli" />
     <MESSAGE value="fix cli, update requirements" />
     <MESSAGE value="cli tests" />
@@ -679,7 +681,12 @@
     <MESSAGE value="update lib, probably fix windows font issue" />
     <MESSAGE value="fix doc: start app from pypi" />
     <MESSAGE value="upgrade libs" />
-    <option name="LAST_COMMIT_MESSAGE" value="upgrade libs" />
+    <MESSAGE value="pipx in doc, support python until &lt;4.0" />
+    <MESSAGE value="make pytree: improvements on show_tree.py: &#10;- class attributes, instance attributes" />
+    <MESSAGE value="make pytree: improvements on show_tree.py: &#10;- mermaid diagram" />
+    <MESSAGE value="make pytree: improvements on show_tree.py: &#10;- back to before, good formatting" />
+    <MESSAGE value="make pytree: improvements on show_tree.py: schlanke Variante mit besserem Datenmodell" />
+    <option name="LAST_COMMIT_MESSAGE" value="make pytree: improvements on show_tree.py: schlanke Variante mit besserem Datenmodell" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -770,16 +777,6 @@
           <option name="timeStamp" value="56" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
-          <line>138</line>
-          <option name="timeStamp" value="61" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
-          <line>128</line>
-          <option name="timeStamp" value="62" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/Photo_Composition_Designer/image/DescriptionRenderer.py</url>
           <line>55</line>
           <option name="timeStamp" value="64" />
@@ -799,7 +796,19 @@
           <line>58</line>
           <option name="timeStamp" value="67" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/show_tree.py</url>
+          <line>270</line>
+          <option name="timeStamp" value="71" />
+        </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
 </project>
