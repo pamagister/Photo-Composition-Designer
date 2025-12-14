@@ -3,6 +3,11 @@ import argparse
 import ast
 import json
 
+# Usage with Pycharm External Tools:
+# Program:     $PyInterpreterDirectory$/python
+# Arguments:   $ProjectFileDir$/scripts/show_tree.py $FilePath$ --json --md --llm
+# Working dir: $ProjectFileDir$
+
 # ─────────────────────────────────────────────────────────────
 # Tree-Symbole
 # ─────────────────────────────────────────────────────────────
@@ -204,7 +209,10 @@ def build_model(root: str) -> dict:
     node = {"type": "directory", "name": os.path.basename(root) or root, "children": []}
 
     try:
-        entries = sorted(os.listdir(root))
+        if os.path.isfile(root):
+            entries = [root]
+        else:
+            entries = sorted(os.listdir(root))
     except PermissionError:
         return node
 
@@ -279,44 +287,56 @@ def iter_files(node):
         for child in node.get("children", []):
             yield from iter_files(child)
 
-
 def build_llm_summary(model) -> dict:
     modules = []
 
     for file_node in iter_files(model):
-        if not file_node.get("classes"):
+        if not file_node.get("classes") and not file_node.get("functions"):
             continue
 
-        module_entry = {"module": file_node["name"], "classes": []}
+        module_entry = {
+            "module": file_node["name"],
+            "classes": [],
+            "functions": []
+        }
 
-        for cls in file_node["classes"]:
+        # ── Top-Level-Funktionen ───────────────────────────
+        for fn in file_node.get("functions", []):
+            if fn["visibility"] == "public":
+                module_entry["functions"].append(fn["signature"])
+
+        # ── Klassen ────────────────────────────────────────
+        for cls in file_node.get("classes", []):
             class_entry = {
                 "name": cls["name"],
-                "class_attributes": [
-                    a["name"] for a in cls.get("class_attributes", [])
-                ],
-                "instance_attributes": [
-                    a["name"].removeprefix("self.")
-                    for a in cls.get("instance_attributes", [])
-                ],
-                "public_methods": [
-                    m for m in cls.get("methods", []) if not m.startswith("_")
-                ],
-                "internal_methods": [
-                    m for m in cls.get("methods", []) if m.startswith("_")
-                ],
+                "class_attributes": [],
+                "instance_attributes": [],
+                "public_methods": [],
+                "internal_methods": [],
             }
 
+            for a in cls.get("class_attributes", []):
+                class_entry["class_attributes"].append(
+                    f"{a['name']}: {a['type']}" if a.get("type") else a["name"]
+                    )
+
+            for a in cls.get("instance_attributes", []):
+                class_entry["instance_attributes"].append(
+                    f"{a['name']}: {a['type']}" if a.get("type") else a["name"]
+                )
+
+            for m in cls.get("methods", []):
+                if m.startswith("_"):
+                    class_entry["internal_methods"].append(m)
+                else:
+                    class_entry["public_methods"].append(m)
+
             module_entry["classes"].append(class_entry)
-            module_entry["functions"] = [
-                fn["name"]
-                for fn in file_node.get("functions", [])
-                if fn["visibility"] == "public"
-            ]
 
         modules.append(module_entry)
 
     return {"modules": modules}
+
 
 
 def render_markdown(node, lines):
@@ -387,7 +407,7 @@ if __name__ == "__main__":
             model, open("project_structure.json", "w", encoding="utf-8"), indent=2
         )
 
-    if True or args.llm:
+    if args.llm:
         llm_json = build_llm_summary(model)
         json.dump(
             llm_json,
