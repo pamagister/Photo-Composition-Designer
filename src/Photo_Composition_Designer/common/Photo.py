@@ -8,6 +8,10 @@ from PIL import Image
 
 
 class Photo:
+    """
+    Class doc string
+    """
+
     DATE_PATTERN_FULL: re.Pattern = re.compile(
         r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2}))"
     )
@@ -20,6 +24,10 @@ class Photo:
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
     def get_location(self) -> tuple[float, float] | None:
+        """
+        Returns the GPS coordinates if available
+        using EXIF or filename.
+        """
         return self.get_location_from_exif() or self.get_location_from_name()
 
     def get_location_from_exif(self) -> tuple[float, float] | None:
@@ -92,8 +100,9 @@ class Photo:
 def get_photos_from_dir(
     image_folder: Path, locations: dict[str, tuple[float, float]] = None
 ) -> list["Photo"] | None:
-    """Liest alle Bilddateien aus einem Ordner ein und gibt eine Liste von Photo-Objekten zurück."""
-
+    """
+    Reads all image files from a folder and returns a list of Photo objects.
+    """
     folder_path = Path(image_folder)
 
     if not folder_path.is_dir():

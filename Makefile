@@ -261,7 +261,7 @@ tree:            ## Show project tree (excluding ignored folders)
 
 .PHONY: pytree
 pytree:            ## Show project tree (excluding ignored folders)
-	@uv run ./scripts/project_structure.py --json --md --llm
+	@uv run ./scripts/project_structure.py --json --md --llm --doc-string
 
 .PHONY: init
 init:             ## Initialize the project based on an application template.

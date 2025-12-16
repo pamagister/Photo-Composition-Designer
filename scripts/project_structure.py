@@ -5,7 +5,7 @@ import json
 
 # Usage with Pycharm External Tools:
 # Program:     $PyInterpreterDirectory$/python
-# Arguments:   $ProjectFileDir$/scripts/project_structure.py $FilePath$ --json --md --llm
+# Arguments:   $ProjectFileDir$/scripts/project_structure.py $FilePath$ --json --md --llm --doc-string
 # Working dir: $ProjectFileDir$
 
 # ─────────────────────────────────────────────────────────────
@@ -66,6 +66,7 @@ IGNORE_EXTENSIONS = {
 # Hilfsfunktionen
 # ─────────────────────────────────────────────────────────────
 def should_ignore(path: str) -> bool:
+    """Check if path should be ignored"""
     name = os.path.basename(path)
     if name in IGNORE_DIRS:
         return True
@@ -84,6 +85,13 @@ def visibility(name: str) -> int:
 
 def normalize_type(t: str | None) -> str | None:
     return t.replace("typing.", "") if t else None
+
+
+def normalize_doc(doc: str | None) -> str | None:
+    """Normalizes doc string: Split at first empty line and return first lines"""
+    if not doc:
+        return None
+    return doc.strip().split("\n\n")[0]
 
 
 def format_function_signature(func: ast.FunctionDef) -> str:
@@ -106,7 +114,7 @@ def format_function_signature(func: ast.FunctionDef) -> str:
 # ─────────────────────────────────────────────────────────────
 # Python-Datei → Klassenmodell
 # ─────────────────────────────────────────────────────────────
-def parse_python_file(path: str) -> dict:
+def parse_python_file(path: str, include_docstrings: bool = False) -> dict:
     try:
         tree = ast.parse(open(path, encoding="utf-8").read())
     except Exception:
@@ -122,9 +130,8 @@ def parse_python_file(path: str) -> dict:
                 {
                     "name": node.name,
                     "signature": format_function_signature(node),
-                    "visibility": (
-                        "private" if node.name.startswith("_") else "public"
-                    ),
+                    "visibility": "private" if node.name.startswith("_") else "public",
+                    "doc": ast.get_docstring(node) if include_docstrings else None,
                 }
             )
 
@@ -134,6 +141,7 @@ def parse_python_file(path: str) -> dict:
                 "type": "class",
                 "name": node.name,
                 "dataclass": False,
+                "doc": ast.get_docstring(node) if include_docstrings else None,
                 "class_attributes": [],
                 "instance_attributes": [],
                 "methods": [],
@@ -148,7 +156,14 @@ def parse_python_file(path: str) -> dict:
 
             for item in node.body:
                 if isinstance(item, ast.FunctionDef):
-                    cls["methods"].append(format_function_signature(item))
+                    cls["methods"].append(
+                        {
+                            "signature": format_function_signature(item),
+                            "doc": (
+                                ast.get_docstring(item) if include_docstrings else None
+                            ),
+                        }
+                    )
 
                     for stmt in ast.walk(item):
                         if isinstance(stmt, ast.AnnAssign):
@@ -195,8 +210,8 @@ def parse_python_file(path: str) -> dict:
                 if n not in seen:
                     cls["instance_attributes"].append({"name": f"self.{n}", "type": t})
                     seen.add(n)
-
-            cls["methods"].sort(key=visibility)
+            # sort methods by signature using visibility
+            cls["methods"].sort(key=lambda x: visibility(x["signature"]))
             classes.append(cls)
 
     return {"classes": classes, "functions": functions}
@@ -205,7 +220,7 @@ def parse_python_file(path: str) -> dict:
 # ─────────────────────────────────────────────────────────────
 # Projektmodell
 # ─────────────────────────────────────────────────────────────
-def build_model(root: str) -> dict:
+def build_model(root: str, include_docstrings: bool = False) -> dict:
     node = {"type": "directory", "name": os.path.basename(root) or root, "children": []}
 
     try:
@@ -222,11 +237,13 @@ def build_model(root: str) -> dict:
             continue
 
         if os.path.isdir(full):
-            node["children"].append(build_model(full))
+            node["children"].append(
+                build_model(full, include_docstrings=include_docstrings)
+            )
         else:
             file_node = {"type": "file", "name": e, "classes": []}
             if e.endswith(".py"):
-                parsed = parse_python_file(full)
+                parsed = parse_python_file(full, include_docstrings=include_docstrings)
                 file_node["classes"] = parsed["classes"]
                 file_node["functions"] = parsed["functions"]
 
@@ -272,7 +289,8 @@ def render_tree(node, indent, lines):
                 lines.append(f"{indent}{INDENT*2}{ATTR_SYMBOL}  {a['name']}{t}")
 
             for m in cls["methods"]:
-                lines.append(f"{indent}{INDENT*2}{FUNC_SYMBOL}  {cls['name']}.{m}")
+                doc_str = f": {m['doc']}" if m["doc"] else ''
+                lines.append(f"{indent}{INDENT*2}{FUNC_SYMBOL}  {cls['name']}.{m['signature']}{doc_str}")
 
     if node["type"] == "directory":
         for c in node["children"]:
@@ -287,23 +305,24 @@ def iter_files(node):
         for child in node.get("children", []):
             yield from iter_files(child)
 
-def build_llm_summary(model) -> dict:
+
+def build_llm_summary(model, include_docstrings: bool = False) -> dict:
     modules = []
 
     for file_node in iter_files(model):
         if not file_node.get("classes") and not file_node.get("functions"):
             continue
 
-        module_entry = {
-            "module": file_node["name"],
-            "classes": [],
-            "functions": []
-        }
+        module_entry = {"module": file_node["name"], "classes": [], "functions": []}
 
         # ── Top-Level-Funktionen ───────────────────────────
         for fn in file_node.get("functions", []):
             if fn["visibility"] == "public":
-                module_entry["functions"].append(fn["signature"])
+                if include_docstrings:
+                    fn["doc"] = normalize_doc(fn["doc"])
+                    module_entry["functions"].append(f"{fn['signature']}: {fn['doc']}")
+                else:
+                    module_entry["functions"].append(fn["signature"])
 
         # ── Klassen ────────────────────────────────────────
         for cls in file_node.get("classes", []):
@@ -318,7 +337,7 @@ def build_llm_summary(model) -> dict:
             for a in cls.get("class_attributes", []):
                 class_entry["class_attributes"].append(
                     f"{a['name']}: {a['type']}" if a.get("type") else a["name"]
-                    )
+                )
 
             for a in cls.get("instance_attributes", []):
                 class_entry["instance_attributes"].append(
@@ -326,10 +345,16 @@ def build_llm_summary(model) -> dict:
                 )
 
             for m in cls.get("methods", []):
-                if m.startswith("_"):
-                    class_entry["internal_methods"].append(m)
+                if m["signature"].startswith("_"):
+                    class_entry["internal_methods"].append(m["signature"])
                 else:
-                    class_entry["public_methods"].append(m)
+                    if include_docstrings:
+                        m["doc"] = normalize_doc(m["doc"])
+                        class_entry["public_methods"].append(
+                            f"{m['signature']}: {m['doc']}"
+                        )
+                    else:
+                        class_entry["public_methods"].append(m["signature"])
 
             module_entry["classes"].append(class_entry)
 
@@ -338,41 +363,49 @@ def build_llm_summary(model) -> dict:
     return {"modules": modules}
 
 
-
 def render_markdown(node, lines):
-    if node["type"] == "file" and node["classes"]:
-        lines.append(f"\n## File `{node['name']}`\n")
+    if node["type"] == "file" and (node.get("classes") or node.get("functions")):
+        file_name = os.path.basename(node["name"])
+        lines.append(f"\n## File `{file_name}`\n")
 
+        # ── Top-level functions ────────────────────────────
         if node.get("functions"):
             lines.append("### Functions")
             for fn in node["functions"]:
                 lines.append(f"- `{fn['signature']}`")
+                if fn.get("doc"):
+                    lines.append(f"  {fn['doc']}")
+            lines.append("")
 
-        for cls in node["classes"]:
-            lines.append(f"### Class `{cls['name']}`")
+        # ── Classes ─────────────────────────────────────────
+        for cls in node.get("classes", []):
+            lines.append(f"### Class `{cls['name']}`\n")
 
-            first = True
-            for a in cls["class_attributes"]:
-                if first:
-                    lines.append(f"\n**Class attributes of `{cls['name']}`**\n")
-                t = f": {a['type']}" if a["type"] else ""
-                lines.append(f"- `{a['name']}{t}`")
-                first = False
+            # Class attributes
+            if cls.get("class_attributes"):
+                lines.append("**Class attributes**")
+                for a in cls["class_attributes"]:
+                    t = f": {a['type']}" if a.get("type") else ""
+                    lines.append(f"- `{a['name']}{t}`")
+                lines.append("")
 
-            first = True
-            for a in cls["instance_attributes"]:
-                if first:
-                    lines.append(f"\n**Instance attributes of `{cls['name']}`**\n")
-                t = f": {a['type']}" if a["type"] else ""
-                lines.append(f"- `{a['name']}{t}`")
-                first = False
+            # Instance attributes
+            if cls.get("instance_attributes"):
+                lines.append("**Instance attributes**")
+                for a in cls["instance_attributes"]:
+                    name = a["name"].removeprefix("self.")
+                    t = f": {a['type']}" if a.get("type") else ""
+                    lines.append(f"- `{name}{t}`")
+                lines.append("")
 
-            first = True
-            for m in cls["methods"]:
-                if first:
-                    lines.append(f"\n**Methods of `{cls['name']}`**\n")
-                lines.append(f"- `{m}`")
-                first = False
+            # Methods
+            if cls.get("methods"):
+                lines.append("**Methods**")
+                for m in cls["methods"]:
+                    lines.append(f"- `{m['signature']}`")
+                    if m.get("doc"):
+                        lines.append(f"  {m['doc']}")
+                lines.append("")
 
     if node["type"] == "directory":
         for c in node["children"]:
@@ -385,13 +418,21 @@ def render_markdown(node, lines):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("path", nargs="?", default=".")
-    parser.add_argument("--md", action="store_true")
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--llm", action="store_true")
+    parser.add_argument("-m", "--md", action="store_true", help="Include markdown")
+    parser.add_argument("-j", "--json", action="store_true", help="Include json")
+    parser.add_argument(
+        "-l", "--llm", action="store_true", help="Make the output more llm-friendly"
+    )
+    parser.add_argument(
+        "-d",
+        "--doc-string",
+        action="store_true",
+        help="Include docstrings in the generated output",
+    )
 
     args = parser.parse_args()
 
-    model = build_model(args.path)
+    model = build_model(args.path, include_docstrings=args.doc_string)
 
     tree_lines = []
     render_tree(model, "", tree_lines)
@@ -408,7 +449,7 @@ if __name__ == "__main__":
         )
 
     if args.llm:
-        llm_json = build_llm_summary(model)
+        llm_json = build_llm_summary(model, include_docstrings=args.doc_string)
         json.dump(
             llm_json,
             open("project_structure_llm.json", "w", encoding="utf-8"),

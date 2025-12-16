@@ -5,8 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7196224b-0c6d-4df3-926f-d243fd984ba4" name="Changes" comment="make pytree: improvements on show_tree.py: doc external tool">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/show_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/project_structure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/project_structure.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/project_structure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Photo.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Photo_Composition_Designer/common/Photo.py" afterDir="false" />
     </list>
     <list id="124f435c-cc09-40e9-9ed2-72d6742eb56b" name="NO_COMMIT" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -57,54 +59,55 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python tests.Python tests in test_gpx.py.executor": "Run",
-    "Python tests.Python tests in tests.executor": "Run",
-    "Python tests.pytest for test_DescriptionRenderer.test_generate_description_creates_image_in_temp.executor": "Run",
-    "Python tests.pytest for test_GeoPlotter.test__add_layer.executor": "Run",
-    "Python tests.pytest for test_GeoPlotter.test__calculate_bounds.executor": "Run",
-    "Python tests.pytest in test_CalendarGenerator.py.executor": "Run",
-    "Python tests.pytest in test_CollageGenerator.py.executor": "Run",
-    "Python tests.pytest in test_CompositionDesigner.py.executor": "Run",
-    "Python tests.pytest in test_DescriptionGenerator.py.executor": "Run",
-    "Python tests.pytest in test_DescriptionRenderer.py.executor": "Run",
-    "Python tests.pytest in test_DescriptionsFileGenerator.py.executor": "Run",
-    "Python tests.pytest in test_GeoPlotter.py.executor": "Run",
-    "Python tests.pytest in test_ImageDistributor.py.executor": "Run",
-    "Python tests.pytest in test_MapGenerator.py.executor": "Run",
-    "Python tests.pytest in test_MapRenderer.py.executor": "Run",
-    "Python tests.pytest in test_MoonPhase.py.executor": "Run",
-    "Python tests.pytest in test_Photo.py.executor": "Run",
-    "Python tests.pytest in test_PhotoLayoutManager.py.executor": "Run",
-    "Python tests.pytest in test_cli.py.executor": "Run",
-    "Python.Anniversaries.executor": "Debug",
-    "Python.CalendarGenerator.executor": "Run",
-    "Python.CalendarRenderer.executor": "Run",
-    "Python.CompositionDesigner.executor": "Debug",
-    "Python.DescriptionsFileGenerator.executor": "Run",
-    "Python.GeoPlotter.executor": "Run",
-    "Python.MapGenerator.executor": "Debug",
-    "Python.MapRenderer.executor": "Run",
-    "Python.cli.executor": "Debug",
-    "Python.config-generate.executor": "Run",
-    "Python.generate_plantuml.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.module cli.executor": "Run",
-    "Python.module gui.executor": "Run",
-    "Python.show_tree.executor": "Run",
-    "Python.test_Locations.executor": "Debug",
-    "Python.test_Photo.executor": "Run",
-    "Python.test_anniversaries.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/dev/Photo-Composition-Designer",
-    "settings.editor.selected.configurable": "preferences.externalTools"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python tests.Python tests in test_gpx.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.Python tests in tests.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_DescriptionRenderer.test_generate_description_creates_image_in_temp.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_GeoPlotter.test__add_layer.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_GeoPlotter.test__calculate_bounds.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_CalendarGenerator.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_CollageGenerator.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_CompositionDesigner.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_DescriptionGenerator.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_DescriptionRenderer.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_DescriptionsFileGenerator.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_GeoPlotter.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_ImageDistributor.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_MapGenerator.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_MapRenderer.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_MoonPhase.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_Photo.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_PhotoLayoutManager.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_cli.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Anniversaries.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.CalendarGenerator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.CalendarRenderer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.CompositionDesigner.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.DescriptionsFileGenerator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.GeoPlotter.executor&quot;: &quot;Run&quot;,
+    &quot;Python.MapGenerator.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.MapRenderer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.cli.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.config-generate.executor&quot;: &quot;Run&quot;,
+    &quot;Python.generate_plantuml.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.module cli.executor&quot;: &quot;Run&quot;,
+    &quot;Python.module gui.executor&quot;: &quot;Run&quot;,
+    &quot;Python.project_structure.executor&quot;: &quot;Run&quot;,
+    &quot;Python.show_tree.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_Locations.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.test_Photo.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_anniversaries.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/dev/Photo-Composition-Designer&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.externalTools&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/docs/_static/img" />
@@ -797,8 +800,28 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/scripts/project_structure.py</url>
-          <line>218</line>
-          <option name="timeStamp" value="73" />
+          <line>78</line>
+          <option name="timeStamp" value="74" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/project_structure.py</url>
+          <line>93</line>
+          <option name="timeStamp" value="75" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/project_structure.py</url>
+          <line>432</line>
+          <option name="timeStamp" value="76" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/project_structure.py</url>
+          <line>440</line>
+          <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/project_structure.py</url>
+          <line>365</line>
+          <option name="timeStamp" value="79" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
