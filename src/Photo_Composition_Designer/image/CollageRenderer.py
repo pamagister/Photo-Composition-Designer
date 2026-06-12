@@ -1,16 +1,20 @@
 import random
 
+import numpy as np
+import onnxruntime as ort
 from PIL import Image, UnidentifiedImageError
-from ultralytics import YOLO
 
 
 class CollageRenderer:
-    def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
+    def __init__(
+        self, width=900, height=600, spacing=10, color=(0, 0, 0), use_image_recognition=False
+    ):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
-        self.yolo_model = None  # Will load this lazily
+        self.yolo_session = None  # Will load this lazily
+        self.use_image_recognition = use_image_recognition
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """
@@ -100,7 +104,13 @@ class CollageRenderer:
         aspect_ratio_img = img_width / img_height
         aspect_ratio_target = target_width / target_height
 
-        objects = self.detect_objects(image)
+        objects = None
+        if self.yolo_session is None and self.use_image_recognition:
+            self.yolo_session = ort.InferenceSession(
+                "res/yolo/yolo26n.onnx", providers=["CPUExecutionProvider"]
+            )
+        if self.yolo_session:
+            objects = self.detect_objects(image)
 
         if aspect_ratio_img > aspect_ratio_target:
             # Bild ist breiter -> Seitlich beschneiden
@@ -129,27 +139,73 @@ class CollageRenderer:
 
     def detect_objects(self, image: Image.Image):
         """
-        Detects objects in the given image using yolo26n.
-        Returns a list of bounding boxes for detected objects.
+        Detect objects using YOLO ONNX.
+        Returns:
+            [
+                {
+                    "bbox": [x1, y1, x2, y2],
+                    "confidence": 0.95
+                }
+            ]
         """
-        if self.yolo_model is None:
-            # Load a yolo model. User can specify yolo11n.pt if preferred.
-            self.yolo_model = YOLO("yolo26n.pt")
 
-        # Perform inference
-        results = self.yolo_model(image)
+        wanted_ids = {
+            0,  # person
+            1,  # bicycle
+            2,  # car
+            3,  # motorcycle
+        }
 
-        wanted = {"person", "car", "bicycle", "motorcycle"}
+        input_name = self.yolo_session.get_inputs()[0].name
+
+        orig_w, orig_h = image.size
+
+        # Resize to model input size
+        resized = image.resize((640, 640))
+
+        img = np.array(resized, dtype=np.float32)
+
+        # RGB -> float32 [0..1]
+        img /= 255.0
+
+        # HWC -> CHW
+        img = np.transpose(img, (2, 0, 1))
+
+        # Add batch dimension
+        img = np.expand_dims(img, axis=0)
+
+        outputs = self.yolo_session.run(None, {input_name: img})
+
+        detections = outputs[0][0]
+
+        scale_x = orig_w / 640.0
+        scale_y = orig_h / 640.0
 
         objects = []
-        for result in results:
-            for box in result.boxes:
-                cls = int(box.cls[0])
-                label = self.yolo_model.names[cls]
 
-                if label in wanted:
-                    x1, y1, x2, y2 = box.xyxy[0].tolist()
-                    objects.append({"bbox": [x1, y1, x2, y2], "confidence": float(box.conf[0])})
+        for det in detections:
+            x1, y1, x2, y2, conf, cls_id = det
+
+            cls_id = int(cls_id)
+
+            if conf < 0.25:
+                continue
+
+            if cls_id not in wanted_ids:
+                continue
+
+            objects.append(
+                {
+                    "bbox": [
+                        float(x1 * scale_x),
+                        float(y1 * scale_y),
+                        float(x2 * scale_x),
+                        float(y2 * scale_y),
+                    ],
+                    "confidence": float(conf),
+                }
+            )
+
         return objects
 
     def arrangeOneImage(self, collage, image, width, height):

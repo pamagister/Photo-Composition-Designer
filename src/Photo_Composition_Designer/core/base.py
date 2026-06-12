@@ -81,7 +81,11 @@ class CompositionDesigner:
         # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
         collage_height_px = self.get_available_collage_height_px()
         self.layoutManager: CollageRenderer = CollageRenderer(
-            self.width_px, collage_height_px, self.spacing_px, background_color
+            self.width_px,
+            collage_height_px,
+            self.spacing_px,
+            background_color,
+            use_image_recognition=True,
         )
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:
