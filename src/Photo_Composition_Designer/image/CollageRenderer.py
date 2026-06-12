@@ -94,20 +94,20 @@ class CollageRenderer:
     def cropAndResize(self, image, target_width, target_height):
         """
         Schneidet ein Bild proportional zu und skaliert es dann auf die gewünschte Größe.
-        Versucht dabei, erkannte Personen im Bild zu behalten.
+        Versucht dabei, erkannte Objekte im Bild zu behalten.
         """
         img_width, img_height = image.size
         aspect_ratio_img = img_width / img_height
         aspect_ratio_target = target_width / target_height
 
-        persons = self.detect_persons(image)
+        objects = self.detect_objects(image)
 
         if aspect_ratio_img > aspect_ratio_target:
             # Bild ist breiter -> Seitlich beschneiden
             new_width = int(aspect_ratio_target * img_height)
-            if persons:
-                # Berechne den horizontalen Mittelpunkt aller Personen
-                avg_x = sum((p["bbox"][0] + p["bbox"][2]) / 2 for p in persons) / len(persons)
+            if objects:
+                # Berechne den horizontalen Mittelpunkt aller Objekte
+                avg_x = sum((p["bbox"][0] + p["bbox"][2]) / 2 for p in objects) / len(objects)
                 left = int(max(0, min(img_width - new_width, avg_x - new_width / 2)))
             else:
                 left = (img_width - new_width) // 2
@@ -116,9 +116,9 @@ class CollageRenderer:
         else:
             # Bild ist höher -> Oben und unten beschneiden
             new_height = int(img_width / aspect_ratio_target)
-            if persons:
-                # Berechne den vertikalen Mittelpunkt aller Personen
-                avg_y = sum((p["bbox"][1] + p["bbox"][3]) / 2 for p in persons) / len(persons)
+            if objects:
+                # Berechne den vertikalen Mittelpunkt aller Objekte
+                avg_y = sum((p["bbox"][1] + p["bbox"][3]) / 2 for p in objects) / len(objects)
                 top = int(max(0, min(img_height - new_height, avg_y - new_height / 2)))
             else:
                 top = (img_height - new_height) // 2
@@ -127,27 +127,30 @@ class CollageRenderer:
 
         return cropped.resize((target_width, target_height))
 
-    def detect_persons(self, image: Image.Image):
+    def detect_objects(self, image: Image.Image):
         """
-        Detects persons in the given image using yolo26n.
-        Returns a list of bounding boxes for detected persons.
+        Detects objects in the given image using yolo26n.
+        Returns a list of bounding boxes for detected objects.
         """
         if self.yolo_model is None:
-            # Load a yolo26n model. User can specify yolo11n.pt if preferred.
+            # Load a yolo model. User can specify yolo11n.pt if preferred.
             self.yolo_model = YOLO("yolo26n.pt")
 
         # Perform inference
         results = self.yolo_model(image)
 
-        persons = []
+        wanted = {"person", "car", "bicycle", "motorcycle"}
+
+        objects = []
         for result in results:
             for box in result.boxes:
                 cls = int(box.cls[0])
-                # YOLO's 'person' class is usually 0
-                if cls == 0:  # person class
+                label = self.yolo_model.names[cls]
+
+                if label in wanted:
                     x1, y1, x2, y2 = box.xyxy[0].tolist()
-                    persons.append({"bbox": [x1, y1, x2, y2], "confidence": float(box.conf[0])})
-        return persons
+                    objects.append({"bbox": [x1, y1, x2, y2], "confidence": float(box.conf[0])})
+        return objects
 
     def arrangeOneImage(self, collage, image, width, height):
         """
