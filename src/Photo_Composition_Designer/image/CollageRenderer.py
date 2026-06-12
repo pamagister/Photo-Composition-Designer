@@ -7,14 +7,14 @@ from PIL import Image, UnidentifiedImageError
 
 class CollageRenderer:
     def __init__(
-        self, width=900, height=600, spacing=10, color=(0, 0, 0), use_image_recognition=False
+        self, width=900, height=600, spacing=10, color=(0, 0, 0), use_object_recognition=False
     ):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
         self.yolo_session = None  # Will load this lazily
-        self.use_image_recognition = use_image_recognition
+        self.use_image_recognition = use_object_recognition
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """

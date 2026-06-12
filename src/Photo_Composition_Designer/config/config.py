@@ -263,6 +263,12 @@ class LayoutConfig(ConfigCategory):
         help="Combine all generated collages into one pdf",
     )
 
+    objectRecognition: ConfigParameter = ConfigParameter(
+        name="objectRecognition",
+        value=True,
+        help="Use neuronal network YOLO (You Only Look Once) object detection model to crop images content-aware.",
+    )
+
 
 class ConfigParameterManager(ConfigManager):
     """Main configuration manager that handles all parameter categories."""

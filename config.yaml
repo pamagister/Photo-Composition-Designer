@@ -69,3 +69,5 @@ layout:
   usePhotoDescription: true
   # Combine all generated collages into one pdf | type=bool | choices=[True, False]
   generatePdf: true
+  # Use neuronal network YOLO (You Only Look Once) object detection model to crop images content-aware. | type=bool | choices=[True, False]
+  objectRecognition: true

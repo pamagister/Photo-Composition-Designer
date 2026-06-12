@@ -55,6 +55,7 @@ class CompositionDesigner:
         # size in pixels
         self.width_px = self._mm_to_px(self.config.size.width.value)
         self.height_px = self._mm_to_px(self.config.size.height.value)
+        self.use_object_recognition = self.config.layout.objectRecognition
 
         # margins / spacing in pixels
         self.margin_top_px = self._mm_to_px(self.config.layout.marginTop.value)
@@ -85,7 +86,7 @@ class CompositionDesigner:
             collage_height_px,
             self.spacing_px,
             background_color,
-            use_image_recognition=True,
+            self.use_object_recognition,
         )
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:
