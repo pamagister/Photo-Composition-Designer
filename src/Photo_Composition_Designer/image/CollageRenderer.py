@@ -1,6 +1,7 @@
 import random
 
 from PIL import Image, UnidentifiedImageError
+from ultralytics import YOLO
 
 
 class CollageRenderer:
@@ -9,11 +10,15 @@ class CollageRenderer:
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
+        self.yolo_model = None  # Will load this lazily
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """
         Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
         """
+        if not images:
+            return Image.new(mode="RGB", size=(self.width, self.height), color=self.color)
+
         # Bilder nach Seitenverhältnis sortieren
         collage: Image.Image = Image.new(
             mode="RGB", size=(self.width, self.height), color=self.color
@@ -38,10 +43,10 @@ class CollageRenderer:
         except (UnidentifiedImageError, OSError) as e:
             print(f"Error in the arrangement of images: {e}")
             # Entferne ungültige Bilder und versuche es erneut
-            photos = self.remove_invalid_images(images)
-            if photos:
+            valid_images = self.remove_invalid_images(images)
+            if valid_images and len(valid_images) < len(images):
                 print("Invalid images removed, try again...")
-                self.generate(photos)
+                return self.generate(valid_images)
             else:
                 # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
                 print("No more valid images available.")
@@ -49,20 +54,19 @@ class CollageRenderer:
         return collage
 
     @staticmethod
-    def remove_invalid_images(photos: list[Image.Image]):
+    def remove_invalid_images(images: list[Image.Image]):
         """
         Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
         """
         valid_images = []
-        for img in photos:
+        for img in images:
             try:
                 # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
-                img.crop((0, 2, 3, 3))
+                img.crop((0, 0, 1, 1))
                 valid_images.append(img)
-            except (UnidentifiedImageError, OSError) as e:
-                print(f"Invalid image skipped: {img.info} - {e}")
+            except (UnidentifiedImageError, OSError, AttributeError) as e:
+                print(f"Invalid image skipped: {e}")
 
-        # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
         return valid_images
 
     @staticmethod
@@ -87,29 +91,63 @@ class CollageRenderer:
         """
         return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
 
-    @staticmethod
-    def cropAndResize(image, target_width, target_height):
+    def cropAndResize(self, image, target_width, target_height):
         """
         Schneidet ein Bild proportional zu und skaliert es dann auf die gewünschte Größe.
+        Versucht dabei, erkannte Personen im Bild zu behalten.
         """
         img_width, img_height = image.size
         aspect_ratio_img = img_width / img_height
         aspect_ratio_target = target_width / target_height
 
+        persons = self.detect_persons(image)
+
         if aspect_ratio_img > aspect_ratio_target:
             # Bild ist breiter -> Seitlich beschneiden
             new_width = int(aspect_ratio_target * img_height)
-            left = (img_width - new_width) // 2
+            if persons:
+                # Berechne den horizontalen Mittelpunkt aller Personen
+                avg_x = sum((p["bbox"][0] + p["bbox"][2]) / 2 for p in persons) / len(persons)
+                left = int(max(0, min(img_width - new_width, avg_x - new_width / 2)))
+            else:
+                left = (img_width - new_width) // 2
             right = left + new_width
             cropped = image.crop((left, 0, right, img_height))
         else:
             # Bild ist höher -> Oben und unten beschneiden
             new_height = int(img_width / aspect_ratio_target)
-            top = (img_height - new_height) // 2
+            if persons:
+                # Berechne den vertikalen Mittelpunkt aller Personen
+                avg_y = sum((p["bbox"][1] + p["bbox"][3]) / 2 for p in persons) / len(persons)
+                top = int(max(0, min(img_height - new_height, avg_y - new_height / 2)))
+            else:
+                top = (img_height - new_height) // 2
             bottom = top + new_height
             cropped = image.crop((0, top, img_width, bottom))
 
         return cropped.resize((target_width, target_height))
+
+    def detect_persons(self, image: Image.Image):
+        """
+        Detects persons in the given image using yolo26n.
+        Returns a list of bounding boxes for detected persons.
+        """
+        if self.yolo_model is None:
+            # Load a yolo26n model. User can specify yolo11n.pt if preferred.
+            self.yolo_model = YOLO("yolo26n.pt")
+
+        # Perform inference
+        results = self.yolo_model(image)
+
+        persons = []
+        for result in results:
+            for box in result.boxes:
+                cls = int(box.cls[0])
+                # YOLO's 'person' class is usually 0
+                if cls == 0:  # person class
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    persons.append({"bbox": [x1, y1, x2, y2], "confidence": float(box.conf[0])})
+        return persons
 
     def arrangeOneImage(self, collage, image, width, height):
         """

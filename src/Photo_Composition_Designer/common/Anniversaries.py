@@ -50,12 +50,12 @@ class Anniversaries:
         # Define label formatters for each category
         label_formatter = {
             "Birthdays": lambda _name, _year: f"{_name} {str(_year)[-2:]}" if _year else _name,
-            "Dates of death": lambda _name, _year: f"{_name} ✝ {str(_year)[-2:]}"
-            if _year
-            else f"{_name} ✝",
-            "Weddings": lambda _name, _year: f"{_name} ⚭ {str(_year)[-2:]}"
-            if _year
-            else f"{_name} ⚭",
+            "Dates of death": lambda _name, _year: (
+                f"{_name} ✝ {str(_year)[-2:]}" if _year else f"{_name} ✝"
+            ),
+            "Weddings": lambda _name, _year: (
+                f"{_name} ⚭ {str(_year)[-2:]}" if _year else f"{_name} ⚭"
+            ),
         }.get(category, lambda _name, _year: _name)  # Default formatter if category is unknown
 
         label = label_formatter(name, year)
