@@ -1,8 +1,12 @@
 import random
+from logging import Logger
 
 import numpy as np
-import onnxruntime as ort
+from config_cli_gui.logging import get_logger, initialize_logging
 from PIL import Image, UnidentifiedImageError
+
+from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
+from Photo_Composition_Designer.image.SmartCrop import SmartCrop
 
 
 class CollageRenderer:
@@ -15,6 +19,12 @@ class CollageRenderer:
         self.spacing: int = spacing
         self.yolo_session = None  # Will load this lazily
         self.use_image_recognition = use_object_recognition
+        self.detector = ObjectDetector() if use_object_recognition else None
+        self.cropper = SmartCrop()
+
+        # Initialize logging system
+        initialize_logging()
+        self.logger: Logger = get_logger("base")
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """
@@ -45,20 +55,19 @@ class CollageRenderer:
             else:
                 self.arrangeMultipleImages(collage, images, self.width, self.height)
         except (UnidentifiedImageError, OSError) as e:
-            print(f"Error in the arrangement of images: {e}")
+            self.logger.critical(f"Error in the arrangement of images: {e}")
             # Entferne ungültige Bilder und versuche es erneut
             valid_images = self.remove_invalid_images(images)
             if valid_images and len(valid_images) < len(images):
-                print("Invalid images removed, try again...")
+                self.logger.warning("Invalid images removed, try again...")
                 return self.generate(valid_images)
             else:
                 # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
-                print("No more valid images available.")
+                self.logger.warning("No more valid images available.")
                 raise e
         return collage
 
-    @staticmethod
-    def remove_invalid_images(images: list[Image.Image]):
+    def remove_invalid_images(self, images: list[Image.Image]):
         """
         Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
         """
@@ -69,7 +78,7 @@ class CollageRenderer:
                 img.crop((0, 0, 1, 1))
                 valid_images.append(img)
             except (UnidentifiedImageError, OSError, AttributeError) as e:
-                print(f"Invalid image skipped: {e}")
+                self.logger.info(f"Invalid image skipped: {e}")
 
         return valid_images
 
@@ -100,44 +109,20 @@ class CollageRenderer:
         Schneidet ein Bild proportional zu und skaliert es dann auf die gewünschte Größe.
         Versucht dabei, erkannte Objekte im Bild zu behalten.
         """
-        img_width, img_height = image.size
-        aspect_ratio_img = img_width / img_height
-        aspect_ratio_target = target_width / target_height
 
-        objects = None
-        if self.yolo_session is None and self.use_image_recognition:
-            self.yolo_session = ort.InferenceSession(
-                "res/yolo/yolo26n.onnx", providers=["CPUExecutionProvider"]
-            )
-        if self.yolo_session:
-            objects = self.detect_objects(image)
+        detections = None
 
-        if aspect_ratio_img > aspect_ratio_target:
-            # Bild ist breiter -> Seitlich beschneiden
-            new_width = int(aspect_ratio_target * img_height)
-            if objects:
-                # Berechne den horizontalen Mittelpunkt aller Objekte
-                avg_x = sum((p["bbox"][0] + p["bbox"][2]) / 2 for p in objects) / len(objects)
-                left = int(max(0, min(img_width - new_width, avg_x - new_width / 2)))
-            else:
-                left = (img_width - new_width) // 2
-            right = left + new_width
-            cropped = image.crop((left, 0, right, img_height))
-        else:
-            # Bild ist höher -> Oben und unten beschneiden
-            new_height = int(img_width / aspect_ratio_target)
-            if objects:
-                # Berechne den vertikalen Mittelpunkt aller Objekte
-                avg_y = sum((p["bbox"][1] + p["bbox"][3]) / 2 for p in objects) / len(objects)
-                top = int(max(0, min(img_height - new_height, avg_y - new_height / 2)))
-            else:
-                top = (img_height - new_height) // 2
-            bottom = top + new_height
-            cropped = image.crop((0, top, img_width, bottom))
+        if self.detector:
+            detections = self.detector.detect(image)
 
-        return cropped.resize((target_width, target_height))
+        return self.cropper.crop(
+            image=image,
+            target_width=target_width,
+            target_height=target_height,
+            detections=detections,
+        )
 
-    def detect_objects(self, image: Image.Image):
+    def detect_objects(self, image: Image.Image) -> list[dict]:
         """
         Detect objects using YOLO ONNX.
         Returns:
@@ -154,6 +139,98 @@ class CollageRenderer:
             1,  # bicycle
             2,  # car
             3,  # motorcycle
+            4,  # airplane
+            5,  # bus
+            8,  # boat
+            14,  # bird
+            15,  # cat
+            16,  # dog
+            17,  # horse
+            18,  # sheep
+            19,  # cow
+        }
+
+        id_map = {
+            0: "person",
+            1: "bicycle",
+            2: "car",
+            3: "motorcycle",
+            4: "airplane",
+            5: "bus",
+            6: "train",
+            7: "truck",
+            8: "boat",
+            9: "traffic light",
+            10: "fire hydrant",
+            11: "stop sign",
+            12: "parking meter",
+            13: "bench",
+            14: "bird",
+            15: "cat",
+            16: "dog",
+            17: "horse",
+            18: "sheep",
+            19: "cow",
+            20: "elephant",
+            21: "bear",
+            22: "zebra",
+            23: "giraffe",
+            24: "backpack",
+            25: "umbrella",
+            26: "handbag",
+            27: "tie",
+            28: "suitcase",
+            29: "frisbee",
+            30: "skis",
+            31: "snowboard",
+            32: "sports ball",
+            33: "kite",
+            34: "baseball bat",
+            35: "baseball glove",
+            36: "skateboard",
+            37: "surfboard",
+            38: "tennis racket",
+            39: "bottle",
+            40: "wine glass",
+            41: "cup",
+            42: "fork",
+            43: "knife",
+            44: "spoon",
+            45: "bowl",
+            46: "banana",
+            47: "apple",
+            48: "sandwich",
+            49: "orange",
+            50: "broccoli",
+            51: "carrot",
+            52: "hot dog",
+            53: "pizza",
+            54: "donut",
+            55: "cake",
+            56: "chair",
+            57: "couch",
+            58: "potted plant",
+            59: "bed",
+            60: "dining table",
+            61: "toilet",
+            62: "tv",
+            63: "laptop",
+            64: "mouse",
+            65: "remote",
+            66: "keyboard",
+            67: "cell phone",
+            68: "microwave",
+            69: "oven",
+            70: "toaster",
+            71: "sink",
+            72: "refrigerator",
+            73: "book",
+            74: "clock",
+            75: "vase",
+            76: "scissors",
+            77: "teddy bear",
+            78: "hair drier",
+            79: "toothbrush",
         }
 
         input_name = self.yolo_session.get_inputs()[0].name
@@ -162,7 +239,6 @@ class CollageRenderer:
 
         # Resize to model input size
         resized = image.resize((640, 640))
-
         img = np.array(resized, dtype=np.float32)
 
         # RGB -> float32 [0..1]
@@ -173,7 +249,7 @@ class CollageRenderer:
 
         # Add batch dimension
         img = np.expand_dims(img, axis=0)
-
+        self.logger.debug(f"Process image {input_name} with object recognition.")
         outputs = self.yolo_session.run(None, {input_name: img})
 
         detections = outputs[0][0]
@@ -185,14 +261,13 @@ class CollageRenderer:
 
         for det in detections:
             x1, y1, x2, y2, conf, cls_id = det
-
             cls_id = int(cls_id)
-
             if conf < 0.25:
                 continue
-
             if cls_id not in wanted_ids:
                 continue
+
+            self.logger.info(f"Object detected: {id_map.get(cls_id)}: {conf}")
 
             objects.append(
                 {
@@ -207,6 +282,33 @@ class CollageRenderer:
             )
 
         return objects
+
+    def calculateImageScore(
+        self,
+        image,
+    ):
+
+        if not self.detector:
+            return 0
+
+        score = 0
+
+        detections = self.detector.detect(image)
+
+        for d in detections:
+            if d.class_name == "person":
+                score += 5
+
+            elif d.class_name in ("dog", "cat"):
+                score += 4
+
+            elif d.class_name == "bicycle":
+                score += 3
+
+            elif d.class_name in ("car", "motorcycle"):
+                score += 2
+
+        return score
 
     def arrangeOneImage(self, collage, image, width, height):
         """
@@ -246,7 +348,10 @@ class CollageRenderer:
             # Ein großes Bild quer oben, zwei kleinere unten nebeneinander LLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)), (0, int(h * 0.6))),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)),
+                    (0, int(h * 0.6)),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.5), int(h * 0.4)),
                     (int(w * 0.5) + s, int(h * 0.6)),
@@ -255,7 +360,10 @@ class CollageRenderer:
             # Großes Querformat links, zwei Querformat rechts übereinander LLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)), (int(w * 0.7) + s, 0)),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)),
+                    (int(w * 0.7) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.3), int(h * 0.5) - s),
                     (int(w * 0.7) + s, int(h * 0.5) + s),
@@ -264,7 +372,10 @@ class CollageRenderer:
             # Großes Hochformat links, zwei Querformat rechts übereinander PLL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)), (int(w * 0.4) + s, 0)),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)),
+                    (int(w * 0.4) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.6), int(h * 0.5) - s),
                     (int(w * 0.4) + s, int(h * 0.5) + s),
@@ -273,7 +384,10 @@ class CollageRenderer:
             # Großes Querformat links, zwei Hochformat rechts übereinander PPL
             lambda imgs: [
                 (self.cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)), (int(w * 0.6) + s, 0)),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)),
+                    (int(w * 0.6) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.4), int(h * 0.5) - s),
                     (int(w * 0.6) + s, int(h * 0.5) + s),
@@ -312,7 +426,10 @@ class CollageRenderer:
                     self.cropAndResize(imgs[3], int(w * 0.55), int(h * 0.55) - s),
                     (int(w * 0.45) + s, 0),
                 ),
-                (self.cropAndResize(imgs[2], int(w * 0.55), int(h * 0.45)), (0, int(h * 0.55))),
+                (
+                    self.cropAndResize(imgs[2], int(w * 0.55), int(h * 0.45)),
+                    (0, int(h * 0.55)),
+                ),
                 (
                     self.cropAndResize(imgs[1], int(w * 0.45), int(h * 0.45)),
                     (int(w * 0.55) + s, int(h * 0.55)),
@@ -320,8 +437,14 @@ class CollageRenderer:
             ],
             # Großes Quadrat, drei kleine landscape rechts Q-LLL
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.3), int(h / 3)), (int(w * 0.7) + s, 0)),
+                (
+                    self.cropAndResize(imgs[0], int(w * 0.7), h),
+                    (0, 0),
+                ),  # portrait, index 0
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.3), int(h / 3)),
+                    (int(w * 0.7) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.3), int(h / 3) - s),
                     (int(w * 0.7) + s, int(h / 3) + s),
@@ -334,8 +457,14 @@ class CollageRenderer:
             # Großes portrait-Bild links, rechts oben landscape,
             # darunter zwei kleine landscape nebeneinander PLLL
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
+                (
+                    self.cropAndResize(imgs[0], int(w * 0.4), h),
+                    (0, 0),
+                ),  # portrait, index 0
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)),
+                    (int(w * 0.4) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
                     (int(w * 0.4) + s, int(h * 3 / 5) + s),
@@ -348,8 +477,14 @@ class CollageRenderer:
             # Großes portrait-Bild links, rechts oben landscape,
             # darunter kleines portrait und landscape PPLL
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
+                (
+                    self.cropAndResize(imgs[0], int(w * 0.4), h),
+                    (0, 0),
+                ),  # portrait, index 0
+                (
+                    self.cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)),
+                    (int(w * 0.4) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s),
                     (int(w * 0.4) + s, int(h * 3 / 5) + s),
@@ -362,8 +497,14 @@ class CollageRenderer:
             # Großes portrait-Bild links, rechts oben landscape,
             # darunter zwei kleines portrait nebeneinander PPLL
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)), (int(w * 0.4) + s, 0)),
+                (
+                    self.cropAndResize(imgs[0], int(w * 0.4), h),
+                    (0, 0),
+                ),  # portrait, index 0
+                (
+                    self.cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)),
+                    (int(w * 0.4) + s, 0),
+                ),
                 (
                     self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
                     (int(w * 0.4) + s, int(h * 2 / 5) + s),
@@ -427,7 +568,10 @@ class CollageRenderer:
                     self.cropAndResize(imgs[0], int(w * 0.3 - s), int(h)),
                     (0, 0),
                 ),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.55) - s), (int(w * 0.3), 0)),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.55) - s),
+                    (int(w * 0.3), 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
                     (int(w * 0.6) + s, 0),
@@ -472,7 +616,10 @@ class CollageRenderer:
                     self.cropAndResize(imgs[0], int(w * 0.35 - s), int(h)),
                     (0, 0),
                 ),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.25), int(h * 0.55) - s), (int(w * 0.35), 0)),
+                (
+                    self.cropAndResize(imgs[1], int(w * 0.25), int(h * 0.55) - s),
+                    (int(w * 0.35), 0),
+                ),
                 (
                     self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
                     (int(w * 0.6) + s, 0),

@@ -266,7 +266,8 @@ class LayoutConfig(ConfigCategory):
     objectRecognition: ConfigParameter = ConfigParameter(
         name="objectRecognition",
         value=True,
-        help="Use neuronal network YOLO (You Only Look Once) object detection model to crop images content-aware.",
+        help="Use neuronal network YOLO (You Only Look Once) object detection "
+        "model to crop images content-aware.",
     )
 
 
