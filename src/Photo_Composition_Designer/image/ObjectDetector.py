@@ -24,8 +24,17 @@ class ObjectDetector:
         1: "bicycle",
         2: "car",
         3: "motorcycle",
+        4: "airplane",
+        5: "bus",
+        6: "train",
         15: "cat",
         16: "dog",
+        17: "horse",
+        18: "sheep",
+        19: "cow",
+        39: "bottle",
+        40: "wine glass",
+        41: "cup",
     }
 
     def __init__(
