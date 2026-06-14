@@ -20,8 +20,8 @@ def test_smart_crop(temp_dir):
 
     # Directories containing test images
     image_dirs = [
-        Path("images/testimages"),
-        Path("images/testimages_objects"),
+        Path("images/week_6_testimages_3"),
+        Path("images/week_7_testimages_4"),
     ]
 
     # Define various target crop sizes/aspect ratios
