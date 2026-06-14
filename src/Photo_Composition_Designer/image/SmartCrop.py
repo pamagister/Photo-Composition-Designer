@@ -163,7 +163,7 @@ class SmartCrop:
             1,
         )
 
-        return priority * detection.confidence * math.sqrt(area)
+        return priority * (detection.confidence or 0.0) * math.sqrt(area)
 
     def _calculate_weighted_anchor(
         self,
