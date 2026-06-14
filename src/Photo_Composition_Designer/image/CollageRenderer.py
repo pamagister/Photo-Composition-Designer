@@ -9,7 +9,7 @@ from PIL import Image
 from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.image.SmartCrop import SmartCrop
 
-IMAGE_SCORE_FACTOR = 0.35
+IMAGE_SCORE_FACTOR = 0.8
 
 from dataclasses import dataclass
 
@@ -44,8 +44,6 @@ def linear_partition_table(seq, k):
                 ((max(table[x][j - 1], table[i][0] - table[x][0]), x) for x in range(i)),
                 key=itemgetter(0))
     return (table, solution)
-
-# end partition problem algorithm
 
 def linear_partition(seq, k, data_list=None, do_rotate=False):
     if k <= 0:
@@ -181,112 +179,67 @@ class CollageRenderer:
             weights=row_weights
         )
 
-
-    def _generateTwoImageLayout(
-        self,
-        images,
-        width,
-        height,
-    ):
-
-        if width >= height:
-            return SplitNode(
-                direction="vertical",
-                children=[
-                    ImageNode(images[0]),
-                    ImageNode(images[1]),
-                ],
-                weights=[
-                    self._calculateLayoutWeight(images[0]),
-                    self._calculateLayoutWeight(images[1]),
-                ],
-            )
-
-        return SplitNode(
-            direction="horizontal",
-            children=[
-                ImageNode(images[0]),
-                ImageNode(images[1]),
-            ],
-            weights=[
-                self._calculateLayoutWeight(images[0]),
-                self._calculateLayoutWeight(images[1]),
-            ],
-        )
-
-    def _renderLayout(
-        self,
-        collage,
-        node,
-        x,
-        y,
-        width,
-        height,
-    ):
+    def _renderLayout(self, collage, node, x, y, width, height):
+        # Leaf
         if isinstance(node, ImageNode):
-            img = self._cropAndResize(
-                node.image,
-                width,
-                height,
-            )
-
-            collage.paste(
-                img,
-                (int(x), int(y)),
-            )
-
+            img = self._cropAndResize(node.image, width, height)
+            collage.paste(img, (int(x), int(y)))
             return
 
-        weight_sum = sum(node.weights)
+        if not node.children:
+            return
 
-        if weight_sum == 0:
-            w1 = w2 = 0.5
-        else:
-            w1 = node.weights[0] / weight_sum
-            w2 = node.weights[1] / weight_sum
+        weight_sum = sum(node.weights) if node.weights else len(node.children)
 
+        # --- VERTICAL SPLIT (nebeneinander) ---
         if node.direction == "vertical":
-            split = int(width * w1)
+            current_x = x
 
-            self._renderLayout(
-                collage,
-                node.children[0],
-                x,
-                y,
-                split - self.spacing // 2,
-                height,
-            )
+            for i, child in enumerate(node.children):
+                w = node.weights[i] if node.weights else 1
+                w_ratio = w / weight_sum
 
-            self._renderLayout(
-                collage,
-                node.children[1],
-                x + split + self.spacing // 2,
-                y,
-                width - split - self.spacing // 2,
-                height,
-            )
+                cw = int(width * w_ratio)
+
+                # letzter block bekommt Rest (verhindert Drift)
+                if i == len(node.children) - 1:
+                    cw = x + width - current_x
+
+                self._renderLayout(
+                    collage,
+                    child,
+                    current_x,
+                    y,
+                    cw - self.spacing // 2,
+                    height
+                )
+
+                current_x += cw + self.spacing
 
             return
 
-        split = int(height * w1)
+        # --- HORIZONTAL SPLIT (untereinander) ---
+        current_y = y
 
-        self._renderLayout(
-            collage,
-            node.children[0],
-            x,
-            y,
-            width,
-            split - self.spacing // 2,
-        )
+        for i, child in enumerate(node.children):
+            h = node.weights[i] if node.weights else 1
+            h_ratio = h / weight_sum
 
-        self._renderLayout(
-            collage,
-            node.children[1],
-            x,
-            y + split + self.spacing // 2,
-            width,
-            height - split - self.spacing // 2,
-        )
+            ch = int(height * h_ratio)
+
+            if i == len(node.children) - 1:
+                ch = y + height - current_y
+
+            self._renderLayout(
+                collage,
+                child,
+                x,
+                current_y,
+                width,
+                ch - self.spacing // 2
+            )
+
+            current_y += ch + self.spacing
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """
