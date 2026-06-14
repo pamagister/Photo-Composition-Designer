@@ -44,9 +44,9 @@ class CollageRenderer:
         collage: Image.Image = Image.new(
             mode="RGB", size=(self.width, self.height), color=self.color
         )
-        images = self.sortByAspectRatio(images)
+        images = self._sortByAspectRatio(images)
         self.logger.info("Images sorted by aspect ratio.")
-        formats = self.analyzeImages(images)
+        formats = self._analyzeImages(images)
         self.logger.info(f"Image formats analyzed: {formats}")
 
         try:
@@ -55,17 +55,17 @@ class CollageRenderer:
             self.logger.info(f"Arranging {num_images} images.")
 
             if num_images == 1:
-                self.arrangeOneImage(collage, images[0], self.width, self.height)
+                self._arrangeOneImage(collage, images[0], self.width, self.height)
             elif num_images == 2:
-                self.arrangeTwoImages(collage, images, formats, self.width, self.height)
+                self._arrangeTwoImages(collage, images, formats, self.width, self.height)
             elif num_images == 3:
-                self.arrangeThreeImages(collage, images, formats, self.width, self.height)
+                self._arrangeThreeImages(collage, images, formats, self.width, self.height)
             elif num_images == 4:
-                self.arrangeFourImages(collage, images, formats, self.width, self.height)
+                self._arrangeFourImages(collage, images, formats, self.width, self.height)
             elif num_images == 5:
-                self.arrangeFiveImages(collage, images, formats, self.width, self.height)
+                self._arrangeFiveImages(collage, images, formats, self.width, self.height)
             else:
-                self.arrangeMultipleImages(collage, images, self.width, self.height)
+                self._arrangeMultipleImages(collage, images, self.width, self.height)
             self.logger.info("Image arrangement completed successfully.")
 
         except (UnidentifiedImageError, OSError) as e:
@@ -73,7 +73,7 @@ class CollageRenderer:
                 f"Error in the arrangement of images: {e}. Attempting to remove invalid images."
             )
             # Remove invalid images and try again
-            valid_images = self.remove_invalid_images(images)
+            valid_images = self._remove_invalid_images(images)
             if valid_images and len(valid_images) < len(images):
                 self.logger.info(
                     "Invalid images removed, trying collage generation again with valid images."
@@ -85,7 +85,7 @@ class CollageRenderer:
                 raise e
         return collage
 
-    def remove_invalid_images(self, images: list[Image.Image]):
+    def _remove_invalid_images(self, images: list[Image.Image]):
         """
         Checks a list of images and removes unreadable or corrupted images.
         """
@@ -101,7 +101,7 @@ class CollageRenderer:
         return valid_images
 
     @staticmethod
-    def analyzeImages(images):
+    def _analyzeImages(images):
         """
         Analyzes whether images are portrait or landscape.
         """
@@ -115,14 +115,14 @@ class CollageRenderer:
         return analysis
 
     @staticmethod
-    def sortByAspectRatio(images):
+    def _sortByAspectRatio(images):
         """
         Sorts images based on their aspect ratio (width / height).
         Narrowest ("portrait") first, widest ("landscape") last.
         """
         return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
 
-    def cropAndResize(self, image, target_width, target_height):
+    def _cropAndResize(self, image, target_width, target_height):
         """
         Crops an image proportionally and then scales it to the desired size.
         Attempts to retain recognized objects in the image.
@@ -143,7 +143,7 @@ class CollageRenderer:
         )
         return cropped_image
 
-    def calculateImageScore(
+    def _calculateImageScore(
         self,
         image,
     ):
@@ -174,15 +174,15 @@ class CollageRenderer:
             )
         return score
 
-    def arrangeOneImage(self, collage, image, width, height):
+    def _arrangeOneImage(self, collage, image, width, height):
         """
         Layout for a single image.
         """
         self.logger.info("Arranging one image.")
-        img = self.cropAndResize(image, width, height)
+        img = self._cropAndResize(image, width, height)
         collage.paste(img, (0, 0))
 
-    def arrangeTwoImages(self, collage, images, formats, width, height):
+    def _arrangeTwoImages(self, collage, images, formats, width, height):
         """
         Layout for two images.
         """
@@ -194,20 +194,20 @@ class CollageRenderer:
             # Golden ratio layout
             portrait_width = int(width * 0.4)
             landscape_width = width - portrait_width - self.spacing
-            img1 = self.cropAndResize(images[portrait_idx], portrait_width, height)
-            img2 = self.cropAndResize(images[landscape_idx], landscape_width, height)
+            img1 = self._cropAndResize(images[portrait_idx], portrait_width, height)
+            img2 = self._cropAndResize(images[landscape_idx], landscape_width, height)
             collage.paste(img1, (0, 0))
             collage.paste(img2, (portrait_width + self.spacing, 0))
         else:
             self.logger.info("Two images: both landscape layout (side-by-side).")
             # Both landscape -> side by side
             img_width = (width - self.spacing) // 2
-            img1 = self.cropAndResize(images[0], img_width, height)
-            img2 = self.cropAndResize(images[1], img_width, height)
+            img1 = self._cropAndResize(images[0], img_width, height)
+            img2 = self._cropAndResize(images[1], img_width, height)
             collage.paste(img1, (0, 0))
             collage.paste(img2, (img_width + self.spacing, 0))
 
-    def arrangeThreeImages(self, collage, images, formats, w, h):
+    def _arrangeThreeImages(self, collage, images, formats, w, h):
         """
         Layouts for three images.
         """
@@ -217,49 +217,49 @@ class CollageRenderer:
             # One large landscape image at the top,
             # two smaller ones side-by-side at the bottom (LLL)
             lambda imgs: [
-                (self.cropAndResize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
+                (self._cropAndResize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)),
+                    self._cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)),
                     (0, int(h * 0.6)),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.5), int(h * 0.4)),
+                    self._cropAndResize(imgs[2], int(w * 0.5), int(h * 0.4)),
                     (int(w * 0.5) + s, int(h * 0.6)),
                 ),
             ],
             # Large landscape on the left, two landscape images stacked on the right (LLL)
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),
+                (self._cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)),
+                    self._cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)),
                     (int(w * 0.7) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.3), int(h * 0.5) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.3), int(h * 0.5) - s),
                     (int(w * 0.7) + s, int(h * 0.5) + s),
                 ),
             ],
             # Large portrait on the left, two landscape images stacked on the right (PLL)
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),
+                (self._cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)),
+                    self._cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)),
                     (int(w * 0.4) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.6), int(h * 0.5) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.6), int(h * 0.5) - s),
                     (int(w * 0.4) + s, int(h * 0.5) + s),
                 ),
             ],
             # Large landscape on the left, two portrait images stacked on the right (PPL)
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),
+                (self._cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)),
+                    self._cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)),
                     (int(w * 0.6) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.4), int(h * 0.5) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.4), int(h * 0.5) - s),
                     (int(w * 0.6) + s, int(h * 0.5) + s),
                 ),
             ],
@@ -285,13 +285,13 @@ class CollageRenderer:
         else:
             self.logger.info("Three images: all portrait layout (using multiple images grid).")
             # Three equally sized portrait images side by side PPP
-            self.arrangeMultipleImages(collage, images, self.width, self.height)
+            self._arrangeMultipleImages(collage, images, self.width, self.height)
             return
 
         for img, pos in layout(images):
             collage.paste(img, pos)
 
-    def arrangeFourImages(self, collage, images, formats, w, h):
+    def _arrangeFourImages(self, collage, images, formats, w, h):
         """
         Layouts for four images.
         """
@@ -301,36 +301,36 @@ class CollageRenderer:
             # Two large images at the top,
             # two slightly smaller at the bottom, slightly offset (LLLL)
             lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.45), int(h * 0.55) - s), (0, 0)),
+                (self._cropAndResize(imgs[0], int(w * 0.45), int(h * 0.55) - s), (0, 0)),
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.55), int(h * 0.55) - s),
+                    self._cropAndResize(imgs[3], int(w * 0.55), int(h * 0.55) - s),
                     (int(w * 0.45) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.55), int(h * 0.45)),
+                    self._cropAndResize(imgs[2], int(w * 0.55), int(h * 0.45)),
                     (0, int(h * 0.55)),
                 ),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.45), int(h * 0.45)),
+                    self._cropAndResize(imgs[1], int(w * 0.45), int(h * 0.45)),
                     (int(w * 0.55) + s, int(h * 0.55)),
                 ),
             ],
             # Large square, three small landscape on the right Q-LLL
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.7), h),
+                    self._cropAndResize(imgs[0], int(w * 0.7), h),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.3), int(h / 3)),
+                    self._cropAndResize(imgs[1], int(w * 0.3), int(h / 3)),
                     (int(w * 0.7) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.3), int(h / 3) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.3), int(h / 3) - s),
                     (int(w * 0.7) + s, int(h / 3) + s),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.3), int(h / 3) - 1 * s),
+                    self._cropAndResize(imgs[3], int(w * 0.3), int(h / 3) - 1 * s),
                     (int(w * 0.7) + s, int(h * 2 / 3) + s),
                 ),
             ],
@@ -338,19 +338,19 @@ class CollageRenderer:
             # two small landscape side by side below PLLL
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.4), h),
+                    self._cropAndResize(imgs[0], int(w * 0.4), h),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)),
+                    self._cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)),
                     (int(w * 0.4) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
                     (int(w * 0.4) + s, int(h * 3 / 5) + s),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s),
+                    self._cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s),
                     (int(w * 0.7) + s, int(h * 3 / 5) + s),
                 ),
             ],
@@ -358,19 +358,19 @@ class CollageRenderer:
             # below it small portrait and landscape PPLL
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.4), h),
+                    self._cropAndResize(imgs[0], int(w * 0.4), h),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)),
+                    self._cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)),
                     (int(w * 0.4) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s),
+                    self._cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s),
                     (int(w * 0.4) + s, int(h * 3 / 5) + s),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s),
+                    self._cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s),
                     (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s),
                 ),
             ],
@@ -378,19 +378,19 @@ class CollageRenderer:
             # below it two small portrait side by side PPLL
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.4), h),
+                    self._cropAndResize(imgs[0], int(w * 0.4), h),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)),
+                    self._cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)),
                     (int(w * 0.4) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
+                    self._cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
                     (int(w * 0.4) + s, int(h * 2 / 5) + s),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s),
                     (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s),
                 ),
             ],
@@ -424,7 +424,7 @@ class CollageRenderer:
         for img, pos in layout(images):
             collage.paste(img, pos)
 
-    def arrangeFiveImages(self, collage, images, formats, w, h):
+    def _arrangeFiveImages(self, collage, images, formats, w, h):
         """
         Layouts for five images.
         """
@@ -434,46 +434,46 @@ class CollageRenderer:
             # Two large images at the top, three slightly smaller at the bottom (LLLLL)
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.5), int(h * 0.6) - s),
+                    self._cropAndResize(imgs[0], int(w * 0.5), int(h * 0.6) - s),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.6) - s),
+                    self._cropAndResize(imgs[1], int(w * 0.5), int(h * 0.6) - s),
                     (int(w * 0.5) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w / 3), int(h * 0.4)),
+                    self._cropAndResize(imgs[2], int(w / 3), int(h * 0.4)),
                     (int(w * 0 / 3) + 0 * s, int(h * 0.6)),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w / 3), int(h * 0.4)),
+                    self._cropAndResize(imgs[3], int(w / 3), int(h * 0.4)),
                     (int(w * 1 / 3) + 1 * s, int(h * 0.6)),
                 ),
                 (
-                    self.cropAndResize(imgs[4], int(w / 3), int(h * 0.4)),
+                    self._cropAndResize(imgs[4], int(w / 3), int(h * 0.4)),
                     (int(w * 2 / 3) + 2 * s, int(h * 0.6)),
                 ),
             ],
             # Large portrait on the left, four smaller images on the right in golden ratio (PLLLL)
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.3 - s), int(h)),
+                    self._cropAndResize(imgs[0], int(w * 0.3 - s), int(h)),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.55) - s),
+                    self._cropAndResize(imgs[1], int(w * 0.3), int(h * 0.55) - s),
                     (int(w * 0.3), 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
                     (int(w * 0.6) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)),
+                    self._cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)),
                     (int(w * 0.3), int(h * 0.55)),
                 ),
                 (
-                    self.cropAndResize(imgs[4], int(w * 0.3) - s, int(h * 0.45)),
+                    self._cropAndResize(imgs[4], int(w * 0.3) - s, int(h * 0.45)),
                     (int(w * 0.7) + s, int(h * 0.55)),
                 ),
             ],
@@ -481,46 +481,46 @@ class CollageRenderer:
             # three small landscape at the bottom (PPLLL)
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.5), int(h * 2 / 3) - s),
+                    self._cropAndResize(imgs[0], int(w * 0.5), int(h * 2 / 3) - s),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.5), int(h * 2 / 3) - s),
+                    self._cropAndResize(imgs[1], int(w * 0.5), int(h * 2 / 3) - s),
                     (int(w * 0.5) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[4], int(w / 3), int(h / 3)),
+                    self._cropAndResize(imgs[4], int(w / 3), int(h / 3)),
                     (int(w * 0 / 3) + 0 * s, int(h * 2 / 3)),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w / 3), int(h / 3)),
+                    self._cropAndResize(imgs[3], int(w / 3), int(h / 3)),
                     (int(w * 1 / 3) + 1 * s, int(h * 2 / 3)),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w / 3), int(h / 3)),
+                    self._cropAndResize(imgs[2], int(w / 3), int(h / 3)),
                     (int(w * 2 / 3) + 2 * s, int(h * 2 / 3)),
                 ),
             ],
             # Large portrait on the left, four smaller images on the right in golden ratio (PPPLL)
             lambda imgs: [
                 (
-                    self.cropAndResize(imgs[0], int(w * 0.35 - s), int(h)),
+                    self._cropAndResize(imgs[0], int(w * 0.35 - s), int(h)),
                     (0, 0),
                 ),  # portrait, index 0
                 (
-                    self.cropAndResize(imgs[1], int(w * 0.25), int(h * 0.55) - s),
+                    self._cropAndResize(imgs[1], int(w * 0.25), int(h * 0.55) - s),
                     (int(w * 0.35), 0),
                 ),
                 (
-                    self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
+                    self._cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
                     (int(w * 0.6) + s, 0),
                 ),
                 (
-                    self.cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)),
+                    self._cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)),
                     (int(w * 0.35), int(h * 0.55)),
                 ),
                 (
-                    self.cropAndResize(imgs[4], int(w * 0.25) - s, int(h * 0.45)),
+                    self._cropAndResize(imgs[4], int(w * 0.25) - s, int(h * 0.45)),
                     (int(w * 0.75) + s, int(h * 0.55)),
                 ),
             ],
@@ -546,7 +546,7 @@ class CollageRenderer:
         for img, pos in layout(images):
             collage.paste(img, pos)
 
-    def arrangeMultipleImages(self, collage, images, width, height):
+    def _arrangeMultipleImages(self, collage, images, width, height):
         """
         Grid layout for more than four images, with even distribution.
         Automatically adjusts the number of rows and columns.
@@ -569,7 +569,7 @@ class CollageRenderer:
             col = i % cols
 
             # Adjust image size to the grid cell
-            resized_img = self.cropAndResize(img, cell_width, cell_height)
+            resized_img = self._cropAndResize(img, cell_width, cell_height)
 
             # Calculate the position of the image in the composition
             x_offset = col * (cell_width + self.spacing)

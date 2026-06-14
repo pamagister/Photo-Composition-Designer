@@ -19,6 +19,7 @@ class ObjectDetector:
     YOLO ONNX wrapper.
     """
 
+    # https://docs.ultralytics.com/datasets/segment/coco#sample-images-and-annotations
     WANTED_CLASSES = {
         0: "person",
         1: "bicycle",
