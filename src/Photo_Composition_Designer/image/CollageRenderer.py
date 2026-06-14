@@ -1,5 +1,7 @@
+import math
 import random
 from logging import Logger
+from operator import itemgetter
 
 from config_cli_gui.logging import get_logger, initialize_logging
 from PIL import Image
@@ -27,6 +29,59 @@ class SplitNode(LayoutNode):
     direction: str
     children: list
     weights: list[float]
+
+def linear_partition_table(seq, k):
+    n = len(seq)
+    table = [[0] * k for x in range(n)]
+    solution = [[0] * (k - 1) for x in range(n - 1)]
+    for i in range(n):
+        table[i][0] = seq[i] + (table[i - 1][0] if i else 0)
+    for j in range(k):
+        table[0][j] = seq[0]
+    for i in range(1, n):
+        for j in range(1, k):
+            table[i][j], solution[i - 1][j - 1] = min(
+                ((max(table[x][j - 1], table[i][0] - table[x][0]), x) for x in range(i)),
+                key=itemgetter(0))
+    return (table, solution)
+
+# end partition problem algorithm
+
+def linear_partition(seq, k, data_list=None, do_rotate=False):
+    if k <= 0:
+        return []
+    n = len(seq) - 1
+    if k > n:
+        return map(lambda x: [x], seq)
+    _, solution = linear_partition_table(seq, k)
+    k, ans = k - 2, []
+    if data_list == None or len(data_list) != len(seq):
+        while k >= 0:
+            row = [[seq[i] for i in range(solution[n - 1][k] + 1, n + 1)]]
+            if do_rotate:
+                ans += row
+            else:
+                ans = row + ans
+            n, k = solution[n - 1][k], k - 1
+        row = [[seq[i] for i in range(0, n + 1)]]
+        if do_rotate:
+            ans += row
+        else:
+            ans = row + ans
+    else:
+        while k >= 0:
+            row = [[data_list[i] for i in range(solution[n - 1][k] + 1, n + 1)]]
+            if do_rotate:
+                ans += row
+            else:
+                ans = row + ans
+            n, k = solution[n - 1][k], k - 1
+        row = [[data_list[i] for i in range(0, n + 1)]]
+        if do_rotate:
+            ans += row
+        else:
+            ans = row + ans
+    return ans
 
 
 class CollageRenderer:
@@ -78,89 +133,54 @@ class CollageRenderer:
 
         return aspect_ratio * score_factor
 
-    def _generateLayout(
-        self,
-        images,
-        target_width,
-        target_height,
-    ):
+    def _generateLayout(self, images, target_width, target_height):
         """
-        Rekursive Layout-Erzeugung.
-
-        Liefert einen Layout-Baum zurück.
+        Erzeugt ein stabil balanciertes Layout basierend auf echter Partitionierung
+        statt greedy rekursiven Splits.
         """
 
-        if len(images) == 1:
+        n = len(images)
+
+        if n == 1:
             return ImageNode(images[0])
 
-        if len(images) == 2:
-            return self._generateTwoImageLayout(
-                images,
-                target_width,
-                target_height,
-            )
-
-        canvas_ratio = target_width / target_height
-
-        weighted_images = sorted(
-            images,
-            key=self._calculateLayoutWeight,
-            reverse=True,
-        )
-
-        split_index = self._findBestSplit(weighted_images)
-
-        group_a = weighted_images[:split_index]
-        group_b = weighted_images[split_index:]
-
-        sum_a = sum(self._calculateLayoutWeight(img) for img in group_a)
-
-        sum_b = sum(self._calculateLayoutWeight(img) for img in group_b)
-
-        if canvas_ratio >= 1.0:
-            direction = "vertical"
-        else:
-            direction = "horizontal"
-
-        child_a = self._generateLayout(
-            group_a,
-            target_width,
-            target_height,
-        )
-
-        child_b = self._generateLayout(
-            group_b,
-            target_width,
-            target_height,
-        )
-
-        return SplitNode(
-            direction=direction,
-            children=[child_a, child_b],
-            weights=[sum_a, sum_b],
-        )
-
-    def _findBestSplit(self, images):
-
+        # Gewichte berechnen (wie vorher)
         weights = [self._calculateLayoutWeight(img) for img in images]
 
-        total = sum(weights)
+        # Ziel: Anzahl "Zeilen" heuristisch bestimmen
+        canvas_ratio = target_width / target_height
+        num_rows = max(1, min(n, int(round(math.sqrt(n / canvas_ratio)))))
 
-        current = 0
+        # Partitionierung (wie im Referenzalgorithmus)
+        rows = linear_partition(weights, num_rows, images)
 
-        best_index = 1
-        best_error = float("inf")
+        # Jede Zeile wird ein SplitNode (horizontal = Bilder nebeneinander)
+        row_nodes = []
+        row_weights = []
 
-        for i in range(1, len(weights)):
-            current += weights[i - 1]
+        for row in rows:
+            if len(row) == 1:
+                row_nodes.append(ImageNode(row[0]))
+                row_weights.append(self._calculateLayoutWeight(row[0]))
+            else:
+                w = [self._calculateLayoutWeight(img) for img in row]
+                row_nodes.append(SplitNode(
+                    direction="vertical",
+                    children=[ImageNode(img) for img in row],
+                    weights=w
+                ))
+                row_weights.append(sum(w))
 
-            error = abs(current - (total - current))
+        # Falls nur eine Zeile → direkt zurück
+        if len(row_nodes) == 1:
+            return row_nodes[0]
 
-            if error < best_error:
-                best_error = error
-                best_index = i
+        return SplitNode(
+            direction="horizontal",
+            children=row_nodes,
+            weights=row_weights
+        )
 
-        return best_index
 
     def _generateTwoImageLayout(
         self,
@@ -216,10 +236,14 @@ class CollageRenderer:
             )
 
             return
+
         weight_sum = sum(node.weights)
 
-        w1 = node.weights[0] / weight_sum
-        w2 = node.weights[1] / weight_sum
+        if weight_sum == 0:
+            w1 = w2 = 0.5
+        else:
+            w1 = node.weights[0] / weight_sum
+            w2 = node.weights[1] / weight_sum
 
         if node.direction == "vertical":
             split = int(width * w1)
