@@ -21,7 +21,7 @@ def test_object_detector(temp_dir):
         "portrait_two_persons_bottom.jpg": 2,
     }
 
-    image_dir = Path("images/testimages")
+    image_dir = Path("images/week_8_testimages_5")
 
     for filename, expected in images.items():
         img = Image.open(image_dir / filename)

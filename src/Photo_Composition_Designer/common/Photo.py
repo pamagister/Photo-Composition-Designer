@@ -9,7 +9,8 @@ from PIL import Image
 
 class Photo:
     """
-    Class doc string
+    Represents a photo file, providing methods to extract metadata like
+    location and date from EXIF data or filename.
     """
 
     DATE_PATTERN_FULL: re.Pattern = re.compile(
@@ -45,6 +46,9 @@ class Photo:
         return None
 
     def get_location_from_name(self) -> tuple[float, float] | None:
+        """
+        Extracts location from the filename based on predefined locations.
+        """
         location = self._locations
         file_name = self.file_path.name.lower()
 
@@ -86,14 +90,24 @@ class Photo:
                     pass
         return None
 
-    def _extract_date_from_filename(self) -> datetime | None:
+    def _extract_date_from_filename(self) -> datetime:
         """Attempts to extract date from file name."""
-        match = self.DATE_PATTERN_FULL.search(self.file_path.name)
-        if match:
-            return datetime(*map(int, match.groups()))
-        match = self.DATE_PATTERN_NO_TIME.search(self.file_path.name)
-        if match:
-            return datetime(*map(int, match.groups()), 12, 0, 0)
+
+        patterns = (
+            (self.DATE_PATTERN_FULL, ()),
+            (self.DATE_PATTERN_NO_TIME, (12, 0, 0)),
+        )
+
+        for pattern, defaults in patterns:
+            match = pattern.search(self.file_path.name)
+            if not match:
+                continue
+
+            try:
+                return datetime(*map(int, match.groups()), *defaults)
+            except ValueError:
+                continue
+
         return datetime.max
 
 
@@ -108,7 +122,7 @@ def get_photos_from_dir(
     if not folder_path.is_dir():
         raise ValueError(f"Folder '{image_folder}' does not exist.")
 
-    # Alle Bilddateien sammeln
+    # Collect all image files
     image_files = [
         os.path.join(image_folder, file)
         for file in sorted(os.listdir(image_folder))
@@ -119,7 +133,7 @@ def get_photos_from_dir(
         print(f"No images found in '{image_folder}'.")
         return None
 
-    return [Photo(Path(file), locations) for file in image_files]  # Photo-Objekte erstellen
+    return [Photo(Path(file), locations) for file in image_files]  # Create Photo objects
 
 
 def get_photo_dates(photos: list[Photo]) -> str:
