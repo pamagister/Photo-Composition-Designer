@@ -9,7 +9,7 @@ from PIL import Image
 from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.image.SmartCrop import SmartCrop
 
-IMAGE_SCORE_FACTOR = 0.8
+IMAGE_SCORE_FACTOR = 1.0
 
 from dataclasses import dataclass
 
@@ -131,6 +131,114 @@ class CollageRenderer:
 
         return aspect_ratio * score_factor
 
+
+    def _generateTwoImageLayout(
+        self,
+        images,
+        width,
+        height,
+    ):
+
+        if width >= height:
+            return SplitNode(
+                direction="vertical",
+                children=[
+                    ImageNode(images[0]),
+                    ImageNode(images[1]),
+                ],
+                weights=[
+                    self._calculateLayoutWeight(images[0]),
+                    self._calculateLayoutWeight(images[1]),
+                ],
+            )
+
+        return SplitNode(
+            direction="horizontal",
+            children=[
+                ImageNode(images[0]),
+                ImageNode(images[1]),
+            ],
+            weights=[
+                self._calculateLayoutWeight(images[0]),
+                self._calculateLayoutWeight(images[1]),
+            ],
+        )
+
+    def _chooseBestThreeLayout(self, images, w, h):
+        ratios = [img.width / img.height for img in images]
+
+        is_portrait = [r < 0.9 for r in ratios]
+        p_count = sum(is_portrait)
+
+        weights = [self._calculateLayoutWeight(img) for img in images]
+
+        # --- FALL 1: PPP (alle hochkant) ---
+        if p_count == 3:
+            return SplitNode(
+                direction="vertical",
+                children=[
+                    ImageNode(images[0]),
+                    ImageNode(images[1]),
+                    ImageNode(images[2]),
+                ],
+                weights=weights
+            )
+
+        # --- FALL 2: LLL (alle quer) ---
+        if p_count == 0:
+            # stabilere Verteilung: 2 oben, 1 unten
+            return SplitNode(
+                direction="vertical",
+                children=[
+                    SplitNode(
+                        direction="horizontal",
+                        children=[
+                            ImageNode(images[0]),
+                            ImageNode(images[1]),
+                        ],
+                        weights=[weights[0], weights[1]]
+                    ),
+                    ImageNode(images[2]),
+                ],
+                weights=[weights[0] + weights[1], weights[2]]
+            )
+
+        # --- FALL 3: 1 Portrait + 2 Landscape (PLL / LPL etc.) ---
+        # Portrait dominant links
+        if is_portrait[0]:
+            return SplitNode(
+                direction="horizontal",
+                children=[
+                    ImageNode(images[0]),
+                    SplitNode(
+                        direction="vertical",
+                        children=[
+                            ImageNode(images[1]),
+                            ImageNode(images[2]),
+                        ],
+                        weights=[weights[1], weights[2]]
+                    )
+                ],
+                weights=[weights[0], weights[1] + weights[2]]
+            )
+
+        # fallback symmetric
+        return SplitNode(
+            direction="horizontal",
+            children=[
+                ImageNode(images[0]),
+                SplitNode(
+                    direction="vertical",
+                    children=[
+                        ImageNode(images[1]),
+                        ImageNode(images[2]),
+                    ],
+                    weights=[weights[1], weights[2]]
+                )
+            ],
+            weights=[weights[0], weights[1] + weights[2]]
+        )
+
     def _generateLayout(self, images, target_width, target_height):
         """
         Erzeugt ein stabil balanciertes Layout basierend auf echter Partitionierung
@@ -141,6 +249,13 @@ class CollageRenderer:
 
         if n == 1:
             return ImageNode(images[0])
+
+        if n == 2:
+            return self._generateTwoImageLayout(images, target_width, target_height)
+
+        if n == 3:
+            return self._chooseBestThreeLayout(images, target_width, target_height)
+
 
         # Gewichte berechnen (wie vorher)
         weights = [self._calculateLayoutWeight(img) for img in images]
@@ -218,7 +333,7 @@ class CollageRenderer:
 
             return
 
-        # --- HORIZONTAL SPLIT (untereinander) ---
+        # --- VERTICAL = OBEN/UNTEN ---
         current_y = y
 
         for i, child in enumerate(node.children):
