@@ -63,11 +63,8 @@ class ObjectDetector:
         resized = image.resize((640, 640))
 
         img = np.asarray(resized, dtype=np.float32)
-
         img /= 255.0
-
         img = np.transpose(img, (2, 0, 1))
-
         img = np.expand_dims(img, axis=0)
 
         outputs = self.session.run(

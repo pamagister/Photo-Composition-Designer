@@ -33,12 +33,29 @@ def test_smart_crop(temp_dir):
         (800, 300),  # Very Wide Landscape
         (300, 800),  # Very High Portrait
         (600, 400),  # 3:2 Landscape
-        (400, 600),  # 3:4 Portrait
+        (400, 600),  # 2:3 Portrait
     ]
 
     for image_dir in image_dirs:
         for image_file in sorted(image_dir.glob("*.jpg")):
             image = Image.open(image_file).convert("RGB")  # Ensure RGB for consistent processing
+
+            width, height = image.size
+            output_max_dim: int = 1080
+
+            if max(width, height) > output_max_dim:
+                scale = output_max_dim / max(
+                    width,
+                    height,
+                )
+
+                image = image.resize(
+                    (
+                        int(width * scale),
+                        int(height * scale),
+                    ),
+                    Image.Resampling.LANCZOS,
+                )
 
             detections = detector.detect(image)
 
@@ -64,7 +81,6 @@ def test_smart_crop(temp_dir):
                     original_image=image,
                     detections=detections,
                     crop_box=crop_box,
-                    output_max_dim=1080,  # Normalize long edge to HD for visualization
                 )
                 visualized_image_name = f"{image_file.stem}_visualized_{width}x{height}.jpg"
                 visualized_image.save(temp_dir / visualized_image_name)

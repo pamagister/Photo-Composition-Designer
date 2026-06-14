@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import colorsys
 import math
 from dataclasses import dataclass
+from hashlib import blake2b
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -245,30 +247,19 @@ class SmartCrop:
                 ),
             )
 
-            #
             # Head protection:
             #
-            # Prevent the crop from cutting off
-            # the upper part of important objects.
-            #
+            # Prevent the crop from cutting off the upper part of important objects.
             if detections:
                 important_top = min(
-                    d.bbox[1]
-                    for d in detections
-                    if self.object_priorities.get(
-                        d.class_name,
-                        1,
-                    )
+                    d.bbox[1] for d in detections if self.object_priorities.get(d.class_name, 1)
                 )
 
                 top = min(top, important_top)
 
                 top = max(
                     0,
-                    min(
-                        top,
-                        img_height - crop_height,
-                    ),
+                    min(top, img_height - crop_height),
                 )
 
             left = 0
@@ -336,6 +327,15 @@ class SmartCrop:
     ) -> tuple[Image.Image, tuple[int, int, int, int]]:
         """
         Perform smart crop and resize.
+
+        Args:
+            image: The source PIL Image.
+            target_width: Desired output width in pixels.
+            target_height: Desired output height in pixels.
+            detections: List of object detections to consider for cropping.
+
+        Returns:
+            A tuple containing the cropped/resized Image and the crop coordinates.
         """
 
         img_width, img_height = image.size
@@ -361,10 +361,17 @@ class SmartCrop:
         original_image: Image.Image,
         detections: list[Detection],
         crop_box: tuple[int, int, int, int],
-        output_max_dim: int = 1080,
     ) -> Image.Image:
         """
-        Visualize detections and crop box.
+        Visualize detections and crop box on a copy of the original image.
+
+        Args:
+            original_image: The source PIL Image.
+            detections: List of detections to draw.
+            crop_box: The (left, top, right, bottom) coordinates of the crop.
+
+        Returns:
+            A new Image with visualization overlays.
         """
 
         image = original_image.copy().convert("RGB")
@@ -374,7 +381,7 @@ class SmartCrop:
         try:
             font = ImageFont.truetype(
                 "arial.ttf",
-                20,
+                32,
             )
         except OSError:
             font = ImageFont.load_default()
@@ -382,11 +389,10 @@ class SmartCrop:
         for detection in detections:
             x1, y1, x2, y2 = detection.bbox
 
-            draw.rectangle(
-                [x1, y1, x2, y2],
-                outline="red",
-                width=1,
-            )
+            label = f"{detection.class_name} ({detection.confidence:.2f})"
+            color = get_color(detection.class_name)
+
+            draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
 
             anchor_x, anchor_y = self._get_detection_anchor(detection)
 
@@ -400,35 +406,36 @@ class SmartCrop:
                 fill="yellow",
             )
 
-            label = f"{detection.class_name} ({detection.confidence:.2f})"
+            draw.text((x1 + 2, max(2, y1 + 2)), label, fill=color, font=font)
 
-            draw.text(
-                (x1, max(0, y1 - 20)),
-                label,
-                fill="red",
-                font=font,
-            )
-
-        draw.rectangle(
-            crop_box,
-            outline="blue",
-            width=3,
-        )
-
-        width, height = image.size
-
-        if max(width, height) > output_max_dim:
-            scale = output_max_dim / max(
-                width,
-                height,
-            )
-
-            image = image.resize(
-                (
-                    int(width * scale),
-                    int(height * scale),
-                ),
-                Image.Resampling.LANCZOS,
-            )
+        draw.rectangle(crop_box, outline="blue", width=4)
 
         return image
+
+
+def get_color(value: str | int) -> tuple[int, int, int]:
+    """
+    Convert any value to a deterministic RGB color using a hash.
+
+    Args:
+        value: The value to hash into a color.
+
+    Returns:
+        An RGB tuple (0-255).
+    """
+    h = int.from_bytes(
+        blake2b(str(value).encode("utf-8"), digest_size=4).digest(),
+        "big",
+    )
+
+    hue = (h % 360) / 360.0
+    saturation = 0.95
+    value = 0.95
+
+    r, g, b = colorsys.hsv_to_rgb(hue, saturation, value)
+
+    return (
+        int(r * 255),
+        int(g * 255),
+        int(b * 255),
+    )

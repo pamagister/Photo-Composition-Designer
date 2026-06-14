@@ -69,7 +69,7 @@ class Photo:
         """Returns an Image object if the file can be opened."""
         try:
             return Image.open(self.file_path)
-        except Exception as e:
+        except (OSError, SyntaxError) as e:
             print(f"Error opening image: {e}")
             return None
 
@@ -113,7 +113,7 @@ class Photo:
 
 def get_photos_from_dir(
     image_folder: Path, locations: dict[str, tuple[float, float]] = None
-) -> list["Photo"] | None:
+) -> list[Photo]:
     """
     Reads all image files from a folder and returns a list of Photo objects.
     """
@@ -129,11 +129,7 @@ def get_photos_from_dir(
         if file.lower().endswith((".png", ".jpg", ".jpeg"))
     ]
 
-    if not image_files:
-        print(f"No images found in '{image_folder}'.")
-        return None
-
-    return [Photo(Path(file), locations) for file in image_files]  # Create Photo objects
+    return [Photo(Path(file), locations) for file in image_files]
 
 
 def get_photo_dates(photos: list[Photo]) -> str:
