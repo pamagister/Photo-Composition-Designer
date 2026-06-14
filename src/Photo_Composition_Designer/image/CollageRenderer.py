@@ -2,7 +2,7 @@ import random
 from logging import Logger
 
 from config_cli_gui.logging import get_logger, initialize_logging
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 
 from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.image.SmartCrop import SmartCrop
@@ -33,13 +33,37 @@ class CollageRenderer:
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """
-        Arranges the images in the composition. Images are checked for readability beforehand.
+        Arranges images dynamically based on canvas ratio and content,
+        generating a complete collage image.
+
+        Args:
+            images: A list of PIL Image objects to be arranged in the collage.
+
+        Returns:
+            A PIL Image object representing the generated collage.
+            Returns an empty canvas if no valid images are provided or
+            if an unrecoverable error occurs.
         """
-        self.logger.info(f"Starting collage generation for {len(images)} images.")
+
+        self.logger.info("Starting collage generation.")
 
         if not images:
-            self.logger.info("No images provided, returning empty collage.")
-            return Image.new(mode="RGB", size=(self.width, self.height), color=self.color)
+            self.logger.warning(
+                "No images provided for collage generation. Returning empty canvas."
+            )
+            return Image.new("RGB", (self.width, self.height), self.color)
+
+        # Filter out non-PIL Image objects and corrupted images
+        images = self._sanitize(images)
+        images = self._filter_valid(images)
+
+        if not images:
+            self.logger.error(
+                "All provided images were invalid or corrupted after sanitization. "
+                "Returning empty canvas."
+            )
+            return Image.new("RGB", (self.width, self.height), self.color)
+        self.logger.info(f"Starting collage generation for {len(images)} images.")
 
         collage: Image.Image = Image.new(
             mode="RGB", size=(self.width, self.height), color=self.color
@@ -49,56 +73,63 @@ class CollageRenderer:
         formats = self._analyzeImages(images)
         self.logger.info(f"Image formats analyzed: {formats}")
 
-        try:
-            # Arrangement logic based on the number of images
-            num_images = len(images)
-            self.logger.info(f"Arranging {num_images} images.")
+        # Arrangement logic based on the number of images
+        num_images = len(images)
+        self.logger.info(f"Arranging {num_images} images.")
 
-            if num_images == 1:
-                self._arrangeOneImage(collage, images[0], self.width, self.height)
-            elif num_images == 2:
-                self._arrangeTwoImages(collage, images, formats, self.width, self.height)
-            elif num_images == 3:
-                self._arrangeThreeImages(collage, images, formats, self.width, self.height)
-            elif num_images == 4:
-                self._arrangeFourImages(collage, images, formats, self.width, self.height)
-            elif num_images == 5:
-                self._arrangeFiveImages(collage, images, formats, self.width, self.height)
-            else:
-                self._arrangeMultipleImages(collage, images, self.width, self.height)
-            self.logger.info("Image arrangement completed successfully.")
+        if num_images == 1:
+            self._arrangeOneImage(collage, images[0], self.width, self.height)
+        elif num_images == 2:
+            self._arrangeTwoImages(collage, images, formats, self.width, self.height)
+        elif num_images == 3:
+            self._arrangeThreeImages(collage, images, formats, self.width, self.height)
+        elif num_images == 4:
+            self._arrangeFourImages(collage, images, formats, self.width, self.height)
+        elif num_images == 5:
+            self._arrangeFiveImages(collage, images, formats, self.width, self.height)
+        else:
+            self._arrangeMultipleImages(collage, images, self.width, self.height)
+        self.logger.info("Image arrangement completed successfully.")
 
-        except (UnidentifiedImageError, OSError) as e:
-            self.logger.info(
-                f"Error in the arrangement of images: {e}. Attempting to remove invalid images."
-            )
-            # Remove invalid images and try again
-            valid_images = self._remove_invalid_images(images)
-            if valid_images and len(valid_images) < len(images):
-                self.logger.info(
-                    "Invalid images removed, trying collage generation again with valid images."
-                )
-                return self.generate(valid_images)
-            else:
-                # If no valid images remain, re-raise the error
-                self.logger.info("No more valid images available after removal.")
-                raise e
         return collage
 
-    def _remove_invalid_images(self, images: list[Image.Image]):
+    def _sanitize(self, images: list[Image.Image]) -> list[Image.Image]:
         """
-        Checks a list of images and removes unreadable or corrupted images.
+        Filters out non-PIL Image objects from the input list.
+
+        Args:
+            images: A list of potential PIL Image objects.
+
+        Returns:
+            A list containing only valid PIL Image objects.
         """
-        valid_images = []
+        valid_images = [img for img in images if isinstance(img, Image.Image)]
+        if len(valid_images) < len(images):
+            self.logger.warning(
+                f"Removed {len(images) - len(valid_images)} non-Image objects from input."
+            )
+        return valid_images
+
+    def _filter_valid(self, images: list[Image.Image]) -> list[Image.Image]:
+        """
+        Filters out images that cause errors during basic PIL operations (e.g., corrupted files).
+
+        Args:
+            images: A list of PIL Image objects.
+
+        Returns:
+            A list containing only valid and readable PIL Image objects.
+        """
+        valid = []
         for img in images:
             try:
-                # Test if the image can be cropped without errors
-                img.crop((0, 0, 1, 1))
-                valid_images.append(img)
-            except (UnidentifiedImageError, OSError, AttributeError) as e:
-                self.logger.info(f"Invalid image skipped: {e}")
-
-        return valid_images
+                # Attempt a simple operation to check image validity (e.g., access a pixel)
+                img.getpixel((0, 0))
+                valid.append(img)
+            except Exception as e:
+                self.logger.warning(f"Invalid or corrupted image detected and removed: {e}")
+                continue
+        return valid
 
     @staticmethod
     def _analyzeImages(images):
