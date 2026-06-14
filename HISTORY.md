@@ -4,6 +4,40 @@ Changelog
 
 (unreleased)
 ------------
+- Object recognition: improve cropping: prevent crash on None. [Paul
+  Magister]
+- Object recognition: improve cropping. [Paul Magister]
+- Object recognition: add tests, add improved cropping and object
+  prioritization, add test images. [Paul Magister]
+- Object recognition: add tests, add improved cropping and object
+  prioritization, add test images. [Paul Magister]
+- Object recognition: improve module structure, add SmartCrop test.
+  [Paul Magister]
+- Object recognition: improve module structure. [Paul Magister]
+- Image recognition: add parameter whether to use object recognition.
+  [Paul Magister]
+- Image recognition: add example images for improved testing. [Paul
+  Magister]
+- Image recognition: use onnx file and onnxruntime instead of
+  ultralytics and pytorch. [Paul Magister]
+- Image recognition: detect not only persons, but different objects.
+  [Paul Magister]
+- Collage designer: using YOLO for object recognition. [Paul Magister]
+- Make pytree: consider doc strings. [Paul Magister]
+- Make pytree: improvements on show_tree.py: rename to
+  project_structure.py. [Paul Magister]
+- Make pytree: improvements on show_tree.py: doc external tool. [Paul
+  Magister]
+- Make pytree: improvements on show_tree.py: bild compact llm
+  understandable json, consider functions. [Paul Magister]
+- Make pytree: improvements on show_tree.py: - class attributes,
+  instance attributes. [Paul Magister]
+- Pipx in doc, support python until <4.0. [Paul Magister]
+
+
+1.0.0 (2025-12-04)
+------------------
+- Docs: Update HISTORY.md for release 1.0.0. [Paul Magister]
 - Upgrade libs. [Paul Magister]
 - Fix doc: start app from pypi. [Paul Magister]
 
