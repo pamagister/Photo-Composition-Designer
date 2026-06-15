@@ -15,7 +15,7 @@ def create_test_image(idx: int, orientation: str) -> Image.Image:
     """
     Creates a synthetic image with a number and orientation label centered.
     """
-    if orientation == "landscape":
+    if orientation == "L":
         size = (300, 200)
         color = (100, 150, 240)
     else:
@@ -33,7 +33,13 @@ def create_test_image(idx: int, orientation: str) -> Image.Image:
     except OSError:
         font = ImageFont.load_default()
 
-    draw.text((size[0] / 1.5, size[1] / 2), label, fill=(255, 255, 255), font=font, anchor="rt")
+    draw.text(
+        (size[0] / 1.5, size[1] / 2),
+        label,
+        fill=(255, 255, 255),
+        font=font,
+        anchor="rt",
+    )
 
     return img
 
@@ -42,36 +48,30 @@ def create_test_image(idx: int, orientation: str) -> Image.Image:
 # Layout configurations from your draft
 # ────────────────────────────────────────────────────────────────
 layout_configurations = [
-    (1, ["landscape"]),
-    (1, ["portrait"]),
-    (2, ["landscape", "landscape"]),
-    (2, ["portrait", "portrait"]),
-    (2, ["landscape", "portrait"]),
-    (3, ["landscape", "landscape", "landscape"]),
-    (3, ["portrait", "portrait", "portrait"]),
-    (3, ["landscape", "landscape", "portrait"]),
-    (3, ["landscape", "portrait", "portrait"]),
-    (4, ["landscape", "landscape", "landscape", "landscape"]),
-    (4, ["landscape", "landscape", "landscape", "portrait"]),
-    (4, ["landscape", "landscape", "portrait", "portrait"]),
-    (4, ["landscape", "portrait", "portrait", "portrait"]),
-    (5, ["landscape", "landscape", "landscape", "landscape", "landscape"]),
-    (5, ["landscape", "landscape", "landscape", "landscape", "portrait"]),
-    (5, ["landscape", "landscape", "landscape", "portrait", "portrait"]),
-    (5, ["landscape", "landscape", "portrait", "portrait", "portrait"]),
-    (6, ["landscape", "landscape", "landscape", "portrait", "portrait", "portrait"]),
-    (
-        7,
-        [
-            "portrait",
-            "landscape",
-            "landscape",
-            "landscape",
-            "portrait",
-            "landscape",
-            "portrait",
-        ],
-    ),
+    (1, ["L"]),
+    (1, ["P"]),
+    (2, ["L", "L"]),
+    (2, ["P", "P"]),
+    (2, ["L", "P"]),
+    (3, ["L", "L", "L"]),
+    (3, ["P", "P", "P"]),
+    (3, ["L", "L", "P"]),
+    (3, ["L", "P", "P"]),
+    (4, ["L", "L", "L", "L"]),
+    (4, ["L", "L", "L", "P"]),
+    (4, ["L", "L", "P", "P"]),
+    (4, ["L", "P", "P", "P"]),
+    (5, ["L", "L", "L", "L", "L"]),
+    (5, ["L", "L", "L", "L", "P"]),
+    (5, ["L", "L", "L", "P", "P"]),
+    (5, ["L", "L", "P", "P", "P"]),
+    (6, ["L", "L", "L", "P", "P", "P"]),
+    (6, ["L", "L", "L", "L", "P", "P"]),
+    (6, ["L", "L", "L", "L", "L", "L"]),
+    (6, ["P", "P", "P", "P", "P", "P"]),
+    (7, ["L", "L", "L", "P", "P", "P", "P"]),
+    (9, ["L", "L", "L", "P", "L", "P", "P", "P", "P"]),
+    (11, ["L", "L", "L", "P", "L", "P", "L", "P", "P", "P", "P"]),
 ]
 
 
@@ -86,28 +86,28 @@ def test_generate_different_layouts(num_images, layout, temp_dir):
     """
 
     # Create pools of test images
-    landscape_images = [create_test_image(i, "landscape") for i in range(1, 10)]
-    portrait_images = [create_test_image(i, "portrait") for i in range(1, 10)]
+    L_images = [create_test_image(i, "L") for i in range(1, 10)]
+    P_images = [create_test_image(i, "P") for i in range(1, 10)]
 
-    if not landscape_images or not portrait_images:
-        pytest.skip("Both landscape and portrait test images required.")
+    if not L_images or not P_images:
+        pytest.skip("Both L and P test images required.")
 
     # Select images as defined in layout spec
     selected_images = []
-    landscape_ptr = 0
-    portrait_ptr = 0
+    L_ptr = 0
+    P_ptr = 0
 
     for t in layout:
-        if t == "landscape":
-            selected_images.append(landscape_images[landscape_ptr])
-            landscape_ptr += 1
+        if t == "L":
+            selected_images.append(L_images[L_ptr])
+            L_ptr += 1
         else:
-            selected_images.append(portrait_images[portrait_ptr])
-            portrait_ptr += 1
+            selected_images.append(P_images[P_ptr])
+            P_ptr += 1
 
     assert len(selected_images) == num_images
 
-    generator = CollageRenderer(width=500, height=300, spacing=10, color=(130, 30, 30))
+    generator = CollageRenderer(width=500, height=300, spacing=10, color=(120, 120, 30))
 
     # RUN THE COLLAGE GENERATOR
     collage = generator.generate(selected_images)

@@ -325,7 +325,7 @@ class CollageRenderer:
                 # TODO  row_weights.append(self._calculateLayoutWeight(row[0]))
                 row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
             else:
-                w = [self._calculateLayoutWeight(img) for img in row]
+                w = self._adjust_row_weights(row)
                 row_nodes.append(
                     SplitNode(
                         direction="vertical",
@@ -564,6 +564,20 @@ class CollageRenderer:
             detections=detections,
         )
         return cropped_image
+
+    def _adjust_row_weights(self, row_images):
+        weights = []
+
+        for img in row_images:
+            ratio = img.width / img.height
+
+            if ratio < 1.0:
+                # Portraits Richtung Quadrat ziehen
+                ratio = 0.7 + (ratio * 0.3)
+
+            weights.append(ratio)
+
+        return weights
 
     def _calculateImageScore(
         self,
