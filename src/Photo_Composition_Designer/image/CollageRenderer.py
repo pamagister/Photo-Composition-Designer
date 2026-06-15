@@ -1,5 +1,6 @@
 import math
-import random
+from collections import deque
+from dataclasses import dataclass
 from logging import Logger
 from operator import itemgetter
 
@@ -9,9 +10,16 @@ from PIL import Image
 from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.image.SmartCrop import SmartCrop
 
-IMAGE_SCORE_FACTOR = 1.0
+IMAGE_SCORE_FACTOR = 0.6
 
-from dataclasses import dataclass
+PATTERNS = [
+    ["P", "L", "L", "P"],
+    ["L", "P", "P", "L"],
+    ["P", "L", "P"],
+    ["L", "P", "L"],
+    ["L", "P", "L", "P", "L"],
+    ["P", "P", "L", "P", "P"],
+]
 
 
 @dataclass
@@ -30,6 +38,7 @@ class SplitNode(LayoutNode):
     children: list
     weights: list[float]
 
+
 def linear_partition_table(seq, k):
     n = len(seq)
     table = [[0] * k for x in range(n)]
@@ -42,18 +51,20 @@ def linear_partition_table(seq, k):
         for j in range(1, k):
             table[i][j], solution[i - 1][j - 1] = min(
                 ((max(table[x][j - 1], table[i][0] - table[x][0]), x) for x in range(i)),
-                key=itemgetter(0))
-    return (table, solution)
+                key=itemgetter(0),
+            )
+    return table, solution
+
 
 def linear_partition(seq, k, data_list=None, do_rotate=False):
     if k <= 0:
         return []
     n = len(seq) - 1
     if k > n:
-        return map(lambda x: [x], seq)
+        return ([x] for x in seq)
     _, solution = linear_partition_table(seq, k)
     k, ans = k - 2, []
-    if data_list == None or len(data_list) != len(seq):
+    if data_list is None or len(data_list) != len(seq):
         while k >= 0:
             row = [[seq[i] for i in range(solution[n - 1][k] + 1, n + 1)]]
             if do_rotate:
@@ -129,8 +140,7 @@ class CollageRenderer:
 
         score_factor = 1.0 + (score / 100.0) * IMAGE_SCORE_FACTOR
 
-        return aspect_ratio * score_factor
-
+        return score_factor * aspect_ratio
 
     def _generateTwoImageLayout(
         self,
@@ -181,7 +191,7 @@ class CollageRenderer:
                     ImageNode(images[1]),
                     ImageNode(images[2]),
                 ],
-                weights=weights
+                weights=weights,
             )
 
         # --- FALL 2: LLL (alle quer) ---
@@ -196,16 +206,15 @@ class CollageRenderer:
                             ImageNode(images[0]),
                             ImageNode(images[1]),
                         ],
-                        weights=[weights[0], weights[1]]
+                        weights=[weights[0], weights[1]],
                     ),
                     ImageNode(images[2]),
                 ],
-                weights=[(weights[0] + weights[1])/2, weights[2]]
+                weights=[(weights[0] + weights[1]) / 2, weights[2]],
             )
 
         # --- FALL 3: mixed (1P2L / 2P1L) ---
         if p_count in (1, 2):
-
             portraits = []
             landscapes = []
 
@@ -230,10 +239,10 @@ class CollageRenderer:
                                 ImageNode(l1[0]),
                                 ImageNode(l2[0]),
                             ],
-                            weights=[l1[1], l2[1]]
-                        )
+                            weights=[l1[1], l2[1]],
+                        ),
                     ],
-                    weights=[p_w, (l1[1] + l2[1])/3]
+                    weights=[p_w, (l1[1] + l2[1]) / 3],
                 )
 
             # --- FALL: 2 Portrait + 1 Landscape ---
@@ -250,11 +259,11 @@ class CollageRenderer:
                                 ImageNode(p1[0]),
                                 ImageNode(p2[0]),
                             ],
-                            weights=[p1[1], p2[1]]
+                            weights=[p1[1], p2[1]],
                         ),
                         ImageNode(l_img),
                     ],
-                    weights=[p1[1] + p2[1], l_w]
+                    weights=[p1[1] + p2[1], l_w],
                 )
 
         # fallback symmetric
@@ -268,10 +277,10 @@ class CollageRenderer:
                         ImageNode(images[1]),
                         ImageNode(images[2]),
                     ],
-                    weights=[weights[1], weights[2]]
-                )
+                    weights=[weights[1], weights[2]],
+                ),
             ],
-            weights=[weights[0], weights[1] + weights[2]]
+            weights=[weights[0], weights[1] + weights[2]],
         )
 
     def _generateLayout(self, images, target_width, target_height):
@@ -291,7 +300,6 @@ class CollageRenderer:
         if n == 3:
             return self._chooseBestThreeLayout(images, target_width, target_height)
 
-
         # Gewichte berechnen (wie vorher)
         weights = [self._calculateLayoutWeight(img) for img in images]
 
@@ -306,28 +314,82 @@ class CollageRenderer:
         row_nodes = []
         row_weights = []
 
-        for row in rows:
+        for idx, row in enumerate(rows):
+            row = self._balance_row(row)
+
+            if (idx + len(row)) % 2 == 0:
+                row = list(reversed(row))
+
             if len(row) == 1:
                 row_nodes.append(ImageNode(row[0]))
-                row_weights.append(self._calculateLayoutWeight(row[0]))
+                # TODO  row_weights.append(self._calculateLayoutWeight(row[0]))
+                row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
             else:
                 w = [self._calculateLayoutWeight(img) for img in row]
-                row_nodes.append(SplitNode(
-                    direction="vertical",
-                    children=[ImageNode(img) for img in row],
-                    weights=w
-                ))
+                row_nodes.append(
+                    SplitNode(
+                        direction="vertical",
+                        children=[ImageNode(img) for img in row],
+                        weights=w,
+                    )
+                )
                 row_weights.append(sum(w))
 
         # Falls nur eine Zeile → direkt zurück
         if len(row_nodes) == 1:
             return row_nodes[0]
 
-        return SplitNode(
-            direction="horizontal",
-            children=row_nodes,
-            weights=row_weights
-        )
+        return SplitNode(direction="horizontal", children=row_nodes, weights=row_weights)
+
+    def _interleave_portrait_landscape(self, images):
+        portraits = [img for img in images if img.width < img.height]
+        landscapes = [img for img in images if img.width >= img.height]
+
+        result = []
+
+        while portraits or landscapes:
+            if landscapes:
+                result.append(landscapes.pop(0))
+            if portraits:
+                result.append(portraits.pop(0))
+
+        return result
+
+    def _balance_row(self, row_images):
+        portraits = deque([img for img in row_images if img.width < img.height])
+        landscapes = deque([img for img in row_images if img.width >= img.height])
+
+        def score(pattern):
+            pt = len(portraits)
+            ls = len(landscapes)
+            needed_pt = pattern.count("P")
+            needed_ls = pattern.count("L")
+
+            # harte Strafe wenn nicht erfüllbar
+            if needed_pt > pt or needed_ls > ls:
+                return float("-inf")
+
+            # leichte Präferenz für "symmetrische" Muster
+            imbalance = abs(needed_pt - needed_ls)
+            return -(imbalance)
+
+        best = max(PATTERNS, key=score)
+
+        result = []
+        for t in best:
+            if t == "P" and portraits:
+                result.append(portraits.popleft())
+            elif t == "L" and landscapes:
+                result.append(landscapes.popleft())
+
+        # Rest anhängen (fallback, falls mehr Bilder da sind)
+        while portraits or landscapes:
+            if landscapes:
+                result.append(landscapes.popleft())
+            if portraits:
+                result.append(portraits.popleft())
+
+        return result
 
     def _renderLayout(self, collage, node, x, y, width, height):
         # Leaf
@@ -357,14 +419,7 @@ class CollageRenderer:
                 else:
                     cw = int(usable_width * w_ratio)
 
-                self._renderLayout(
-                    collage,
-                    child,
-                    current_x,
-                    y,
-                    cw,
-                    height
-                )
+                self._renderLayout(collage, child, current_x, y, cw, height)
 
                 current_x += cw + self.spacing
 
@@ -388,14 +443,7 @@ class CollageRenderer:
             if i == len(node.children) - 1:
                 ch = y + height - current_y
 
-            self._renderLayout(
-                collage,
-                child,
-                x,
-                current_y,
-                width,
-                ch
-            )
+            self._renderLayout(collage, child, x, current_y, width, ch)
 
             current_y += ch + self.spacing
 
@@ -424,6 +472,8 @@ class CollageRenderer:
         # Filter out non-PIL Image objects and corrupted images
         images = self._sanitize(images)
         images = self._filter_valid(images)
+
+        images = self._interleave_portrait_landscape(images)
 
         if not images:
             self.logger.error(
@@ -493,7 +543,6 @@ class CollageRenderer:
                 self.logger.warning(f"Invalid or corrupted image detected and removed: {e}")
                 continue
         return valid
-
 
     def _cropAndResize(self, image, target_width, target_height):
         """
