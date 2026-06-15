@@ -79,7 +79,10 @@ class FirewallHandler:
         for url in self.srtm_urls:
             try:
                 with urllib.request.urlopen(url, timeout=timeout) as response:
-                    if response.status in [200, 403]:  # 403 is expected for directory listing
+                    if response.status in [
+                        200,
+                        403,
+                    ]:  # 403 is expected for directory listing
                         self.logger.debug(f"SRTM access confirmed via {url}")
                         return True
             except (TimeoutError, urllib.error.URLError, urllib.error.HTTPError) as e:

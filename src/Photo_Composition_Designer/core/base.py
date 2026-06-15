@@ -11,7 +11,11 @@ from config_cli_gui.logging import get_logger, initialize_logging
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Locations import Locations
-from Photo_Composition_Designer.common.Photo import Photo, get_photo_dates, get_photos_from_dir
+from Photo_Composition_Designer.common.Photo import (
+    Photo,
+    get_photo_dates,
+    get_photos_from_dir,
+)
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
@@ -145,7 +149,8 @@ class CompositionDesigner:
                 self.compositionTitle, available_cal_width, self.calendar_height_px
             )
             composition.paste(
-                title_img, (self.margin_sides_px, self.height_px - self.calendar_height_px)
+                title_img,
+                (self.margin_sides_px, self.height_px - self.calendar_height_px),
             )
         elif self.config.calendar.useCalendar.value:
             if self.config.geo.usePhotoLocationMaps.value:

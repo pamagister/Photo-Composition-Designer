@@ -61,6 +61,7 @@ class SmartCrop:
         "car": 2,
         "motorcycle": 2,
         "bus": 2,
+        "cow":5,
     }
 
     #
@@ -165,7 +166,7 @@ class SmartCrop:
             1,
         )
 
-        return priority * (detection.confidence or 0.0) * math.sqrt(area)
+        return priority * (detection.confidence*detection.confidence or 0.0) * area
 
     def _calculate_weighted_anchor(
         self,

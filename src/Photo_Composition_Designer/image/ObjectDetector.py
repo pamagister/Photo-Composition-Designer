@@ -20,6 +20,7 @@ class ObjectDetector:
     """
 
     # https://docs.ultralytics.com/datasets/segment/coco#sample-images-and-annotations
+    # https://gist.github.com/rcland12/dc48e1963268ff98c8b2c4543e7a9be8
     WANTED_CLASSES = {
         0: "person",
         1: "bicycle",
@@ -28,11 +29,13 @@ class ObjectDetector:
         4: "airplane",
         5: "bus",
         6: "train",
+        8: "boat",
         15: "cat",
         16: "dog",
         17: "horse",
         18: "sheep",
         19: "cow",
+        32: "sports ball",
         39: "bottle",
         40: "wine glass",
         41: "cup",

@@ -33,7 +33,9 @@ from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import CompositionDesigner
 from Photo_Composition_Designer.gui.GuiLogWriter import GuiLogWriter
-from Photo_Composition_Designer.tools.DescriptionsFileGenerator import DescriptionsFileGenerator
+from Photo_Composition_Designer.tools.DescriptionsFileGenerator import (
+    DescriptionsFileGenerator,
+)
 from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor
 
 
@@ -120,7 +122,8 @@ class MainGui:
         input_file_scrollbar.pack(side="right", fill="y", pady=5)
 
         self.photo_dir_listbox.bind(
-            "<Double-Button-1>", lambda event: self._open_selected_file(event, self.photo_folders)
+            "<Double-Button-1>",
+            lambda event: self._open_selected_file(event, self.photo_folders),
         )
         self.photo_dir_listbox.bind("<<ListboxSelect>>", self._generate_preview_callback)
 
@@ -161,7 +164,10 @@ class MainGui:
                 text=label,
                 command=partial(self._run_processing_image_distribution, mode=mode),
             )
-            ToolTip(button, f"Distribute all images into folders using \nthe method '{label}'")
+            ToolTip(
+                button,
+                f"Distribute all images into folders using \nthe method '{label}'",
+            )
             button.pack(pady=2, fill=tk.X)
             self.run_buttons[mode] = button
 
@@ -180,7 +186,9 @@ class MainGui:
 
         # compositions button
         self.generate_compositions_button = ttk.Button(
-            button_frame, text="Generate Compositions", command=self._generate_compositions
+            button_frame,
+            text="Generate Compositions",
+            command=self._generate_compositions,
         )
         self.generate_compositions_button.pack(pady=0, fill=tk.X)
 
@@ -241,7 +249,8 @@ class MainGui:
         # Create Run menu options dynamically
         for mode, label in self.distribution_modes:
             file_menu.add_command(
-                label=label, command=partial(self._run_processing_image_distribution, mode=mode)
+                label=label,
+                command=partial(self._run_processing_image_distribution, mode=mode),
             )
 
         file_menu.add_separator()
@@ -481,7 +490,8 @@ class MainGui:
             self.logger.error(f"Processing failed: {err}", exc_info=True)
             # Show error dialog in main thread
             self.root.after(
-                0, lambda e=err: messagebox.showerror("Error", f"Processing failed: {e}")
+                0,
+                lambda e=err: messagebox.showerror("Error", f"Processing failed: {e}"),
             )
 
         finally:
@@ -549,7 +559,8 @@ class MainGui:
         if description_file_gen.description_file_exists():
             # ask user for overwrite permission
             overwrite = messagebox.askyesno(
-                "Overwrite?", "A description file already exists. Do you want to overwrite it?"
+                "Overwrite?",
+                "A description file already exists. Do you want to overwrite it?",
             )
 
             if not overwrite:

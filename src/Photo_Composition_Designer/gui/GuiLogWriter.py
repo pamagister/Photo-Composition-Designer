@@ -45,13 +45,19 @@ class GuiLogWriter:
                         tag_name = f"link_{len(self.hyperlink_tags)}"
                         self.text_widget.tag_config(tag_name, foreground="blue", underline=True)
                         self.text_widget.tag_bind(
-                            tag_name, "<Button-1>", lambda e, p=path: self._open_path_in_explorer(p)
+                            tag_name,
+                            "<Button-1>",
+                            lambda e, p=path: self._open_path_in_explorer(p),
                         )
                         self.text_widget.tag_bind(
-                            tag_name, "<Enter>", lambda e: self.text_widget.config(cursor="hand2")
+                            tag_name,
+                            "<Enter>",
+                            lambda e: self.text_widget.config(cursor="hand2"),
                         )
                         self.text_widget.tag_bind(
-                            tag_name, "<Leave>", lambda e: self.text_widget.config(cursor="")
+                            tag_name,
+                            "<Leave>",
+                            lambda e: self.text_widget.config(cursor=""),
                         )
                         self.text_widget.tag_add(tag_name, start_index, end_index)
                         self.hyperlink_tags[tag_name] = path

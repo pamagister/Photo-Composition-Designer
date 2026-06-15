@@ -49,7 +49,8 @@ class ImageDistributor:
         for _i in range(self.distribution_count - 1):
             images_per_group = remaining_images // remaining_groups
             group_size = max(
-                1, images_per_group + random.choice(range(-allowed_delta, allowed_delta + 1))
+                1,
+                images_per_group + random.choice(range(-allowed_delta, allowed_delta + 1)),
             )
             grouped_images.append(
                 [photo_queue.popleft() for _ in range(min(group_size, remaining_images))]
