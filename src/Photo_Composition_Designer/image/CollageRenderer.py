@@ -10,8 +10,6 @@ from PIL import Image, ImageDraw
 from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.image.SmartCrop import SmartCrop
 
-IMAGE_SCORE_FACTOR = 0.6
-
 PATTERNS = [
     ["P", "L", "L", "P"],
     ["L", "P", "P", "L"],
@@ -50,10 +48,7 @@ def linear_partition_table(seq, k):
     for i in range(1, n):
         for j in range(1, k):
             table[i][j], solution[i - 1][j - 1] = min(
-                (
-                    (max(table[x][j - 1], table[i][0] - table[x][0]), x)
-                    for x in range(i)
-                ),
+                ((max(table[x][j - 1], table[i][0] - table[x][0]), x) for x in range(i)),
                 key=itemgetter(0),
             )
     return table, solution
@@ -102,6 +97,8 @@ class CollageRenderer:
     optionally using object recognition for smart cropping.
     """
 
+    DEFAULT_IMAGE_SCORE_FACTOR = 0.6
+
     def __init__(
         self,
         width=900,
@@ -110,12 +107,14 @@ class CollageRenderer:
         color=(0, 0, 0),
         use_object_recognition=False,
         rounded_corners=False,
+        image_score_factor: float = DEFAULT_IMAGE_SCORE_FACTOR,
     ):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
         self.rounded_corners = rounded_corners
+        self.image_score_factor = image_score_factor
         self.yolo_session = None  # Will load this lazily
         self.use_image_recognition = use_object_recognition
         self.detector = ObjectDetector() if use_object_recognition else None
@@ -176,7 +175,7 @@ class CollageRenderer:
 
         score = self._calculateImageScore(image)
 
-        score_factor = 1.0 + (score / 100.0) * IMAGE_SCORE_FACTOR
+        score_factor = 1.0 + (score / 100.0) * self.image_score_factor
 
         return score_factor * aspect_ratio
 
@@ -352,9 +351,7 @@ class CollageRenderer:
             if len(row) == 1:
                 row_nodes.append(ImageNode(row[0]))
                 # TODO  row_weights.append(self._calculateLayoutWeight(row[0]))
-                row_weights.append(
-                    sum([self._calculateLayoutWeight(img) for img in row])
-                )
+                row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
             else:
                 w = self._adjust_row_weights(row)
                 row_nodes.append(
@@ -370,9 +367,7 @@ class CollageRenderer:
         if len(row_nodes) == 1:
             return row_nodes[0]
 
-        return SplitNode(
-            direction="horizontal", children=row_nodes, weights=row_weights
-        )
+        return SplitNode(direction="horizontal", children=row_nodes, weights=row_weights)
 
     def _interleave_portrait_landscape(self, images):
         portraits = [img for img in images if img.width < img.height]
@@ -578,9 +573,7 @@ class CollageRenderer:
                 img.getpixel((0, 0))
                 valid.append(img)
             except Exception as e:
-                self.logger.warning(
-                    f"Invalid or corrupted image detected and removed: {e}"
-                )
+                self.logger.warning(f"Invalid or corrupted image detected and removed: {e}")
                 continue
         return valid
 
@@ -591,9 +584,7 @@ class CollageRenderer:
         """
         detections = None
         if self.detector:
-            self.logger.info(
-                "Object detection enabled. Detecting objects for smart crop."
-            )
+            self.logger.info("Object detection enabled. Detecting objects for smart crop.")
             detections = self.detector.detect(image)
             self.logger.info(f"Detected {len(detections)} objects.")
         else:
@@ -635,9 +626,7 @@ class CollageRenderer:
 
         score = 0
         detections = self.detector.detect(image)
-        self.logger.info(
-            f"Calculating score for image with {len(detections)} detections."
-        )
+        self.logger.info(f"Calculating score for image with {len(detections)} detections.")
 
         for d in detections:
             if d.class_name == "person":

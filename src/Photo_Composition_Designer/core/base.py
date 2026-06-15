@@ -92,6 +92,7 @@ class CompositionDesigner:
             background_color,
             self.use_object_recognition,
             self.config.layout.useRoundedCorners.value,
+            self.config.layout.imageScoreFactor.value,
         )
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:

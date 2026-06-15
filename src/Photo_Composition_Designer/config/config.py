@@ -245,6 +245,13 @@ class LayoutConfig(ConfigCategory):
         help="Use rounded corners at the edges of the images in the collage",
     )
 
+    imageScoreFactor: ConfigParameter = ConfigParameter(
+        name="imageScoreFactor",
+        value=1.0,
+        help="Factor how much the objects (humans, animals, ...) in the image "
+        "are considered for weighting the image size",
+    )
+
     useShortDayNames: ConfigParameter = ConfigParameter(
         name="useShortDayNames",
         value=False,

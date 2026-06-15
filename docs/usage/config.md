@@ -59,16 +59,17 @@ The parameters in the cli category can be accessed via the command line interfac
 
 ## Category "layout"
 
-| Name                | Type | Description                                                                                         | Default | Choices       |
-|---------------------|------|-----------------------------------------------------------------------------------------------------|---------|---------------|
-| marginTop           | int  | Top margin in mm                                                                                    | 6       | -             |
-| marginBottom        | int  | Bottom margin in mm                                                                                 | 3       | -             |
-| marginSides         | int  | Side margins in mm                                                                                  | 3       | -             |
-| spacing             | int  | Spacing between elements in mm                                                                      | 2       | -             |
-| useRoundedCorners   | bool | Use rounded corners at the edges of the images in the collage                                       | False   | [True, False] |
-| useShortDayNames    | bool | Use short weekday names (e.g., Mon, Tue)                                                            | False   | [True, False] |
-| useShortMonthNames  | bool | Use short month names (e.g., Jan, Feb)                                                              | True    | [True, False] |
-| usePhotoDescription | bool | Include photo descriptions in the collage                                                           | True    | [True, False] |
-| generatePdf         | bool | Combine all generated collages into one pdf                                                         | True    | [True, False] |
-| objectRecognition   | bool | Use neuronal network YOLO (You Only Look Once) object detection model to crop images content-aware. | True    | [True, False] |
+| Name                | Type  | Description                                                                                                 | Default | Choices       |
+|---------------------|-------|-------------------------------------------------------------------------------------------------------------|---------|---------------|
+| marginTop           | int   | Top margin in mm                                                                                            | 6       | -             |
+| marginBottom        | int   | Bottom margin in mm                                                                                         | 3       | -             |
+| marginSides         | int   | Side margins in mm                                                                                          | 3       | -             |
+| spacing             | int   | Spacing between elements in mm                                                                              | 2       | -             |
+| useRoundedCorners   | bool  | Use rounded corners at the edges of the images in the collage                                               | False   | [True, False] |
+| imageScoreFactor    | float | Factor how much the objects (humans, animals, ...) in the image are considered for weighting the image size | 1.0     | -             |
+| useShortDayNames    | bool  | Use short weekday names (e.g., Mon, Tue)                                                                    | False   | [True, False] |
+| useShortMonthNames  | bool  | Use short month names (e.g., Jan, Feb)                                                                      | True    | [True, False] |
+| usePhotoDescription | bool  | Include photo descriptions in the collage                                                                   | True    | [True, False] |
+| generatePdf         | bool  | Combine all generated collages into one pdf                                                                 | True    | [True, False] |
+| objectRecognition   | bool  | Use neuronal network YOLO (You Only Look Once) object detection model to crop images content-aware.         | True    | [True, False] |
 
