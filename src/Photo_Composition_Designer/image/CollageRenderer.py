@@ -50,7 +50,10 @@ def linear_partition_table(seq, k):
     for i in range(1, n):
         for j in range(1, k):
             table[i][j], solution[i - 1][j - 1] = min(
-                ((max(table[x][j - 1], table[i][0] - table[x][0]), x) for x in range(i)),
+                (
+                    (max(table[x][j - 1], table[i][0] - table[x][0]), x)
+                    for x in range(i)
+                ),
                 key=itemgetter(0),
             )
     return table, solution
@@ -106,7 +109,7 @@ class CollageRenderer:
         spacing=10,
         color=(0, 0, 0),
         use_object_recognition=False,
-        rounded_corners=True,
+        rounded_corners=False,
     ):
         self.color = color
         self.width: int = width
@@ -144,6 +147,18 @@ class CollageRenderer:
 
         return image
 
+    def _flip_layout(self, node):
+        if isinstance(node, ImageNode):
+            return node
+
+        flipped_children = [self._flip_layout(c) for c in node.children]
+
+        return SplitNode(
+            direction=("horizontal" if node.direction == "vertical" else "vertical"),
+            children=flipped_children,
+            weights=node.weights,
+        )
+
     def _calculateLayoutWeight(self, image):
         """
         Gewicht für die Layout-Optimierung.
@@ -172,21 +187,12 @@ class CollageRenderer:
         height,
     ):
 
-        if width >= height:
-            return SplitNode(
-                direction="vertical",
-                children=[
-                    ImageNode(images[0]),
-                    ImageNode(images[1]),
-                ],
-                weights=[
-                    self._calculateLayoutWeight(images[0]),
-                    self._calculateLayoutWeight(images[1]),
-                ],
-            )
+        is_portrait_canvas = height > width
+
+        direction = "horizontal" if is_portrait_canvas else "vertical"
 
         return SplitNode(
-            direction="horizontal",
+            direction=direction,
             children=[
                 ImageNode(images[0]),
                 ImageNode(images[1]),
@@ -346,7 +352,9 @@ class CollageRenderer:
             if len(row) == 1:
                 row_nodes.append(ImageNode(row[0]))
                 # TODO  row_weights.append(self._calculateLayoutWeight(row[0]))
-                row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
+                row_weights.append(
+                    sum([self._calculateLayoutWeight(img) for img in row])
+                )
             else:
                 w = self._adjust_row_weights(row)
                 row_nodes.append(
@@ -362,7 +370,9 @@ class CollageRenderer:
         if len(row_nodes) == 1:
             return row_nodes[0]
 
-        return SplitNode(direction="horizontal", children=row_nodes, weights=row_weights)
+        return SplitNode(
+            direction="horizontal", children=row_nodes, weights=row_weights
+        )
 
     def _interleave_portrait_landscape(self, images):
         portraits = [img for img in images if img.width < img.height]
@@ -419,7 +429,11 @@ class CollageRenderer:
         if isinstance(node, ImageNode):
             img = self._cropAndResize(node.image, width, height)
             img = self._applyRoundedCorners(img)
-            collage.paste(img, (int(x), int(y)), img)
+            pos = (int(x), int(y))
+            if "A" in img.getbands():
+                collage.paste(img, pos, img)
+            else:
+                collage.paste(img, pos)
             return
 
         if not node.children:
@@ -564,7 +578,9 @@ class CollageRenderer:
                 img.getpixel((0, 0))
                 valid.append(img)
             except Exception as e:
-                self.logger.warning(f"Invalid or corrupted image detected and removed: {e}")
+                self.logger.warning(
+                    f"Invalid or corrupted image detected and removed: {e}"
+                )
                 continue
         return valid
 
@@ -575,7 +591,9 @@ class CollageRenderer:
         """
         detections = None
         if self.detector:
-            self.logger.info("Object detection enabled. Detecting objects for smart crop.")
+            self.logger.info(
+                "Object detection enabled. Detecting objects for smart crop."
+            )
             detections = self.detector.detect(image)
             self.logger.info(f"Detected {len(detections)} objects.")
         else:
@@ -617,7 +635,9 @@ class CollageRenderer:
 
         score = 0
         detections = self.detector.detect(image)
-        self.logger.info(f"Calculating score for image with {len(detections)} detections.")
+        self.logger.info(
+            f"Calculating score for image with {len(detections)} detections."
+        )
 
         for d in detections:
             if d.class_name == "person":

@@ -91,6 +91,7 @@ class CompositionDesigner:
             self.spacing_px,
             background_color,
             self.use_object_recognition,
+            self.config.layout.useRoundedCorners.value,
         )
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:

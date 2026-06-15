@@ -65,6 +65,7 @@ The parameters in the cli category can be accessed via the command line interfac
 | marginBottom        | int  | Bottom margin in mm                                                                                 | 3       | -             |
 | marginSides         | int  | Side margins in mm                                                                                  | 3       | -             |
 | spacing             | int  | Spacing between elements in mm                                                                      | 2       | -             |
+| useRoundedCorners   | bool | Use rounded corners at the edges of the images in the collage                                       | False   | [True, False] |
 | useShortDayNames    | bool | Use short weekday names (e.g., Mon, Tue)                                                            | False   | [True, False] |
 | useShortMonthNames  | bool | Use short month names (e.g., Jan, Feb)                                                              | True    | [True, False] |
 | usePhotoDescription | bool | Include photo descriptions in the collage                                                           | True    | [True, False] |

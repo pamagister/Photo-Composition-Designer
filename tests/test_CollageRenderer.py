@@ -107,7 +107,7 @@ def test_generate_different_layouts(num_images, layout, temp_dir):
 
     assert len(selected_images) == num_images
 
-    generator = CollageRenderer(width=500, height=300, spacing=10, color=(120, 120, 30))
+    generator = CollageRenderer(width=500, height=300, spacing=10, color=(200, 200, 0))
 
     # RUN THE COLLAGE GENERATOR
     collage = generator.generate(selected_images)

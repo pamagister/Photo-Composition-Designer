@@ -239,6 +239,12 @@ class LayoutConfig(ConfigCategory):
         help="Spacing between elements in mm",
     )
 
+    useRoundedCorners: ConfigParameter = ConfigParameter(
+        name="useRoundedCorners",
+        value=False,
+        help="Use rounded corners at the edges of the images in the collage",
+    )
+
     useShortDayNames: ConfigParameter = ConfigParameter(
         name="useShortDayNames",
         value=False,
