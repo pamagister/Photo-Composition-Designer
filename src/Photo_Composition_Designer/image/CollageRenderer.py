@@ -5,7 +5,7 @@ from logging import Logger
 from operator import itemgetter
 
 from config_cli_gui.logging import get_logger, initialize_logging
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.image.SmartCrop import SmartCrop
@@ -106,11 +106,13 @@ class CollageRenderer:
         spacing=10,
         color=(0, 0, 0),
         use_object_recognition=False,
+        rounded_corners=True,
     ):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
+        self.rounded_corners = rounded_corners
         self.yolo_session = None  # Will load this lazily
         self.use_image_recognition = use_object_recognition
         self.detector = ObjectDetector() if use_object_recognition else None
@@ -120,6 +122,27 @@ class CollageRenderer:
         initialize_logging()
         self.logger: Logger = get_logger("base")
         self.logger.info("CollageRenderer initialized.")
+
+    def _applyRoundedCorners(self, image):
+        if not self.rounded_corners:
+            return image
+
+        radius = self.spacing
+
+        mask = Image.new("L", image.size, 0)
+
+        draw = ImageDraw.Draw(mask)
+
+        draw.rounded_rectangle(
+            (0, 0, image.width, image.height),
+            radius=radius,
+            fill=255,
+        )
+
+        image = image.convert("RGBA")
+        image.putalpha(mask)
+
+        return image
 
     def _calculateLayoutWeight(self, image):
         """
@@ -395,7 +418,8 @@ class CollageRenderer:
         # Leaf
         if isinstance(node, ImageNode):
             img = self._cropAndResize(node.image, width, height)
-            collage.paste(img, (int(x), int(y)))
+            img = self._applyRoundedCorners(img)
+            collage.paste(img, (int(x), int(y)), img)
             return
 
         if not node.children:
