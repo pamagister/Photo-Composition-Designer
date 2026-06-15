@@ -343,24 +343,26 @@ class CollageRenderer:
 
         # --- VERTICAL SPLIT (nebeneinander) ---
         if node.direction == "vertical":
+            total_spacing = self.spacing * (len(node.children) - 1)
+            usable_width = width - total_spacing
+
             current_x = x
 
             for i, child in enumerate(node.children):
                 w = node.weights[i] if node.weights else 1
                 w_ratio = w / weight_sum
 
-                cw = int(width * w_ratio)
-
-                # letzter block bekommt Rest (verhindert Drift)
                 if i == len(node.children) - 1:
-                    cw = x + width - current_x
+                    cw = (x + width) - current_x  # Rest füllen
+                else:
+                    cw = int(usable_width * w_ratio)
 
                 self._renderLayout(
                     collage,
                     child,
                     current_x,
                     y,
-                    cw - self.spacing // 2,
+                    cw,
                     height
                 )
 
@@ -372,10 +374,16 @@ class CollageRenderer:
         current_y = y
 
         for i, child in enumerate(node.children):
+            total_spacing = self.spacing * (len(node.children) - 1)
+            usable_height = height - total_spacing
+
             h = node.weights[i] if node.weights else 1
             h_ratio = h / weight_sum
 
-            ch = int(height * h_ratio)
+            if i == len(node.children) - 1:
+                ch = (x + width) - current_y  # Rest füllen
+            else:
+                ch = int(usable_height * h_ratio)
 
             if i == len(node.children) - 1:
                 ch = y + height - current_y
@@ -386,7 +394,7 @@ class CollageRenderer:
                 x,
                 current_y,
                 width,
-                ch - self.spacing // 2
+                ch
             )
 
             current_y += ch + self.spacing
