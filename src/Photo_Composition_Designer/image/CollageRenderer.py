@@ -188,10 +188,10 @@ class CollageRenderer:
         if p_count == 0:
             # stabilere Verteilung: 2 oben, 1 unten
             return SplitNode(
-                direction="vertical",
+                direction="horizontal",
                 children=[
                     SplitNode(
-                        direction="horizontal",
+                        direction="vertical",
                         children=[
                             ImageNode(images[0]),
                             ImageNode(images[1]),
@@ -200,27 +200,62 @@ class CollageRenderer:
                     ),
                     ImageNode(images[2]),
                 ],
-                weights=[weights[0] + weights[1], weights[2]]
+                weights=[(weights[0] + weights[1])/2, weights[2]]
             )
 
-        # --- FALL 3: 1 Portrait + 2 Landscape (PLL / LPL etc.) ---
-        # Portrait dominant links
-        if is_portrait[0]:
-            return SplitNode(
-                direction="horizontal",
-                children=[
-                    ImageNode(images[0]),
-                    SplitNode(
-                        direction="vertical",
-                        children=[
-                            ImageNode(images[1]),
-                            ImageNode(images[2]),
-                        ],
-                        weights=[weights[1], weights[2]]
-                    )
-                ],
-                weights=[weights[0], weights[1] + weights[2]]
-            )
+        # --- FALL 3: mixed (1P2L / 2P1L) ---
+        if p_count in (1, 2):
+
+            portraits = []
+            landscapes = []
+
+            for img, p, w in zip(images, is_portrait, weights):
+                if p:
+                    portraits.append((img, w))
+                else:
+                    landscapes.append((img, w))
+
+            # --- FALL: 1 Portrait + 2 Landscape ---
+            if len(portraits) == 1 and len(landscapes) == 2:
+                p_img, p_w = portraits[0]
+                l1, l2 = landscapes
+
+                return SplitNode(
+                    direction="vertical",
+                    children=[
+                        ImageNode(p_img),
+                        SplitNode(
+                            direction="horizontal",
+                            children=[
+                                ImageNode(l1[0]),
+                                ImageNode(l2[0]),
+                            ],
+                            weights=[l1[1], l2[1]]
+                        )
+                    ],
+                    weights=[p_w, (l1[1] + l2[1])/3]
+                )
+
+            # --- FALL: 2 Portrait + 1 Landscape ---
+            if len(portraits) == 2 and len(landscapes) == 1:
+                l_img, l_w = landscapes[0]
+                p1, p2 = portraits
+
+                return SplitNode(
+                    direction="horizontal",
+                    children=[
+                        SplitNode(
+                            direction="vertical",
+                            children=[
+                                ImageNode(p1[0]),
+                                ImageNode(p2[0]),
+                            ],
+                            weights=[p1[1], p2[1]]
+                        ),
+                        ImageNode(l_img),
+                    ],
+                    weights=[p1[1] + p2[1], l_w]
+                )
 
         # fallback symmetric
         return SplitNode(
