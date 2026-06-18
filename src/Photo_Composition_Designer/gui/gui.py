@@ -28,6 +28,7 @@ from config_cli_gui.logging import (
     get_logger,
     initialize_logging,
 )
+from config_cli_gui.persistence import read_last_used_config
 from PIL import Image, ImageTk
 
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
@@ -56,11 +57,26 @@ class MainGui:
         self.root.update_idletasks()
 
         # Initialize configuration
-        self.config_manager = ConfigParameterManager()
+        self._config = ConfigParameterManager()
 
-        # Initialize logging system
-        self.logger_manager = initialize_logging(self.config_manager.app.log_level.value)
+        # Initialize logging system using individual AppConfig values
+        self.logger_manager = initialize_logging(
+            log_level=self._config.app.log_level.value,
+            log_file_max_size=self._config.app.log_file_max_size.value,
+            enable_file_logging=self._config.app.enable_file_logging.value,
+            enable_console_logging=self._config.app.enable_console_logging.value,
+        )
         self.logger: logging.Logger = get_logger("gui.main")
+        # Inform about which configuration file was last used (if any)
+        try:
+            last_cfg = self._config.get_last_used_config()
+            if last_cfg:
+                self.logger.info(f"Configuration loaded: {last_cfg}")
+            else:
+                self.logger.info("No configuration file loaded (using defaults)")
+        except Exception:
+            # Do not fail GUI startup if logging or config introspection fails
+            self.logger.debug("Could not determine last used configuration file")
 
         self._build_widgets()
         self._create_menu()
@@ -75,7 +91,7 @@ class MainGui:
 
     def _reload_config(self):
         # File lists
-        self.composition_designer = CompositionDesigner(self.config_manager, self.logger)
+        self.composition_designer = CompositionDesigner(self._config, self.logger)
         self.composition_designer.progress_callback = self._progress_update
 
         self.preview_image_original = None
@@ -224,7 +240,7 @@ class MainGui:
         ttk.Button(log_controls, text="Clear Log", command=self._clear_log).pack(side=tk.LEFT)
 
         ttk.Label(log_controls, text="Log Level:").pack(side=tk.LEFT, padx=(10, 5))
-        self.log_level_var = tk.StringVar(value=self.config_manager.app.log_level.value)
+        self.log_level_var = tk.StringVar(value=self._config.app.log_level.value)
 
         log_level_combo = ttk.Combobox(
             log_controls,
@@ -414,7 +430,7 @@ class MainGui:
 
         self.logger.info(f"Loading new configuration from: {config_file}")
         try:
-            self.config_manager = ConfigParameterManager(config_file)
+            self._config = ConfigParameterManager(config_file)
             self._reload_config()
             self._generate_preview(0)
         except Exception as e:
@@ -451,7 +467,7 @@ class MainGui:
                 )
                 return
             # prepare image distribution
-            collages_to_generate = self.config_manager.calendar.collagesToGenerate.value
+            collages_to_generate = self._config.calendar.collagesToGenerate.value
             image_distributor = ImageDistributor(photos, collages_to_generate)
             # implement switch case for different processing modes
             if mode == "distribute_equally":
@@ -463,7 +479,7 @@ class MainGui:
             else:
                 self.logger.warning(f"Unknown mode: {mode}")
 
-            start_date = self.config_manager.calendar.startDate.value
+            start_date = self._config.calendar.startDate.value
             output_dir = self.composition_designer.photoDir
             for week in range(collages_to_generate):
                 week_start = start_date + timedelta(weeks=week)
@@ -524,14 +540,14 @@ class MainGui:
     def _open_settings(self):
         """Open the settings dialog."""
         self.logger.debug("Opening settings dialog")
-        settings_dialog_generator = SettingsDialogGenerator(self.config_manager)
+        settings_dialog_generator = SettingsDialogGenerator(self._config)
         dialog = settings_dialog_generator.create_settings_dialog(self.root)
         self.root.wait_window(dialog.dialog)
 
         if dialog.result == "ok":
             self.logger.info("Settings updated successfully")
             # Update log level selector if it changed
-            self.log_level_var.set(self.config_manager.app.log_level.value)
+            self.log_level_var.set(self._config.app.log_level.value)
             self._reload_config()
 
     def _open_help(self):
@@ -571,7 +587,7 @@ class MainGui:
         self.logger.info(f"Template description file generated: {description_file}")
 
         # Re-initialize the composition designer to recognize the new file
-        self.composition_designer = CompositionDesigner(self.config_manager, self.logger)
+        self.composition_designer = CompositionDesigner(self._config, self.logger)
         self.composition_designer.progress_callback = self._progress_update
 
         # Refresh the preview for the currently selected folder
@@ -609,7 +625,17 @@ class MainGui:
 
 def main():
     """Main entry point for the GUI application."""
-    _config = ConfigParameterManager()
+
+    # Determine theme from configuration (fall back to sandstone on error)
+
+    # Try to restore the last used configuration file so the GUI can start
+    # with the user's preferred theme and settings.
+    last = read_last_used_config("config-cli-gui")
+    if last and Path(last).exists():
+        _config = ConfigParameterManager(last)
+    else:
+        _config = ConfigParameterManager()
+
     theme_choice = _config.app.theme.value
 
     root: ttkbootstrap.Window = ttkbootstrap.Window(themename=theme_choice)

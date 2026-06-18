@@ -120,7 +120,7 @@ wheels = [
 
 [[package]]
 name = "config-cli-gui"
-version = "0.3.4"
+version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pillow" },
@@ -128,9 +128,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "ttkbootstrap" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/f7/10840fcc57d258c6148502fcdc978689a800c74fec7f84b657c525b89e07/config_cli_gui-0.3.4.tar.gz", hash = "sha256:c4845e51148f9b6939a259cd5218bd48b0acd6f6b89b7a85a488ae10c894a134", size = 213918, upload-time = "2026-06-18T18:00:56.442Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/f5/0060a06070ae8e5ca826ab895c3d35a854700c8c0ab9a868c18d147c3308/config_cli_gui-0.3.5.tar.gz", hash = "sha256:42b96f247686de1c178c5af5b359308dd76a3a2cc0efdab9730200908c3b0d33", size = 216078, upload-time = "2026-06-18T22:09:05.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/59/cd5b2dbf2a5dc294a29eb6085432611b23127d773f8d6d90d42797db8bd7/config_cli_gui-0.3.4-py3-none-any.whl", hash = "sha256:522009b73abf80b1e32b137ba93e4782c414ceb46dbceab17e51a76c72251c8c", size = 23746, upload-time = "2026-06-18T18:00:55.461Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/f7/0fe659483fc54b34cc8cd0bae34a2f956513b79386f1b49ca5bc22f8ab09/config_cli_gui-0.3.5-py3-none-any.whl", hash = "sha256:4c7002e6d4ebdc493340abeb353d60a567779e77a77c799e275908fb9a7eb59a", size = 26968, upload-time = "2026-06-18T22:09:03.843Z" },
 ]
 
 [[package]]
@@ -1192,7 +1192,7 @@ docs = [
 requires-dist = [
     { name = "astral", specifier = ">=3.2" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=25.1.0" },
-    { name = "config-cli-gui", specifier = ">=0.3.4" },
+    { name = "config-cli-gui", specifier = ">=0.3.5" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.8.2" },
     { name = "exifread", specifier = ">=3.5.1" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=7.2.0" },

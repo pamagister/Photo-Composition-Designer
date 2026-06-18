@@ -1,7 +1,15 @@
 app:
+  # Date format to use | type=str
+  date_format: '%Y-%m-%d'
   # Logging level for the application | type=str | choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
   log_level: INFO
-  # GUI theme setting suppoerted by ttkbootstrap | type=str | choices=['cosmo', 'flatly', 'litera', 'minty', 'lumen', 'sandstone', 'yeti', 'pulse', 'united', 'darkly', 'superhero', 'solar', 'cyborg', 'vapor', 'simplex']
+  # Maximum log file size in MB before rotation | type=int
+  log_file_max_size: 2
+  # Enable logging to file | type=bool | choices=[True, False]
+  enable_file_logging: true
+  # Enable logging to console | type=bool | choices=[True, False]
+  enable_console_logging: true
+  # GUI theme setting supported by ttkbootstrap | type=str | choices=['cosmo', 'flatly', 'litera', 'minty', 'lumen', 'sandstone', 'yeti', 'pulse', 'united', 'darkly', 'superhero', 'solar', 'cyborg', 'vapor', 'simplex']
   theme: darkly
 general:
   # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath | [CLI]

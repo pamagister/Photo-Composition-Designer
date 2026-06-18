@@ -15,43 +15,6 @@ from config_cli_gui.configtypes.font import Font
 from config_cli_gui.docs import DocumentationGenerator
 
 
-class AppConfig(ConfigCategory):
-    """Application-specific configuration parameters."""
-
-    def get_category_name(self) -> str:
-        return "app"
-
-    log_level: ConfigParameter = ConfigParameter(
-        name="log_level",
-        value="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="Logging level for the application",
-    )
-
-    theme: ConfigParameter = ConfigParameter(
-        name="theme",
-        value="darkly",
-        choices=[
-            "cosmo",
-            "flatly",
-            "litera",
-            "minty",
-            "lumen",
-            "sandstone",
-            "yeti",
-            "pulse",
-            "united",
-            "darkly",
-            "superhero",
-            "solar",
-            "cyborg",
-            "vapor",
-            "simplex",
-        ],
-        help="GUI theme setting suppoerted by ttkbootstrap",
-    )
-
-
 class GeneralConfig(ConfigCategory):
     """GENERAL configuration parameters."""
 
@@ -310,7 +273,6 @@ class LayoutConfig(ConfigCategory):
 class ConfigParameterManager(ConfigManager):
     """Main configuration manager that handles all parameter categories."""
 
-    app: AppConfig
     general: GeneralConfig
     calendar: CalendarConfig
     style: StyleConfig
@@ -320,7 +282,6 @@ class ConfigParameterManager(ConfigManager):
 
     def __init__(self, config_file: str | None = None, **kwargs):
         categories = (
-            AppConfig(),
             GeneralConfig(),
             CalendarConfig(),
             StyleConfig(),
