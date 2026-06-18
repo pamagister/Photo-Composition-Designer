@@ -28,6 +28,29 @@ class AppConfig(ConfigCategory):
         help="Logging level for the application",
     )
 
+    theme: ConfigParameter = ConfigParameter(
+        name="theme",
+        value="darkly",
+        choices=[
+            "cosmo",
+            "flatly",
+            "litera",
+            "minty",
+            "lumen",
+            "sandstone",
+            "yeti",
+            "pulse",
+            "united",
+            "darkly",
+            "superhero",
+            "solar",
+            "cyborg",
+            "vapor",
+            "simplex",
+        ],
+        help="GUI theme setting suppoerted by ttkbootstrap",
+    )
+
 
 class GeneralConfig(ConfigCategory):
     """GENERAL configuration parameters."""

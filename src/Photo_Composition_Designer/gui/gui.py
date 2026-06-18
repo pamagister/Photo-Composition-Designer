@@ -18,8 +18,9 @@ import webbrowser
 from datetime import timedelta
 from functools import partial
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, font, messagebox, ttk
 
+import ttkbootstrap
 from config_cli_gui.gui import SettingsDialogGenerator, ToolTip
 from config_cli_gui.logging import (
     connect_gui_logging,
@@ -608,7 +609,18 @@ class MainGui:
 
 def main():
     """Main entry point for the GUI application."""
-    root = tk.Tk()
+    _config = ConfigParameterManager()
+    theme_choice = _config.app.theme.value
+
+    root: ttkbootstrap.Window = ttkbootstrap.Window(themename=theme_choice)
+
+    root.tk.call("tk", "scaling", 1.25)
+
+    font.nametofont("TkDefaultFont").configure(size=11)
+    font.nametofont("TkTextFont").configure(size=11)
+    font.nametofont("TkMenuFont").configure(size=11)
+    font.nametofont("TkHeadingFont").configure(size=11)
+
     try:
         MainGui(root)
         root.mainloop()

@@ -5,9 +5,10 @@ The parameters in the cli category can be accessed via the command line interfac
 
 ## Category "app"
 
-| Name      | Type | Description                       | Default | Choices                                           |
-|-----------|------|-----------------------------------|---------|---------------------------------------------------|
-| log_level | str  | Logging level for the application | 'INFO'  | ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] |
+| Name      | Type | Description                                  | Default  | Choices                                                                                                                                               |
+|-----------|------|----------------------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| log_level | str  | Logging level for the application            | 'INFO'   | ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']                                                                                                     |
+| theme     | str  | GUI theme setting suppoerted by ttkbootstrap | 'darkly' | ['cosmo', 'flatly', 'litera', 'minty', 'lumen', 'sandstone', 'yeti', 'pulse', 'united', 'darkly', 'superhero', 'solar', 'cyborg', 'vapor', 'simplex'] |
 
 ## Category "general"
 

@@ -1,6 +1,8 @@
 app:
   # Logging level for the application | type=str | choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
   log_level: INFO
+  # GUI theme setting suppoerted by ttkbootstrap | type=str | choices=['cosmo', 'flatly', 'litera', 'minty', 'lumen', 'sandstone', 'yeti', 'pulse', 'united', 'darkly', 'superhero', 'solar', 'cyborg', 'vapor', 'simplex']
+  theme: darkly
 general:
   # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath | [CLI]
   photoDirectory: images
@@ -61,6 +63,10 @@ layout:
   marginSides: 3
   # Spacing between elements in mm | type=int
   spacing: 2
+  # Use rounded corners at the edges of the images in the collage | type=bool | choices=[True, False]
+  useRoundedCorners: false
+  # Factor how much the objects (humans, animals, ...) in the image are considered for weighting the image size | type=float
+  imageScoreFactor: 1.0
   # Use short weekday names (e.g., Mon, Tue) | type=bool | choices=[True, False]
   useShortDayNames: false
   # Use short month names (e.g., Jan, Feb) | type=bool | choices=[True, False]
