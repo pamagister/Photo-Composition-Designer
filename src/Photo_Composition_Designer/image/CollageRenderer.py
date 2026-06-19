@@ -173,10 +173,11 @@ class CollageRenderer:
         """
 
         aspect_ratio = image.width / image.height
+        portrait_factor = 1 if image.width < image.height else 1
 
         score = self._calculateImageScore(image)
 
-        score_factor = 1.0 + (score / 100.0) * self.image_score_factor
+        score_factor = 1.0 + (score / 50.0) * self.image_score_factor * portrait_factor
 
         return score_factor * aspect_ratio
 
@@ -211,7 +212,7 @@ class CollageRenderer:
 
         weights = [self._calculateLayoutWeight(img) for img in images]
 
-        # --- FALL 1: PPP (alle hochkant) ---
+        # --- FALL 1.1: PPP (alle hochkant) ---
         if p_count == 3:
             return SplitNode(
                 direction="vertical",
@@ -223,9 +224,20 @@ class CollageRenderer:
                 weights=weights,
             )
 
-        # --- FALL 2: LLL (alle quer) ---
+        # --- FALL 1.2: LLL (alle quer) ---
         if p_count == 0:
-            # stabilere Verteilung: 2 oben, 1 unten
+            return SplitNode(
+                direction="horizontal",
+                children=[
+                    ImageNode(images[0]),
+                    ImageNode(images[1]),
+                    ImageNode(images[2]),
+                ],
+                weights=weights,
+            )
+
+        # --- FALL 2: PLL (Eins hochkant, zwei quer) ---
+        if p_count == 4:
             return SplitNode(
                 direction="horizontal",
                 children=[
@@ -328,6 +340,31 @@ class CollageRenderer:
 
         if n == 3:
             return self._chooseBestThreeLayout(images, target_width, target_height)
+
+        # Special handling for 4 images: prefer nested/grouped layouts similar to
+        # PhotoCollage.makeCollage. This results in nicer, more balanced
+        # compositions (e.g. portrait on one side and three landscapes stacked
+        # on the other, or two nested groups of two images).
+        portraits = [img for img in images if img.width < img.height]
+        landscapes = [img for img in images if img.width >= img.height]
+        if n == 4 and len(portraits) == 1 and True:
+            # Helper to compute weight for a group (sum of image weights)
+            def group_weight(img_list):
+                return sum(self._calculateLayoutWeight(img) for img in img_list)
+
+            # Case: 1 portrait and 3 landscapes -> portrait on one side and
+            # 3 images arranged (stacked or split) on the other side.
+            if len(portraits) == 1 and len(landscapes) == 3:
+                p_img = portraits[0]
+                right_node = self._chooseBestThreeLayout(landscapes, target_width, target_height)
+                left_node = ImageNode(p_img)
+                # choose split direction according to canvas ratio
+                direction = "vertical" if target_width >= target_height else "horizontal"
+                return SplitNode(
+                    direction=direction,
+                    children=[left_node, right_node],
+                    weights=[self._calculateLayoutWeight(p_img)*7, group_weight(landscapes)],
+                )
 
         # Gewichte berechnen (wie vorher)
         weights = [self._calculateLayoutWeight(img) for img in images]
@@ -613,33 +650,50 @@ class CollageRenderer:
 
         return weights
 
-    def _calculateImageScore(
-        self,
-        image,
-    ):
+    def _calculateImageScore(self, image):
         """
-        Calculates a score for an image based on detected objects,
-        prioritizing certain object types.
+        Calculates a score in the range [0, 100),
+        approaching 100 asymptotically as more relevant
+        objects are detected.
         """
         if not self.detector:
             self.logger.info("Object detector not initialized, returning score 0.")
-            return 0
+            return 0.0
 
-        score = 0
         detections = self.detector.detect(image)
-        self.logger.info(f"Calculating score for image with {len(detections)} detections.")
+        self.logger.info(
+            f"Calculating score for image with {len(detections)} detections."
+        )
+
+        weighted_sum = 0.0
+
+        weights = {
+            "person": 3.0,
+            "dog": 2.0,
+            "cat": 2.0,
+            "bicycle": 1.5,
+            "car": 1.5,
+            "motorcycle": 1.5,
+        }
 
         for d in detections:
-            if d.class_name == "person":
-                score += 5
-            elif d.class_name in ("dog", "cat"):
-                score += 4
-            elif d.class_name == "bicycle":
-                score += 3
-            elif d.class_name in ("car", "motorcycle"):
-                score += 2
-            self.logger.info(
-                f"Object '{d.class_name}' (confidence: {d.confidence:.2f}) "
-                f"added to score. Current score: {score}"
+            weight = weights.get(d.class_name, 0.5)
+            contribution = weight * d.confidence
+
+            weighted_sum += contribution
+
+            self.logger.debug(
+                f"Object '{d.class_name}' "
+                f"(confidence={d.confidence:.2f}, "
+                f"weight={weight:.1f}) "
+                f"contribution={contribution:.2f}"
             )
-        return score
+
+        # Asymptotisch gegen 100
+        score = 100.0 * (1.0 - math.exp(-weighted_sum / 10.0))
+
+        self.logger.info(
+            f"Weighted sum={weighted_sum:.2f}, score={score:.2f}"
+        )
+
+        return round(score, 2)
