@@ -363,7 +363,7 @@ class CollageRenderer:
                 return SplitNode(
                     direction=direction,
                     children=[left_node, right_node],
-                    weights=[self._calculateLayoutWeight(p_img)*7, group_weight(landscapes)],
+                    weights=[self._calculateLayoutWeight(p_img) * 7, group_weight(landscapes)],
                 )
 
         # Gewichte berechnen (wie vorher)
@@ -637,16 +637,44 @@ class CollageRenderer:
         return cropped_image
 
     def _adjust_row_weights(self, row_images):
-        weights = []
+        """
+        Compute per-image weights for a row by combining the dynamic
+        layout weight (from `_calculateLayoutWeight`) with an aspect-ratio
+        modifier.
+
+        The result preserves relative proportions (no forced normalization)
+        so callers can continue to use `sum(weights)` to determine row
+        contribution when building the parent SplitNode.
+
+        Args:
+            row_images: list of PIL Image objects that belong to the same row.
+
+        Returns:
+            A list of positive floats representing per-image weights for the
+            row. Larger values indicate a larger share of space.
+        """
+        weights: list[float] = []
 
         for img in row_images:
+            # base dynamic weight considers aspect ratio and image score
+            base_weight = float(self._calculateLayoutWeight(img))
+
+            # aspect modifier: keep previous behavior (pull portraits towards square)
+            # but express it as a multiplier
             ratio = img.width / img.height
-
             if ratio < 1.0:
-                # Portraits Richtung Quadrat ziehen
-                ratio = 0.7 + (ratio * 0.3)
+                aspect_mod = 0.7 + (ratio * 0.3)
+            else:
+                aspect_mod = ratio
 
-            weights.append(ratio)
+            # combine both contributions
+            combined = aspect_mod * (1 + base_weight / 10)
+
+            # ensure strictly positive
+            if combined <= 0:
+                combined = 0.001
+
+            weights.append(combined)
 
         return weights
 
@@ -661,9 +689,7 @@ class CollageRenderer:
             return 0.0
 
         detections = self.detector.detect(image)
-        self.logger.info(
-            f"Calculating score for image with {len(detections)} detections."
-        )
+        self.logger.info(f"Calculating score for image with {len(detections)} detections.")
 
         weighted_sum = 0.0
 
@@ -692,8 +718,6 @@ class CollageRenderer:
         # Asymptotisch gegen 100
         score = 100.0 * (1.0 - math.exp(-weighted_sum / 10.0))
 
-        self.logger.info(
-            f"Weighted sum={weighted_sum:.2f}, score={score:.2f}"
-        )
+        self.logger.info(f"Weighted sum={weighted_sum:.2f}, score={score:.2f}")
 
         return round(score, 2)
