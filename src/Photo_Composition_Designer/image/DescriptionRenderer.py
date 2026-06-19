@@ -45,20 +45,22 @@ class DescriptionRenderer:
             dpi=config.size.dpi.value,
         )
 
-    # -------------------------------------------------------------------------
-
-    def generate(self, text: str) -> Image.Image:
-        """Render simple text label."""
-
+    def generate(self, description: str) -> Image.Image:
+        """Generates an image with the given description text."""
         img = Image.new("RGB", (self.width_px, self.height_px), self.background_color)
         draw = ImageDraw.Draw(img)
 
-        draw.text(
-            (self.margin_side_px, self.height_px),
-            text,
-            fill=self.font.color.to_pil(),
-            font=self.font.get_image_font(self.dpi),
-            anchor="lb",
-        )
+        # Use the font object to get the PIL font with the correct DPI
+        pil_font = self.font.get_image_font(self.dpi)
 
+        text_x = self.margin_side_px
+        text_y = self.height_px
+
+        draw.text(
+            (text_x, text_y),
+            description,
+            font=pil_font,
+            fill=self.font.color.to_pil(),
+            anchor="lb",  # Left-start, bottom-aligned
+        )
         return img

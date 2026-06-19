@@ -299,30 +299,48 @@ class MainGui:
             )
             return
         folder_name = self.photo_folders[selection_index].name
-        preview_image: Image.Image = self.composition_designer.generate_compositions_from_folder(
+
+        # Get current dimensions of the preview_label
+        w = self.preview_label.winfo_width()
+        h = self.preview_label.winfo_height()
+
+        margin = 10  # extra padding around the preview
+        target_width = max(1, w - margin)
+        target_height = max(1, h - margin)
+
+        # Create a temporary CompositionDesigner instance to get the full unscaled width
+        temp_designer = CompositionDesigner(self._config, self.logger)
+        full_width_px = temp_designer.width_px
+        full_height_px = temp_designer.height_px
+
+        # Calculate the scale factor needed to fit the full composition into the preview area
+        preview_scale_factor = max(
+            0.1, min(target_width / full_width_px, target_height / full_height_px)
+        )
+
+        self._config_preview = self._config
+        self._config_preview.size.dpi.value = self._config.size.dpi.value * preview_scale_factor
+
+        # Create a new CompositionDesigner instance with the calculated scale factor
+        preview_designer = CompositionDesigner(
+            self._config,
+            self.logger,
+        )
+
+        preview_image: Image.Image | None = preview_designer.generate_compositions_from_folder(
             folder_name
         )
 
         if not preview_image:
             self.logger.info(f"Empty folder '{folder_name}'. No preview available.")
             return
-        # Save original unscaled image
-        img = preview_image.copy()
-        self.preview_image_original = img
 
-        # Scale to current preview widget
-        w = self.preview_label.winfo_width()
-        h = self.preview_label.winfo_height()
-
-        if w > 0 and h > 0:
-            img.thumbnail((w, h))
-
-        self.preview_photo = ImageTk.PhotoImage(img)
+        # The image is already scaled by generate_compositions_from_folder
+        self.preview_image_original = preview_image
+        self.preview_photo = ImageTk.PhotoImage(preview_image)
         self.preview_label.configure(image=self.preview_photo)
 
         self.logger.info(f"Preview generated for folder {folder_name}")
-
-        # self.preview_label.after(10, lambda: self._refresh_preview(tk.Event()))
 
     def _load_photo_folders(self):
         """Scan self.photo_dir for subfolders and populate the listbox and internal list."""
@@ -617,9 +635,8 @@ class MainGui:
         if width <= margin or height <= margin:
             return
 
-        img = self.preview_image_original.copy()
-        img.thumbnail((width - margin, height - margin))
-        self.preview_photo = ImageTk.PhotoImage(img)
+        # The image is already scaled, just update the PhotoImage
+        self.preview_photo = ImageTk.PhotoImage(self.preview_image_original)
         self.preview_label.configure(image=self.preview_photo, anchor="center", compound="")
 
 

@@ -199,15 +199,18 @@ class CalendarRenderer:
         return img
 
     def generateTitle(self, title: str, width: int | float, height: int | float) -> Image.Image:
+        """Generates a title strip."""
         width = int(width)
         height = int(height)
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
+        font_large_pil = self.font_large.get_image_font(self.dpi)
+
         draw.text(
             (width // 2, height - self.font_holiday.size * self.dpi / 25.4),
             title,
-            font=self.font_large.get_image_font(self.dpi),
+            font=font_large_pil,
             fill=self.font_large.color.to_pil(),
             anchor="md",
         )

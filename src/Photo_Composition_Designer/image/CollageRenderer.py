@@ -108,6 +108,7 @@ class CollageRenderer:
         use_object_recognition=False,
         rounded_corners=False,
         image_score_factor: float = DEFAULT_IMAGE_SCORE_FACTOR,
+        object_detector: ObjectDetector | None = None,  # Added object_detector parameter
     ):
         self.color = color
         self.width: int = width
@@ -117,7 +118,7 @@ class CollageRenderer:
         self.image_score_factor = image_score_factor
         self.yolo_session = None  # Will load this lazily
         self.use_image_recognition = use_object_recognition
-        self.detector = ObjectDetector() if use_object_recognition else None
+        self.detector = object_detector  # Use the passed object_detector
         self.cropper = SmartCrop()
 
         # Initialize logging system

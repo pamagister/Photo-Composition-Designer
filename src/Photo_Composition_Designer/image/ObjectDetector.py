@@ -1,3 +1,4 @@
+import hashlib
 from dataclasses import dataclass
 from logging import Logger
 
@@ -58,8 +59,19 @@ class ObjectDetector:
         )
 
         self.input_name = self.session.get_inputs()[0].name
+        self.cache: dict[str, list[Detection]] = {}  # Initialize cache
 
     def detect(self, image: Image.Image) -> list[Detection]:
+        # Generate a hash for the image to use as a cache key
+        # Convert image to bytes for hashing
+        img_bytes = image.tobytes()
+        image_hash = hashlib.md5(img_bytes).hexdigest()
+
+        if image_hash in self.cache:
+            self.logger.debug(f"Returning cached detections for image hash: {image_hash}")
+            return self.cache[image_hash]
+
+        self.logger.debug(f"Performing YOLO detection for image hash: {image_hash}")
 
         orig_w, orig_h = image.size
 
@@ -110,4 +122,5 @@ class ObjectDetector:
                 )
             )
 
+        self.cache[image_hash] = result  # Store results in cache
         return result

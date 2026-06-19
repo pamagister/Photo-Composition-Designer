@@ -21,6 +21,7 @@ from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
 from Photo_Composition_Designer.image.MapRenderer import MapRenderer
+from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector  # Import ObjectDetector
 from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
@@ -77,6 +78,9 @@ class CompositionDesigner:
         # colors
         background_color = self.config.style.backgroundColor.value.to_pil()
 
+        # Create ObjectDetector instance once
+        self.object_detector = ObjectDetector() if self.use_object_recognition else None
+
         # Create other helpers/generators — pass config object for them to pull values from.
         self.mapGenerator: MapRenderer = MapRenderer.from_config(self.config)
         self.descGenerator: DescriptionRenderer = DescriptionRenderer.from_config(self.config)
@@ -93,6 +97,7 @@ class CompositionDesigner:
             self.use_object_recognition,
             self.config.layout.useRoundedCorners.value,
             self.config.layout.imageScoreFactor.value,
+            self.object_detector,  # Pass the shared ObjectDetector instance
         )
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:
@@ -236,7 +241,10 @@ class CompositionDesigner:
                 photo_description = [text_file.stem]
         return photo_description
 
-    def generate_compositions_from_folder(self, folder_name: str) -> Image.Image | None:
+    def generate_compositions_from_folder(
+        self,
+        folder_name: str,
+    ) -> Image.Image | None:
         """
         Generates a single collage for the given folder name.
         Returns True if a composition was generated, False if skipped.
@@ -308,7 +316,7 @@ class CompositionDesigner:
         output_file_name = f"{output_prefix}.jpg"
         output_path = self.outputDir / output_file_name
         jpg_quality = int(self.config.size.jpgQuality.value)
-        dpi_tuple = (self.dpi, self.dpi)
+        dpi_tuple = (self.dpi, self.dpi)  # Use original DPI for saving
         composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
         self.logger.info(f"Composition saved: {output_path}")
 
