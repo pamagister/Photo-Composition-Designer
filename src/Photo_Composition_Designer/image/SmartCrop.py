@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import colorsys
+import math
 from dataclasses import dataclass
 from hashlib import blake2b
 
@@ -165,7 +166,7 @@ class SmartCrop:
             1,
         )
 
-        return priority * (detection.confidence * detection.confidence or 0.0) * area
+        return priority * (detection.confidence * detection.confidence or 0.0) * math.sqrt(area)
 
     def _calculate_weighted_anchor(
         self,

@@ -72,9 +72,9 @@ layout:
   # Spacing between elements in mm | type=int
   spacing: 2
   # Use rounded corners at the edges of the images in the collage | type=bool | choices=[True, False]
-  useRoundedCorners: false
+  useRoundedCorners: true
   # Factor how much the objects (humans, animals, ...) in the image are considered for weighting the image size | type=float
-  imageScoreFactor: 1.0
+  imageScoreFactor: 2.0
   # Use short weekday names (e.g., Mon, Tue) | type=bool | choices=[True, False]
   useShortDayNames: false
   # Use short month names (e.g., Jan, Feb) | type=bool | choices=[True, False]

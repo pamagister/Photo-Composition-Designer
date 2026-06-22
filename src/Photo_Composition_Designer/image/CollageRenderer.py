@@ -1,4 +1,5 @@
 import math
+import os
 from collections import deque
 from dataclasses import dataclass
 from logging import Logger
@@ -97,7 +98,7 @@ class CollageRenderer:
     optionally using object recognition for smart cropping.
     """
 
-    DEFAULT_IMAGE_SCORE_FACTOR = 0.6
+    DEFAULT_IMAGE_SCORE_FACTOR = 1.0
 
     def __init__(
         self,
@@ -165,21 +166,25 @@ class CollageRenderer:
 
         Berücksichtigt:
         - Seitenverhältnis
-        - Bildinhalt (Personen/Tiere/etc.)
-
-        Berücksichtigt NICHT:
-        - Auflösung
-        - Dateigröße
         """
+        return image.width / image.height
 
-        aspect_ratio = image.width / image.height
-        portrait_factor = 1 if image.width < image.height else 1
+    def _calculateImageImportance(self, image):
+        """
+        Gewicht für die Layout-Optimierung.
 
+        Berücksichtigt:
+        - Bildinhalt (Personen/Tiere/etc.)
+        """
         score = self._calculateImageScore(image)
 
-        score_factor = 1.0 + (score / 50.0) * self.image_score_factor * portrait_factor
+        return 1.0 + (score / 100.0) * self.image_score_factor
 
-        return score_factor * aspect_ratio
+    def _calculateCombinedWeight(self, image):
+        """
+        Kombinierte Gewichtung: Seitenverhältnis und Bild-Relevanz
+        """
+        return self._calculateLayoutWeight(image) * self._calculateImageImportance(image)
 
     def _generateTwoImageLayout(
         self,
@@ -199,8 +204,8 @@ class CollageRenderer:
                 ImageNode(images[1]),
             ],
             weights=[
-                self._calculateLayoutWeight(images[0]),
-                self._calculateLayoutWeight(images[1]),
+                self._calculateCombinedWeight(images[0]),
+                self._calculateCombinedWeight(images[1]),
             ],
         )
 
@@ -210,7 +215,7 @@ class CollageRenderer:
         is_portrait = [r < 0.9 for r in ratios]
         p_count = sum(is_portrait)
 
-        weights = [self._calculateLayoutWeight(img) for img in images]
+        weights = [self._calculateCombinedWeight(img) for img in images]
 
         # --- FALL 1.1: PPP (alle hochkant) ---
         if p_count == 3:
@@ -350,7 +355,8 @@ class CollageRenderer:
         if n == 4 and len(portraits) == 1 and True:
             # Helper to compute weight for a group (sum of image weights)
             def group_weight(img_list):
-                return sum(self._calculateLayoutWeight(img) for img in img_list)
+                return 1
+                # return sum(self._calculateLayoutWeight(img) for img in img_list)
 
             # Case: 1 portrait and 3 landscapes -> portrait on one side and
             # 3 images arranged (stacked or split) on the other side.
@@ -363,7 +369,7 @@ class CollageRenderer:
                 return SplitNode(
                     direction=direction,
                     children=[left_node, right_node],
-                    weights=[self._calculateLayoutWeight(p_img) * 7, group_weight(landscapes)],
+                    weights=[self._calculateLayoutWeight(p_img) * 2, group_weight(landscapes)],
                 )
 
         # Gewichte berechnen (wie vorher)
@@ -388,8 +394,8 @@ class CollageRenderer:
 
             if len(row) == 1:
                 row_nodes.append(ImageNode(row[0]))
-                # TODO  row_weights.append(self._calculateLayoutWeight(row[0]))
-                row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
+                row_weights.append(self._calculateCombinedWeight(row[0]))
+                # row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
             else:
                 w = self._adjust_row_weights(row)
                 row_nodes.append(
@@ -622,11 +628,11 @@ class CollageRenderer:
         """
         detections = None
         if self.detector:
-            self.logger.info("Object detection enabled. Detecting objects for smart crop.")
+            self.logger.debug("Object detection enabled. Detecting objects for smart crop.")
             detections = self.detector.detect(image)
-            self.logger.info(f"Detected {len(detections)} objects.")
+            self.logger.debug(f"Detected {len(detections)} objects.")
         else:
-            self.logger.info("Object detection disabled. Performing standard crop.")
+            self.logger.debug("Object detection disabled. Performing standard crop.")
 
         cropped_image, _ = self.cropper.crop(
             image=image,
@@ -657,7 +663,7 @@ class CollageRenderer:
 
         for img in row_images:
             # base dynamic weight considers aspect ratio and image score
-            base_weight = float(self._calculateLayoutWeight(img))
+            base_weight = float(self._calculateCombinedWeight(img))
 
             # aspect modifier: keep previous behavior (pull portraits towards square)
             # but express it as a multiplier
@@ -689,7 +695,10 @@ class CollageRenderer:
             return 0.0
 
         detections = self.detector.detect(image)
-        self.logger.info(f"Calculating score for image with {len(detections)} detections.")
+        self.logger.info(
+            f"Calculating score for image {os.path.split(image.filename)[-1]} "
+            f"with {len(detections)} detections."
+        )
 
         weighted_sum = 0.0
 
@@ -704,7 +713,9 @@ class CollageRenderer:
 
         for d in detections:
             weight = weights.get(d.class_name, 0.5)
-            contribution = weight * d.confidence
+            x1, y1, x2, y2 = d.bbox
+            area = max(0.1, 10 * (x2 - x1) / image.width * (y2 - y1) / image.height)
+            contribution = weight * d.confidence * math.sqrt(area)
 
             weighted_sum += contribution
 
@@ -718,6 +729,6 @@ class CollageRenderer:
         # Asymptotisch gegen 100
         score = 100.0 * (1.0 - math.exp(-weighted_sum / 10.0))
 
-        self.logger.info(f"Weighted sum={weighted_sum:.2f}, score={score:.2f}")
+        self.logger.info(f"    -> Weighted sum={weighted_sum:.2f}, score={score:.2f}")
 
         return round(score, 2)
