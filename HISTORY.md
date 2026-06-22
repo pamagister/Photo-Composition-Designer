@@ -4,6 +4,49 @@ Changelog
 
 (unreleased)
 ------------
+- Improve layouting: distribute 2x2 images more equally. Use image
+  importance weight where useful. Consider object area when calculating
+  importance. Clear cache at session start. [Paul Magister]
+- No more workspace.xml in vcs. [Paul Magister]
+- Calculate image weights better. [Paul Magister]
+- Calculate image weights better. [Paul Magister]
+- Improve reactivity: add file cache to store image recognition data.
+  [Paul Magister]
+- Improve reactivity: render preview only as large as needed. [Paul
+  Magister]
+- Update config-cli-gui: improved gui handling, reload last config.yaml,
+  move AppConfig into general base class. [Paul Magister]
+- Use ttkbootstrap for modern gui design. [Paul Magister]
+- CollageRenderer.py: imageScoreFactor: Factor how much the objects
+  (humans, animals, ...) in the image are considered for weighting the
+  image size. [Paul Magister]
+- CollageRenderer.py: add rounded corner functionality: add parameter.
+  [Paul Magister]
+- CollageRenderer.py: add rounded corner functionality. [Paul Magister]
+- CollageRenderer.py: improve tests, more variants, shorter P and L for
+  portrait and landscape. Overweight portraits in one row so that they
+  get more space. [Paul Magister]
+- Adjust weight in SmartCrop. [Paul Magister]
+- Code formatting and import optimization. [Paul Magister]
+- Algorithm finally working. [Paul Magister]
+- Draft: spezielle Behandlung für 3: fast perfekt: fix gap bug. [Paul
+  Magister]
+- Draft: spezielle Behandlung für 3: fast perfekt. [Paul Magister]
+- Draft: spezielle Behandlung für 3. [Paul Magister]
+- Draft: neues arrangement mit fitting algo: schon viel besser, aber bei
+  3 Bildern geht es nicht. [Paul Magister]
+- Draft: neues arrangement mit fitting algo: schon viel besser, aber bei
+  3 Bildern geht es nicht. [Paul Magister]
+- Draft: neues arrangement mit fitting algo. [Paul Magister]
+- Make pytree: improvements on show_tree.py: doc external tool. [Paul
+  Magister]
+- Improve cropping boxes and test visualization. [Paul Magister]
+- CollageRenderer.py: rename private methods. [Paul Magister]
+
+
+1.0.1 (2026-06-14)
+------------------
+- Docs: Update HISTORY.md for release 1.0.1. [Paul Magister]
 - Object recognition: improve cropping: prevent crash on None. [Paul
   Magister]
 - Object recognition: improve cropping. [Paul Magister]
