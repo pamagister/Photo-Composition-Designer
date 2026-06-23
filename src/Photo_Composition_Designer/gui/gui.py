@@ -6,6 +6,7 @@ with settings dialog, file management, and centralized logging capabilities.
 run gui: python -m Photo_Composition_Designer.gui
 """
 
+import copy
 import logging
 import os
 import shutil
@@ -318,12 +319,13 @@ class MainGui:
             0.1, min(target_width / full_width_px, target_height / full_height_px)
         )
 
-        self._config_preview = self._config
+        # Use a deep copy for preview config to avoid modifying the main config
+        self._config_preview = copy.deepcopy(self._config)
         self._config_preview.size.dpi.value = self._config.size.dpi.value * preview_scale_factor
 
         # Create a new CompositionDesigner instance with the calculated scale factor
         preview_designer = CompositionDesigner(
-            self._config,
+            self._config_preview,
             self.logger,
         )
 
