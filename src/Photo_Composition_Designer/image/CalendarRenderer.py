@@ -61,6 +61,7 @@ class CalendarRenderer:
             startDate.year,
             country_code,
             holidayCountries,
+            language=self.language,
         )
 
     @classmethod
@@ -79,7 +80,7 @@ class CalendarRenderer:
             useShortDayNames=config.layout.useShortDayNames.value,
             useShortMonthNames=config.layout.useShortMonthNames.value,
             marginSides=margin_sides_px,
-            anniversaries=None,  # use default
+            anniversaries=config.general.anniversariesConfig.value,  # use default
             dpi=config.size.dpi.value,
         )
 
@@ -246,15 +247,46 @@ class CalendarRenderer:
             locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
-    def get_combined_holidays(year: int, country: str, subdivs: list[str]) -> holidays.HolidayBase:
+    def get_combined_holidays(
+        year: int, country: str, subdivs: list[str], language: str | None = None
+    ) -> holidays.HolidayBase:
+        """Return combined country + subdivision holidays for year and optionally localised names.
+
+        language: Optional locale string like 'de_DE' or 'en_US'. The function will extract
+        the language code (e.g. 'de') and pass it to python-holidays so names are returned
+        in the requested language when supported.
+        """
         years = (year, year + 1)
         combined = holidays.HolidayBase()
-        combined.update(holidays.country_holidays(country, years=years))
-        try:
-            for sub in subdivs:
-                combined.update(holidays.country_holidays(country, years=years, subdiv=sub))
-        except Exception as e:
-            logging.warning(f"Unable to load holiday subdivision {sub}: {e}")
+
+        # Determine language code for python-holidays (e.g., 'de' from 'de_DE')
+        lang_code = None
+        if language:
+            try:
+                lang_code = language.split("_")[0]
+            except Exception:
+                lang_code = language
+
+        # Load base country holidays with language if provided
+        if lang_code:
+            combined.update(holidays.country_holidays(country, years=years, language=lang_code))
+        else:
+            combined.update(holidays.country_holidays(country, years=years))
+
+        # Load subdivisions (if any).
+        # Handle errors per subdivision so one bad subdiv won't break all.
+        for sub in subdivs or []:
+            try:
+                if lang_code:
+                    combined.update(
+                        holidays.country_holidays(
+                            country, years=years, subdiv=sub, language=lang_code
+                        )
+                    )
+                else:
+                    combined.update(holidays.country_holidays(country, years=years, subdiv=sub))
+            except Exception as e:
+                logging.warning(f"Unable to load holiday subdivision {sub}: {e}")
 
         return combined
 

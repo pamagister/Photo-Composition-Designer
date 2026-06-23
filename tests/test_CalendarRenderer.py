@@ -39,3 +39,32 @@ def test_CalendarGenerator_proper_name(temp_dir):
     assert cal_path.stat().st_size > 0
 
     print("Generated files:", title_path, cal_path)
+
+
+def test_holidays_localization_and_subdivision():
+    """Ensure german holiday names are returned and Saxony-specific holidays are present."""
+    from datetime import date
+
+    # Request German localization and Saxony subdivision
+    combined = CalendarRenderer.get_combined_holidays(2025, "DE", ["SN"], language="de_DE")
+
+    # New Year's Day should be present and in German
+    new_year = date(2025, 1, 1)
+    name_ny = combined.get(new_year)
+    assert name_ny is not None
+    assert "Neujahr" in name_ny
+
+    # Reformationstag (31 Oct) should be a holiday and named in German
+    reformation = date(2025, 10, 31)
+    assert reformation in combined
+    name_ref = combined.get(reformation)
+    assert name_ref is not None
+    assert "Reformationstag" in name_ref or "Reformation" in name_ref
+
+    # Buß- und Bettag (Saxony special) - 2025-11-19 is expected
+    buss_bettag = date(2025, 11, 19)
+    assert buss_bettag in combined
+    name_buss = combined.get(buss_bettag)
+    assert name_buss is not None
+    # name may contain 'Buß' (with ß) or similar; check substring
+    assert "Buß" in name_buss or "Buss" in name_buss or "Bettag" in name_buss
