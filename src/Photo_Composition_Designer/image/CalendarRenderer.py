@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import calendar
-import locale
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -10,6 +9,7 @@ import holidays
 import pytz
 from astral import LocationInfo
 from astral.sun import sun
+from babel.dates import get_day_names, get_month_names
 from config_cli_gui.configtypes.font import Font
 from PIL import Image, ImageDraw
 
@@ -69,6 +69,14 @@ class CalendarRenderer:
         """Factory function to create CalendarGenerator using the config manager."""
         margin_sides_px = mm_to_px(config.layout.marginSides.value, config.size.dpi.value)
 
+        # Resolve anniversaries config:
+        # if a file path (or string) is provided, load it via Anniversaries
+        anniv_cfg = config.general.anniversariesConfig.value
+        if isinstance(anniv_cfg, (str, Path)):
+            anniversaries_obj = Anniversaries(anniv_cfg)
+        else:
+            anniversaries_obj = anniv_cfg
+
         return cls(
             backgroundColor=config.style.backgroundColor.value.to_pil(),
             fontLarge=config.style.fontLarge.value,
@@ -80,7 +88,7 @@ class CalendarRenderer:
             useShortDayNames=config.layout.useShortDayNames.value,
             useShortMonthNames=config.layout.useShortMonthNames.value,
             marginSides=margin_sides_px,
-            anniversaries=config.general.anniversariesConfig.value,  # use default
+            anniversaries=anniversaries_obj,  # resolved object or None
             dpi=config.size.dpi.value,
         )
 
@@ -229,22 +237,21 @@ class CalendarRenderer:
     @staticmethod
     def get_month_name(month: int, locale_name: str, abbreviation: bool = False) -> str:
         try:
-            locale.setlocale(locale.LC_TIME, locale_name)
+            width = "abbreviated" if abbreviation else "wide"
+            months = get_month_names(width=width, locale=locale_name)
+            return months[month].rstrip(".")
+        except Exception:
+            # Fallback auf englische Namen wie bisher
             return calendar.month_abbr[month] if abbreviation else calendar.month_name[month]
-        except locale.Error:
-            return calendar.month_abbr[month] if abbreviation else calendar.month_name[month]
-        finally:
-            locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
     def get_day_name(day: int, locale_name: str) -> str:
         try:
-            locale.setlocale(locale.LC_TIME, locale_name)
+            days = get_day_names(width="wide", locale=locale_name)
+            return days[day]
+        except Exception:
+            # Fallback auf englische Namen wie bisher
             return calendar.day_name[day]
-        except locale.Error:
-            return calendar.day_name[day]
-        finally:
-            locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
     def get_combined_holidays(

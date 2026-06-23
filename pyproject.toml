@@ -19,7 +19,8 @@ dependencies = [
     "pytz>=2025.2",
     "shapely>=2.1.1",
     "onnxruntime>=1.26.0",
-    "numpy>=2.4.6"
+    "numpy>=2.4.6",
+    "babel>=2.18.0",
 ]
 
 # Dev dependencies as optional dependencies
