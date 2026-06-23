@@ -4,6 +4,19 @@ Changelog
 
 (unreleased)
 ------------
+- Fix test for github actions. [Paul Magister]
+- Bugfix: fix essencial bug due to overwrite size.dpi setting because of
+  copy-by-reference mistake. [Paul Magister]
+- Bugfix: fix linux locale problem with languages. [Paul Magister]
+- Pass language to python-holidays so holiday names are localized; load
+  subdivisions per-language. [Paul Magister]
+
+  Added test to ensure German names and Saxony holidays are present (tests/test_CalendarRenderer.py)\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+
+1.0.2 (2026-06-22)
+------------------
+- Docs: Update HISTORY.md for release 1.0.2. [Paul Magister]
 - Improve layouting: distribute 2x2 images more equally. Use image
   importance weight where useful. Consider object area when calculating
   importance. Clear cache at session start. [Paul Magister]
