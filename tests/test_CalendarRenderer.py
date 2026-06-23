@@ -105,7 +105,12 @@ def test_get_combined_holidays_includes_subdivision_holidays():
     # Load raw holiday sets to determine a subdivision-only date (if present).
     years = (year, year + 1)
     base = holidays.country_holidays(country, years=years)
-    sn = holidays.country_holidays(country, years=years, subdiv=subdiv)
+    sn = holidays.country_holidays(
+        country,
+        years=years,
+        subdiv=subdiv,
+        language="de",
+    )
 
     # Build combined using the function under test (request German localization if possible)
     combined = CalendarRenderer.get_combined_holidays(year, country, [subdiv], language="de_DE")
