@@ -51,14 +51,28 @@ class MainGui:
         ("distribute_group_matching_dates", "Distribute photos by date"),
     ]
 
-    def __init__(self, root):
+    def __init__(self, root, config=None):
         self.root = root
         self.root.title("Photo-Composition-Designer")
         self.root.geometry("1200x800")  # Increased width for new layout
         self.root.update_idletasks()
 
         # Initialize configuration
-        self._config = ConfigParameterManager()
+        # Prefer the user's last used configuration if present; otherwise
+        # load a local default config.yaml without marking it as "last used"
+        # (so we don't overwrite the user's actual last-used file).
+        try:
+            last = read_last_used_config(ConfigParameterManager.get_app_name())
+        except Exception:
+            last = None
+
+        if last and Path(last).exists():
+            self._config = ConfigParameterManager(last)
+        elif Path("config.yaml").exists():
+            # Load default config but do not persist it as the "last used"
+            self._config = ConfigParameterManager("config.yaml", persist_last_used=False)
+        else:
+            self._config = ConfigParameterManager()
 
         # Initialize logging system using individual AppConfig values
         self.logger_manager = initialize_logging(
@@ -68,16 +82,8 @@ class MainGui:
             enable_console_logging=self._config.app.enable_console_logging.value,
         )
         self.logger: logging.Logger = get_logger("gui.main")
-        # Inform about which configuration file was last used (if any)
-        try:
-            last_cfg = self._config.get_last_used_config()
-            if last_cfg:
-                self.logger.info(f"Configuration loaded: {last_cfg}")
-            else:
-                self.logger.info("No configuration file loaded (using defaults)")
-        except Exception:
-            # Do not fail GUI startup if logging or config introspection fails
-            self.logger.debug("Could not determine last used configuration file")
+        self.logger.info(f"Anniversaries used: {self._config.general.anniversariesConfig.value}")
+        self.logger.info(f"Locations used: {self._config.general.locationsConfig.value}")
 
         self._build_widgets()
         self._create_menu()
@@ -261,7 +267,7 @@ class MainGui:
         # File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open...", command=self._select_config)
+        file_menu.add_command(label="Select config file", command=self._select_config)
         file_menu.add_separator()
 
         # Create Run menu options dynamically
@@ -649,7 +655,7 @@ def main():
 
     # Try to restore the last used configuration file so the GUI can start
     # with the user's preferred theme and settings.
-    last = read_last_used_config("config-cli-gui")
+    last = read_last_used_config(ConfigParameterManager.get_app_name())
     if last and Path(last).exists():
         _config = ConfigParameterManager(last)
     else:

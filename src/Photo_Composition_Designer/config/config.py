@@ -291,6 +291,10 @@ class ConfigParameterManager(ConfigManager):
         )
         super().__init__(categories, config_file, **kwargs)
 
+    @staticmethod
+    def get_app_name():
+        return "photo-composition-designer"
+
 
 def main():
     """Main function to generate config file and documentation."""

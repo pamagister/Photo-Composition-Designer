@@ -23,7 +23,7 @@ install:          ## Install the project in dev mode.
 
 .PHONY: lock
 lock:           ## builds the uv.make lock file and syncs the packages
-	uv lock
+	uv lock --no-cacke
 
 .PHONY: precommit
 # install automatic pre-commit run locally:

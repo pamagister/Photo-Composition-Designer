@@ -129,7 +129,7 @@ wheels = [
 
 [[package]]
 name = "config-cli-gui"
-version = "0.3.5"
+version = "0.3.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pillow" },
@@ -137,9 +137,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "ttkbootstrap" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/f5/0060a06070ae8e5ca826ab895c3d35a854700c8c0ab9a868c18d147c3308/config_cli_gui-0.3.5.tar.gz", hash = "sha256:42b96f247686de1c178c5af5b359308dd76a3a2cc0efdab9730200908c3b0d33", size = 216078, upload-time = "2026-06-18T22:09:05.06Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/ba/62bcc20c60381907ea68d77808c1323392b818e4fe725062ae78e09dc011/config_cli_gui-0.3.7.tar.gz", hash = "sha256:6c7fd99f25c4b47f0560de712e68a0d0f4c4147ed57c4671c9cbd1b95f35e0c6", size = 217706, upload-time = "2026-06-24T08:07:01.956Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/f7/0fe659483fc54b34cc8cd0bae34a2f956513b79386f1b49ca5bc22f8ab09/config_cli_gui-0.3.5-py3-none-any.whl", hash = "sha256:4c7002e6d4ebdc493340abeb353d60a567779e77a77c799e275908fb9a7eb59a", size = 26968, upload-time = "2026-06-18T22:09:03.843Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/bb/dfbad8f7318712009fdf6223da7f49458872ea2f5471373ea867b6c52721/config_cli_gui-0.3.7-py3-none-any.whl", hash = "sha256:6e7314f36518332553573665eed9fd18bd222d1156fd4ad33093beaa45d2538c", size = 28622, upload-time = "2026-06-24T08:07:00.727Z" },
 ]
 
 [[package]]
@@ -1203,7 +1203,7 @@ requires-dist = [
     { name = "astral", specifier = ">=3.2" },
     { name = "babel", specifier = ">=2.18.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=25.1.0" },
-    { name = "config-cli-gui", specifier = ">=0.3.5" },
+    { name = "config-cli-gui", specifier = ">=0.3.7" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.8.2" },
     { name = "exifread", specifier = ">=3.5.1" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=7.2.0" },
