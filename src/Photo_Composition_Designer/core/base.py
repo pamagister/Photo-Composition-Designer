@@ -177,15 +177,15 @@ class CompositionDesigner:
 
         # description area
         if self.config.layout.usePhotoDescription.value:
-            description_img = self.descGenerator.generate(photo_description)
-            desc_h = getattr(self.descGenerator, "height", description_img.size[1])
-            composition.paste(
-                description_img,
-                (
-                    0,
-                    self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px,
-                ),
-            )
+            alignment = "middle" if is_title else "left"
+            description_img = self.descGenerator.generate(photo_description, alignment)
+            # Use the actual rendered image size for height (and width) instead of getattr
+            desc_w, desc_h = description_img.size
+            # Center horizontally when this is the title page; otherwise align to left margin
+            x = 0
+            # Place the description above the calendar/title area, respecting bottom margin
+            y = self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px
+            composition.paste(description_img, (x, y))
 
         if len(photos) == 0:
             self.logger.info("No pictures found.")
@@ -206,17 +206,17 @@ class CompositionDesigner:
                     self.height_px - self.mapGenerator.height - self.margin_bottom_px,
                 ),
             )
+        if not is_title:
+            # draw the image dates in
+            date_str = get_photo_dates(photos)
+            draw = ImageDraw.Draw(composition)
+            font = self.config.style.fontAnniversaries.value.get_image_font(self.dpi)
 
-        # draw the image dates in
-        date_str = get_photo_dates(photos)
-        draw = ImageDraw.Draw(composition)
-        font = self.config.style.fontAnniversaries.value.get_image_font(self.dpi)
-
-        # Anchor rd expects coordinates relative to lower-right;
-        # to put text inside margins we shift left/up
-        x = self.width_px - self.margin_sides_px
-        y = self.height_px - self.margin_bottom_px
-        draw.text((x, y), date_str, font=font, fill=text_color2, anchor="rd")
+            # Anchor rd expects coordinates relative to lower-right;
+            # to put text inside margins we shift left/up
+            x = self.width_px - self.margin_sides_px
+            y = self.height_px - self.margin_bottom_px
+            draw.text((x, y), date_str, font=font, fill=text_color2, anchor="rd")
 
         return composition
 
