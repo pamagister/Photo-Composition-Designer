@@ -11,7 +11,7 @@ print(f"Use temp dir: {temp_dir}")
 
 def test_CalendarGenerator_proper_name(temp_dir):
     # Load default config
-    config = ConfigParameterManager()
+    config = ConfigParameterManager(persist_last_used=False)
 
     # Build generator from config
     cg = CalendarRenderer.from_config(config)

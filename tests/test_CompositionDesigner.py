@@ -15,7 +15,7 @@ class TestCompositionDesigner:
         # -----------------------------
         # Create light-weight config
         # -----------------------------
-        config = ConfigParameterManager()
+        config = ConfigParameterManager(persist_last_used=False)
 
         # Override required values
         config.size.dpi.value = 30

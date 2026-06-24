@@ -284,6 +284,10 @@ class MainGui:
         options_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Options", menu=options_menu)
         options_menu.add_command(label="Settings", command=self._open_settings)
+        options_menu.add_command(
+            label="Clear object detector cache",
+            command=self._clear_object_detector_cache,
+        )
 
         # Help menu
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -575,6 +579,23 @@ class MainGui:
             # Update log level selector if it changed
             self.log_level_var.set(self._config.app.log_level.value)
             self._reload_config()
+
+    def _clear_object_detector_cache(self):
+        """Clear the object detector cache if object recognition is enabled."""
+        try:
+            od = getattr(self.composition_designer, "object_detector", None)
+            if od:
+                od.clear_cache()
+                messagebox.showinfo("Cache cleared", "Object detector cache cleared.")
+                self.logger.info("Object detector cache cleared via GUI")
+            else:
+                messagebox.showinfo(
+                    "Not available",
+                    "Object detector is not enabled in configuration.",
+                )
+        except Exception as e:
+            self.logger.error(f"Failed to clear object detector cache: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to clear cache: {e}")
 
     def _open_help(self):
         """Open help documentation in browser."""

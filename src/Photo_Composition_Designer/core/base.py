@@ -80,8 +80,6 @@ class CompositionDesigner:
 
         # Create ObjectDetector instance once
         self.object_detector = ObjectDetector() if self.use_object_recognition else None
-        if self.object_detector:
-            self.object_detector.clear_cache()
 
         # Create other helpers/generators — pass config object for them to pull values from.
         self.mapGenerator: MapRenderer = MapRenderer.from_config(self.config)
