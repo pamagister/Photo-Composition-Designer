@@ -47,7 +47,7 @@ class DescriptionRenderer:
 
     def generate(self, description: str, alignment="middle") -> Image.Image:
         """Generates an image with the given description text."""
-        img = Image.new("RGB", (self.width_px, self.height_px), self.background_color)
+        img = Image.new("RGBA", (self.width_px, self.height_px), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
 
         # Use the font object to get the PIL font with the correct DPI
@@ -69,7 +69,7 @@ class DescriptionRenderer:
             (text_x, text_y),
             description,
             font=pil_font,
-            fill=self.font.color.to_pil(),
+            fill=(*self.font.color.to_pil(), 255),
             anchor=anchor,
         )
         return img

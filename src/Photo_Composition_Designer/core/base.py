@@ -154,7 +154,7 @@ class CompositionDesigner:
         background_color = self.config.style.backgroundColor.value.to_pil()
         text_color2 = self.config.style.fontSmall.value.color.to_pil()
 
-        composition = Image.new("RGB", (self.width_px, self.height_px), background_color)
+        composition = Image.new("RGBA", (self.width_px, self.height_px), (*background_color, 255))
         available_cal_width = self.width_px
 
         # add title or calendar
@@ -180,26 +180,6 @@ class CompositionDesigner:
                 ),
             )
 
-        # description area
-        if self.config.layout.usePhotoDescription.value:
-            alignment = "middle" if is_title else "left"
-            description_img = self.descGenerator.generate(photo_description, alignment)
-            # Use the actual rendered image size for height (and width) instead of getattr
-            desc_w, desc_h = description_img.size
-            # Center horizontally when this is the title page; otherwise align to left margin
-            x = 0
-            # Place the description above the calendar/title area, respecting bottom margin
-            y = self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px
-            composition.paste(description_img, (x, y))
-
-        if len(photos) == 0:
-            self.logger.info("No pictures found.")
-            return composition
-
-        # Arrange image composition
-        collage = self.layoutManager.generate([photo.get_image() for photo in photos])
-        composition.paste(collage, (self.margin_sides_px, self.margin_top_px))
-
         # add location map (if configured and not the title page)
         if self.config.geo.usePhotoLocationMaps.value and not is_title:
             coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
@@ -211,6 +191,27 @@ class CompositionDesigner:
                     self.height_px - self.mapGenerator.height - self.margin_bottom_px,
                 ),
             )
+
+        # description area
+        if self.config.layout.usePhotoDescription.value:
+            alignment = "middle" if is_title else "left"
+            description_img = self.descGenerator.generate(photo_description, alignment)
+            # Use the actual rendered image size for height (and width) instead of getattr
+            desc_w, desc_h = description_img.size
+            # Center horizontally when this is the title page; otherwise align to left margin
+            x = 0
+            # Place the description above the calendar/title area, respecting bottom margin
+            y = self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px
+            composition.alpha_composite(description_img, (x, y))
+
+        if len(photos) == 0:
+            self.logger.info("No pictures found.")
+            return composition
+
+        # Arrange image composition
+        collage = self.layoutManager.generate([photo.get_image() for photo in photos])
+        composition.paste(collage, (self.margin_sides_px, self.margin_top_px))
+
         if not is_title:
             # draw the image dates in
             date_str = get_photo_dates(photos)
@@ -223,7 +224,7 @@ class CompositionDesigner:
             y = self.height_px - self.margin_bottom_px
             draw.text((x, y), date_str, font=font, fill=text_color2, anchor="rd")
 
-        return composition
+        return composition.convert("RGB")
 
     @staticmethod
     def _get_description(folder_path: Path) -> list[str]:
