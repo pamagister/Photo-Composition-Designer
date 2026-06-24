@@ -75,7 +75,7 @@ layout_configurations = [
     (7, ["L", "L", "L", "P", "P", "P", "P"]),
     (9, group_9),
     (11, group_11),
-    (20, group_9+group_11),
+    (20, group_9 + group_11),
 ]
 
 

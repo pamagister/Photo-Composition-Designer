@@ -211,7 +211,6 @@ class CollageRenderer:
 
     def _chooseBestThreeLayout(self, images, direction="horizontal"):
         ratios = [img.width / img.height for img in images]
-        direction_inverted = "vertical" if direction == "horizontal" else "horizontal"
 
         is_portrait = [r < 0.9 for r in ratios]
         p_count = sum(is_portrait)
