@@ -189,13 +189,8 @@ class CollageRenderer:
     def _generateTwoImageLayout(
         self,
         images,
-        width,
-        height,
+        direction="horizontal",
     ):
-
-        is_portrait_canvas = height > width
-
-        direction = "horizontal" if is_portrait_canvas else "vertical"
 
         return SplitNode(
             direction=direction,
@@ -209,16 +204,22 @@ class CollageRenderer:
             ],
         )
 
-    def _chooseBestThreeLayout(self, images, w, h):
+    def _get_splitter_direction(self, width, height) -> str:
+        is_portrait_canvas = height > width
+        direction = "horizontal" if is_portrait_canvas else "vertical"
+        return direction
+
+    def _chooseBestThreeLayout(self, images, direction="horizontal"):
         ratios = [img.width / img.height for img in images]
+        direction_inverted = "vertical" if direction == "horizontal" else "horizontal"
 
         is_portrait = [r < 0.9 for r in ratios]
         p_count = sum(is_portrait)
 
         weights = [self._calculateCombinedWeight(img) for img in images]
 
-        # --- FALL 1.1: PPP (alle hochkant) ---
-        if p_count == 3:
+        # --- FALL 1.1: PPP  ---
+        if p_count == 3 and direction == "vertical":
             return SplitNode(
                 direction="vertical",
                 children=[
@@ -241,24 +242,6 @@ class CollageRenderer:
                 weights=weights,
             )
 
-        # --- FALL 2: PLL (Eins hochkant, zwei quer) ---
-        if p_count == 4:
-            return SplitNode(
-                direction="horizontal",
-                children=[
-                    SplitNode(
-                        direction="vertical",
-                        children=[
-                            ImageNode(images[0]),
-                            ImageNode(images[1]),
-                        ],
-                        weights=[weights[0], weights[1]],
-                    ),
-                    ImageNode(images[2]),
-                ],
-                weights=[(weights[0] + weights[1]) / 2, weights[2]],
-            )
-
         # --- FALL 3: mixed (1P2L / 2P1L) ---
         if p_count in (1, 2):
             portraits = []
@@ -271,7 +254,7 @@ class CollageRenderer:
                     landscapes.append((img, w))
 
             # --- FALL: 1 Portrait + 2 Landscape ---
-            if len(portraits) == 1 and len(landscapes) == 2:
+            if len(portraits) == 1 and len(landscapes) == 2 and direction == "vertical":
                 p_img, p_w = portraits[0]
                 l1, l2 = landscapes
 
@@ -288,7 +271,7 @@ class CollageRenderer:
                             weights=[l1[1], l2[1]],
                         ),
                     ],
-                    weights=[p_w, (l1[1] + l2[1]) / 3],
+                    weights=[p_w, (l1[1] + l2[1]) / 4],
                 )
 
             # --- FALL: 2 Portrait + 1 Landscape ---
@@ -326,7 +309,7 @@ class CollageRenderer:
                     weights=[weights[1], weights[2]],
                 ),
             ],
-            weights=[weights[0], weights[1] + weights[2]],
+            weights=[weights[0] * 2, weights[1] + weights[2]],
         )
 
     def _generateLayout(self, images, target_width, target_height):
@@ -336,15 +319,16 @@ class CollageRenderer:
         """
 
         n = len(images)
+        direction = self._get_splitter_direction(target_width, target_height)
 
         if n == 1:
             return ImageNode(images[0])
 
         if n == 2:
-            return self._generateTwoImageLayout(images, target_width, target_height)
+            return self._generateTwoImageLayout(images, direction)
 
         if n == 3:
-            return self._chooseBestThreeLayout(images, target_width, target_height)
+            return self._chooseBestThreeLayout(images, direction)
 
         # Special handling for 4 images: prefer nested/grouped layouts similar to
         # PhotoCollage.makeCollage. This results in nicer, more balanced
@@ -352,20 +336,17 @@ class CollageRenderer:
         # on the other, or two nested groups of two images).
         portraits = [img for img in images if img.width < img.height]
         landscapes = [img for img in images if img.width >= img.height]
-        if n == 4 and len(portraits) == 1 and True:
-            # Case: 1 portrait and 3 landscapes -> portrait on one side and
-            # 3 images arranged (stacked or split) on the other side.
-            if len(portraits) == 1 and len(landscapes) == 3:
-                p_img = portraits[0]
-                right_node = self._chooseBestThreeLayout(landscapes, target_width, target_height)
-                left_node = ImageNode(p_img)
-                # choose split direction according to canvas ratio
-                direction = "vertical" if target_width >= target_height else "horizontal"
-                return SplitNode(
-                    direction=direction,
-                    children=[left_node, right_node],
-                    weights=[self._calculateLayoutWeight(p_img) * 2, 1],
-                )
+        if n == 4 and len(portraits) == 1 and direction == "vertical":
+            p_img = portraits[0]
+            right_node = self._chooseBestThreeLayout(landscapes, direction)
+            left_node = ImageNode(p_img)
+            # choose split direction according to canvas ratio
+            # direction = "vertical" if target_width >= target_height else "horizontal"
+            return SplitNode(
+                direction=direction,
+                children=[left_node, right_node],
+                weights=[self._calculateLayoutWeight(p_img) * 2, 1],
+            )
 
         # Gewichte berechnen (wie vorher)
         weights = [self._calculateLayoutWeight(img) for img in images]
@@ -373,6 +354,8 @@ class CollageRenderer:
         # Ziel: Anzahl "Zeilen" heuristisch bestimmen
         canvas_ratio = target_width / target_height
         num_rows = max(1, min(n, int(round(math.sqrt(n / canvas_ratio)))))
+        if n == 4 and len(portraits) == 1:
+            num_rows = 3
 
         # Partitionierung (wie im Referenzalgorithmus)
         rows = linear_partition(weights, num_rows, images)

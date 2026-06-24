@@ -47,6 +47,9 @@ def create_test_image(idx: int, orientation: str) -> Image.Image:
 # ────────────────────────────────────────────────────────────────
 # Layout configurations from your draft
 # ────────────────────────────────────────────────────────────────
+group_6 = ["L", "L", "L", "P", "P", "P"]
+group_9 = ["L", "L", "L", "P", "L", "P", "P", "P", "P"]
+group_11 = ["L", "L", "L", "P", "L", "P", "L", "P", "P", "P", "P"]
 layout_configurations = [
     (1, ["L"]),
     (1, ["P"]),
@@ -65,13 +68,14 @@ layout_configurations = [
     (5, ["L", "L", "L", "L", "P"]),
     (5, ["L", "L", "L", "P", "P"]),
     (5, ["L", "L", "P", "P", "P"]),
-    (6, ["L", "L", "L", "P", "P", "P"]),
+    (6, group_6),
     (6, ["L", "L", "L", "L", "P", "P"]),
     (6, ["L", "L", "L", "L", "L", "L"]),
     (6, ["P", "P", "P", "P", "P", "P"]),
     (7, ["L", "L", "L", "P", "P", "P", "P"]),
-    (9, ["L", "L", "L", "P", "L", "P", "P", "P", "P"]),
-    (11, ["L", "L", "L", "P", "L", "P", "L", "P", "P", "P", "P"]),
+    (9, group_9),
+    (11, group_11),
+    (20, group_9+group_11),
 ]
 
 
@@ -86,8 +90,8 @@ def test_generate_different_layouts(num_images, layout, temp_dir):
     """
 
     # Create pools of test images
-    L_images = [create_test_image(i, "L") for i in range(1, 10)]
-    P_images = [create_test_image(i, "P") for i in range(1, 10)]
+    L_images = [create_test_image(i, "L") for i in range(1, 20)]
+    P_images = [create_test_image(i, "P") for i in range(1, 20)]
 
     if not L_images or not P_images:
         pytest.skip("Both L and P test images required.")
