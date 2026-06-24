@@ -312,7 +312,7 @@ class CompositionDesigner:
 
     def save(self, composition: Image.Image, element: str):
         # save with configured quality/dpi
-        output_prefix = f"collage_{element}"
+        output_prefix = f"{element}"
         output_file_name = f"{output_prefix}.jpg"
         output_path = self.outputDir / output_file_name
         jpg_quality = int(self.config.size.jpgQuality.value)

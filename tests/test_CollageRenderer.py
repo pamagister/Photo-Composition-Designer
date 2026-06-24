@@ -119,4 +119,4 @@ def test_generate_different_layouts(num_images, layout, temp_dir):
     assert collage.mode == "RGB"
 
     # Optionally save for debugging:
-    collage.save(temp_dir / f"collage_{num_images}_{'_'.join(layout)}.jpg")
+    collage.save(temp_dir / f"{num_images}_{'_'.join(layout)}.jpg")

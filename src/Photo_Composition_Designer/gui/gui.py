@@ -51,11 +51,18 @@ class MainGui:
         ("distribute_group_matching_dates", "Distribute photos by date"),
     ]
 
+    composition_modes = [
+        ("render_and_pdf", "Render images & generate PDF"),
+        ("render_only", "Render images only"),
+        ("pdf_only", "Generate PDF only"),
+    ]
+
     def __init__(self, root, config=None):
         self.root = root
         self.root.title("Photo-Composition-Designer")
         self.root.geometry("1200x800")  # Increased width for new layout
         self.root.update_idletasks()
+        self._config_path = None
 
         # Initialize configuration
         # Prefer the user's last used configuration if present; otherwise
@@ -68,11 +75,14 @@ class MainGui:
 
         if last and Path(last).exists():
             self._config = ConfigParameterManager(last)
+            self._config_path = last
         elif Path("config.yaml").exists():
             # Load default config but do not persist it as the "last used"
             self._config = ConfigParameterManager("config.yaml", persist_last_used=False)
+            self._config_path = "config.yaml"
         else:
             self._config = ConfigParameterManager()
+            self._config_path = None
 
         # Initialize logging system using individual AppConfig values
         self.logger_manager = initialize_logging(
@@ -88,6 +98,7 @@ class MainGui:
         self._build_widgets()
         self._create_menu()
         self._reload_config()
+        self._update_window_title_with_config()
 
         # Setup GUI logging after widgets are created
         self._setup_gui_logging()
@@ -170,30 +181,81 @@ class MainGui:
         # Add with weight=0 to keep fixed width
         top_paned.add(button_outer_frame, weight=0)
 
+        # RIGHT SIDE — FIXED-WIDTH BUTTON PANEL with Workflow Phases
+        button_outer_frame = ttk.Frame(top_paned)
+        # Add with weight=0 to keep fixed width
+        top_paned.add(button_outer_frame, weight=0)
+
         # inner frame for padding
         button_frame = ttk.Frame(button_outer_frame)
-        button_frame.pack(fill=tk.Y, padx=5, pady=5)
+        button_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # folder selection
+        # ===== PHASE 1: Configuration =====
+        phase1_label = ttk.Label(
+            button_frame, text="1 Configuration", font=("TkHeadingFont", 10, "bold")
+        )
+        phase1_label.pack(pady=(10, 5), fill=tk.X)
+
         select_config_button = ttk.Button(
             button_frame, text="Select config file", command=self._select_config
         )
-        select_config_button.pack(pady=10, fill=tk.X)
+        ToolTip(select_config_button, "Select and load a configuration file (.yaml)")
+        select_config_button.pack(pady=2, fill=tk.X)
 
-        # dynamic run buttons
-        self.run_buttons = {}
-        for mode, label in self.distribution_modes:
-            button = ttk.Button(
-                button_frame,
-                text=label,
-                command=partial(self._run_processing_image_distribution, mode=mode),
-            )
-            ToolTip(
-                button,
-                f"Distribute all images into folders using \nthe method '{label}'",
-            )
-            button.pack(pady=2, fill=tk.X)
-            self.run_buttons[mode] = button
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(pady=10, fill=tk.X)
+
+        # ===== PHASE 2: Image Distribution =====
+        phase2_label = ttk.Label(
+            button_frame, text="2 Image Distribution", font=("TkHeadingFont", 10, "bold")
+        )
+        phase2_label.pack(pady=(10, 5), fill=tk.X)
+
+        # Distribution mode dropdown
+        dist_frame = ttk.Frame(button_frame)
+        dist_frame.pack(fill=tk.X, pady=2)
+
+        ttk.Label(dist_frame, text="Method:", width=8).pack(side=tk.LEFT, padx=(0, 5))
+        self.distribution_var = tk.StringVar(value="distribute_group_matching_dates")
+        # Map IDs to labels for display
+        self._dist_mode_map = {mode[0]: mode[1] for mode in self.distribution_modes}
+        self.distribution_combo = ttk.Combobox(
+            dist_frame,
+            textvariable=self.distribution_var,
+            values=[self._dist_mode_map[mode[0]] for mode in self.distribution_modes],
+            state="readonly",
+            width=20,
+        )
+        self.distribution_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        # Set initial display value
+        self.distribution_combo.set(self._dist_mode_map["distribute_group_matching_dates"])
+
+        # Add tooltips for distribution options
+        tooltip_text = (
+            "by date: Groups photos by their capture date\n"
+            "equally: Distributes photos evenly across folders\n"
+            "randomly: Distributes photos randomly"
+        )
+        ToolTip(self.distribution_combo, tooltip_text)
+
+        # Distribution run button
+        self.run_distribution_button = ttk.Button(
+            button_frame,
+            text="Distribute",
+            command=self._run_distribution,
+        )
+        ToolTip(
+            self.run_distribution_button,
+            "Execute the selected distribution method\nfor all photos in the source directory",
+        )
+        self.run_distribution_button.pack(pady=5, fill=tk.X)
+
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(pady=10, fill=tk.X)
+
+        # ===== PHASE 3: Descriptions =====
+        phase3_label = ttk.Label(
+            button_frame, text="3 Prepare Description File", font=("TkHeadingFont", 10, "bold")
+        )
+        phase3_label.pack(pady=(10, 5), fill=tk.X)
 
         # description file button
         self.generate_description_file_button = ttk.Button(
@@ -203,20 +265,79 @@ class MainGui:
         )
         ToolTip(
             self.generate_description_file_button,
-            "Generate a template description file for all collages \n"
+            "Generate a template description file for all collages\n"
             "based on the generated photo directories",
         )
-        self.generate_description_file_button.pack(pady=20, fill=tk.X)
+        self.generate_description_file_button.pack(pady=2, fill=tk.X)
 
-        # compositions button
-        self.generate_compositions_button = ttk.Button(
-            button_frame,
-            text="Generate Compositions",
-            command=self._generate_compositions,
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(pady=10, fill=tk.X)
+
+        # ===== PHASE 4: Composition & Export =====
+        phase4_label = ttk.Label(
+            button_frame, text="4 Composition & Export", font=("TkHeadingFont", 10, "bold")
         )
-        self.generate_compositions_button.pack(pady=0, fill=tk.X)
+        phase4_label.pack(pady=(10, 5), fill=tk.X)
 
-        # progress bar
+        # Composition mode dropdown
+        comp_frame = ttk.Frame(button_frame)
+        comp_frame.pack(fill=tk.X, pady=2)
+
+        ttk.Label(comp_frame, text="Action:", width=8).pack(side=tk.LEFT, padx=(0, 5))
+        self.composition_var = tk.StringVar(value="render_and_pdf")
+        # Map IDs to labels for display
+        self._comp_mode_map = {mode[0]: mode[1] for mode in self.composition_modes}
+        self.composition_combo = ttk.Combobox(
+            comp_frame,
+            textvariable=self.composition_var,
+            values=[self._comp_mode_map[mode[0]] for mode in self.composition_modes],
+            state="readonly",
+            width=20,
+        )
+        self.composition_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        # Set initial display value
+        self.composition_combo.set(self._comp_mode_map["render_and_pdf"])
+
+        # Add tooltips for composition options
+        tooltip_text = (
+            "Render+PDF: Generate all composition images AND create PDF\n"
+            "Render only: Generate composition images without PDF\n"
+            "PDF only: Create PDF from existing composition images"
+        )
+        ToolTip(self.composition_combo, tooltip_text)
+
+        # Composition run button
+        self.run_composition_button = ttk.Button(
+            button_frame,
+            text="Generate",
+            command=self._run_generate_compositions,
+        )
+        ToolTip(
+            self.run_composition_button,
+            "Execute the selected composition action\n"
+            "This may take a while depending on the number of images",
+        )
+        self.run_composition_button.pack(pady=5, fill=tk.X)
+
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(pady=10, fill=tk.X)
+
+        # ===== PHASE 4: Preview & Descriptions =====
+        phase4_label = ttk.Label(button_frame, text="Preview", font=("TkHeadingFont", 10, "bold"))
+        phase4_label.pack(pady=(10, 5), fill=tk.X)
+
+        self.render_preview_button = ttk.Button(
+            button_frame,
+            text="Render Current Preview",
+            command=self._render_and_save_preview,
+        )
+        ToolTip(
+            self.render_preview_button,
+            "Render the currently selected preview\nand save it to the compose output folder",
+        )
+        self.render_preview_button.pack(pady=2, fill=tk.X)
+
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(pady=10, fill=tk.X)
+
+        # ===== Progress Bar =====
         self.progress = ttk.Progressbar(button_frame, mode="determinate")
         self.progress.pack(
             pady=10,
@@ -461,11 +582,163 @@ class MainGui:
         self.logger.info(f"Loading new configuration from: {config_file}")
         try:
             self._config = ConfigParameterManager(config_file)
+            self._config_path = config_file
             self._reload_config()
             self._generate_preview(0)
+            self._update_window_title_with_config()
         except Exception as e:
             self.logger.error(f"Failed to load config file: {e}", exc_info=True)
             messagebox.showerror("Config Error", f"Failed to load configuration: {e}")
+
+    def _update_window_title_with_config(self):
+        """Update window title to show the relative path to the config file."""
+        if self._config_path:
+            try:
+                config_path = Path(self._config_path)
+                # Try to get relative path from current working directory
+                try:
+                    rel_path = config_path.relative_to(Path.cwd())
+                except ValueError:
+                    # If not relative to cwd, use the absolute path
+                    rel_path = config_path
+                self.root.title(f"Photo-Composition-Designer - Config: {rel_path}")
+            except Exception as e:
+                self.logger.debug(f"Could not set title with config path: {e}")
+                self.root.title("Photo-Composition-Designer")
+        else:
+            self.root.title("Photo-Composition-Designer")
+
+    def _run_distribution(self):
+        """Run image distribution using the selected mode from dropdown."""
+        # Map displayed label back to mode ID
+        display_label = self.distribution_var.get()
+        mode_id = next(
+            (mode[0] for mode in self.distribution_modes if mode[1] == display_label),
+            "distribute_group_matching_dates",
+        )
+        self.logger.info(f"Starting distribution in mode: {mode_id}")
+        self._run_processing_image_distribution(mode_id)
+
+    def _render_and_save_preview(self):
+        """Render the currently selected preview and save it."""
+        selection = self.photo_dir_listbox.curselection()
+        if not selection:
+            messagebox.showwarning(
+                "No Selection", "Please select a photo folder to render its preview."
+            )
+            return
+
+        selection_index = selection[0]
+        if not self.photo_folders:
+            messagebox.showwarning("No Folders", "No photo folders available.")
+            return
+
+        folder_name = self.photo_folders[selection_index].name
+
+        self.logger.info(f"Rendering and saving preview for folder: {folder_name}")
+
+        self._start_processing()
+
+        # Run in separate thread to avoid blocking GUI
+        thread = threading.Thread(
+            target=self._render_preview_thread,
+            args=(folder_name,),
+            daemon=True,
+        )
+        thread.start()
+
+    def _render_preview_thread(self, folder_name):
+        """Threaded backend for rendering and saving preview."""
+        try:
+            self.logger.info(f"Generating and saving preview for: {folder_name}")
+
+            # Generate the preview image
+            preview_designer = CompositionDesigner(self._config, self.logger)
+            preview_image = preview_designer.generate_compositions_from_folder(folder_name)
+
+            if not preview_image:
+                self.logger.warning(f"Could not generate preview for {folder_name}")
+                self.root.after(
+                    0,
+                    lambda: messagebox.showwarning(
+                        "Error", f"Could not generate preview for folder {folder_name}"
+                    ),
+                )
+                return
+
+            # Save the image to the output folder
+            output_dir = preview_designer.outputDir
+            output_file = output_dir / f"{folder_name}.jpg"
+            preview_image.save(output_file, quality=95)
+            self.logger.info(f"Preview saved to: {output_file}")
+
+        except Exception as e:
+            self.logger.error(f"Error rendering preview: {e}", exc_info=True)
+            self.root.after(
+                0,
+                lambda err=e: messagebox.showerror("Error", f"Preview rendering failed: {err}"),
+            )
+
+        finally:
+            # Re-enable controls in main thread
+            self.root.after(0, self._processing_finished)
+
+    def _run_generate_compositions(self):
+        """Run composition generation using the selected mode from dropdown."""
+        # Map displayed label back to mode ID
+        display_label = self.composition_var.get()
+        mode_id = next(
+            (mode[0] for mode in self.composition_modes if mode[1] == display_label),
+            "render_and_pdf",
+        )
+        self.logger.info(f"Starting composition generation in mode: {mode_id}")
+
+        self._start_processing()
+        thread = threading.Thread(
+            target=self._generate_compositions_thread,
+            args=(mode_id,),
+            daemon=True,
+        )
+        thread.start()
+
+    def _generate_compositions_thread(self, mode="render_and_pdf"):
+        """Threaded backend for composition generation with different modes."""
+        try:
+            self.logger.info(f"Generate compositions in mode: {mode}")
+
+            if mode == "render_and_pdf":
+                # Generate all compositions and PDF (default/original behavior)
+                self.composition_designer.generate_compositions_from_folders()
+            elif mode == "render_only":
+                # Generate compositions without PDF
+                # Temporarily disable PDF generation
+                original_pdf_setting = self._config.layout.generatePdf.value
+                self._config.layout.generatePdf.value = False
+                try:
+                    self.composition_designer.generate_compositions_from_folders()
+                finally:
+                    # Restore original setting
+                    self._config.layout.generatePdf.value = original_pdf_setting
+            elif mode == "pdf_only":
+                # Generate PDF from existing composition images
+                self.composition_designer.generate_pdf(self.composition_designer.outputDir)
+            else:
+                self.logger.warning(f"Unknown composition mode: {mode}")
+
+            self.logger.info("Composition generation completed")
+
+        except Exception as e:
+            self.logger.error(f"Error generating compositions: {e}", exc_info=True)
+            self.root.after(
+                0,
+                lambda err=e: messagebox.showerror(
+                    "Error", f"Composition generation failed: {err}"
+                ),
+            )
+
+        finally:
+            # Re-enable controls in main thread
+            self.root.after(0, self._processing_finished)
 
     def _run_processing_image_distribution(self, mode="distribute_group_matching_dates"):
         """Run the processing in a separate thread."""
@@ -546,20 +819,25 @@ class MainGui:
             self.root.after(0, self._processing_finished)
 
     def _start_processing(self):
-        # Disable all buttons during processing
-        for button in self.run_buttons.values():
-            button.config(state="disabled")
+        """Disable all buttons during processing."""
+        self.run_distribution_button.config(state="disabled")
+        self.run_composition_button.config(state="disabled")
+        self.render_preview_button.config(state="disabled")
+        self.generate_description_file_button.config(state="disabled")
+        self.distribution_combo.config(state="disabled")
+        self.composition_combo.config(state="disabled")
 
-        self.generate_compositions_button.config(state="disabled")
         self.progress.configure(value=0, maximum=100)
-        # self.progress.start()
 
     def _processing_finished(self):
         """Re-enable controls after processing is finished."""
-        for button in self.run_buttons.values():
-            button.config(state="normal")
+        self.run_distribution_button.config(state="normal")
+        self.run_composition_button.config(state="normal")
+        self.render_preview_button.config(state="normal")
+        self.generate_description_file_button.config(state="normal")
+        self.distribution_combo.config(state="readonly")
+        self.composition_combo.config(state="readonly")
 
-        self.generate_compositions_button.config(state="normal")
         self.progress.stop()
         self.progress.configure(value=0)
 
