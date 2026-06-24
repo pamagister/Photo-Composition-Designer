@@ -353,11 +353,6 @@ class CollageRenderer:
         portraits = [img for img in images if img.width < img.height]
         landscapes = [img for img in images if img.width >= img.height]
         if n == 4 and len(portraits) == 1 and True:
-            # Helper to compute weight for a group (sum of image weights)
-            def group_weight(img_list):
-                return 1
-                # return sum(self._calculateLayoutWeight(img) for img in img_list)
-
             # Case: 1 portrait and 3 landscapes -> portrait on one side and
             # 3 images arranged (stacked or split) on the other side.
             if len(portraits) == 1 and len(landscapes) == 3:
@@ -369,7 +364,7 @@ class CollageRenderer:
                 return SplitNode(
                     direction=direction,
                     children=[left_node, right_node],
-                    weights=[self._calculateLayoutWeight(p_img) * 2, group_weight(landscapes)],
+                    weights=[self._calculateLayoutWeight(p_img) * 2, 1],
                 )
 
         # Gewichte berechnen (wie vorher)

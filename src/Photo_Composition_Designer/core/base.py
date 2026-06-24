@@ -89,8 +89,9 @@ class CompositionDesigner:
 
         # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
         collage_height_px = self.get_available_collage_height_px()
+        collage_width_py = self.get_available_collage_width_px()
         self.layoutManager: CollageRenderer = CollageRenderer(
-            self.width_px,
+            collage_width_py,
             collage_height_px,
             self.spacing_px,
             background_color,
@@ -108,6 +109,12 @@ class CompositionDesigner:
     # ---------------------------------------------------------------------
     # Helpers: unit conversions & derived sizes
     # ---------------------------------------------------------------------
+    def get_available_collage_width_px(self) -> int:
+        available_width = self.width_px
+        # side margins reduce space
+        available_width -= 2 * self.margin_sides_px
+        return int(available_width)
+
     def get_available_collage_height_px(self) -> int:
         """
         Compute available vertical space for the collage area in pixels.
@@ -191,7 +198,7 @@ class CompositionDesigner:
 
         # Arrange image composition
         collage = self.layoutManager.generate([photo.get_image() for photo in photos])
-        composition.paste(collage, (0, self.margin_top_px))
+        composition.paste(collage, (self.margin_sides_px, self.margin_top_px))
 
         # add location map (if configured and not the title page)
         if self.config.geo.usePhotoLocationMaps.value and not is_title:
