@@ -4,6 +4,15 @@ Changelog
 
 (unreleased)
 ------------
+- Clear cache only optionally with explicit menu entry. [Paul Magister]
+- Fix last used config issue: pass config into MainGui. [Paul Magister]
+- Align title description centrally. [Paul Magister]
+- Do not run precommit twice on make release. [Paul Magister]
+
+
+1.0.3 (2026-06-23)
+------------------
+- Docs: Update HISTORY.md for release 1.0.3. [Paul Magister]
 - Fix test for github actions. [Paul Magister]
 - Bugfix: fix essencial bug due to overwrite size.dpi setting because of
   copy-by-reference mistake. [Paul Magister]
