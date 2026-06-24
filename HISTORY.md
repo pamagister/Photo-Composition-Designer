@@ -4,6 +4,19 @@ Changelog
 
 (unreleased)
 ------------
+- Collages in Portrait mode: improve layouting for portrait collages.
+  [Paul Magister]
+- Collages in Portrait mode: improve layouting for portrait collages.
+  [Paul Magister]
+- Use side margins also for collage to avoid images to be cropped in
+  print shop. [Paul Magister]
+- More intuitive workflow concept: New button structure and alignment.
+  [Paul Magister]
+
+
+1.0.4 (2026-06-24)
+------------------
+- Docs: Update HISTORY.md for release 1.0.4. [Paul Magister]
 - Clear cache only optionally with explicit menu entry. [Paul Magister]
 - Fix last used config issue: pass config into MainGui. [Paul Magister]
 - Align title description centrally. [Paul Magister]
