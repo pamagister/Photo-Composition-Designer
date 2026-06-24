@@ -232,7 +232,7 @@ release:          ## Create a new tag for release.
 	# Generate changelog *before* tagging, based on existing history up to the new tag point
 	uv run gitchangelog > HISTORY.md
 	git add HISTORY.md
-	git commit -m "docs: Update HISTORY.md for release $${NEW_TAG}"
+	GIT_COMMITTER_DATE="$(date)" git commit --no-verify -m "docs: Update HISTORY.md for release $${NEW_TAG}"
 
 	echo "Creating git tag : $${NEW_TAG}"
 	git tag "$${NEW_TAG}"
