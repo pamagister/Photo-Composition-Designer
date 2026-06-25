@@ -4,6 +4,249 @@ Changelog
 
 (unreleased)
 ------------
+- Fix gui: no duplicated button frame. [Paul Magister]
+- Add documentation for new feature, fix links in README.md, new images.
+  [Paul Magister]
+- Transparent description text. [Paul Magister]
+
+
+1.0.5 (2026-06-24)
+------------------
+- Docs: Update HISTORY.md for release 1.0.5. [Paul Magister]
+- Collages in Portrait mode: improve layouting for portrait collages.
+  [Paul Magister]
+- Collages in Portrait mode: improve layouting for portrait collages.
+  [Paul Magister]
+- Use side margins also for collage to avoid images to be cropped in
+  print shop. [Paul Magister]
+- More intuitive workflow concept: New button structure and alignment.
+  [Paul Magister]
+
+
+1.0.4 (2026-06-24)
+------------------
+- Docs: Update HISTORY.md for release 1.0.4. [Paul Magister]
+- Clear cache only optionally with explicit menu entry. [Paul Magister]
+- Fix last used config issue: pass config into MainGui. [Paul Magister]
+- Align title description centrally. [Paul Magister]
+- Do not run precommit twice on make release. [Paul Magister]
+
+
+1.0.3 (2026-06-23)
+------------------
+- Docs: Update HISTORY.md for release 1.0.3. [Paul Magister]
+- Fix test for github actions. [Paul Magister]
+- Bugfix: fix essencial bug due to overwrite size.dpi setting because of
+  copy-by-reference mistake. [Paul Magister]
+- Bugfix: fix linux locale problem with languages. [Paul Magister]
+- Pass language to python-holidays so holiday names are localized; load
+  subdivisions per-language. [Paul Magister]
+
+  Added test to ensure German names and Saxony holidays are present (tests/test_CalendarRenderer.py)\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+
+1.0.2 (2026-06-22)
+------------------
+- Docs: Update HISTORY.md for release 1.0.2. [Paul Magister]
+- Improve layouting: distribute 2x2 images more equally. Use image
+  importance weight where useful. Consider object area when calculating
+  importance. Clear cache at session start. [Paul Magister]
+- No more workspace.xml in vcs. [Paul Magister]
+- Calculate image weights better. [Paul Magister]
+- Calculate image weights better. [Paul Magister]
+- Improve reactivity: add file cache to store image recognition data.
+  [Paul Magister]
+- Improve reactivity: render preview only as large as needed. [Paul
+  Magister]
+- Update config-cli-gui: improved gui handling, reload last config.yaml,
+  move AppConfig into general base class. [Paul Magister]
+- Use ttkbootstrap for modern gui design. [Paul Magister]
+- CollageRenderer.py: imageScoreFactor: Factor how much the objects
+  (humans, animals, ...) in the image are considered for weighting the
+  image size. [Paul Magister]
+- CollageRenderer.py: add rounded corner functionality: add parameter.
+  [Paul Magister]
+- CollageRenderer.py: add rounded corner functionality. [Paul Magister]
+- CollageRenderer.py: improve tests, more variants, shorter P and L for
+  portrait and landscape. Overweight portraits in one row so that they
+  get more space. [Paul Magister]
+- Adjust weight in SmartCrop. [Paul Magister]
+- Code formatting and import optimization. [Paul Magister]
+- Algorithm finally working. [Paul Magister]
+- Draft: spezielle Behandlung für 3: fast perfekt: fix gap bug. [Paul
+  Magister]
+- Draft: spezielle Behandlung für 3: fast perfekt. [Paul Magister]
+- Draft: spezielle Behandlung für 3. [Paul Magister]
+- Draft: neues arrangement mit fitting algo: schon viel besser, aber bei
+  3 Bildern geht es nicht. [Paul Magister]
+- Draft: neues arrangement mit fitting algo: schon viel besser, aber bei
+  3 Bildern geht es nicht. [Paul Magister]
+- Draft: neues arrangement mit fitting algo. [Paul Magister]
+- Make pytree: improvements on show_tree.py: doc external tool. [Paul
+  Magister]
+- Improve cropping boxes and test visualization. [Paul Magister]
+- CollageRenderer.py: rename private methods. [Paul Magister]
+
+
+1.0.1 (2026-06-14)
+------------------
+- Docs: Update HISTORY.md for release 1.0.1. [Paul Magister]
+- Object recognition: improve cropping: prevent crash on None. [Paul
+  Magister]
+- Object recognition: improve cropping. [Paul Magister]
+- Object recognition: add tests, add improved cropping and object
+  prioritization, add test images. [Paul Magister]
+- Object recognition: add tests, add improved cropping and object
+  prioritization, add test images. [Paul Magister]
+- Object recognition: improve module structure, add SmartCrop test.
+  [Paul Magister]
+- Object recognition: improve module structure. [Paul Magister]
+- Image recognition: add parameter whether to use object recognition.
+  [Paul Magister]
+- Image recognition: add example images for improved testing. [Paul
+  Magister]
+- Image recognition: use onnx file and onnxruntime instead of
+  ultralytics and pytorch. [Paul Magister]
+- Image recognition: detect not only persons, but different objects.
+  [Paul Magister]
+- Collage designer: using YOLO for object recognition. [Paul Magister]
+- Make pytree: consider doc strings. [Paul Magister]
+- Make pytree: improvements on show_tree.py: rename to
+  project_structure.py. [Paul Magister]
+- Make pytree: improvements on show_tree.py: doc external tool. [Paul
+  Magister]
+- Make pytree: improvements on show_tree.py: bild compact llm
+  understandable json, consider functions. [Paul Magister]
+- Make pytree: improvements on show_tree.py: - class attributes,
+  instance attributes. [Paul Magister]
+- Pipx in doc, support python until <4.0. [Paul Magister]
+
+
+1.0.0 (2025-12-04)
+------------------
+- Docs: Update HISTORY.md for release 1.0.0. [Paul Magister]
+- Upgrade libs. [Paul Magister]
+- Fix doc: start app from pypi. [Paul Magister]
+
+
+0.1.5 (2025-12-04)
+------------------
+- Add collages with transparency. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+- Rename installer download zip. [Paul Magister]
+- Improve doc, add collages.png example image. [Paul Magister]
+
+
+0.1.4 (2025-12-04)
+------------------
+- Docs: Update HISTORY.md for release 0.1.4. [Paul Magister]
+- Update lib, probably fix windows font issue. [Paul Magister]
+
+
+0.1.3 (2025-12-03)
+------------------
+- Docs: Update HISTORY.md for release 0.1.3. [Paul Magister]
+- Docs: Update HISTORY.md for release 0.1.2. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+
+
+0.1.2 (2025-12-03)
+------------------
+- Docs: Update HISTORY.md for release 0.1.2. [Paul Magister]
+- Improve doc. [Paul Magister]
+- Use logging module from lib. [Paul Magister]
+- Selection and preview issue fixed, remove tight layout parameter.
+  [Paul Magister]
+- Code structure refactorings, new config_cli_gui version with preserved
+  config order and logger. [Paul Magister]
+- Code structure refactorings, new config_cli_gui version with preserved
+  config order and logger. [Paul Magister]
+- Remove unused helpers. [Paul Magister]
+- Use new Font class, use dpi awareness so that the fonts do not change
+  in size relatively if dpi is changed. [Paul Magister]
+- Use new Font class. [Paul Magister]
+- Update config_cli_gui. [Paul Magister]
+
+
+0.1.1 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.1.1. [Paul Magister]
+- Make font configurable. [Paul Magister]
+
+
+0.1.0 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.1.0. [Paul Magister]
+- Gitignore. [Paul Magister]
+- Docs: Update HISTORY.md for release 0.0.9. [Paul Magister]
+- Docs: Update HISTORY.md for release 0.0.8. [Paul Magister]
+- Fix test. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+
+
+0.0.9 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.0.9. [Paul Magister]
+
+
+0.0.8 (2025-12-01)
+------------------
+- Docs: Update HISTORY.md for release 0.0.8. [Paul Magister]
+- Fix test. [Paul Magister]
+- Progress bar, logger in base.py, lifecycle fixes. [Paul Magister]
+- Improved logging. [Paul Magister]
+- Update README.md from docs/index.md. [github-actions]
+- Set up nice documentation. [Paul Magister]
+
+
+0.0.7 (2025-11-30)
+------------------
+- Docs: Update HISTORY.md for release 0.0.7. [Paul Magister]
+- Remove zip function from makefile. [Paul Magister]
+
+
+0.0.6 (2025-11-30)
+------------------
+- Docs: Update HISTORY.md for release 0.0.6. [Paul Magister]
+- Fix zip linux. [Paul Magister]
+- Fix more import errors. [Paul Magister]
+
+
+0.0.5 (2025-11-30)
+------------------
+- Docs: Update HISTORY.md for release 0.0.5. [Paul Magister]
+- Improve path issue with relative paths to res/ini files. [Paul
+  Magister]
+- Fix test_cli.py for windows. [Paul Magister]
+- Add ini files individually, fix test_cli.py for windows. [Paul
+  Magister]
+
+
+0.0.4 (2025-11-29)
+------------------
+- Docs: Update HISTORY.md for release 0.0.4. [Paul Magister]
+- Add ini files individually. [Paul Magister]
+- Move all ini files top-level so that the user can find them
+  immediately. [Paul Magister]
+- Cli tests. [Paul Magister]
+- Fix cli, update requirements. [Paul Magister]
+- Button to open alternative config, reload config functionality. [Paul
+  Magister]
+
+
+0.0.3 (2025-11-29)
+------------------
+- Docs: Update HISTORY.md for release 0.0.3. [Paul Magister]
+- Remove duplicated clean from Makefile. [Paul Magister]
+- Fix main.py startup. [Paul Magister]
+- Exclude some more folders. [Paul Magister]
+- Build stage for linux. [Paul Magister]
+- Add docs and res folders to build artifacts. [Paul Magister]
+
+
+0.0.2 (2025-11-28)
+------------------
+- Docs: Update HISTORY.md for release 0.0.2. [Paul Magister]
 - Step to every image with arrows. [Paul Magister]
 - Tooltips, generate preview immediately. [Paul Magister]
 

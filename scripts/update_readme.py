@@ -14,8 +14,10 @@ source_content = src.read_text(encoding="utf-8")
 dst.write_text(
     prefix
     + source_content.replace(r"](getting-started/", r"](docs/getting-started/").replace(
-        r"](develop/", r"](docs/develop/"
-    ),
+        r"](_static/", r"](docs/_static/").replace(
+        r"](funding/", r"](docs/funding/").replace(
+        r"](getting-started/", r"](docs/getting-started/").replace(
+        r"](usage/", r"](docs/usage/"),
     encoding="utf-8",
 )
 print(f"DONE    -  {dst} updated from {src}")

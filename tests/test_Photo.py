@@ -22,8 +22,17 @@ TEST_DATE_NO_TIME = datetime(2023, 5, 17, 12, 0, 0)
         ("IMG_20230517.jpeg", datetime(2023, 5, 17, 12, 0, 0)),
         ("IMG_20230517_143025_sometext.jpeg", datetime(2023, 5, 17, 14, 30, 25)),
         ("IMG_20230517_Holiday.jpg", datetime(2023, 5, 17, 12, 0, 0)),
-        ("03-2023-05-17-143025_002-strange_format.jpg", datetime(2023, 5, 17, 14, 30, 25)),
+        (
+            "03-2023-05-17-143025_002-strange_format.jpg",
+            datetime(2023, 5, 17, 14, 30, 25),
+        ),
+        ("fietzfotos-london-2928889_1920.jpg", datetime.max),
         ("random_name.jpg", datetime.max),
+        ("IMG_2023-05-17_14-30-25.jpg", datetime(2023, 5, 17, 14, 30, 25)),
+        ("2023_05_17_14_30_25.jpg", datetime(2023, 5, 17, 14, 30, 25)),
+        ("foo_2023-05-17.jpg", datetime(2023, 5, 17, 12, 0, 0)),
+        ("IMG_20231317.jpg", datetime.max),  # Monat 13
+        ("IMG_20230230.jpg", datetime.max),  # 30. Februar
     ],
 )
 def test_extract_date_from_filename(filename, expected_date):

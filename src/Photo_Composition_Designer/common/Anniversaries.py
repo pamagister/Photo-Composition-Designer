@@ -1,13 +1,14 @@
 import os
 from collections import defaultdict
-from pathlib import Path
+
+from path_handler import get_base_path
 
 
 class Anniversaries:
     def __init__(self, anniversaries_file=None):
         if not anniversaries_file:
-            base_path = Path(__file__).parent.parent
-            anniversaries_file = base_path / "config" / "anniversaries.ini"
+            base_path = get_base_path()
+            anniversaries_file = base_path / "anniversaries.ini"
 
         self.anniversary_dict = defaultdict(str)  # Dictionary für die Anniversaries
 
@@ -49,12 +50,12 @@ class Anniversaries:
         # Define label formatters for each category
         label_formatter = {
             "Birthdays": lambda _name, _year: f"{_name} {str(_year)[-2:]}" if _year else _name,
-            "Dates of death": lambda _name, _year: f"{_name} ✝ {str(_year)[-2:]}"
-            if _year
-            else f"{_name} ✝",
-            "Weddings": lambda _name, _year: f"{_name} ⚭ {str(_year)[-2:]}"
-            if _year
-            else f"{_name} ⚭",
+            "Dates of death": lambda _name, _year: (
+                f"{_name} ✝ {str(_year)[-2:]}" if _year else f"{_name} ✝"
+            ),
+            "Weddings": lambda _name, _year: (
+                f"{_name} ⚭ {str(_year)[-2:]}" if _year else f"{_name} ⚭"
+            ),
         }.get(category, lambda _name, _year: _name)  # Default formatter if category is unknown
 
         label = label_formatter(name, year)

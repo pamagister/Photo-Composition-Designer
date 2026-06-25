@@ -1,4 +1,3 @@
-import pytest
 from PIL import Image
 
 from Photo_Composition_Designer.image.MapRenderer import MapRenderer
@@ -20,7 +19,13 @@ def test_generate_map_creates_image_file(temp_dir):
         (52.5200, 13.5156),  # Berlin
     ]
 
-    map_gen = MapRenderer(mapHeight=200, mapWidth=200)
+    map_gen = MapRenderer(
+        mapHeight=200,
+        mapWidth=200,
+        minimalExtension=7,
+        backgroundColor=(30, 30, 30),
+        textColor1=(150, 250, 150),
+    )
 
     img = map_gen.generate(gps_coordinates)
 
@@ -37,17 +42,3 @@ def test_generate_map_creates_image_file(temp_dir):
     # Basic pixel check – ensures image is not empty/corrupt
     px = opened.getpixel((10, 10))
     assert isinstance(px, tuple), "Pixel data invalid, image may be corrupted."
-
-
-def test_convert_to_decimal():
-    """
-    Simple unit test for decimal conversion.
-    """
-    map_gen = MapRenderer()
-
-    # degrees, minutes, seconds
-    dms = [10, 30, 30]  # 10° 30' 30''
-    decimal = map_gen.convert_to_decimal(dms)
-
-    expected = 10 + 30 / 60 + 30 / 3600
-    assert pytest.approx(decimal, 0.0001) == expected

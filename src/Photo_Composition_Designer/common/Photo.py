@@ -8,10 +8,15 @@ from PIL import Image
 
 
 class Photo:
-    DATE_PATTERN_FULL = re.compile(
+    """
+    Represents a photo file, providing methods to extract metadata like
+    location and date from EXIF data or filename.
+    """
+
+    DATE_PATTERN_FULL: re.Pattern = re.compile(
         r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2}))"
     )
-    DATE_PATTERN_NO_TIME = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
+    DATE_PATTERN_NO_TIME: re.Pattern = re.compile(r"(?:(\d{4})[-_]?(\d{2})[-_]?(\d{2}))")
 
     def __init__(self, file_path: Path, locations=None):
         self.file_path: Path = Path(file_path)
@@ -20,6 +25,10 @@ class Photo:
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
     def get_location(self) -> tuple[float, float] | None:
+        """
+        Returns the GPS coordinates if available
+        using EXIF or filename.
+        """
         return self.get_location_from_exif() or self.get_location_from_name()
 
     def get_location_from_exif(self) -> tuple[float, float] | None:
@@ -37,6 +46,9 @@ class Photo:
         return None
 
     def get_location_from_name(self) -> tuple[float, float] | None:
+        """
+        Extracts location from the filename based on predefined locations.
+        """
         location = self._locations
         file_name = self.file_path.name.lower()
 
@@ -57,7 +69,7 @@ class Photo:
         """Returns an Image object if the file can be opened."""
         try:
             return Image.open(self.file_path)
-        except Exception as e:
+        except (OSError, SyntaxError) as e:
             print(f"Error opening image: {e}")
             return None
 
@@ -78,36 +90,60 @@ class Photo:
                     pass
         return None
 
-    def _extract_date_from_filename(self) -> datetime | None:
+    def _extract_date_from_filename(self) -> datetime:
         """Attempts to extract date from file name."""
-        match = self.DATE_PATTERN_FULL.search(self.file_path.name)
-        if match:
-            return datetime(*map(int, match.groups()))
-        match = self.DATE_PATTERN_NO_TIME.search(self.file_path.name)
-        if match:
-            return datetime(*map(int, match.groups()), 12, 0, 0)
+
+        patterns = (
+            (self.DATE_PATTERN_FULL, ()),
+            (self.DATE_PATTERN_NO_TIME, (12, 0, 0)),
+        )
+
+        for pattern, defaults in patterns:
+            match = pattern.search(self.file_path.name)
+            if not match:
+                continue
+
+            try:
+                return datetime(*map(int, match.groups()), *defaults)
+            except ValueError:
+                continue
+
         return datetime.max
 
 
 def get_photos_from_dir(
     image_folder: Path, locations: dict[str, tuple[float, float]] = None
-) -> list["Photo"] | None:
-    """Liest alle Bilddateien aus einem Ordner ein und gibt eine Liste von Photo-Objekten zurück."""
-
+) -> list[Photo]:
+    """
+    Reads all image files from a folder and returns a list of Photo objects.
+    """
     folder_path = Path(image_folder)
 
     if not folder_path.is_dir():
         raise ValueError(f"Folder '{image_folder}' does not exist.")
 
-    # Alle Bilddateien sammeln
+    # Collect all image files
     image_files = [
         os.path.join(image_folder, file)
         for file in sorted(os.listdir(image_folder))
         if file.lower().endswith((".png", ".jpg", ".jpeg"))
     ]
 
-    if not image_files:
-        print(f"No images found in '{image_folder}'.")
-        return None
+    return [Photo(Path(file), locations) for file in image_files]
 
-    return [Photo(Path(file), locations) for file in image_files]  # Photo-Objekte erstellen
+
+def get_photo_dates(photos: list[Photo]) -> str:
+    """
+    Get a string of at most 3 unique dates from a list of photos
+    """
+    image_dates = [d for photo in photos if (d := photo.get_date()) is not None]
+    unique_dates = set()
+    date_str = ""
+    for d in image_dates:
+        formatted = d.strftime("%d. %b ")
+        if formatted not in unique_dates:
+            unique_dates.add(formatted)
+            date_str += formatted
+        if len(unique_dates) >= 3:
+            break
+    return date_str

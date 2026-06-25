@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import calendar
-import locale
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -10,12 +9,14 @@ import holidays
 import pytz
 from astral import LocationInfo
 from astral.sun import sun
+from babel.dates import get_day_names, get_month_names
+from config_cli_gui.configtypes.font import Font
 from PIL import Image, ImageDraw
 
 from Photo_Composition_Designer.common.Anniversaries import Anniversaries
 from Photo_Composition_Designer.common.MoonPhase import MoonPhase
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.tools.Helpers import load_font
+from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
 class CalendarRenderer:
@@ -26,31 +27,24 @@ class CalendarRenderer:
     def __init__(
         self,
         backgroundColor: tuple[int],
-        textColor1: tuple[int],
-        textColor2: tuple[int],
-        holidayColor: tuple[int],
+        fontLarge: Font,
+        fontSmall: Font,
+        fontHoliday: Font,
         language: str,
         startDate: datetime,
         holidayCountries: list[str],
-        fontSizeSmall: float,
-        fontSizeLarge: float,
-        fontSizeAnniversaries: float,
         useShortDayNames: bool,
         useShortMonthNames: bool,
         marginSides: float,
         anniversaries: Anniversaries | None = None,
+        dpi: int = 300,
     ) -> None:
         self.anniversaries = anniversaries or Anniversaries()
 
-        # Convert colors to 0–255 int tuples used by Pillow
         self.backgroundColor = backgroundColor
-        self.textColor1 = textColor1
-        self.textColor2 = textColor2
-        self.holidayColor = holidayColor
-
-        self.fontSizeSmall = fontSizeSmall
-        self.fontSizeLarge = fontSizeLarge
-        self.fontSizeAnniversaries = fontSizeAnniversaries
+        self.font_large: Font = fontLarge
+        self.font_small: Font = fontSmall
+        self.font_holiday: Font = fontHoliday
 
         self.language = language
         self.startDate = startDate
@@ -58,6 +52,7 @@ class CalendarRenderer:
         self.useShortDayNames = useShortDayNames
         self.useShortMonthNames = useShortMonthNames
         self.marginSides = marginSides
+        self.dpi = dpi
 
         # Extract country code from locale ("de_DE" → "DE")
         country_code = language.split("_")[1].upper()
@@ -66,6 +61,35 @@ class CalendarRenderer:
             startDate.year,
             country_code,
             holidayCountries,
+            language=self.language,
+        )
+
+    @classmethod
+    def from_config(cls, config: ConfigParameterManager) -> CalendarRenderer:
+        """Factory function to create CalendarGenerator using the config manager."""
+        margin_sides_px = mm_to_px(config.layout.marginSides.value, config.size.dpi.value)
+
+        # Resolve anniversaries config:
+        # if a file path (or string) is provided, load it via Anniversaries
+        anniv_cfg = config.general.anniversariesConfig.value
+        if isinstance(anniv_cfg, (str, Path)):
+            anniversaries_obj = Anniversaries(anniv_cfg)
+        else:
+            anniversaries_obj = anniv_cfg
+
+        return cls(
+            backgroundColor=config.style.backgroundColor.value.to_pil(),
+            fontLarge=config.style.fontLarge.value,
+            fontSmall=config.style.fontSmall.value,
+            fontHoliday=config.style.fontAnniversaries.value,
+            language=config.calendar.language.value,
+            startDate=config.calendar.startDate.value,
+            holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
+            useShortDayNames=config.layout.useShortDayNames.value,
+            useShortMonthNames=config.layout.useShortMonthNames.value,
+            marginSides=margin_sides_px,
+            anniversaries=anniversaries_obj,  # resolved object or None
+            dpi=config.size.dpi.value,
         )
 
     # -------------------------------------------------------------------------
@@ -81,10 +105,6 @@ class CalendarRenderer:
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        font_large = load_font("DejaVuSans.ttf", int(self.fontSizeLarge))
-        font_small = load_font("DejaVuSans.ttf", int(self.fontSizeSmall))
-        font_ann = load_font("DejaVuSans.ttf", int(self.fontSizeAnniversaries))
-
         # Header (month + year)
         month_name = self.get_month_name(
             week_dates[0].month,
@@ -93,10 +113,10 @@ class CalendarRenderer:
         )
         header_text = f"{month_name} {str(d.year)[-2:]}"
         draw.text(
-            (0, height - self.fontSizeAnniversaries),
+            (0, height - self.font_holiday.size * self.dpi / 25.4),
             header_text,
-            font=font_large,
-            fill=self.textColor2,
+            font=self.font_large.get_image_font(self.dpi),
+            fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
 
@@ -113,8 +133,8 @@ class CalendarRenderer:
         draw.text(
             (0, height),
             sun_string,
-            font=font_ann,
-            fill=self.textColor2,
+            font=self.font_holiday.get_image_font(self.dpi),
+            fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
 
@@ -130,7 +150,11 @@ class CalendarRenderer:
             is_weekend = day_date.weekday() >= 5
             is_holiday = day_date in self.localHolidays
 
-            color_day = self.holidayColor if (is_holiday or is_weekend) else self.textColor1
+            color_day = (
+                self.font_holiday.color.to_pil()
+                if (is_holiday or is_weekend)
+                else self.font_large.color.to_pil()
+            )
 
             # Day name
             day_name = self.get_day_name(day_date.weekday(), self.language)
@@ -142,17 +166,22 @@ class CalendarRenderer:
                 day_name = f"{day_name} {moon_symbol}"
 
             draw.text(
-                (x, height - self.fontSizeAnniversaries - self.fontSizeLarge * 1.15),
+                (
+                    x,
+                    height
+                    - self.font_holiday.size * self.dpi / 25.4
+                    - self.font_large.size * self.dpi / 25.4 * 1.15,
+                ),
                 day_name,
-                font=font_small,
-                fill=self.textColor2,
+                font=self.font_small.get_image_font(self.dpi),
+                fill=self.font_small.color.to_pil(),
                 anchor="md",
             )
 
             draw.text(
-                (x, height - self.fontSizeAnniversaries),
+                (x, height - self.font_holiday.size * self.dpi / 25.4),
                 str(day_date.day),
-                font=font_large,
+                font=self.font_large.get_image_font(self.dpi),
                 fill=color_day,
                 anchor="md",
             )
@@ -163,7 +192,7 @@ class CalendarRenderer:
                 label = self.anniversaries[date_key]
                 if holiday_name:
                     label += f", {holiday_name}"
-                draw.fill = self.textColor1
+                draw.fill = self.font_large
             elif holiday_name:
                 label = holiday_name
 
@@ -171,25 +200,27 @@ class CalendarRenderer:
                 draw.text(
                     (x, height),
                     label,
-                    font=font_ann,
-                    fill=self.holidayColor,
+                    font=self.font_holiday.get_image_font(self.dpi),
+                    fill=self.font_holiday.color.to_pil(),
                     anchor="md",
                 )
 
         return img
 
     def generateTitle(self, title: str, width: int | float, height: int | float) -> Image.Image:
+        """Generates a title strip."""
         width = int(width)
         height = int(height)
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
-        font_large = load_font("DejaVuSans.ttf", int(self.fontSizeLarge))
+
+        font_large_pil = self.font_large.get_image_font(self.dpi)
 
         draw.text(
-            (width // 2, height - self.fontSizeAnniversaries),
+            (width // 2, height - self.font_holiday.size * self.dpi / 25.4),
             title,
-            font=font_large,
-            fill=self.textColor1,
+            font=font_large_pil,
+            fill=self.font_large.color.to_pil(),
             anchor="md",
         )
         return img
@@ -206,33 +237,63 @@ class CalendarRenderer:
     @staticmethod
     def get_month_name(month: int, locale_name: str, abbreviation: bool = False) -> str:
         try:
-            locale.setlocale(locale.LC_TIME, locale_name)
+            width = "abbreviated" if abbreviation else "wide"
+            months = get_month_names(width=width, locale=locale_name)
+            return months[month].rstrip(".")
+        except Exception:
+            # Fallback auf englische Namen wie bisher
             return calendar.month_abbr[month] if abbreviation else calendar.month_name[month]
-        except locale.Error:
-            return calendar.month_abbr[month] if abbreviation else calendar.month_name[month]
-        finally:
-            locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
     def get_day_name(day: int, locale_name: str) -> str:
         try:
-            locale.setlocale(locale.LC_TIME, locale_name)
+            days = get_day_names(width="wide", locale=locale_name)
+            return days[day]
+        except Exception:
+            # Fallback auf englische Namen wie bisher
             return calendar.day_name[day]
-        except locale.Error:
-            return calendar.day_name[day]
-        finally:
-            locale.setlocale(locale.LC_TIME, "")
 
     @staticmethod
-    def get_combined_holidays(year: int, country: str, subdivs: list[str]) -> holidays.HolidayBase:
+    def get_combined_holidays(
+        year: int, country: str, subdivs: list[str], language: str | None = None
+    ) -> holidays.HolidayBase:
+        """Return combined country + subdivision holidays for year and optionally localised names.
+
+        language: Optional locale string like 'de_DE' or 'en_US'. The function will extract
+        the language code (e.g. 'de') and pass it to python-holidays so names are returned
+        in the requested language when supported.
+        """
         years = (year, year + 1)
         combined = holidays.HolidayBase()
-        combined.update(holidays.country_holidays(country, years=years))
-        try:
-            for sub in subdivs:
-                combined.update(holidays.country_holidays(country, years=years, subdiv=sub))
-        except Exception as e:
-            logging.warning(f"Unable to load holiday subdivision {sub}: {e}")
+
+        # Determine language code for python-holidays (e.g., 'de' from 'de_DE')
+        lang_code = None
+        if language:
+            try:
+                lang_code = language.split("_")[0]
+            except Exception:
+                lang_code = language
+
+        # Load base country holidays with language if provided
+        if lang_code:
+            combined.update(holidays.country_holidays(country, years=years, language=lang_code))
+        else:
+            combined.update(holidays.country_holidays(country, years=years))
+
+        # Load subdivisions (if any).
+        # Handle errors per subdivision so one bad subdiv won't break all.
+        for sub in subdivs or []:
+            try:
+                if lang_code:
+                    combined.update(
+                        holidays.country_holidays(
+                            country, years=years, subdiv=sub, language=lang_code
+                        )
+                    )
+                else:
+                    combined.update(holidays.country_holidays(country, years=years, subdiv=sub))
+            except Exception as e:
+                logging.warning(f"Unable to load holiday subdivision {sub}: {e}")
 
         return combined
 
@@ -242,48 +303,13 @@ class CalendarRenderer:
 # -----------------------------------------------------------------------------
 
 
-def from_config(config: ConfigParameterManager) -> CalendarRenderer:
-    """Factory function to create CalendarGenerator using the config manager."""
-    return CalendarRenderer(
-        backgroundColor=config.colors.backgroundColor.value.to_pil(),
-        textColor1=config.colors.textColor1.value.to_pil(),
-        textColor2=config.colors.textColor2.value.to_pil(),
-        holidayColor=config.colors.holidayColor.value.to_pil(),
-        language=config.calendar.language.value,
-        startDate=config.calendar.startDate.value,
-        holidayCountries=[s.strip() for s in config.calendar.holidayCountries.value.split(",")],
-        fontSizeSmall=int(
-            config.layout.fontSizeSmall.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        ),
-        fontSizeLarge=int(
-            config.layout.fontSizeLarge.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        ),
-        fontSizeAnniversaries=int(
-            config.layout.fontSizeAnniversaries.value
-            * config.size.calendarHeight.value
-            * config.size.dpi.value
-            / 25.4
-        ),
-        useShortDayNames=config.layout.useShortDayNames.value,
-        useShortMonthNames=config.layout.useShortMonthNames.value,
-        marginSides=int(config.layout.marginSides.value * config.size.dpi.value / 25.4),
-        anniversaries=None,  # use default
-    )
-
-
 def main() -> None:
     import os
 
     from Photo_Composition_Designer.config.config import ConfigParameterManager
 
     config = ConfigParameterManager()
-    cg = from_config(config)
+    cg = CalendarRenderer.from_config(config)
 
     # Create temp directory
     project_root = Path(__file__).resolve().parents[3]

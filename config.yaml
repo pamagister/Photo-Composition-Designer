@@ -1,75 +1,87 @@
 app:
-  # Logging level for the application | type=str, default=INFO
+  # Date format to use | type=str
+  date_format: '%Y-%m-%d'
+  # Logging level for the application | type=str | choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
   log_level: INFO
-calendar:
-  # Number of collages to be generated (e.g. number of weeks) | type=int, default=11
-  collagesToGenerate: 11
-  # Country/state codes for public holidays, e.g., NY,CA | type=str, default=SN
-  holidayCountries: SN
-  # Language for the calendar (e.g., de_DE, en_US) | type=str, default=de_DE
-  language: de_DE
-  # Start date of the calendar | type=datetime, default=2025-12-31 00:00:00 [CLI]
-  startDate: '2025-12-31T00:00:00'
-  # True: Calendar elements are generated | type=bool, default=True
-  useCalendar: true
-colors:
-  # Background color (RGB) | type=Color, default=#141414
-  backgroundColor: '#141414'
-  # Color for holidays | type=Color, default=#ff0000
-  holidayColor: '#ff0000'
-  # Primary text color | type=Color, default=#ffffff
-  textColor1: '#ffffff'
-  # Secondary text color | type=Color, default=#969696
-  textColor2: '#969696'
+  # Maximum log file size in MB before rotation | type=int
+  log_file_max_size: 2
+  # Enable logging to file | type=bool | choices=[True, False]
+  enable_file_logging: true
+  # Enable logging to console | type=bool | choices=[True, False]
+  enable_console_logging: true
+  # GUI theme setting supported by ttkbootstrap | type=str | choices=['cosmo', 'flatly', 'litera', 'minty', 'lumen', 'sandstone', 'yeti', 'pulse', 'united', 'darkly', 'superhero', 'solar', 'cyborg', 'vapor', 'simplex']
+  theme: darkly
 general:
-  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=str, default=anniversaries.ini
+  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=PosixPath | [CLI]
+  photoDirectory: images
+  # Path to anniversaries.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   anniversariesConfig: anniversaries.ini
-  # This is the title of the composition on the first page. Leave empty if not required. | type=str, default=This is the title of the composition
-  compositionTitle: This is the title of the composition
-  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=str, default=locations_en.ini
+  # Path to locations.ini file (absolute, or relative to this config.ini file) | type=PosixPath
   locationsConfig: locations_en.ini
-  # Path to the directory containing photos (absolute, or relative to this config.ini file) | type=str, default=../../images [CLI]
-  photoDirectory: ../../images
+  # This is the title of the composition on the first page. Leave empty if not required. | type=str
+  compositionTitle: This is the title of the composition
+calendar:
+  # True: Calendar elements are generated | type=bool | choices=[True, False]
+  useCalendar: true
+  # Language for the calendar (e.g., de_DE, en_US) | type=str
+  language: de_DE
+  # Country/state codes for public holidays, e.g., NY,CA | type=str
+  holidayCountries: SN
+  # Start date of the calendar | type=datetime | [CLI]
+  startDate: '2025-12-29T00:00:00'
+  # Number of collages to be generated (e.g. number of weeks) | type=int
+  collagesToGenerate: 53
+style:
+  # Background color (RGB) | type=Color
+  backgroundColor: '#141414'
+  # Font size for large text like the title and the weekday numbers | type=Font
+  fontLarge: 'DejaVuSans.ttf, 9, #ffffff'
+  # Font size for small text like the weekday names | type=Font
+  fontSmall: 'DejaVuSans.ttf, 2.5, #969696'
+  # Font for the description texts | type=Font
+  fontDescription: 'DejaVuSans.ttf, 2.5, #969696'
+  # Font size for anniversaries: Text with anniversaries and holiday names | type=Font
+  fontAnniversaries: 'DejaVuSans.ttf, 2.0, #ff0000'
 geo:
-  # Minimum range for map display (degrees) | type=int, default=7
-  minimalExtension: 7
-  # Use GPS data to generate maps | type=bool, default=True
+  # Use GPS data to generate maps | type=bool | choices=[True, False]
   usePhotoLocationMaps: true
-layout:
-  # Font size for anniversaries | type=float, default=0.115
-  fontSizeAnniversaries: 0.115
-  # Font size for large text | type=float, default=0.5
-  fontSizeLarge: 0.5
-  # Font size for small text | type=float, default=0.14
-  fontSizeSmall: 0.14
-  # Combine all generated collages into one pdf | type=bool, default=True
-  generatePdf: true
-  # Bottom margin in mm | type=int, default=3
-  marginBottom: 3
-  # Side margins in mm | type=int, default=3
-  marginSides: 3
-  # Top margin in mm | type=int, default=6
-  marginTop: 6
-  # Spacing between elements in mm | type=int, default=2
-  spacing: 2
-  # Include photo descriptions in the collage | type=bool, default=True
-  usePhotoDescription: true
-  # Use short weekday names (e.g., Mon, Tue) | type=bool, default=False
-  useShortDayNames: false
-  # Use short month names (e.g., Jan, Feb) | type=bool, default=True
-  useShortMonthNames: true
+  # Minimum range for map display (degrees) | type=int
+  minimalExtension: 7
 size:
-  # Height of the calendar area in mm | type=int, default=18
-  calendarHeight: 18
-  # Resolution of the image in dpi | type=int, default=150
-  dpi: 150
-  # Height of the collage in mm | type=int, default=154 [CLI]
-  height: 154
-  # JPG compression quality (1-100) | type=int, default=90
-  jpgQuality: 90
-  # Height of the locations map in mm | type=int, default=20
-  mapHeight: 20
-  # Width of the locations map in mm | type=int, default=20
-  mapWidth: 20
-  # Width of the collage in mm | type=int, default=216 [CLI]
+  # Width of the collage in mm | type=int | [CLI]
   width: 216
+  # Height of the collage in mm | type=int | [CLI]
+  height: 154
+  # Height of the calendar area in mm | type=int
+  calendarHeight: 18
+  # Width of the locations map in mm | type=int
+  mapWidth: 20
+  # Height of the locations map in mm | type=int
+  mapHeight: 20
+  # Resolution of the image in dpi | type=int | [CLI]
+  dpi: 300
+  # JPG compression quality (1-100) | type=int
+  jpgQuality: 90
+layout:
+  # Top margin in mm | type=int
+  marginTop: 6
+  # Bottom margin in mm | type=int
+  marginBottom: 3
+  # Side margins in mm | type=int
+  marginSides: 3
+  # Spacing between elements in mm | type=int
+  spacing: 2
+  # Use rounded corners at the edges of the images in the collage | type=bool | choices=[True, False]
+  useRoundedCorners: true
+  # Factor how much the objects (humans, animals, ...) in the image are considered for weighting the image size | type=float
+  imageScoreFactor: 2.0
+  # Use short weekday names (e.g., Mon, Tue) | type=bool | choices=[True, False]
+  useShortDayNames: false
+  # Use short month names (e.g., Jan, Feb) | type=bool | choices=[True, False]
+  useShortMonthNames: true
+  # Include photo descriptions in the collage | type=bool | choices=[True, False]
+  usePhotoDescription: true
+  # Combine all generated collages into one pdf | type=bool | choices=[True, False]
+  generatePdf: true
+  # Use neuronal network YOLO (You Only Look Once) object detection model to crop images content-aware. | type=bool | choices=[True, False]
+  objectRecognition: true

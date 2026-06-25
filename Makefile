@@ -23,7 +23,7 @@ install:          ## Install the project in dev mode.
 
 .PHONY: lock
 lock:           ## builds the uv.make lock file and syncs the packages
-	uv lock
+	uv lock --no-cacke
 
 .PHONY: precommit
 # install automatic pre-commit run locally:
@@ -36,6 +36,9 @@ precommit: ## Format, test and check dependencies.
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
+	@echo "sync documentation ..."
+	@uv run ./scripts/generate_config_docs.py
+	@uv run ./scripts/update_readme.py
 	uv run ruff format src/
 	uv run ruff format tests/
 	uv run ruff check src/ --fix
@@ -69,34 +72,50 @@ VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
 RELEASE_DIR := release
 DIST_DIR := dist
 
+
+# Alle *.ini im Top-Level auflisten und mit zum Release packen
+
 # Gemeinsame PyInstaller-Optionen
 COMMON_PYI_OPTS = \
 	--add-data "config.yaml:." \
+	--add-data "anniversaries.ini:." \
+	--add-data "locations_en.ini:." \
+	--add-data "locations_de.ini:." \
 	--add-data "res:res" \
 	--add-data "docs:docs" \
+	--add-data "images:images" \
 	--hidden-import Photo_Composition_Designer.cli.cli \
 	--hidden-import Photo_Composition_Designer.gui.gui \
+	--collect-all=holidays \
+    --hidden-import=holidays.countries \
+    --hidden-import=holidays.countries.* \
+    --hidden-import=PIL._tkinter_finder \
+    --hidden-import=PIL.ImageTk \
+    --collect-all=geopandas \
+    --collect-all=shapely \
+    --collect-all=pyogrio \
+    --collect-all=PIL \
+    --collect-submodules=PIL \
 	--exclude-module pkg_resources \
-    --exclude-module setuptools
+    --exclude-module setuptools \
 
 
 # ==========================
 #   UTILS
 # ==========================
 
-.PHONY: clean
-clean:
-	rm -rf $(DIST_DIR) $(RELEASE_DIR)
-
-
 .PHONY: prepare-release
 prepare-release:
 	rm -rf $(RELEASE_DIR)
 	mkdir -p $(RELEASE_DIR)
 	cp config.yaml $(RELEASE_DIR)/
+	cp anniversaries.ini $(RELEASE_DIR)/
+	cp locations_en.ini $(RELEASE_DIR)/
+	cp locations_de.ini $(RELEASE_DIR)/
 	cp README.md $(RELEASE_DIR)/
 	cp -R res $(RELEASE_DIR)/
 	cp -R docs $(RELEASE_DIR)/
+	cp -R images $(RELEASE_DIR)/
 
 
 # ==========================
@@ -113,12 +132,6 @@ build-win: clean
 	$(MAKE) prepare-release
 	cp $(DIST_DIR)/$(NAME).exe $(RELEASE_DIR)/
 
-	$(MAKE) zip-win
-
-
-.PHONY: zip-win
-zip-win:
-	cd $(RELEASE_DIR) && zip -r "../$(NAME)-win-$(VERSION).zip" .
 
 
 # ==========================
@@ -126,7 +139,7 @@ zip-win:
 # ==========================
 
 .PHONY: build-macos
-build-macos: clean
+build-macos:
 	echo "Building macOS CLI/GUI executable"
 	uv run pyinstaller --onefile src/main.py \
 		--name $(NAME) \
@@ -141,12 +154,6 @@ build-macos: clean
 	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
 	cp -R $(DIST_DIR)/TemplateApp.app $(RELEASE_DIR)/
 
-	$(MAKE) zip-macos
-
-
-.PHONY: zip-macos
-zip-macos:
-	cd $(RELEASE_DIR) && zip -r "../$(NAME)-macos-$(VERSION).zip" .
 
 
 # ==========================
@@ -162,13 +169,6 @@ build-linux: clean
 
 	$(MAKE) prepare-release
 	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
-
-	$(MAKE) zip-linux
-
-
-.PHONY: zip-linux
-zip-linux:
-	cd $(RELEASE_DIR) && zip -r "../$(NAME)-linux-$(VERSION).zip" .
 
 
 # ==========================
@@ -199,6 +199,7 @@ clean:            ## Clean unused files.
 	@rm -rf htmlcov
 	@rm -rf .tox/
 	@rm -rf docs/_build
+	rm -rf $(DIST_DIR) $(RELEASE_DIR)
 
 .PHONY: deptry
 deptry:            ## Check for unused dependencies.
@@ -211,6 +212,7 @@ virtualenv:       ## Create a virtual environment.
 
 .PHONY: release
 release:          ## Create a new tag for release.
+	git pull origin HEAD
 	$(MAKE) precommit
 	@echo "WARNING: This operation will create a version tag and push to GitHub"
 
@@ -230,7 +232,7 @@ release:          ## Create a new tag for release.
 	# Generate changelog *before* tagging, based on existing history up to the new tag point
 	uv run gitchangelog > HISTORY.md
 	git add HISTORY.md
-	git commit -m "docs: Update HISTORY.md for release $${NEW_TAG}"
+	GIT_COMMITTER_DATE="$(date)" git commit --no-verify -m "docs: Update HISTORY.md for release $${NEW_TAG}"
 
 	echo "Creating git tag : $${NEW_TAG}"
 	git tag "$${NEW_TAG}"
@@ -255,11 +257,11 @@ list:            ## Show project file list (excluding ignored folders)
 
 .PHONY: tree
 tree:            ## Show project tree (excluding ignored folders)
-	@uv run ./scripts/show_tree.py
+	@uv run ./scripts/project_structure.py
 
 .PHONY: pytree
 pytree:            ## Show project tree (excluding ignored folders)
-	@uv run ./scripts/show_tree.py --show-code
+	@uv run ./scripts/project_structure.py --json --md --llm --doc-string
 
 .PHONY: init
 init:             ## Initialize the project based on an application template.

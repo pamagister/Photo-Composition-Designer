@@ -1,433 +1,711 @@
-import random
+import math
+import os
+from collections import deque
+from dataclasses import dataclass
+from logging import Logger
+from operator import itemgetter
 
-from PIL import Image, UnidentifiedImageError
+from config_cli_gui.logging import get_logger, initialize_logging
+from PIL import Image, ImageDraw
+
+from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
+from Photo_Composition_Designer.image.SmartCrop import SmartCrop
+
+PATTERNS = [
+    ["P", "L", "L", "P"],
+    ["L", "P", "P", "L"],
+    ["P", "L", "P"],
+    ["L", "P", "L"],
+    ["L", "P", "L", "P", "L"],
+    ["P", "P", "L", "P", "P"],
+]
+
+
+@dataclass
+class LayoutNode:
+    pass
+
+
+@dataclass
+class ImageNode(LayoutNode):
+    image: Image.Image
+
+
+@dataclass
+class SplitNode(LayoutNode):
+    direction: str
+    children: list
+    weights: list[float]
+
+
+def linear_partition_table(seq, k):
+    n = len(seq)
+    table = [[0] * k for x in range(n)]
+    solution = [[0] * (k - 1) for x in range(n - 1)]
+    for i in range(n):
+        table[i][0] = seq[i] + (table[i - 1][0] if i else 0)
+    for j in range(k):
+        table[0][j] = seq[0]
+    for i in range(1, n):
+        for j in range(1, k):
+            table[i][j], solution[i - 1][j - 1] = min(
+                ((max(table[x][j - 1], table[i][0] - table[x][0]), x) for x in range(i)),
+                key=itemgetter(0),
+            )
+    return table, solution
+
+
+def linear_partition(seq, k, data_list=None, do_rotate=False):
+    if k <= 0:
+        return []
+    n = len(seq) - 1
+    if k > n:
+        return ([x] for x in seq)
+    _, solution = linear_partition_table(seq, k)
+    k, ans = k - 2, []
+    if data_list is None or len(data_list) != len(seq):
+        while k >= 0:
+            row = [[seq[i] for i in range(solution[n - 1][k] + 1, n + 1)]]
+            if do_rotate:
+                ans += row
+            else:
+                ans = row + ans
+            n, k = solution[n - 1][k], k - 1
+        row = [[seq[i] for i in range(0, n + 1)]]
+        if do_rotate:
+            ans += row
+        else:
+            ans = row + ans
+    else:
+        while k >= 0:
+            row = [[data_list[i] for i in range(solution[n - 1][k] + 1, n + 1)]]
+            if do_rotate:
+                ans += row
+            else:
+                ans = row + ans
+            n, k = solution[n - 1][k], k - 1
+        row = [[data_list[i] for i in range(0, n + 1)]]
+        if do_rotate:
+            ans += row
+        else:
+            ans = row + ans
+    return ans
 
 
 class CollageRenderer:
-    def __init__(self, width=900, height=600, spacing=10, color=(0, 0, 0)):
+    """
+    Renders a collage of images with various layout options,
+    optionally using object recognition for smart cropping.
+    """
+
+    DEFAULT_IMAGE_SCORE_FACTOR = 1.0
+
+    def __init__(
+        self,
+        width=900,
+        height=600,
+        spacing=10,
+        color=(0, 0, 0),
+        use_object_recognition=False,
+        rounded_corners=False,
+        image_score_factor: float = DEFAULT_IMAGE_SCORE_FACTOR,
+        object_detector: ObjectDetector | None = None,  # Added object_detector parameter
+    ):
         self.color = color
         self.width: int = width
         self.height: int = height
         self.spacing: int = spacing
+        self.rounded_corners = rounded_corners
+        self.image_score_factor = image_score_factor
+        self.yolo_session = None  # Will load this lazily
+        self.use_image_recognition = use_object_recognition
+        self.detector = object_detector  # Use the passed object_detector
+        self.cropper = SmartCrop()
+
+        # Initialize logging system
+        initialize_logging()
+        self.logger: Logger = get_logger("base")
+        self.logger.info("CollageRenderer initialized.")
+
+    def _applyRoundedCorners(self, image):
+        if not self.rounded_corners:
+            return image
+
+        radius = self.spacing
+
+        mask = Image.new("L", image.size, 0)
+
+        draw = ImageDraw.Draw(mask)
+
+        draw.rounded_rectangle(
+            (0, 0, image.width, image.height),
+            radius=radius,
+            fill=255,
+        )
+
+        image = image.convert("RGBA")
+        image.putalpha(mask)
+
+        return image
+
+    def _flip_layout(self, node):
+        if isinstance(node, ImageNode):
+            return node
+
+        flipped_children = [self._flip_layout(c) for c in node.children]
+
+        return SplitNode(
+            direction=("horizontal" if node.direction == "vertical" else "vertical"),
+            children=flipped_children,
+            weights=node.weights,
+        )
+
+    def _calculateLayoutWeight(self, image):
+        """
+        Gewicht für die Layout-Optimierung.
+
+        Berücksichtigt:
+        - Seitenverhältnis
+        """
+        return image.width / image.height
+
+    def _calculateImageImportance(self, image):
+        """
+        Gewicht für die Layout-Optimierung.
+
+        Berücksichtigt:
+        - Bildinhalt (Personen/Tiere/etc.)
+        """
+        score = self._calculateImageScore(image)
+
+        return 1.0 + (score / 100.0) * self.image_score_factor
+
+    def _calculateCombinedWeight(self, image):
+        """
+        Kombinierte Gewichtung: Seitenverhältnis und Bild-Relevanz
+        """
+        return self._calculateLayoutWeight(image) * self._calculateImageImportance(image)
+
+    def _generateTwoImageLayout(
+        self,
+        images,
+        direction="horizontal",
+    ):
+
+        return SplitNode(
+            direction=direction,
+            children=[
+                ImageNode(images[0]),
+                ImageNode(images[1]),
+            ],
+            weights=[
+                self._calculateCombinedWeight(images[0]),
+                self._calculateCombinedWeight(images[1]),
+            ],
+        )
+
+    def _get_splitter_direction(self, width, height) -> str:
+        is_portrait_canvas = height > width
+        direction = "horizontal" if is_portrait_canvas else "vertical"
+        return direction
+
+    def _chooseBestThreeLayout(self, images, direction="horizontal"):
+        ratios = [img.width / img.height for img in images]
+
+        is_portrait = [r < 0.9 for r in ratios]
+        p_count = sum(is_portrait)
+
+        weights = [self._calculateCombinedWeight(img) for img in images]
+
+        # --- FALL 1.1: PPP  ---
+        if p_count == 3 and direction == "vertical":
+            return SplitNode(
+                direction="vertical",
+                children=[
+                    ImageNode(images[0]),
+                    ImageNode(images[1]),
+                    ImageNode(images[2]),
+                ],
+                weights=weights,
+            )
+
+        # --- FALL 1.2: LLL (alle quer) ---
+        if p_count == 0:
+            return SplitNode(
+                direction="horizontal",
+                children=[
+                    ImageNode(images[0]),
+                    ImageNode(images[1]),
+                    ImageNode(images[2]),
+                ],
+                weights=weights,
+            )
+
+        # --- FALL 3: mixed (1P2L / 2P1L) ---
+        if p_count in (1, 2):
+            portraits = []
+            landscapes = []
+
+            for img, p, w in zip(images, is_portrait, weights):
+                if p:
+                    portraits.append((img, w))
+                else:
+                    landscapes.append((img, w))
+
+            # --- FALL: 1 Portrait + 2 Landscape ---
+            if len(portraits) == 1 and len(landscapes) == 2 and direction == "vertical":
+                p_img, p_w = portraits[0]
+                l1, l2 = landscapes
+
+                return SplitNode(
+                    direction="vertical",
+                    children=[
+                        ImageNode(p_img),
+                        SplitNode(
+                            direction="horizontal",
+                            children=[
+                                ImageNode(l1[0]),
+                                ImageNode(l2[0]),
+                            ],
+                            weights=[l1[1], l2[1]],
+                        ),
+                    ],
+                    weights=[p_w, (l1[1] + l2[1]) / 4],
+                )
+
+            # --- FALL: 2 Portrait + 1 Landscape ---
+            if len(portraits) == 2 and len(landscapes) == 1:
+                l_img, l_w = landscapes[0]
+                p1, p2 = portraits
+
+                return SplitNode(
+                    direction="horizontal",
+                    children=[
+                        SplitNode(
+                            direction="vertical",
+                            children=[
+                                ImageNode(p1[0]),
+                                ImageNode(p2[0]),
+                            ],
+                            weights=[p1[1], p2[1]],
+                        ),
+                        ImageNode(l_img),
+                    ],
+                    weights=[p1[1] + p2[1], l_w],
+                )
+
+        # fallback symmetric
+        return SplitNode(
+            direction="horizontal",
+            children=[
+                ImageNode(images[0]),
+                SplitNode(
+                    direction="vertical",
+                    children=[
+                        ImageNode(images[1]),
+                        ImageNode(images[2]),
+                    ],
+                    weights=[weights[1], weights[2]],
+                ),
+            ],
+            weights=[weights[0] * 2, weights[1] + weights[2]],
+        )
+
+    def _generateLayout(self, images, target_width, target_height):
+        """
+        Erzeugt ein stabil balanciertes Layout basierend auf echter Partitionierung
+        statt greedy rekursiven Splits.
+        """
+
+        n = len(images)
+        direction = self._get_splitter_direction(target_width, target_height)
+
+        if n == 1:
+            return ImageNode(images[0])
+
+        if n == 2:
+            return self._generateTwoImageLayout(images, direction)
+
+        if n == 3:
+            return self._chooseBestThreeLayout(images, direction)
+
+        # Special handling for 4 images: prefer nested/grouped layouts similar to
+        # PhotoCollage.makeCollage. This results in nicer, more balanced
+        # compositions (e.g. portrait on one side and three landscapes stacked
+        # on the other, or two nested groups of two images).
+        portraits = [img for img in images if img.width < img.height]
+        landscapes = [img for img in images if img.width >= img.height]
+        if n == 4 and len(portraits) == 1 and direction == "vertical":
+            p_img = portraits[0]
+            right_node = self._chooseBestThreeLayout(landscapes, direction)
+            left_node = ImageNode(p_img)
+            # choose split direction according to canvas ratio
+            # direction = "vertical" if target_width >= target_height else "horizontal"
+            return SplitNode(
+                direction=direction,
+                children=[left_node, right_node],
+                weights=[self._calculateLayoutWeight(p_img) * 2, 1],
+            )
+
+        # Gewichte berechnen (wie vorher)
+        weights = [self._calculateLayoutWeight(img) for img in images]
+
+        # Ziel: Anzahl "Zeilen" heuristisch bestimmen
+        canvas_ratio = target_width / target_height
+        num_rows = max(1, min(n, int(round(math.sqrt(n / canvas_ratio)))))
+        if n == 4 and len(portraits) == 1:
+            num_rows = 3
+
+        # Partitionierung (wie im Referenzalgorithmus)
+        rows = linear_partition(weights, num_rows, images)
+
+        # Jede Zeile wird ein SplitNode (horizontal = Bilder nebeneinander)
+        row_nodes = []
+        row_weights = []
+
+        for idx, row in enumerate(rows):
+            row = self._balance_row(row)
+
+            if (idx + len(row)) % 2 == 0:
+                row = list(reversed(row))
+
+            if len(row) == 1:
+                row_nodes.append(ImageNode(row[0]))
+                row_weights.append(self._calculateCombinedWeight(row[0]))
+                # row_weights.append(sum([self._calculateLayoutWeight(img) for img in row]))
+            else:
+                w = self._adjust_row_weights(row)
+                row_nodes.append(
+                    SplitNode(
+                        direction="vertical",
+                        children=[ImageNode(img) for img in row],
+                        weights=w,
+                    )
+                )
+                row_weights.append(sum(w))
+
+        # Falls nur eine Zeile → direkt zurück
+        if len(row_nodes) == 1:
+            return row_nodes[0]
+
+        return SplitNode(direction="horizontal", children=row_nodes, weights=row_weights)
+
+    def _interleave_portrait_landscape(self, images):
+        portraits = [img for img in images if img.width < img.height]
+        landscapes = [img for img in images if img.width >= img.height]
+
+        result = []
+
+        while portraits or landscapes:
+            if landscapes:
+                result.append(landscapes.pop(0))
+            if portraits:
+                result.append(portraits.pop(0))
+
+        return result
+
+    def _balance_row(self, row_images):
+        portraits = deque([img for img in row_images if img.width < img.height])
+        landscapes = deque([img for img in row_images if img.width >= img.height])
+
+        def score(pattern):
+            pt = len(portraits)
+            ls = len(landscapes)
+            needed_pt = pattern.count("P")
+            needed_ls = pattern.count("L")
+
+            # harte Strafe wenn nicht erfüllbar
+            if needed_pt > pt or needed_ls > ls:
+                return float("-inf")
+
+            # leichte Präferenz für "symmetrische" Muster
+            imbalance = abs(needed_pt - needed_ls)
+            return -(imbalance)
+
+        best = max(PATTERNS, key=score)
+
+        result = []
+        for t in best:
+            if t == "P" and portraits:
+                result.append(portraits.popleft())
+            elif t == "L" and landscapes:
+                result.append(landscapes.popleft())
+
+        # Rest anhängen (fallback, falls mehr Bilder da sind)
+        while portraits or landscapes:
+            if landscapes:
+                result.append(landscapes.popleft())
+            if portraits:
+                result.append(portraits.popleft())
+
+        return result
+
+    def _renderLayout(self, collage, node, x, y, width, height):
+        # Leaf
+        if isinstance(node, ImageNode):
+            img = self._cropAndResize(node.image, width, height)
+            img = self._applyRoundedCorners(img)
+            pos = (int(x), int(y))
+            if "A" in img.getbands():
+                collage.paste(img, pos, img)
+            else:
+                collage.paste(img, pos)
+            return
+
+        if not node.children:
+            return
+
+        weight_sum = sum(node.weights) if node.weights else len(node.children)
+
+        # --- VERTICAL SPLIT (nebeneinander) ---
+        if node.direction == "vertical":
+            total_spacing = self.spacing * (len(node.children) - 1)
+            usable_width = width - total_spacing
+
+            current_x = x
+
+            for i, child in enumerate(node.children):
+                w = node.weights[i] if node.weights else 1
+                w_ratio = w / weight_sum
+
+                if i == len(node.children) - 1:
+                    cw = (x + width) - current_x  # Rest füllen
+                else:
+                    cw = int(usable_width * w_ratio)
+
+                self._renderLayout(collage, child, current_x, y, cw, height)
+
+                current_x += cw + self.spacing
+
+            return
+
+        # --- VERTICAL = OBEN/UNTEN ---
+        current_y = y
+
+        for i, child in enumerate(node.children):
+            total_spacing = self.spacing * (len(node.children) - 1)
+            usable_height = height - total_spacing
+
+            h = node.weights[i] if node.weights else 1
+            h_ratio = h / weight_sum
+
+            if i == len(node.children) - 1:
+                ch = (x + width) - current_y  # Rest füllen
+            else:
+                ch = int(usable_height * h_ratio)
+
+            if i == len(node.children) - 1:
+                ch = y + height - current_y
+
+            self._renderLayout(collage, child, x, current_y, width, ch)
+
+            current_y += ch + self.spacing
 
     def generate(self, images: list[Image.Image]) -> Image.Image:
         """
-        Ordnet die Bilder in der Composition an. Bilder werden vorab auf Lesbarkeit geprüft.
-        """
-        # Bilder nach Seitenverhältnis sortieren
-        collage: Image.Image = Image.new(
-            mode="RGB", size=(self.width, self.height), color=self.color
-        )
-        images = self.sortByAspectRatio(images)
-        formats = self.analyzeImages(images)
+        Arranges images dynamically based on canvas ratio and content,
+        generating a complete collage image.
 
-        try:
-            # Anordnungslogik basierend auf Bildanzahl
-            if len(images) == 1:
-                self.arrangeOneImage(collage, images[0], self.width, self.height)
-            elif len(images) == 2:
-                self.arrangeTwoImages(collage, images, formats, self.width, self.height)
-            elif len(images) == 3:
-                self.arrangeThreeImages(collage, images, formats, self.width, self.height)
-            elif len(images) == 4:
-                self.arrangeFourImages(collage, images, formats, self.width, self.height)
-            elif len(images) == 5:
-                self.arrangeFiveImages(collage, images, formats, self.width, self.height)
-            else:
-                self.arrangeMultipleImages(collage, images, self.width, self.height)
-        except (UnidentifiedImageError, OSError) as e:
-            print(f"Error in the arrangement of images: {e}")
-            # Entferne ungültige Bilder und versuche es erneut
-            photos = self.remove_invalid_images(images)
-            if photos:
-                print("Invalid images removed, try again...")
-                self.generate(photos)
-            else:
-                # Wenn keine gültigen Bilder mehr vorhanden sind, Fehler erneut werfen
-                print("No more valid images available.")
-                raise e
+        Args:
+            images: A list of PIL Image objects to be arranged in the collage.
+
+        Returns:
+            A PIL Image object representing the generated collage.
+            Returns an empty canvas if no valid images are provided or
+            if an unrecoverable error occurs.
+        """
+
+        self.logger.info("Starting collage generation.")
+
+        if not images:
+            self.logger.warning(
+                "No images provided for collage generation. Returning empty canvas."
+            )
+            return Image.new("RGB", (self.width, self.height), self.color)
+
+        # Filter out non-PIL Image objects and corrupted images
+        images = self._sanitize(images)
+        images = self._filter_valid(images)
+
+        images = self._interleave_portrait_landscape(images)
+
+        if not images:
+            self.logger.error(
+                "All provided images were invalid or corrupted after sanitization. "
+                "Returning empty canvas."
+            )
+            return Image.new("RGB", (self.width, self.height), self.color)
+        self.logger.info(f"Starting collage generation for {len(images)} images.")
+
+        layout = self._generateLayout(
+            images,
+            self.width,
+            self.height,
+        )
+
+        collage = Image.new(
+            "RGB",
+            (self.width, self.height),
+            self.color,
+        )
+
+        self._renderLayout(
+            collage,
+            layout,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
         return collage
 
-    @staticmethod
-    def remove_invalid_images(photos: list[Image.Image]):
+    def _sanitize(self, images: list[Image.Image]) -> list[Image.Image]:
         """
-        Überprüft eine Liste von Bildern und entfernt nicht lesbare oder kaputte Bilder.
-        """
-        valid_images = []
-        for img in photos:
-            try:
-                # Teste, ob das Bild ohne Fehler zugeschnitten werden kann
-                img.crop((0, 2, 3, 3))
-                valid_images.append(img)
-            except (UnidentifiedImageError, OSError) as e:
-                print(f"Invalid image skipped: {img.info} - {e}")
+        Filters out non-PIL Image objects from the input list.
 
-        # Öffne die Bilder erneut, da der Dateizeiger möglicherweise geschlossen wurde
+        Args:
+            images: A list of potential PIL Image objects.
+
+        Returns:
+            A list containing only valid PIL Image objects.
+        """
+        valid_images = [img for img in images if isinstance(img, Image.Image)]
+        if len(valid_images) < len(images):
+            self.logger.warning(
+                f"Removed {len(images) - len(valid_images)} non-Image objects from input."
+            )
         return valid_images
 
-    @staticmethod
-    def analyzeImages(images):
+    def _filter_valid(self, images: list[Image.Image]) -> list[Image.Image]:
         """
-        Analysiert, ob Bilder Hoch- oder Querformat haben.
+        Filters out images that cause errors during basic PIL operations (e.g., corrupted files).
+
+        Args:
+            images: A list of PIL Image objects.
+
+        Returns:
+            A list containing only valid and readable PIL Image objects.
         """
-        analysis = []
+        valid = []
         for img in images:
-            width, height = img.size
-            if height > width:
-                analysis.append("portrait")
-            else:
-                analysis.append("landscape")
-        return analysis
+            try:
+                # Attempt a simple operation to check image validity (e.g., access a pixel)
+                img.getpixel((0, 0))
+                valid.append(img)
+            except Exception as e:
+                self.logger.warning(f"Invalid or corrupted image detected and removed: {e}")
+                continue
+        return valid
 
-    @staticmethod
-    def sortByAspectRatio(images):
+    def _cropAndResize(self, image, target_width, target_height):
         """
-        Sortiert Bilder basierend auf ihrem Seitenverhältnis (Breite / Höhe).
-        Schmalste ("portrait") zuerst, breiteste ("landscape") zuletzt.
+        Crops an image proportionally and then scales it to the desired size.
+        Attempts to retain recognized objects in the image.
         """
-        return sorted(images, key=lambda img: img.size[0] / img.size[1], reverse=False)
-
-    @staticmethod
-    def cropAndResize(image, target_width, target_height):
-        """
-        Schneidet ein Bild proportional zu und skaliert es dann auf die gewünschte Größe.
-        """
-        img_width, img_height = image.size
-        aspect_ratio_img = img_width / img_height
-        aspect_ratio_target = target_width / target_height
-
-        if aspect_ratio_img > aspect_ratio_target:
-            # Bild ist breiter -> Seitlich beschneiden
-            new_width = int(aspect_ratio_target * img_height)
-            left = (img_width - new_width) // 2
-            right = left + new_width
-            cropped = image.crop((left, 0, right, img_height))
+        detections = None
+        if self.detector:
+            self.logger.debug("Object detection enabled. Detecting objects for smart crop.")
+            detections = self.detector.detect(image)
+            self.logger.debug(f"Detected {len(detections)} objects.")
         else:
-            # Bild ist höher -> Oben und unten beschneiden
-            new_height = int(img_width / aspect_ratio_target)
-            top = (img_height - new_height) // 2
-            bottom = top + new_height
-            cropped = image.crop((0, top, img_width, bottom))
+            self.logger.debug("Object detection disabled. Performing standard crop.")
 
-        return cropped.resize((target_width, target_height))
+        cropped_image, _ = self.cropper.crop(
+            image=image,
+            target_width=target_width,
+            target_height=target_height,
+            detections=detections,
+        )
+        return cropped_image
 
-    def arrangeOneImage(self, collage, image, width, height):
+    def _adjust_row_weights(self, row_images):
         """
-        Layout für ein einzelnes Bild.
-        """
-        img = self.cropAndResize(image, width, height)
-        collage.paste(img, (0, 0))
+        Compute per-image weights for a row by combining the dynamic
+        layout weight (from `_calculateLayoutWeight`) with an aspect-ratio
+        modifier.
 
-    def arrangeTwoImages(self, collage, images, formats, width, height):
-        """
-        Layout für zwei Bilder.
-        """
-        if "portrait" in formats:
-            portrait_idx = formats.index("portrait")
-            landscape_idx = 1 - portrait_idx
-            # Goldener Schnitt Layout
-            portrait_width = int(width * 0.4)
-            landscape_width = width - portrait_width - self.spacing
-            img1 = self.cropAndResize(images[portrait_idx], portrait_width, height)
-            img2 = self.cropAndResize(images[landscape_idx], landscape_width, height)
-            collage.paste(img1, (0, 0))
-            collage.paste(img2, (portrait_width + self.spacing, 0))
-        else:
-            # Beide Querformat -> nebeneinander
-            img_width = (width - self.spacing) // 2
-            img1 = self.cropAndResize(images[0], img_width, height)
-            img2 = self.cropAndResize(images[1], img_width, height)
-            collage.paste(img1, (0, 0))
-            collage.paste(img2, (img_width + self.spacing, 0))
+        The result preserves relative proportions (no forced normalization)
+        so callers can continue to use `sum(weights)` to determine row
+        contribution when building the parent SplitNode.
 
-    def arrangeThreeImages(self, collage, images, formats, w, h):
-        """
-        Layouts für drei Bilder.
-        """
-        s = self.spacing
-        layouts = [
-            # Ein großes Bild quer oben, zwei kleinere unten nebeneinander LLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], w, int(h * 0.6) - s), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.4)), (0, int(h * 0.6))),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.5), int(h * 0.4)),
-                    (int(w * 0.5) + s, int(h * 0.6)),
-                ),
-            ],
-            # Großes Querformat links, zwei Querformat rechts übereinander LLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.5)), (int(w * 0.7) + s, 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.3), int(h * 0.5) - s),
-                    (int(w * 0.7) + s, int(h * 0.5) + s),
-                ),
-            ],
-            # Großes Hochformat links, zwei Querformat rechts übereinander PLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 0.5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.6), int(h * 0.5) - s),
-                    (int(w * 0.4) + s, int(h * 0.5) + s),
-                ),
-            ],
-            # Großes Querformat links, zwei Hochformat rechts übereinander PPL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.6), h), (0, 0)),
-                (self.cropAndResize(imgs[1], int(w * 0.4), int(h * 0.5)), (int(w * 0.6) + s, 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.4), int(h * 0.5) - s),
-                    (int(w * 0.6) + s, int(h * 0.5) + s),
-                ),
-            ],
-        ]
+        Args:
+            row_images: list of PIL Image objects that belong to the same row.
 
-        if formats.count("portrait") == 0:
-            random.seed()
-            if random.random() > 0.8:
-                layout = layouts[0]
+        Returns:
+            A list of positive floats representing per-image weights for the
+            row. Larger values indicate a larger share of space.
+        """
+        weights: list[float] = []
+
+        for img in row_images:
+            # base dynamic weight considers aspect ratio and image score
+            base_weight = float(self._calculateCombinedWeight(img))
+
+            # aspect modifier: keep previous behavior (pull portraits towards square)
+            # but express it as a multiplier
+            ratio = img.width / img.height
+            if ratio < 1.0:
+                aspect_mod = 0.7 + (ratio * 0.3)
             else:
-                layout = layouts[1]
-        elif formats.count("portrait") == 1:
-            layout = layouts[2]
-        elif formats.count("portrait") == 2:
-            layout = layouts[3]
-        else:
-            # Drei gleich große Bilder im Hochformat nebeneinander PPP
-            self.arrangeMultipleImages(collage, images, self.width, self.height)
-            return
+                aspect_mod = ratio
 
-        for img, pos in layout(images):
-            collage.paste(img, pos)
+            # combine both contributions
+            combined = aspect_mod * (1 + base_weight / 10)
 
-    def arrangeFourImages(self, collage, images, formats, w, h):
+            # ensure strictly positive
+            if combined <= 0:
+                combined = 0.001
+
+            weights.append(combined)
+
+        return weights
+
+    def _calculateImageScore(self, image):
         """
-        Layouts für vier Bilder.
+        Calculates a score in the range [0, 100),
+        approaching 100 asymptotically as more relevant
+        objects are detected.
         """
-        s = self.spacing
-        layouts = [
-            # Zwei große Bilder oben, zwei etwas kleiner unten, leicht versetzt (LLLL)
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.45), int(h * 0.55) - s), (0, 0)),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.55), int(h * 0.55) - s),
-                    (int(w * 0.45) + s, 0),
-                ),
-                (self.cropAndResize(imgs[2], int(w * 0.55), int(h * 0.45)), (0, int(h * 0.55))),
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.45), int(h * 0.45)),
-                    (int(w * 0.55) + s, int(h * 0.55)),
-                ),
-            ],
-            # Großes Quadrat, drei kleine landscape rechts Q-LLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.7), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.3), int(h / 3)), (int(w * 0.7) + s, 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.3), int(h / 3) - s),
-                    (int(w * 0.7) + s, int(h / 3) + s),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.3), int(h / 3) - 1 * s),
-                    (int(w * 0.7) + s, int(h * 2 / 3) + s),
-                ),
-            ],
-            # Großes portrait-Bild links, rechts oben landscape,
-            # darunter zwei kleine landscape nebeneinander PLLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.3 - s), int(h * 2 / 5) - s),
-                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.3 - s), int(h * 2 / 5) - s),
-                    (int(w * 0.7) + s, int(h * 3 / 5) + s),
-                ),
-            ],
-            # Großes portrait-Bild links, rechts oben landscape,
-            # darunter kleines portrait und landscape PPLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[2], int(w * 0.6), int(h * 3 / 5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.2), int(h * 2 / 5) - s),
-                    (int(w * 0.4) + s, int(h * 3 / 5) + s),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.4 - 2 * s), int(h * 2 / 5) - s),
-                    (int(w * 0.6) + 2 * s, int(h * 3 / 5) + s),
-                ),
-            ],
-            # Großes portrait-Bild links, rechts oben landscape,
-            # darunter zwei kleines portrait nebeneinander PPLL
-            lambda imgs: [
-                (self.cropAndResize(imgs[0], int(w * 0.4), h), (0, 0)),  # portrait, index 0
-                (self.cropAndResize(imgs[3], int(w * 0.6), int(h * 2 / 5)), (int(w * 0.4) + s, 0)),
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.25), int(h * 3 / 5) - s),
-                    (int(w * 0.4) + s, int(h * 2 / 5) + s),
-                ),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.35 - 2 * s), int(h * 3 / 5) - s),
-                    (int(w * 0.65) + 2 * s, int(h * 2 / 5) + s),
-                ),
-            ],
-        ]
+        if not self.detector:
+            self.logger.info("Object detector not initialized, returning score 0.")
+            return 0.0
 
-        if formats.count("portrait") == 0:  # LLLL = 4x landscape
-            random.seed()
-            if random.random() > 0.5:
-                layout = layouts[0]
-            else:
-                layout = layouts[1]
-        elif formats.count("portrait") == 1:  # PLLL
-            layout = layouts[2]
-        elif formats.count("portrait") == 2:  # PPLL
-            layout = layouts[3]
-        else:  # PPPL
-            layout = layouts[4]
+        detections = self.detector.detect(image)
+        self.logger.info(
+            f"Calculating score for image {os.path.split(image.filename)[-1]} "
+            f"with {len(detections)} detections."
+        )
 
-        for img, pos in layout(images):
-            collage.paste(img, pos)
+        weighted_sum = 0.0
 
-    def arrangeFiveImages(self, collage, images, formats, w, h):
-        """
-        Layouts für fünf Bilder.
-        """
-        s = self.spacing
-        layouts = [
-            # Zwei große Bilder oben, drei etwas kleinere unten (LLLLL)
-            lambda imgs: [
-                (
-                    self.cropAndResize(imgs[0], int(w * 0.5), int(h * 0.6) - s),
-                    (0, 0),
-                ),  # portrait, index 0
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.5), int(h * 0.6) - s),
-                    (int(w * 0.5) + s, 0),
-                ),
-                (
-                    self.cropAndResize(imgs[2], int(w / 3), int(h * 0.4)),
-                    (int(w * 0 / 3) + 0 * s, int(h * 0.6)),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w / 3), int(h * 0.4)),
-                    (int(w * 1 / 3) + 1 * s, int(h * 0.6)),
-                ),
-                (
-                    self.cropAndResize(imgs[4], int(w / 3), int(h * 0.4)),
-                    (int(w * 2 / 3) + 2 * s, int(h * 0.6)),
-                ),
-            ],
-            # Links ein großes Portrait,
-            # rechts daneben im goldenen Schnitt vier kleinere Bilder (PLLLL)
-            lambda imgs: [
-                (
-                    self.cropAndResize(imgs[0], int(w * 0.3 - s), int(h)),
-                    (0, 0),
-                ),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.3), int(h * 0.55) - s), (int(w * 0.3), 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
-                    (int(w * 0.6) + s, 0),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)),
-                    (int(w * 0.3), int(h * 0.55)),
-                ),
-                (
-                    self.cropAndResize(imgs[4], int(w * 0.3) - s, int(h * 0.45)),
-                    (int(w * 0.7) + s, int(h * 0.55)),
-                ),
-            ],
-            # zwei große aber dennoch leider recht breite Portrais oben,
-            # unten drei kleine landscape  (PPLLL)
-            lambda imgs: [
-                (
-                    self.cropAndResize(imgs[0], int(w * 0.5), int(h * 2 / 3) - s),
-                    (0, 0),
-                ),  # portrait, index 0
-                (
-                    self.cropAndResize(imgs[1], int(w * 0.5), int(h * 2 / 3) - s),
-                    (int(w * 0.5) + s, 0),
-                ),
-                (
-                    self.cropAndResize(imgs[4], int(w / 3), int(h / 3)),
-                    (int(w * 0 / 3) + 0 * s, int(h * 2 / 3)),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w / 3), int(h / 3)),
-                    (int(w * 1 / 3) + 1 * s, int(h * 2 / 3)),
-                ),
-                (
-                    self.cropAndResize(imgs[2], int(w / 3), int(h / 3)),
-                    (int(w * 2 / 3) + 2 * s, int(h * 2 / 3)),
-                ),
-            ],
-            # Links ein großes Portrait, rechts daneben im goldenen Schnitt
-            # vier kleinere Bilder kleine unten (PPPLL)
-            lambda imgs: [
-                (
-                    self.cropAndResize(imgs[0], int(w * 0.35 - s), int(h)),
-                    (0, 0),
-                ),  # portrait, index 0
-                (self.cropAndResize(imgs[1], int(w * 0.25), int(h * 0.55) - s), (int(w * 0.35), 0)),
-                (
-                    self.cropAndResize(imgs[2], int(w * 0.40) - s, int(h * 0.55) - s),
-                    (int(w * 0.6) + s, 0),
-                ),
-                (
-                    self.cropAndResize(imgs[3], int(w * 0.40), int(h * 0.45)),
-                    (int(w * 0.35), int(h * 0.55)),
-                ),
-                (
-                    self.cropAndResize(imgs[4], int(w * 0.25) - s, int(h * 0.45)),
-                    (int(w * 0.75) + s, int(h * 0.55)),
-                ),
-            ],
-        ]
+        weights = {
+            "person": 3.0,
+            "dog": 2.0,
+            "cat": 2.0,
+            "bicycle": 1.5,
+            "car": 1.5,
+            "motorcycle": 1.5,
+        }
 
-        if formats.count("portrait") == 0:  # LLLLL = 5x landscape
-            layout = layouts[0]
-        elif formats.count("portrait") == 1:  # PLLLL
-            layout = layouts[1]
-        elif formats.count("portrait") == 2:  # PPLLL
-            layout = layouts[2]
-        else:  # PPPLL
-            layout = layouts[3]
+        for d in detections:
+            weight = weights.get(d.class_name, 0.5)
+            x1, y1, x2, y2 = d.bbox
+            area = max(0.1, 10 * (x2 - x1) / image.width * (y2 - y1) / image.height)
+            contribution = weight * d.confidence * math.sqrt(area)
 
-        for img, pos in layout(images):
-            collage.paste(img, pos)
+            weighted_sum += contribution
 
-    def arrangeMultipleImages(self, collage, images, width, height):
-        """
-        Raster-Layout für mehr als vier Bilder, mit gleichmäßiger Verteilung.
-        Passt automatisch die Anzahl der Zeilen und Spalten an.
-        """
-        # Bestimme die Anzahl der Spalten und Zeilen basierend auf der Anzahl der Bilder
-        rows = int(len(images) ** 0.5)  # Quadratwurzel für möglichst gleichmäßige Aufteilung
-        cols = (len(images) + rows - 1) // rows  # Rundung nach oben
+            self.logger.debug(
+                f"Object '{d.class_name}' "
+                f"(confidence={d.confidence:.2f}, "
+                f"weight={weight:.1f}) "
+                f"contribution={contribution:.2f}"
+            )
 
-        # Berechnung der Zellgrößen basierend auf der Composition-Größe und Abstände
-        cell_width = (width - (cols - 1) * self.spacing) // cols
-        cell_height = (height - (rows - 1) * self.spacing) // rows
+        # Asymptotisch gegen 100
+        score = 100.0 * (1.0 - math.exp(-weighted_sum / 10.0))
 
-        # Bilder in das Raster einfügen
-        for i, img in enumerate(images):
-            # Bestimme Zeile und Spalte des aktuellen Bildes
-            row = i // cols
-            col = i % cols
+        self.logger.info(f"    -> Weighted sum={weighted_sum:.2f}, score={score:.2f}")
 
-            # Passe die Bildgröße an die Rasterzelle an
-            resized_img = self.cropAndResize(img, cell_width, cell_height)
-
-            # Berechne die Position des Bildes in der Composition
-            x_offset = col * (cell_width + self.spacing)
-            y_offset = row * (cell_height + self.spacing)
-
-            # Füge das Bild in die Composition ein
-            collage.paste(resized_img, (x_offset, y_offset))
+        return round(score, 2)
