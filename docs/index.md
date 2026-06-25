@@ -40,9 +40,10 @@ Download the latest executable:
 
 Get an impression of how your own project could be installed and look like.
 
-Download from [PyPI](https://pypi.org/).
+Download from [PyPI](https://pypi.org/). For more installation options see [install](getting-started/install.md).
 
-💾 For more installation options see [install](getting-started/install.md).
+<details open>
+<summary>💡 Details PyPI Installation</summary>
 
 ```bash
 pip install Photo-Composition-Designer
@@ -57,6 +58,9 @@ Run GUI from command line
 ```bash
 Photo-Composition-Designer-gui
 ```
+
+</details>
+
 
 ---
 
@@ -80,6 +84,9 @@ Organize your images in the `images/` directory before running the generator.
 You can use one of the distribution methods to distribute your plain images inside this directory
 into sub-folders that represent your weekly collage content.
 
+<details open>
+<summary>💡 Details Photo Directory Structure</summary>
+
 ```plaintext
 📁 images/
 ├── 📁 title/
@@ -96,14 +103,37 @@ into sub-folders that represent your weekly collage content.
 
 ```
 
+</details>
+
+
 ### 3️⃣ **Provide Descriptions** 🖥️
 Provide descriptions for every week to describe the events.
 
 You can use one single `description.txt` file that can be generated using the GUI
 or you can put individual txt files into every single weekly sub folder.
 
+<details>
+  <summary>💡 Optional control flags</summary>
+
+  The following flags can be added anywhere in the photo description:
+
+  - `[no-calendar]` — prevents a calendar from being generated for this photo.
+  - `[no-description]` — suppresses the generated photo description.
+
+  Example:
+
+  ```text
+    Family vacation at the beach [no-calendar]
+    [no-description]
+  ```
+</details>
+
+
 ### 4️⃣ **Setting up the birthday dates** 🎂📅
 Provide the birthday information of your friends and family by using the `anniversaries.ini`
+
+<details open>
+<summary>💡 Details</summary>
 
 ```plaintext
 [Birthdays]
@@ -116,6 +146,9 @@ Anna = 10.01.
 [Weddings]
 Mary & Josh = 02.01.2021    ; ⚭ Symbol is used for Weddings
 ```
+</details>
+
+
 
 ### 5️⃣ **Generating the Calendar** 🖼️
 Use **Generate Composition** to generate all collages and one PDF file containing all your compositions.

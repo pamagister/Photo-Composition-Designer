@@ -3,7 +3,7 @@ week_1: Description text for week week_1
 week_2: Description text for week week_2
 week_3: Description text for week week_3
 week_4: Description text for week week_4
-week_5: Description text for week week_5
-week_6_testimages_3: Description text for week week_6_testimages_3
-week_7_testimages_4: Description text for week week_7_testimages_4
-week_8_testimages_5: Description text for week week_8_testimages_5
+week_5:
+week_6_testimages_3: [no-description] Description text for week week_6_testimages_3
+week_7_testimages_4: [no-calendar] Description text for week week_7_testimages_4
+week_8_testimages_5: [no-description][no-calendar] Description text for week week_8_testimages_5

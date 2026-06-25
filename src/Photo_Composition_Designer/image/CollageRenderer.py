@@ -441,7 +441,7 @@ class CollageRenderer:
         return result
 
     def _renderLayout(self, collage, node, x, y, width, height):
-        # Leaf
+        # Leaf node: an actual image
         if isinstance(node, ImageNode):
             img = self._cropAndResize(node.image, width, height)
             img = self._applyRoundedCorners(img)
@@ -452,7 +452,11 @@ class CollageRenderer:
                 collage.paste(img, pos)
             return
 
+        # Defensive check: if a SplitNode somehow has no children, do nothing.
         if not node.children:
+            self.logger.warning(
+                f"SplitNode encountered with no children. Skipping rendering for node: ({x}, {y})."
+            )
             return
 
         weight_sum = sum(node.weights) if node.weights else len(node.children)

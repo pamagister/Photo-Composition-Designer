@@ -88,7 +88,8 @@ class CompositionDesigner:
         # startDate: if title present we keep the previous behavior (shift -7 days)
 
         # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
-        collage_height_px = self.get_available_collage_height_px()
+        # Initial call to get_available_collage_height_px without flags, flags are per-composition
+        collage_height_px = self.get_available_collage_height_px(False, False)
         collage_width_py = self.get_available_collage_width_px()
         self.layoutManager: CollageRenderer = CollageRenderer(
             collage_width_py,
@@ -115,19 +116,24 @@ class CompositionDesigner:
         available_width -= 2 * self.margin_sides_px
         return int(available_width)
 
-    def get_available_collage_height_px(self) -> int:
+    def get_available_collage_height_px(
+        self, no_calendar_flag: bool, no_description_flag: bool
+    ) -> int:
         """
         Compute available vertical space for the collage area in pixels.
-        This subtracts calendar and description heights when configured.
+        This subtracts calendar and description heights when configured,
+        unless overridden by flags.
         """
-        available_height = self.height_px
+        available_height = self.height_px - self.margin_bottom_px - self.margin_top_px
 
-        # calendar or title reduces space
-        if self.config.calendar.useCalendar.value or bool(self.compositionTitle):
-            available_height -= self.calendar_height_px + self.margin_bottom_px + self.margin_top_px
+        # calendar or title reduces space, unless no_calendar_flag is True
+        if (
+            self.config.calendar.useCalendar.value or bool(self.compositionTitle)
+        ) and not no_calendar_flag:
+            available_height -= self.calendar_height_px
 
-        # description area
-        if self.config.layout.usePhotoDescription.value:
+        # description area, unless no_description_flag is True
+        if self.config.layout.usePhotoDescription.value and not no_description_flag:
             # descGenerator should expose .height in pixels like before; if not, compute it
             desc_height = getattr(self.descGenerator, "height", None)
             if desc_height is None:
@@ -137,6 +143,39 @@ class CompositionDesigner:
 
         # ensure positive height
         return max(0, int(available_height))
+
+    def _process_photo_description(self, photo_description: str) -> tuple[str, bool, bool]:
+        """
+        Extracts tags from photo_description and returns the cleaned description
+        and corresponding flags.
+
+        Args:
+            photo_description: The raw description string, possibly containing tags.
+
+        Returns:
+            A tuple containing:
+            - cleaned_description: The description string with tags removed.
+            - no_calendar: True if '[no-calendar]' tag was found, False otherwise.
+            - no_description: True if '[no-description]' tag was found, False otherwise.
+        """
+        no_calendar = False
+        no_description = False
+
+        # Find and remove [no-calendar] tag
+        if "[no-calendar]" in photo_description:
+            no_calendar = True
+            photo_description = photo_description.replace("[no-calendar]", "").strip()
+
+        # Find and remove [no-description] tag
+        if "[no-description]" in photo_description:
+            no_description = True
+            photo_description = photo_description.replace("[no-description]", "").strip()
+
+        # If description is empty after tag removal, set no_description flag
+        if not photo_description:
+            no_description = True
+
+        return photo_description, no_calendar, no_description
 
     # ---------------------------------------------------------------------
     # Composition rendering
@@ -157,6 +196,17 @@ class CompositionDesigner:
         composition = Image.new("RGBA", (self.width_px, self.height_px), (*background_color, 255))
         available_cal_width = self.width_px
 
+        # Process photo description for tags
+        processed_description, no_calendar_flag, no_description_flag = (
+            self._process_photo_description(photo_description)
+        )
+
+        # Calculate collage height based on flags
+        current_collage_height_px = self.get_available_collage_height_px(
+            no_calendar_flag, no_description_flag
+        )
+        self.layoutManager.height = current_collage_height_px  # Update layoutManager's height
+
         # add title or calendar
         if is_title and self.compositionTitle:
             title_img = self.calendarObj.generateTitle(
@@ -166,7 +216,7 @@ class CompositionDesigner:
                 title_img,
                 (self.margin_sides_px, self.height_px - self.calendar_height_px),
             )
-        elif self.config.calendar.useCalendar.value:
+        elif self.config.calendar.useCalendar.value and not no_calendar_flag:
             if self.config.geo.usePhotoLocationMaps.value:
                 available_cal_width -= self.mapGenerator.width + self.margin_sides_px
             calendar_img = self.calendarObj.generate(
@@ -181,7 +231,8 @@ class CompositionDesigner:
             )
 
         # add location map (if configured and not the title page)
-        if self.config.geo.usePhotoLocationMaps.value and not is_title:
+        # Also, if no_calendar_flag is true, no map should be displayed
+        if self.config.geo.usePhotoLocationMaps.value and not is_title and not no_calendar_flag:
             coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
             imgMap = self.mapGenerator.generate(coordinates)
             composition.paste(
@@ -193,15 +244,22 @@ class CompositionDesigner:
             )
 
         # description area
-        if self.config.layout.usePhotoDescription.value:
+        if self.config.layout.usePhotoDescription.value and not no_description_flag:
             alignment = "middle" if is_title else "left"
-            description_img = self.descGenerator.generate(photo_description, alignment)
+            description_img = self.descGenerator.generate(processed_description, alignment)
             # Use the actual rendered image size for height (and width) instead of getattr
             desc_w, desc_h = description_img.size
             # Center horizontally when this is the title page; otherwise align to left margin
             x = 0
             # Place the description above the calendar/title area, respecting bottom margin
-            y = self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px
+            # Adjust y position based on whether calendar area is present
+            if (
+                self.config.calendar.useCalendar.value or bool(self.compositionTitle)
+            ) and not no_calendar_flag:
+                y = self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px
+            else:
+                # If no calendar, description goes above the bottom margin
+                y = self.height_px - desc_h - self.margin_bottom_px
             composition.alpha_composite(description_img, (x, y))
 
         if len(photos) == 0:
@@ -212,7 +270,7 @@ class CompositionDesigner:
         collage = self.layoutManager.generate([photo.get_image() for photo in photos])
         composition.paste(collage, (self.margin_sides_px, self.margin_top_px))
 
-        if not is_title:
+        if not is_title and not no_calendar_flag:
             # draw the image dates in
             date_str = get_photo_dates(photos)
             draw = ImageDraw.Draw(composition)
