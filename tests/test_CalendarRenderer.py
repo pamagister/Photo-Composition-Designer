@@ -32,8 +32,8 @@ def test_CalendarGenerator_proper_name(temp_dir):
     dt = config.calendar.startDate.value
     cal_img = cg.generate(
         dt,
-        width=config.size.width.value * config.size.dpi.value / 25.4,
-        height=config.size.calendarHeight.value * config.size.dpi.value / 25.4,
+        width=210 * config.size.dpi.value / 25.4,
+        height=30 * config.size.dpi.value / 25.4,
     )
     cal_path = temp_dir / "week_test.jpg"
     cal_img.save(cal_path)
@@ -42,6 +42,29 @@ def test_CalendarGenerator_proper_name(temp_dir):
     assert cal_path.stat().st_size > 0
 
     print("Generated files:", title_path, cal_path)
+
+
+def test_CalendarGenerator_vertical(temp_dir):
+    # Load default config
+    config = ConfigParameterManager(persist_last_used=False)
+
+    # Build generator from config
+    cg = CalendarRenderer.from_config(config)
+    cg.horizontal = False
+    # Weekly calendar
+    dt = config.calendar.startDate.value
+    cal_img = cg.generate(
+        dt,
+        width=25 * config.size.dpi.value / 25.4,
+        height=150 * config.size.dpi.value / 25.4,
+    )
+    cal_path = temp_dir / "week_test_vertical.jpg"
+    cal_img.save(cal_path)
+
+    assert cal_path.exists()
+    assert cal_path.stat().st_size > 0
+
+    print("Generated files:", cal_path)
 
 
 def test_holidays_localization_and_subdivision():

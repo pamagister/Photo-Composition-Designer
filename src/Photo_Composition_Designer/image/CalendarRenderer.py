@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -17,6 +18,15 @@ from Photo_Composition_Designer.common.Anniversaries import Anniversaries
 from Photo_Composition_Designer.common.MoonPhase import MoonPhase
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.tools.Helpers import mm_to_px
+
+
+@dataclass
+class DayRenderInfo:
+    date: datetime
+    day_name: str
+    day_number: str
+    label: str | None
+    color_day: tuple[int, int, int]
 
 
 class CalendarRenderer:
@@ -38,6 +48,7 @@ class CalendarRenderer:
         marginSides: float,
         anniversaries: Anniversaries | None = None,
         dpi: int = 300,
+        horizontal: bool = True,
     ) -> None:
         self.anniversaries = anniversaries or Anniversaries()
 
@@ -53,6 +64,7 @@ class CalendarRenderer:
         self.useShortMonthNames = useShortMonthNames
         self.marginSides = marginSides
         self.dpi = dpi
+        self.horizontal = horizontal
 
         # Extract country code from locale ("de_DE" → "DE")
         country_code = language.split("_")[1].upper()
@@ -92,44 +104,153 @@ class CalendarRenderer:
             dpi=config.size.dpi.value,
         )
 
+    def _get_header_data(self, d: datetime) -> tuple[str, str]:
+        month_name = self.get_month_name(
+            d.month,
+            locale_name=self.language,
+            abbreviation=self.useShortMonthNames,
+        )
+
+        header_text = f"{month_name} {str(d.year)[-2:]}"
+
+        location = LocationInfo(
+            "Dresden",
+            "Germany",
+            "Europe/Berlin",
+            51.0504,
+            13.7373,
+        )
+
+        tz = pytz.timezone("Europe/Berlin")
+        sun_times = sun(location.observer, date=d)
+
+        sunrise = sun_times["sunrise"].astimezone(tz).strftime("%H:%M")
+        sunset = sun_times["sunset"].astimezone(tz).strftime("%H:%M")
+
+        week_no = d.isocalendar().week
+
+        sun_string = f"KW {week_no}  ● ↑ {sunrise}  ○ ↓ {sunset}"
+
+        return header_text, sun_string
+
+    def _get_day_render_info(self, day_date: datetime) -> DayRenderInfo:
+        date_key = (day_date.day, day_date.month)
+
+        holiday_name = self.localHolidays.get(day_date)
+
+        is_weekend = day_date.weekday() >= 5
+        is_holiday = day_date in self.localHolidays
+
+        color_day = (
+            self.font_holiday.color.to_pil()
+            if (is_holiday or is_weekend)
+            else self.font_large.color.to_pil()
+        )
+
+        day_name = self.get_day_name(
+            day_date.weekday(),
+            self.language,
+        )
+
+        if self.useShortDayNames:
+            day_name = day_name[:2]
+
+        moon_symbol = MoonPhase.get_moon_phase_symbol_dark(day_date)
+        if moon_symbol:
+            day_name = f"{day_name} {moon_symbol}"
+
+        label = None
+
+        if date_key in self.anniversaries:
+            label = self.anniversaries[date_key]
+            if holiday_name:
+                label += f", {holiday_name}"
+        elif holiday_name:
+            label = holiday_name
+
+        return DayRenderInfo(
+            date=day_date,
+            day_name=day_name,
+            day_number=str(day_date.day),
+            label=label,
+            color_day=color_day,
+        )
+
+    def _draw_day_block(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x: float,
+        baseline_y: float,
+        info: DayRenderInfo,
+    ):
+        holiday_h = self.font_holiday.size * self.dpi / 25.4
+        large_h = self.font_large.size * self.dpi / 25.4
+
+        if info.label:
+            draw.text(
+                (x, baseline_y),
+                info.label,
+                font=self.font_holiday.get_image_font(self.dpi),
+                fill=self.font_holiday.color.to_pil(),
+                anchor="md",
+            )
+
+        draw.text(
+            (x, baseline_y - holiday_h),
+            info.day_number,
+            font=self.font_large.get_image_font(self.dpi),
+            fill=info.color_day,
+            anchor="md",
+        )
+
+        draw.text(
+            (
+                x,
+                baseline_y - holiday_h - large_h * 1.15,
+            ),
+            info.day_name,
+            font=self.font_small.get_image_font(self.dpi),
+            fill=self.font_small.color.to_pil(),
+            anchor="md",
+        )
+
     # -------------------------------------------------------------------------
     # Rendering
     # -------------------------------------------------------------------------
 
     def generate(self, d: datetime, width: int | float, height: int | float) -> Image.Image:
-        """Render full weekly calendar image."""
+        if self.horizontal:
+            return self._generate_horizontal(d, width, height)
+        return self._generate_vertical(d, width, height)
+
+    def _generate_horizontal(
+        self,
+        d: datetime,
+        width: int | float,
+        height: int | float,
+    ) -> Image.Image:
+
         width = int(width)
         height = int(height)
+
         week_dates = [d + timedelta(days=i) for i in range(7)]
 
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        # Header (month + year)
-        month_name = self.get_month_name(
-            week_dates[0].month,
-            locale_name=self.language,
-            abbreviation=self.useShortMonthNames,
-        )
-        header_text = f"{month_name} {str(d.year)[-2:]}"
+        header_text, sun_string = self._get_header_data(d)
+
         draw.text(
-            (0, height - self.font_holiday.size * self.dpi / 25.4),
+            (
+                0,
+                height - self.font_holiday.size * self.dpi / 25.4,
+            ),
             header_text,
             font=self.font_large.get_image_font(self.dpi),
             fill=self.font_small.color.to_pil(),
             anchor="ld",
         )
 
-        # Sun times for Europe/Berlin
-        location = LocationInfo("Dresden", "Germany", "Europe/Berlin", 51.0504, 13.7373)
-        tz = pytz.timezone("Europe/Berlin")
-        sun_times = sun(location.observer, date=d)
-
-        sunrise = sun_times["sunrise"].astimezone(tz).strftime("%H:%M")
-        sunset = sun_times["sunset"].astimezone(tz).strftime("%H:%M")
-        week_no = d.isocalendar().week
-
-        sun_string = f"KW {week_no}  ● ↑ {sunrise}  ○ ↓ {sunset}"
         draw.text(
             (0, height),
             sun_string,
@@ -138,72 +259,75 @@ class CalendarRenderer:
             anchor="ld",
         )
 
-        # Day columns
         month_cols, col_width = self.get_cols_property(width)
 
         for idx, day_date in enumerate(week_dates):
             x = self.marginSides + (idx + month_cols + 0.5) * col_width
 
-            date_key = (day_date.day, day_date.month)
-            holiday_name = self.localHolidays.get(day_date)
-
-            is_weekend = day_date.weekday() >= 5
-            is_holiday = day_date in self.localHolidays
-
-            color_day = (
-                self.font_holiday.color.to_pil()
-                if (is_holiday or is_weekend)
-                else self.font_large.color.to_pil()
+            self._draw_day_block(
+                draw=draw,
+                x=x,
+                baseline_y=height,
+                info=self._get_day_render_info(day_date),
             )
 
-            # Day name
-            day_name = self.get_day_name(day_date.weekday(), self.language)
-            if self.useShortDayNames:
-                day_name = day_name[:2]
+        return img
 
-            moon_symbol = MoonPhase.get_moon_phase_symbol_dark(day_date)
-            if moon_symbol:
-                day_name = f"{day_name} {moon_symbol}"
+    def _generate_vertical(
+        self,
+        d: datetime,
+        width: int | float,
+        height: int | float,
+    ) -> Image.Image:
 
-            draw.text(
-                (
-                    x,
-                    height
-                    - self.font_holiday.size * self.dpi / 25.4
-                    - self.font_large.size * self.dpi / 25.4 * 1.15,
-                ),
-                day_name,
-                font=self.font_small.get_image_font(self.dpi),
-                fill=self.font_small.color.to_pil(),
-                anchor="md",
+        width = int(width)
+        height = int(height)
+
+        week_dates = [d + timedelta(days=i) for i in range(7)]
+
+        img = Image.new("RGB", (width, height), self.backgroundColor)
+        draw = ImageDraw.Draw(img)
+
+        header_text, sun_string = self._get_header_data(d)
+
+        center_x = width / 2
+
+        draw.text(
+            (
+                center_x,
+                self.font_large.size * self.dpi / 25.4,
+            ),
+            header_text,
+            font=self.font_large.get_image_font(self.dpi),
+            fill=self.font_small.color.to_pil(),
+            anchor="ma",
+        )
+
+        draw.text(
+            (
+                center_x,
+                self.font_large.size * self.dpi / 25.4 * 2.2,
+            ),
+            sun_string,
+            font=self.font_holiday.get_image_font(self.dpi),
+            fill=self.font_small.color.to_pil(),
+            anchor="ma",
+        )
+
+        top_reserved = self.font_large.size * self.dpi / 25.4 * 3.0
+        available_height = height - top_reserved
+
+        row_height = available_height / len(week_dates)
+
+        for idx, day_date in enumerate(week_dates):
+            baseline_y = top_reserved + (idx + 1) * row_height
+
+            self._draw_day_block(
+                draw=draw,
+                x=center_x,
+                baseline_y=baseline_y,
+                info=self._get_day_render_info(day_date),
             )
-
-            draw.text(
-                (x, height - self.font_holiday.size * self.dpi / 25.4),
-                str(day_date.day),
-                font=self.font_large.get_image_font(self.dpi),
-                fill=color_day,
-                anchor="md",
-            )
-
-            # Anniversaries + holidays
-            label = None
-            if date_key in self.anniversaries:
-                label = self.anniversaries[date_key]
-                if holiday_name:
-                    label += f", {holiday_name}"
-                draw.fill = self.font_large
-            elif holiday_name:
-                label = holiday_name
-
-            if label:
-                draw.text(
-                    (x, height),
-                    label,
-                    font=self.font_holiday.get_image_font(self.dpi),
-                    fill=self.font_holiday.color.to_pil(),
-                    anchor="md",
-                )
 
         return img
 
