@@ -4,6 +4,15 @@ Changelog
 
 (unreleased)
 ------------
+- Fix gui: no duplicated button frame. [Paul Magister]
+- Add documentation for new feature, fix links in README.md, new images.
+  [Paul Magister]
+- Transparent description text. [Paul Magister]
+
+
+1.0.5 (2026-06-24)
+------------------
+- Docs: Update HISTORY.md for release 1.0.5. [Paul Magister]
 - Collages in Portrait mode: improve layouting for portrait collages.
   [Paul Magister]
 - Collages in Portrait mode: improve layouting for portrait collages.
