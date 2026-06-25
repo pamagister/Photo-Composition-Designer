@@ -192,7 +192,7 @@ class MainGui:
 
         # ===== PHASE 1: Configuration =====
         phase1_label = ttk.Label(
-            button_frame, text="1 Configuration", font=("TkHeadingFont", 10, "bold")
+            button_frame, text="1 Configuration", font=("TkTextFont", 10, "bold")
         )
         phase1_label.pack(pady=(10, 5), fill=tk.X)
 
@@ -206,7 +206,7 @@ class MainGui:
 
         # ===== PHASE 2: Image Distribution =====
         phase2_label = ttk.Label(
-            button_frame, text="2 Image Distribution", font=("TkHeadingFont", 10, "bold")
+            button_frame, text="2 Image Distribution", font=("TkTextFont", 10, "bold")
         )
         phase2_label.pack(pady=(10, 5), fill=tk.X)
 
@@ -253,7 +253,7 @@ class MainGui:
 
         # ===== PHASE 3: Descriptions =====
         phase3_label = ttk.Label(
-            button_frame, text="3 Prepare Description File", font=("TkHeadingFont", 10, "bold")
+            button_frame, text="3 Prepare Description File", font=("TkTextFont", 10, "bold")
         )
         phase3_label.pack(pady=(10, 5), fill=tk.X)
 
@@ -274,7 +274,7 @@ class MainGui:
 
         # ===== PHASE 4: Composition & Export =====
         phase4_label = ttk.Label(
-            button_frame, text="4 Composition & Export", font=("TkHeadingFont", 10, "bold")
+            button_frame, text="4 Composition & Export", font=("TkTextFont", 10, "bold")
         )
         phase4_label.pack(pady=(10, 5), fill=tk.X)
 
@@ -321,7 +321,7 @@ class MainGui:
         ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(pady=10, fill=tk.X)
 
         # ===== PHASE 4: Preview & Descriptions =====
-        phase4_label = ttk.Label(button_frame, text="Preview", font=("TkHeadingFont", 10, "bold"))
+        phase4_label = ttk.Label(button_frame, text="Preview", font=("TkTextFont", 10, "bold"))
         phase4_label.pack(pady=(10, 5), fill=tk.X)
 
         self.render_preview_button = ttk.Button(
@@ -969,7 +969,7 @@ def main():
     font.nametofont("TkDefaultFont").configure(size=11)
     font.nametofont("TkTextFont").configure(size=11)
     font.nametofont("TkMenuFont").configure(size=11)
-    font.nametofont("TkHeadingFont").configure(size=11)
+    font.nametofont("TkTextFont").configure(size=11)
 
     try:
         MainGui(root)

@@ -20,6 +20,8 @@ Photo-Composition-Designer is a tool designed to automate the creation of beauti
 * ✅ **Location-Based Maps** – Integrate maps showing image locations using gps meta-data or image names and `locations.ini`.
 * ✅ **GUI Configuration Tool** – Easily modify configurations via a dynamic UI.
 * ✅ **Folder Management** – Automatically structures and organizes images into necessary folders.
+* ✅ **AI Image Analysis** – Smart, content-aware image cropping powered by [Ultralytics YOLO26](https://docs.ultralytics.com/) 
+  object recognition to keep the most important parts of every photo in view.
 
 ![Main GUI](_static/img/gui_main.png)
 
@@ -118,7 +120,7 @@ Mary & Josh = 02.01.2021    ; ⚭ Symbol is used for Weddings
 ### 5️⃣ **Generating the Calendar** 🖼️
 Use **Generate Composition** to generate all collages and one PDF file containing all your compositions.
 
-![collages.png](_static/img/collages.png)
+![Collages_Preview](_static/img/collages.png)
 
 ### 6️⃣ **Printing the Calendar** 🖨️
 Send the generated PDF to your printer or local print shop for high-quality printing.

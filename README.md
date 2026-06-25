@@ -22,8 +22,10 @@ Photo-Composition-Designer is a tool designed to automate the creation of beauti
 * ✅ **Location-Based Maps** – Integrate maps showing image locations using gps meta-data or image names and `locations.ini`.
 * ✅ **GUI Configuration Tool** – Easily modify configurations via a dynamic UI.
 * ✅ **Folder Management** – Automatically structures and organizes images into necessary folders.
+* ✅ **AI Image Analysis** – Smart, content-aware image cropping powered by [Ultralytics YOLO26](https://docs.ultralytics.com/) 
+  object recognition to keep the most important parts of every photo in view.
 
-![Main GUI](_static/img/gui_main.png)
+![Main GUI](docs/_static/img/gui_main.png)
 
 ---
 
@@ -65,14 +67,14 @@ Photo-Composition-Designer-gui
 
 ### 1️⃣ **Configuring the parameters**
 You can adjust the result by setting up your own parameters like size, margins and colors.
-For more details, see [Configuration Parameters](usage/config.md).
+For more details, see [Configuration Parameters](docs/usage/config.md).
 Modify your settings inside the `config.yaml` or using the GUI:
 - Image sizes (mm converted to pixels internally)
 - Calendar layout
 - Paths to `anniversaries.ini` and `locations.ini`
 - Fonts and Colors
 
-![Settings GUI](_static/img/gui_settings.png)
+![Settings GUI](docs/_static/img/gui_settings.png)
 
 
 ### 2️⃣ **Sorting Images into Folders**
@@ -120,7 +122,7 @@ Mary & Josh = 02.01.2021    ; ⚭ Symbol is used for Weddings
 ### 5️⃣ **Generating the Calendar** 🖼️
 Use **Generate Composition** to generate all collages and one PDF file containing all your compositions.
 
-![collages.png](_static/img/collages.png)
+![Collages_Preview](docs/_static/img/collages.png)
 
 ### 6️⃣ **Printing the Calendar** 🖨️
 Send the generated PDF to your printer or local print shop for high-quality printing.
@@ -129,4 +131,4 @@ A very good print shop for Germany is [WIRmachenDRUCK ](https://www.wir-machen-d
 
 ---
 
-If you find this app helpful, [Funding](funding/funding.md) is highly appreciated 🧡.
+If you find this app helpful, [Funding](docs/funding/funding.md) is highly appreciated 🧡.
