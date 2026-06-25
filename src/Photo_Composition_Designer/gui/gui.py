@@ -52,7 +52,7 @@ class MainGui:
     ]
 
     composition_modes = [
-        ("render_and_pdf", "Render images & generate PDF"),
+        ("render_and_pdf", "Render images & PDF"),
         ("render_only", "Render images only"),
         ("pdf_only", "Generate PDF only"),
     ]
@@ -177,12 +177,7 @@ class MainGui:
         # -------------------------------------------------------------
         # RIGHT SIDE — FIXED-WIDTH BUTTON PANEL
         # -------------------------------------------------------------
-        button_outer_frame = ttk.Frame(top_paned)
-        # Add with weight=0 to keep fixed width
-        top_paned.add(button_outer_frame, weight=0)
-
-        # RIGHT SIDE — FIXED-WIDTH BUTTON PANEL with Workflow Phases
-        button_outer_frame = ttk.Frame(top_paned)
+        button_outer_frame = ttk.LabelFrame(top_paned, text="Workflow")
         # Add with weight=0 to keep fixed width
         top_paned.add(button_outer_frame, weight=0)
 
