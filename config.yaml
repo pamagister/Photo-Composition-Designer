@@ -31,6 +31,8 @@ calendar:
   startDate: '2025-12-29T00:00:00'
   # Number of collages to be generated (e.g. number of weeks) | type=int
   collagesToGenerate: 53
+  # Align the calendar horizontally (False means vertical) | type=bool | [CLI] | choices=[True, False]
+  horizontalOrientation: true
 style:
   # Background color (RGB) | type=Color
   backgroundColor: '#141414'

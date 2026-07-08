@@ -69,7 +69,15 @@ class CompositionDesigner:
         self.spacing_px = self._mm_to_px(self.config.layout.spacing.value)
 
         # calendar sizes
-        self.calendar_height_px = self._mm_to_px(self.config.size.calendarHeight.value)
+        self.horizontal_orientation = self.config.calendar.horizontalOrientation.value
+        if self.horizontal_orientation:
+            self.calendar_primary_dim_px = self._mm_to_px(self.config.size.calendarHeight.value)
+            self.calendar_secondary_dim_px = self.width_px - (2 * self.margin_sides_px)
+        else:
+            self.calendar_primary_dim_px = self._mm_to_px(self.config.size.calendarHeight.value)
+            self.calendar_secondary_dim_px = (
+                self.height_px - self.margin_top_px - self.margin_bottom_px
+            )
 
         # colors (Color objects have .to_pil() in your calendar factory)
         # Use the calendar factory which expects the full config object
@@ -114,6 +122,12 @@ class CompositionDesigner:
         available_width = self.width_px
         # side margins reduce space
         available_width -= 2 * self.margin_sides_px
+
+        if not self.horizontal_orientation and (
+            self.config.calendar.useCalendar.value or bool(self.compositionTitle)
+        ):
+            available_width -= self.calendar_primary_dim_px + self.spacing_px
+
         return int(available_width)
 
     def get_available_collage_height_px(
@@ -130,7 +144,11 @@ class CompositionDesigner:
         if (
             self.config.calendar.useCalendar.value or bool(self.compositionTitle)
         ) and not no_calendar_flag:
-            available_height -= self.calendar_height_px
+            if self.horizontal_orientation:
+                available_height -= self.calendar_primary_dim_px
+            else:
+                # In vertical orientation, calendar takes width, not height from collage
+                pass  # height is not reduced by calendar
 
         # description area, unless no_description_flag is True
         if self.config.layout.usePhotoDescription.value and not no_description_flag:
@@ -194,7 +212,6 @@ class CompositionDesigner:
         text_color2 = self.config.style.fontSmall.value.color.to_pil()
 
         composition = Image.new("RGBA", (self.width_px, self.height_px), (*background_color, 255))
-        available_cal_width = self.width_px
 
         # Process photo description for tags
         processed_description, no_calendar_flag, no_description_flag = (
@@ -206,42 +223,63 @@ class CompositionDesigner:
             no_calendar_flag, no_description_flag
         )
         self.layoutManager.height = current_collage_height_px  # Update layoutManager's height
+        self.layoutManager.width = self.get_available_collage_width_px()  # Update collage width
+
+        calendar_x, calendar_y = 0, 0
+        calendar_width, calendar_height = 0, 0
+        map_x, map_y = 0, 0
 
         # add title or calendar
         if is_title and self.compositionTitle:
+            if self.horizontal_orientation or True:
+                calendar_width = self.calendar_secondary_dim_px
+                calendar_height = self.calendar_primary_dim_px
+                calendar_x = self.margin_sides_px
+                calendar_y = self.height_px - self.calendar_primary_dim_px - self.margin_bottom_px
+            else:  # Vertical orientation
+                calendar_width = self.calendar_primary_dim_px
+                calendar_height = self.calendar_secondary_dim_px
+                calendar_x = self.margin_sides_px
+                calendar_y = self.margin_top_px
+
             title_img = self.calendarObj.generateTitle(
-                self.compositionTitle, available_cal_width, self.calendar_height_px
+                self.compositionTitle, calendar_width, calendar_height
             )
-            composition.paste(
-                title_img,
-                (self.margin_sides_px, self.height_px - self.calendar_height_px),
-            )
+            composition.paste(title_img, (calendar_x, calendar_y))
+
         elif self.config.calendar.useCalendar.value and not no_calendar_flag:
-            if self.config.geo.usePhotoLocationMaps.value:
-                available_cal_width -= self.mapGenerator.width + self.margin_sides_px
-            calendar_img = self.calendarObj.generate(
-                date, available_cal_width, self.calendar_height_px
-            )
-            composition.paste(
-                calendar_img,
-                (
-                    self.margin_sides_px,
-                    self.height_px - self.calendar_height_px - self.margin_bottom_px,
-                ),
-            )
+            if self.horizontal_orientation:
+                calendar_width = self.calendar_secondary_dim_px
+                calendar_height = self.calendar_primary_dim_px
+                calendar_x = self.margin_sides_px
+                calendar_y = self.height_px - self.calendar_primary_dim_px - self.margin_bottom_px
+                if self.config.geo.usePhotoLocationMaps.value:
+                    calendar_width -= self.mapGenerator.width + self.spacing_px
+            else:  # Vertical orientation
+                calendar_width = self.calendar_primary_dim_px
+                calendar_height = self.calendar_secondary_dim_px
+                calendar_x = self.margin_sides_px
+                calendar_y = self.margin_top_px
+                if self.config.geo.usePhotoLocationMaps.value:
+                    calendar_height -= self.mapGenerator.height + self.spacing_px
+
+            calendar_img = self.calendarObj.generate(date, calendar_width, calendar_height)
+            composition.paste(calendar_img, (calendar_x, calendar_y))
 
         # add location map (if configured and not the title page)
         # Also, if no_calendar_flag is true, no map should be displayed
         if self.config.geo.usePhotoLocationMaps.value and not is_title and not no_calendar_flag:
             coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
             imgMap = self.mapGenerator.generate(coordinates)
-            composition.paste(
-                imgMap,
-                (
-                    self.width_px - self.mapGenerator.width - self.margin_sides_px,
-                    self.height_px - self.mapGenerator.height - self.margin_bottom_px,
-                ),
-            )
+
+            if self.horizontal_orientation:
+                map_x = self.width_px - self.mapGenerator.width - self.margin_sides_px
+                map_y = self.height_px - self.mapGenerator.height - self.margin_bottom_px
+            else:  # Vertical orientation
+                map_x = self.margin_sides_px
+                map_y = calendar_y + calendar_height + self.spacing_px  # Below the calendar
+
+            composition.paste(imgMap, (map_x, map_y))
 
         # description area
         if self.config.layout.usePhotoDescription.value and not no_description_flag:
@@ -256,7 +294,15 @@ class CompositionDesigner:
             if (
                 self.config.calendar.useCalendar.value or bool(self.compositionTitle)
             ) and not no_calendar_flag:
-                y = self.height_px - self.calendar_height_px - desc_h - self.margin_bottom_px
+                if self.horizontal_orientation:
+                    y = (
+                        self.height_px
+                        - self.calendar_primary_dim_px
+                        - desc_h
+                        - self.margin_bottom_px
+                    )
+                else:  # Vertical orientation
+                    y = self.height_px - desc_h - self.margin_bottom_px  # This needs re-evaluation
             else:
                 # If no calendar, description goes above the bottom margin
                 y = self.height_px - desc_h - self.margin_bottom_px
@@ -268,7 +314,14 @@ class CompositionDesigner:
 
         # Arrange image composition
         collage = self.layoutManager.generate([photo.get_image() for photo in photos])
-        composition.paste(collage, (self.margin_sides_px, self.margin_top_px))
+
+        collage_x = self.margin_sides_px
+        collage_y = self.margin_top_px
+
+        if not self.horizontal_orientation and (not is_title and not no_calendar_flag):
+            collage_x += self.calendar_primary_dim_px + self.spacing_px
+
+        composition.paste(collage, (collage_x, collage_y))
 
         if not is_title and not no_calendar_flag:
             # draw the image dates in

@@ -25,13 +25,14 @@ The parameters in the cli category can be accessed via the command line interfac
 
 ## Category "calendar"
 
-| Name               | Type     | Description                                               | Default                               | Choices       |
-|--------------------|----------|-----------------------------------------------------------|---------------------------------------|---------------|
-| useCalendar        | bool     | True: Calendar elements are generated                     | True                                  | [True, False] |
-| language           | str      | Language for the calendar (e.g., de_DE, en_US)            | 'de_DE'                               | -             |
-| holidayCountries   | str      | Country/state codes for public holidays, e.g., NY,CA      | 'SN'                                  | -             |
-| startDate          | datetime | Start date of the calendar                                | datetime.datetime(2025, 12, 29, 0, 0) | -             |
-| collagesToGenerate | int      | Number of collages to be generated (e.g. number of weeks) | 53                                    | -             |
+| Name                  | Type     | Description                                               | Default                               | Choices       |
+|-----------------------|----------|-----------------------------------------------------------|---------------------------------------|---------------|
+| useCalendar           | bool     | True: Calendar elements are generated                     | True                                  | [True, False] |
+| language              | str      | Language for the calendar (e.g., de_DE, en_US)            | 'de_DE'                               | -             |
+| holidayCountries      | str      | Country/state codes for public holidays, e.g., NY,CA      | 'SN'                                  | -             |
+| startDate             | datetime | Start date of the calendar                                | datetime.datetime(2025, 12, 29, 0, 0) | -             |
+| collagesToGenerate    | int      | Number of collages to be generated (e.g. number of weeks) | 53                                    | -             |
+| horizontalOrientation | bool     | Align the calendar horizontally (False means vertical)    | True                                  | [True, False] |
 
 ## Category "style"
 

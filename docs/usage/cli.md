@@ -8,13 +8,14 @@ python -m app [OPTIONS] photoDirectory
 
 ## Options
 
-| Option           | Type      | Description                                                                             | Default                               | Choices |
-|------------------|-----------|-----------------------------------------------------------------------------------------|---------------------------------------|---|
-| `photoDirectory` | PosixPath | Path to the directory containing photos (absolute, or relative to this config.ini file) | *required*                            | - |
-| `--startDate`    | datetime  | Start date of the calendar                                                              | datetime.datetime(2025, 12, 29, 0, 0) | - |
-| `--width`        | int       | Width of the collage in mm                                                              | 216                                   | - |
-| `--height`       | int       | Height of the collage in mm                                                             | 154                                   | - |
-| `--dpi`          | int       | Resolution of the image in dpi                                                          | 300                                   | - |
+| Option                    | Type      | Description                                                                             | Default                               | Choices       |
+|---------------------------|-----------|-----------------------------------------------------------------------------------------|---------------------------------------|---------------|
+| `photoDirectory`          | PosixPath | Path to the directory containing photos (absolute, or relative to this config.ini file) | *required*                            | -             |
+| `--startDate`             | datetime  | Start date of the calendar                                                              | datetime.datetime(2025, 12, 29, 0, 0) | -             |
+| `--horizontalOrientation` | bool      | Align the calendar horizontally (False means vertical)                                  | True                                  | [True, False] |
+| `--width`                 | int       | Width of the collage in mm                                                              | 216                                   | -             |
+| `--height`                | int       | Height of the collage in mm                                                             | 154                                   | -             |
+| `--dpi`                   | int       | Resolution of the image in dpi                                                          | 300                                   | -             |
 
 
 ## Examples
@@ -46,14 +47,14 @@ python -m app --quiet photoDirectory
 python -m app --startDate 2025-12-29 00:00:00 photoDirectory
 ```
 
-### 5. With width parameter
+### 5. With horizontalOrientation parameter
+
+```bash
+python -m app --horizontalOrientation True photoDirectory
+```
+
+### 6. With width parameter
 
 ```bash
 python -m app --width 216 photoDirectory
-```
-
-### 6. With height parameter
-
-```bash
-python -m app --height 154 photoDirectory
 ```

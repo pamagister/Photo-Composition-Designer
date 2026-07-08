@@ -102,16 +102,16 @@ class CalendarRenderer:
             marginSides=margin_sides_px,
             anniversaries=anniversaries_obj,  # resolved object or None
             dpi=config.size.dpi.value,
+            horizontal=config.calendar.horizontalOrientation.value,  # Pass the new parameter
         )
 
-    def _get_header_data(self, d: datetime) -> tuple[str, str]:
+    def _get_header_data(self, d: datetime) -> tuple[str, str, str, str]:
         month_name = self.get_month_name(
             d.month,
             locale_name=self.language,
             abbreviation=self.useShortMonthNames,
         )
-
-        header_text = f"{month_name} {str(d.year)[-2:]}"
+        year_text = str(d.year)[-2:]
 
         location = LocationInfo(
             "Dresden",
@@ -128,10 +128,10 @@ class CalendarRenderer:
         sunset = sun_times["sunset"].astimezone(tz).strftime("%H:%M")
 
         week_no = d.isocalendar().week
+        week_string = f"KW {week_no}"
+        sun_string = f"● ↑ {sunrise}  ○ ↓ {sunset}"
 
-        sun_string = f"KW {week_no}  ● ↑ {sunrise}  ○ ↓ {sunset}"
-
-        return header_text, sun_string
+        return month_name, year_text, week_string, sun_string
 
     def _get_day_render_info(self, day_date: datetime) -> DayRenderInfo:
         date_key = (day_date.day, day_date.month)
@@ -238,7 +238,9 @@ class CalendarRenderer:
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        header_text, sun_string = self._get_header_data(d)
+        month_name, year_text, week_string, sun_string = self._get_header_data(d)
+
+        header_text = f"{month_name} {year_text}"
 
         draw.text(
             (
@@ -253,7 +255,7 @@ class CalendarRenderer:
 
         draw.text(
             (0, height),
-            sun_string,
+            f"{week_string} {sun_string}",
             font=self.font_holiday.get_image_font(self.dpi),
             fill=self.font_small.color.to_pil(),
             anchor="ld",
@@ -288,14 +290,15 @@ class CalendarRenderer:
         img = Image.new("RGB", (width, height), self.backgroundColor)
         draw = ImageDraw.Draw(img)
 
-        header_text, sun_string = self._get_header_data(d)
+        month_name, year_text, week_string, sun_string = self._get_header_data(d)
+        header_text = month_name
 
         center_x = width / 2
 
         draw.text(
             (
                 center_x,
-                self.font_large.size * self.dpi / 25.4,
+                0,  # self.font_holiday.size * self.dpi / 25.4 * 1.0,
             ),
             header_text,
             font=self.font_large.get_image_font(self.dpi),
@@ -306,7 +309,21 @@ class CalendarRenderer:
         draw.text(
             (
                 center_x,
-                self.font_large.size * self.dpi / 25.4 * 2.2,
+                0,  # self.font_large.size * self.dpi / 25.4 * 1.0,
+            ),
+            "",  # week_string,
+            font=self.font_holiday.get_image_font(self.dpi),
+            fill=self.font_small.color.to_pil(),
+            anchor="ma",
+        )
+
+        sun_string_y_pos = (
+            (self.font_large.size + 0.2 * self.font_holiday.size) * self.dpi / 25.4 * 1.0
+        )
+        draw.text(
+            (
+                center_x,
+                sun_string_y_pos,
             ),
             sun_string,
             font=self.font_holiday.get_image_font(self.dpi),
@@ -314,7 +331,7 @@ class CalendarRenderer:
             anchor="ma",
         )
 
-        top_reserved = self.font_large.size * self.dpi / 25.4 * 3.0
+        top_reserved = sun_string_y_pos * 1.2
         available_height = height - top_reserved
 
         row_height = available_height / len(week_dates)

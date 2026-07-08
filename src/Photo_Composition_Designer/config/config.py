@@ -86,6 +86,13 @@ class CalendarConfig(ConfigCategory):
         help="Number of collages to be generated (e.g. number of weeks)",
     )
 
+    horizontalOrientation: ConfigParameter = ConfigParameter(
+        name="horizontalOrientation",
+        value=True,
+        help="Align the calendar horizontally (False means vertical)",
+        is_cli=True,
+    )
+
 
 class StyleConfig(ConfigCategory):
     """Style configuration parameters."""
