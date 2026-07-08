@@ -186,12 +186,14 @@ class CalendarRenderer:
         holiday_h = self.font_holiday.size * self.dpi / 25.4
         large_h = self.font_large.size * self.dpi / 25.4
 
+        is_holiday = info.date in self.localHolidays
+        info_text_color = info.color_day if is_holiday else self.font_large.color.to_pil()
         if info.label:
             draw.text(
                 (x, baseline_y),
                 info.label,
                 font=self.font_holiday.get_image_font(self.dpi),
-                fill=self.font_holiday.color.to_pil(),
+                fill=info_text_color,
                 anchor="md",
             )
 
@@ -371,8 +373,8 @@ class CalendarRenderer:
     # -------------------------------------------------------------------------
 
     def get_cols_property(self, width: int) -> tuple[float, float]:
-        month_cols = 1.5 if self.useShortMonthNames else 4.0
-        col_width = (width - 3 * self.marginSides) / (7.0 + month_cols)
+        month_cols = 1.4 if self.useShortMonthNames else 4.0
+        col_width = (width - 1.0 * self.marginSides) / (7.0 + month_cols)
         return month_cols, col_width
 
     @staticmethod
