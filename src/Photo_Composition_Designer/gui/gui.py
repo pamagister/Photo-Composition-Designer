@@ -29,12 +29,11 @@ from config_cli_gui.logging import (
 from config_cli_gui.persistence import read_last_used_config
 from PIL import ImageTk
 
-from Photo_Composition_Designer.application.composition_workflow import CompositionWorkflow
+from Photo_Composition_Designer.application import CompositionApplicationFactory
 from Photo_Composition_Designer.application.photo_distribution_workflow import (
     PhotoDistributionWorkflow,
 )
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.base import CompositionDesigner
 from Photo_Composition_Designer.gui.GuiLogWriter import GuiLogWriter
 from Photo_Composition_Designer.tools.DescriptionsFileGenerator import (
     DescriptionsFileGenerator,
@@ -91,6 +90,7 @@ class MainGui:
             enable_console_logging=self._config.app.enable_console_logging.value,
         )
         self.logger: logging.Logger = get_logger("gui.main")
+        self.composition_application_factory = CompositionApplicationFactory(self.logger)
         self.logger.info(f"Anniversaries used: {self._config.general.anniversariesConfig.value}")
         self.logger.info(f"Locations used: {self._config.general.locationsConfig.value}")
 
@@ -108,10 +108,9 @@ class MainGui:
 
     def _reload_config(self):
         # File lists
-        self.composition_designer = CompositionDesigner(self._config, self.logger)
-        self.composition_designer.progress_callback = self._progress_update
-        self.composition_workflow = CompositionWorkflow(
-            self._config, self.logger, self.composition_designer
+        self.composition_workflow = self.composition_application_factory.create_workflow(
+            self._config,
+            self._progress_update,
         )
         self.photo_distribution_workflow = PhotoDistributionWorkflow(self._config, self.logger)
 
@@ -123,7 +122,7 @@ class MainGui:
         # Load initial folder list
         self._load_photo_folders()
 
-        self.logger.info(f"Photo directory: {self.composition_designer.photoDir}")
+        self.logger.info(f"Photo directory: {self.composition_workflow.photo_directory}")
         self.logger_manager.log_config_summary()
 
         if self.photo_folders:
@@ -425,7 +424,8 @@ class MainGui:
     def _generate_preview(self, selection_index):
         if not self.photo_folders:
             self.logger.warning(
-                f"No photo folders available in directory {self.composition_designer.photoDir}"
+                f"No photo folders available in directory "
+                f"{self.composition_workflow.photo_directory}"
             )
             return
         folder_name = self.photo_folders[selection_index].name
@@ -461,17 +461,17 @@ class MainGui:
         self.photo_folders = []
 
         if (
-            not self.composition_designer.photoDir.exists()
-            or not self.composition_designer.photoDir.is_dir()
+            not self.composition_workflow.photo_directory.exists()
+            or not self.composition_workflow.photo_directory.is_dir()
         ):
             self.logger.warning(
-                f"Photo directory '{self.composition_designer.photoDir}' does not exist."
+                f"Photo directory '{self.composition_workflow.photo_directory}' does not exist."
             )
             return
 
         # Collect subfolder names, sorted alphabetically
         subfolders = sorted(
-            [item for item in self.composition_designer.photoDir.iterdir() if item.is_dir()],
+            [item for item in self.composition_workflow.photo_directory.iterdir() if item.is_dir()],
             key=lambda p: p.name.lower(),
         )
 
@@ -715,7 +715,7 @@ class MainGui:
             self.logger.info("Processing files...")
 
             completed = self.photo_distribution_workflow.distribute(
-                self.composition_designer.photoDir, mode
+                self.composition_workflow.photo_directory, mode
             )
             if not completed:
                 return
@@ -757,7 +757,7 @@ class MainGui:
         self.progress.configure(value=0)
 
     def _progress_update(self, value, total):
-        percent = int((value / total) * 100)
+        percent = int((value / total) * 100) if total else 0
         self.root.after(0, lambda: self.progress.configure(value=percent))
 
     def _open_settings(self):
@@ -776,9 +776,7 @@ class MainGui:
     def _clear_object_detector_cache(self):
         """Clear the object detector cache if object recognition is enabled."""
         try:
-            od = getattr(self.composition_designer, "object_detector", None)
-            if od:
-                od.clear_cache()
+            if self.composition_workflow.clear_object_detector_cache():
                 messagebox.showinfo("Cache cleared", "Object detector cache cleared.")
                 self.logger.info("Object detector cache cleared via GUI")
             else:
@@ -809,8 +807,8 @@ class MainGui:
 
     def _generate_template_description_file(self):
         description_file_gen = DescriptionsFileGenerator(
-            self.composition_designer.photoDir,
-            self.composition_designer.outputDir,
+            self.composition_workflow.photo_directory,
+            self.composition_workflow.output_directory,
         )
 
         if description_file_gen.description_file_exists():
@@ -827,8 +825,10 @@ class MainGui:
         self.logger.info(f"Template description file generated: {description_file}")
 
         # Re-initialize the composition designer to recognize the new file
-        self.composition_designer = CompositionDesigner(self._config, self.logger)
-        self.composition_designer.progress_callback = self._progress_update
+        self.composition_workflow = self.composition_application_factory.create_workflow(
+            self._config,
+            self._progress_update,
+        )
 
         # Refresh the preview for the currently selected folder
         selection = self.photo_dir_listbox.curselection()

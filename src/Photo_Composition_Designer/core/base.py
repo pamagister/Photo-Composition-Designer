@@ -1,6 +1,7 @@
 # Photo_Composition_Designer/core/base.py
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from logging import Logger
 from pathlib import Path
@@ -33,8 +34,10 @@ class CompositionDesigner:
         config: ConfigParameterManager | None,
         logger: Logger | None = None,
         render_components: CompositionRenderComponents | None = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> None:
         self.config = config or ConfigParameterManager()
+        self.progress_callback = progress_callback
         if logger:
             self.logger = logger
         else:
@@ -181,7 +184,7 @@ class CompositionDesigner:
         folder_names = self.file_io.get_photo_folders()
         total = len(folder_names)
 
-        if hasattr(self, "progress_callback"):
+        if self.progress_callback is not None:
             self.progress_callback(0, total)
 
         for idx, folder_name in enumerate(folder_names, start=1):
@@ -191,7 +194,7 @@ class CompositionDesigner:
             if composition:
                 self.save(composition, folder_name)
 
-            if hasattr(self, "progress_callback"):
+            if self.progress_callback is not None:
                 self.progress_callback(idx, total)
 
         if self.config.layout.generatePdf.value:

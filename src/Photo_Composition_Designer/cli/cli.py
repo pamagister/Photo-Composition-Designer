@@ -9,8 +9,8 @@ from logging import Logger
 from config_cli_gui.cli import CliGenerator
 from config_cli_gui.logging import initialize_logging
 
+from Photo_Composition_Designer.application import CompositionApplicationFactory
 from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.base import CompositionDesigner
 
 
 def validate_config(config_manager: ConfigParameterManager, logger: Logger) -> bool:
@@ -62,10 +62,10 @@ def run_main_processing(config_manager: ConfigParameterManager, logger: Logger) 
             logger.error("Configuration validation failed")
             return 1
 
-        # Create and run Composition Designer
+        # Create and run the application workflow.
         logger.info("Starting conversion process")
-        composition_designer = CompositionDesigner(config_manager, logger)
-        composition_designer.generate_compositions_from_folders()
+        workflow = CompositionApplicationFactory(logger).create_workflow(config_manager)
+        workflow.generate()
         logger.info("Conversion process completed")
 
         logger.info("CLI processing completed successfully")

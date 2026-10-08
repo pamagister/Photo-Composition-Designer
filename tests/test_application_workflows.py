@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from datetime import datetime
+from logging import Logger
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -6,13 +10,16 @@ from unittest.mock import Mock
 import pytest
 from PIL import Image
 
-from Photo_Composition_Designer.application import composition_workflow
+from Photo_Composition_Designer.application import CompositionApplicationFactory
 from Photo_Composition_Designer.application.composition_workflow import (
     CompositionWorkflow,
 )
 from Photo_Composition_Designer.application.photo_distribution_workflow import (
     PhotoDistributionWorkflow,
 )
+from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.base import CompositionDesigner
+from Photo_Composition_Designer.gui.gui import MainGui
 
 
 def make_config() -> SimpleNamespace:
@@ -29,8 +36,49 @@ def make_config() -> SimpleNamespace:
 class FakeDesigner:
     def __init__(self, output_dir: Path | None = None) -> None:
         self.outputDir = output_dir or Path(".")
+        self.width_px = 100
+        self.height_px = 200
         self.generate_compositions_from_folders = Mock()
         self.generate_pdf = Mock()
+
+
+class PreviewDesignerFactory:
+    def __init__(
+        self,
+        preview_image: Image.Image | None = None,
+        output_dir: Path = Path("."),
+    ) -> None:
+        self.preview_image = preview_image
+        self.output_dir = output_dir
+        self.created_configs: list[ConfigParameterManager | SimpleNamespace] = []
+
+    def create(
+        self,
+        config: ConfigParameterManager | SimpleNamespace,
+        logger: Logger,
+        progress_callback: Callable[[int, int], None] | None = None,
+    ) -> PreviewDesigner:
+        self.created_configs.append(config)
+        return PreviewDesigner(self.preview_image, self.output_dir)
+
+
+class PreviewDesigner:
+    width_px = 100
+    height_px = 200
+
+    def __init__(self, preview_image: Image.Image | None, output_dir: Path) -> None:
+        self.preview_image = preview_image
+        self.outputDir = output_dir
+
+    def generate_compositions_from_folder(self, folder_name: str) -> Image.Image | None:
+        return self.preview_image
+
+
+def make_real_config(photo_dir: Path) -> ConfigParameterManager:
+    config = ConfigParameterManager(persist_last_used=False)
+    config.general.photoDirectory.value = photo_dir
+    config.layout.objectRecognition = False
+    return config
 
 
 def test_generate_render_only_restores_pdf_setting() -> None:
@@ -72,54 +120,91 @@ def test_generate_delegates_to_designer(mode: str, expected_method: str) -> None
     getattr(designer, expected_method).assert_called_once()
 
 
-def test_create_preview_scales_a_copy_of_the_configuration(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_create_preview_scales_a_copy_of_the_configuration() -> None:
     config = make_config()
     preview_image = Image.new("RGB", (50, 100))
-    created_configs = []
-
-    class PreviewDesigner:
-        width_px = 100
-        height_px = 200
-
-        def __init__(self, received_config, logger) -> None:
-            created_configs.append(received_config)
-
-        def generate_compositions_from_folder(self, folder_name):
-            return preview_image
-
-    monkeypatch.setattr(composition_workflow, "CompositionDesigner", PreviewDesigner)
-    workflow = CompositionWorkflow(config, Mock(), FakeDesigner())
+    factory = PreviewDesignerFactory(preview_image)
+    workflow = CompositionWorkflow(
+        config,
+        Mock(),
+        FakeDesigner(),
+        designer_factory=factory,
+    )
 
     result = workflow.create_preview("week", target_width=50, target_height=100)
 
     assert result is preview_image
     assert config.size.dpi.value == 300
-    assert created_configs[1].size.dpi.value == 150
+    assert len(factory.created_configs) == 1
+    assert factory.created_configs[0].size.dpi.value == 150
 
 
-def test_render_and_save_preview_writes_full_size_image(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    preview_image = Mock()
-
-    class PreviewDesigner:
-        outputDir = tmp_path
-
-        def __init__(self, config, logger) -> None:
-            pass
-
-        def generate_compositions_from_folder(self, folder_name):
-            return preview_image
-
-    monkeypatch.setattr(composition_workflow, "CompositionDesigner", PreviewDesigner)
-    workflow = CompositionWorkflow(make_config(), Mock(), FakeDesigner())
+def test_render_and_save_preview_writes_full_size_image(tmp_path: Path) -> None:
+    preview_image = Image.new("RGB", (12, 8), "red")
+    factory = PreviewDesignerFactory(preview_image, tmp_path)
+    workflow = CompositionWorkflow(
+        make_config(),
+        Mock(),
+        FakeDesigner(),
+        designer_factory=factory,
+    )
 
     output_file = workflow.render_and_save_preview("week")
 
     assert output_file == tmp_path / "week.jpg"
-    preview_image.save.assert_called_once_with(output_file, quality=95)
+    assert output_file.is_file()
+    with Image.open(output_file) as saved_image:
+        assert saved_image.size == preview_image.size
+
+
+def test_application_factory_creates_and_runs_a_real_workflow(tmp_path: Path) -> None:
+    photo_dir = tmp_path / "photos"
+    photo_dir.mkdir()
+    config = make_real_config(photo_dir)
+    progress_events: list[tuple[int, int]] = []
+
+    def progress_callback(value: int, total: int) -> None:
+        progress_events.append((value, total))
+
+    workflow = CompositionApplicationFactory(Mock()).create_workflow(
+        config,
+        progress_callback,
+    )
+
+    assert isinstance(workflow.designer, CompositionDesigner)
+    assert workflow.designer.progress_callback is progress_callback
+    assert workflow.photo_directory == photo_dir
+    assert workflow.output_directory == tmp_path / "collages"
+    assert workflow.clear_object_detector_cache() is False
+
+    workflow.generate("render_only")
+
+    assert progress_events == [(0, 0)]
+    assert config.layout.generatePdf.value is True
+
+
+def test_real_workflow_preview_uses_a_scaled_config_copy(tmp_path: Path) -> None:
+    photo_dir = tmp_path / "photos"
+    (photo_dir / "empty-week").mkdir(parents=True)
+    config = make_real_config(photo_dir)
+    workflow = CompositionApplicationFactory(Mock()).create_workflow(config)
+
+    preview = workflow.create_preview("empty-week", target_width=100, target_height=100)
+
+    assert preview is None
+    assert config.size.dpi.value == 300
+
+
+def test_gui_progress_update_handles_empty_workloads() -> None:
+    gui = MainGui.__new__(MainGui)
+    gui.root = Mock()
+    gui.progress = Mock()
+
+    gui._progress_update(0, 0)
+
+    callback = gui.root.after.call_args.args[1]
+    callback()
+    gui.progress.configure.assert_called_once_with(value=0)
 
 
 def test_distribute_copies_grouped_photos_into_week_folders(
