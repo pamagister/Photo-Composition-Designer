@@ -16,7 +16,10 @@ from Photo_Composition_Designer.core.composition_builder import (
     CompositionRenderComponents,
     CompositionRendererBuilder,
 )
-from Photo_Composition_Designer.core.composition_io import CompositionIO
+from Photo_Composition_Designer.core.composition_io import (
+    CompositionFileOperations,
+    CompositionIO,
+)
 from Photo_Composition_Designer.core.composition_layout import CompositionLayout
 from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
@@ -35,6 +38,7 @@ class CompositionDesigner:
         logger: Logger | None = None,
         render_components: CompositionRenderComponents | None = None,
         progress_callback: Callable[[int, int], None] | None = None,
+        file_io: CompositionFileOperations | None = None,
     ) -> None:
         self.config = config or ConfigParameterManager()
         self.progress_callback = progress_callback
@@ -44,23 +48,28 @@ class CompositionDesigner:
             initialize_logging()
             self.logger = get_logger("base")
 
-        self.photoDir: Path = Path(self.config.general.photoDirectory.value).expanduser().resolve()
-        self.outputDir: Path = (self.photoDir.parent / "collages").resolve()
-        self.outputDir.mkdir(parents=True, exist_ok=True)
+        if file_io is None:
+            photo_dir = Path(self.config.general.photoDirectory.value).expanduser().resolve()
+            output_dir = (photo_dir.parent / "collages").resolve()
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load location metadata once and share it with the composition file service.
-        locations_cfg_path = Path(self.config.general.locationsConfig.value)
-        self.locations = Locations(locations_cfg_path).locations_dict
+            locations_cfg_path = Path(self.config.general.locationsConfig.value)
+            self.locations = Locations(locations_cfg_path).locations_dict
+            file_io = CompositionIO(
+                self.config,
+                photo_dir,
+                output_dir,
+                self.locations,
+                self.logger,
+                int(self.config.size.dpi.value),
+            )
+        else:
+            self.locations = file_io.locations
 
-        self.file_io = CompositionIO(
-            self.config,
-            self.photoDir,
-            self.outputDir,
-            self.locations,
-            self.logger,
-            int(self.config.size.dpi.value),
-        )
-        self.descriptions = self._get_description(self.photoDir)
+        self.file_io = file_io
+        self.photoDir = file_io.photo_dir
+        self.outputDir = file_io.output_dir
+        self.descriptions = file_io.get_description(self.photoDir)
 
         components = (
             render_components
@@ -169,7 +178,9 @@ class CompositionDesigner:
         global_description = (
             self.descriptions[week_index] if week_index < len(self.descriptions) else ""
         )
-        collage_description: str = self._get_description(folder_path)[0] or global_description
+        collage_description: str = (
+            self.file_io.get_description(folder_path)[0] or global_description
+        )
 
         start_date = self.startDate + timedelta(weeks=week_index)
 

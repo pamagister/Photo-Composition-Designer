@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
-from logging import Logger
+from logging import Logger, getLogger
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -193,6 +193,41 @@ def test_real_workflow_preview_uses_a_scaled_config_copy(tmp_path: Path) -> None
 
     assert preview is None
     assert config.size.dpi.value == 300
+
+
+def test_real_workflow_renders_photo_files_and_creates_pdf(tmp_path: Path) -> None:
+    photo_dir = tmp_path / "photos"
+    week_dir = photo_dir / "week-1"
+    week_dir.mkdir(parents=True)
+    Image.new("RGB", (80, 60), "royalblue").save(week_dir / "2024-03-01.jpg")
+
+    config = make_real_config(photo_dir)
+    config.general.locationsConfig.value = tmp_path / "locations.ini"
+    config.general.compositionTitle.value = ""
+    config.size.dpi.value = 30
+    config.size.width.value = 100
+    config.size.height.value = 70
+    config.calendar.useCalendar.value = False
+    config.geo.usePhotoLocationMaps.value = False
+    config.layout.usePhotoDescription.value = False
+    config.layout.generatePdf.value = True
+
+    workflow = CompositionApplicationFactory(getLogger("composition-integration")).create_workflow(
+        config
+    )
+
+    workflow.generate()
+
+    output_file = tmp_path / "collages" / "week-1.jpg"
+    pdf_file = tmp_path / "collages" / "output.pdf"
+    assert output_file.is_file()
+    assert pdf_file.read_bytes().startswith(b"%PDF-")
+    with Image.open(output_file) as rendered_image:
+        assert rendered_image.size == (118, 83)
+        red, green, blue = rendered_image.getpixel((20, 20))
+        assert red < 100
+        assert green < 140
+        assert blue > 180
 
 
 def test_gui_progress_update_handles_empty_workloads() -> None:

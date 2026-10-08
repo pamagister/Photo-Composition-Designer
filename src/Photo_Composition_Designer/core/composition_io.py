@@ -6,11 +6,32 @@ import os
 import re
 from logging import Logger
 from pathlib import Path
+from typing import Protocol
 
 from PIL import Image
 
 from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+
+
+class CompositionFileOperations(Protocol):
+    """File-system boundary required by the composition coordinator."""
+
+    photo_dir: Path
+    output_dir: Path
+    locations: dict[str, tuple[float, float]]
+
+    def get_description(self, folder_path: Path) -> list[str]: ...
+
+    def get_photo_folders(self) -> list[str]: ...
+
+    def load_photos(self, folder_path: Path) -> list[Photo]: ...
+
+    def save(self, composition: Image.Image, element: str) -> Path: ...
+
+    def generate_pdf(
+        self, collages_dir: Path | str, output_pdf: str = "output.pdf"
+    ) -> Path | None: ...
 
 
 class CompositionIO:

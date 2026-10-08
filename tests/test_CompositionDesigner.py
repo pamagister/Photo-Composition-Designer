@@ -8,12 +8,10 @@ from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import CompositionDesigner
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
 
 class TestCompositionDesigner:
     @pytest.fixture
-    def mock_config(self):
+    def mock_config(self, tmp_path: Path):
         """Fixture to provide a mock ConfigParameterManager."""
         config = ConfigParameterManager(persist_last_used=False)
         # Set default values for relevant config parameters
@@ -22,7 +20,10 @@ class TestCompositionDesigner:
         config.size.height.value = 297  # A4 height in mm
         config.size.calendarHeight.value = 20  # mm
         config.general.compositionTitle.value = ""
-        config.general.photoDirectory.value = str(PROJECT_ROOT / "images")
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+        config.general.photoDirectory.value = photo_dir
+        config.general.locationsConfig.value = tmp_path / "locations.ini"
         config.layout.marginTop.value = 10  # mm
         config.layout.marginBottom.value = 10  # mm
         config.layout.marginSides.value = 10  # mm
@@ -161,7 +162,7 @@ class TestCompositionDesigner:
         )
         mock_config.general.compositionTitle.value = ""  # Reset
 
-    def test_generate_different_layouts(self):
+    def test_generate_different_layouts(self, tmp_path: Path):
         """
         Tests different collage layouts with CompositionDesigner.
         """
@@ -175,9 +176,18 @@ class TestCompositionDesigner:
         config.size.dpi.value = 30
         config.size.jpgQuality.value = 20
 
-        # Photo input directory should be set in config
-        base_photos_dir = PROJECT_ROOT / "images"
-        config.general.photoDirectory.value = str(base_photos_dir)
+        photo_dir = tmp_path / "photos"
+        week_dir = photo_dir / "week-1"
+        week_dir.mkdir(parents=True)
+        Image.new("RGB", (80, 40), "red").save(week_dir / "2024-03-01.jpg")
+        Image.new("RGB", (40, 80), "blue").save(week_dir / "2024-03-02.jpg")
+        config.general.photoDirectory.value = photo_dir
+        config.general.locationsConfig.value = tmp_path / "locations.ini"
+        config.calendar.useCalendar.value = False
+        config.geo.usePhotoLocationMaps.value = False
+        config.layout.usePhotoDescription.value = False
+        config.layout.generatePdf.value = False
+        config.general.compositionTitle.value = ""
 
         # -----------------------------
         # Initialize new CompositionDesigner
@@ -185,6 +195,11 @@ class TestCompositionDesigner:
         designer = CompositionDesigner(config)
 
         designer.generate_compositions_from_folders()
+
+        output_file = tmp_path / "collages" / "week-1.jpg"
+        assert output_file.is_file()
+        with Image.open(output_file) as generated:
+            assert generated.size == (designer.width_px, designer.height_px)
 
     def test_batch_generation_scans_photo_folders_once(
         self, designer_instance, mock_config, monkeypatch
