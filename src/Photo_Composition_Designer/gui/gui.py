@@ -6,17 +6,14 @@ with settings dialog, file management, and centralized logging capabilities.
 run gui: python -m Photo_Composition_Designer.gui
 """
 
-import copy
 import logging
 import os
-import shutil
 import subprocess
 import sys
 import threading
 import tkinter as tk
 import traceback
 import webbrowser
-from datetime import timedelta
 from functools import partial
 from pathlib import Path
 from tkinter import filedialog, font, messagebox, ttk
@@ -30,16 +27,18 @@ from config_cli_gui.logging import (
     initialize_logging,
 )
 from config_cli_gui.persistence import read_last_used_config
-from PIL import Image, ImageTk
+from PIL import ImageTk
 
-from Photo_Composition_Designer.common.Photo import Photo, get_photos_from_dir
+from Photo_Composition_Designer.application.composition_workflow import CompositionWorkflow
+from Photo_Composition_Designer.application.photo_distribution_workflow import (
+    PhotoDistributionWorkflow,
+)
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import CompositionDesigner
 from Photo_Composition_Designer.gui.GuiLogWriter import GuiLogWriter
 from Photo_Composition_Designer.tools.DescriptionsFileGenerator import (
     DescriptionsFileGenerator,
 )
-from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor
 
 
 class MainGui:
@@ -111,6 +110,10 @@ class MainGui:
         # File lists
         self.composition_designer = CompositionDesigner(self._config, self.logger)
         self.composition_designer.progress_callback = self._progress_update
+        self.composition_workflow = CompositionWorkflow(
+            self._config, self.logger, self.composition_designer
+        )
+        self.photo_distribution_workflow = PhotoDistributionWorkflow(self._config, self.logger)
 
         self.preview_image_original = None
 
@@ -435,28 +438,8 @@ class MainGui:
         target_width = max(1, w - margin)
         target_height = max(1, h - margin)
 
-        # Create a temporary CompositionDesigner instance to get the full unscaled width
-        temp_designer = CompositionDesigner(self._config, self.logger)
-        full_width_px = temp_designer.width_px
-        full_height_px = temp_designer.height_px
-
-        # Calculate the scale factor needed to fit the full composition into the preview area
-        preview_scale_factor = max(
-            0.1, min(target_width / full_width_px, target_height / full_height_px)
-        )
-
-        # Use a deep copy for preview config to avoid modifying the main config
-        self._config_preview = copy.deepcopy(self._config)
-        self._config_preview.size.dpi.value = self._config.size.dpi.value * preview_scale_factor
-
-        # Create a new CompositionDesigner instance with the calculated scale factor
-        preview_designer = CompositionDesigner(
-            self._config_preview,
-            self.logger,
-        )
-
-        preview_image: Image.Image | None = preview_designer.generate_compositions_from_folder(
-            folder_name
+        preview_image = self.composition_workflow.create_preview(
+            folder_name, target_width, target_height
         )
 
         if not preview_image:
@@ -530,7 +513,7 @@ class MainGui:
     def _run_generation_thread(self):
         """Threaded backend call."""
         try:
-            self.composition_designer.generate_compositions_from_folders()
+            self.composition_workflow.generate()
             self.logger.info("Compositions generated")
         except Exception as e:
             self.logger.error(f"Error while generating compositions: {e}")
@@ -648,10 +631,8 @@ class MainGui:
             self.logger.info(f"Generating and saving preview for: {folder_name}")
 
             # Generate the preview image
-            preview_designer = CompositionDesigner(self._config, self.logger)
-            preview_image = preview_designer.generate_compositions_from_folder(folder_name)
-
-            if not preview_image:
+            output_file = self.composition_workflow.render_and_save_preview(folder_name)
+            if output_file is None:
                 self.logger.warning(f"Could not generate preview for {folder_name}")
                 self.root.after(
                     0,
@@ -661,10 +642,6 @@ class MainGui:
                 )
                 return
 
-            # Save the image to the output folder
-            output_dir = preview_designer.outputDir
-            output_file = output_dir / f"{folder_name}.jpg"
-            preview_image.save(output_file, quality=95)
             self.logger.info(f"Preview saved to: {output_file}")
 
         except Exception as e:
@@ -700,26 +677,7 @@ class MainGui:
         """Threaded backend for composition generation with different modes."""
         try:
             self.logger.info(f"Generate compositions in mode: {mode}")
-
-            if mode == "render_and_pdf":
-                # Generate all compositions and PDF (default/original behavior)
-                self.composition_designer.generate_compositions_from_folders()
-            elif mode == "render_only":
-                # Generate compositions without PDF
-                # Temporarily disable PDF generation
-                original_pdf_setting = self._config.layout.generatePdf.value
-                self._config.layout.generatePdf.value = False
-                try:
-                    self.composition_designer.generate_compositions_from_folders()
-                finally:
-                    # Restore original setting
-                    self._config.layout.generatePdf.value = original_pdf_setting
-            elif mode == "pdf_only":
-                # Generate PDF from existing composition images
-                self.composition_designer.generate_pdf(self.composition_designer.outputDir)
-            else:
-                self.logger.warning(f"Unknown composition mode: {mode}")
-
+            self.composition_workflow.generate(mode)
             self.logger.info("Composition generation completed")
 
         except Exception as e:
@@ -752,53 +710,15 @@ class MainGui:
 
     def _distribute_images(self, mode="compress_files"):
         """Process the selected files."""
-        grouped_images = []
         try:
             self.logger.info("=== Processing Started ===")
             self.logger.info("Processing files...")
 
-            # prepare image sorting:
-            photos: list[Photo] = get_photos_from_dir(self.composition_designer.photoDir)
-            if not photos:
-                self.logger.warning(
-                    f"No photos found in directory {self.composition_designer.photoDir}"
-                )
+            completed = self.photo_distribution_workflow.distribute(
+                self.composition_designer.photoDir, mode
+            )
+            if not completed:
                 return
-            # prepare image distribution
-            collages_to_generate = self._config.calendar.collagesToGenerate.value
-            image_distributor = ImageDistributor(photos, collages_to_generate)
-            # implement switch case for different processing modes
-            if mode == "distribute_equally":
-                grouped_images = image_distributor.distribute_equally()
-            elif mode == "distribute_randomly":
-                grouped_images = image_distributor.distribute_randomly()
-            elif mode == "distribute_group_matching_dates":
-                grouped_images = image_distributor.distribute_group_matching_dates()
-            else:
-                self.logger.warning(f"Unknown mode: {mode}")
-
-            start_date = self._config.calendar.startDate.value
-            output_dir = self.composition_designer.photoDir
-            for week in range(collages_to_generate):
-                week_start = start_date + timedelta(weeks=week)
-                folder_name = f"{week:02d}_{week_start.strftime('%b-%d')}"
-                folder_path = os.path.join(output_dir, folder_name)
-                os.makedirs(folder_path, exist_ok=True)
-                self.logger.info(f"Folder created: {folder_path}")
-
-                if not grouped_images:
-                    continue
-                images_in_group = grouped_images.pop(0)
-                for photo in images_in_group:
-                    image_file_name = photo.file_path.name
-                    destination_path = os.path.join(folder_path, image_file_name)
-                    shutil.copy2(photo.file_path, destination_path)
-                    self.logger.info(
-                        f"  --> Image {photo.file_path.name} sorted into {folder_name}"
-                    )
-
-            self.logger.info(f"Completed: {len(grouped_images)} files processed")
-            self.logger.info("=== All files processed successfully! ===")
             self._reload_config()
 
         except Exception as err:
