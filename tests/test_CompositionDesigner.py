@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from PIL import Image
@@ -204,3 +204,41 @@ class TestCompositionDesigner:
         assert generate_folder.call_args_list[0].args == ("week-1", 0)
         assert generate_folder.call_args_list[1].args == ("week-2", 1)
         assert save_composition.call_count == 2
+
+    def test_batch_generation_reports_progress(self, designer_instance, mock_config, monkeypatch):
+        mock_config.layout.generatePdf.value = False
+        monkeypatch.setattr(
+            designer_instance.file_io, "get_photo_folders", Mock(return_value=["week-1", "week-2"])
+        )
+        monkeypatch.setattr(
+            designer_instance,
+            "_generate_composition_from_folder",
+            Mock(return_value=Image.new("RGB", (1, 1))),
+        )
+        monkeypatch.setattr(designer_instance, "save", Mock())
+        progress_callback = Mock()
+        designer_instance.progress_callback = progress_callback
+
+        designer_instance.generate_compositions_from_folders()
+
+        assert progress_callback.call_args_list == [call(0, 2), call(1, 2), call(2, 2)]
+
+    def test_batch_generation_propagates_render_errors(
+        self, designer_instance, mock_config, monkeypatch
+    ):
+        mock_config.layout.generatePdf.value = False
+        monkeypatch.setattr(
+            designer_instance.file_io, "get_photo_folders", Mock(return_value=["week-1"])
+        )
+        monkeypatch.setattr(
+            designer_instance,
+            "_generate_composition_from_folder",
+            Mock(side_effect=RuntimeError("render failed")),
+        )
+        progress_callback = Mock()
+        designer_instance.progress_callback = progress_callback
+
+        with pytest.raises(RuntimeError, match="render failed"):
+            designer_instance.generate_compositions_from_folders()
+
+        assert progress_callback.call_args_list == [call(0, 1)]

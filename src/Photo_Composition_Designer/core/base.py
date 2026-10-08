@@ -11,12 +11,12 @@ from PIL import Image
 from Photo_Composition_Designer.common.Locations import Locations
 from Photo_Composition_Designer.common.Photo import Photo
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.composition_builder import (
+    CompositionRenderComponents,
+    CompositionRendererBuilder,
+)
 from Photo_Composition_Designer.core.composition_io import CompositionIO
 from Photo_Composition_Designer.core.composition_layout import CompositionLayout
-from Photo_Composition_Designer.core.composition_renderer import (
-    CompositionPageRenderer,
-    CompositionRenderContext,
-)
 from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
@@ -26,15 +26,14 @@ from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
 class CompositionDesigner:
-    """
-    CompositionDesigner adapted to the new ConfigParameterManager.
+    """Coordinate composition input/output while preserving the legacy API."""
 
-    - Converts mm-based sizes in the config to pixels using config.size.dpi.value
-    - Uses create_calendar_generator_from_config to create a CalendarGenerator
-    - Accesses parameters through config.<category>.<param>.value
-    """
-
-    def __init__(self, config: ConfigParameterManager | None, logger: Logger | None = None) -> None:
+    def __init__(
+        self,
+        config: ConfigParameterManager | None,
+        logger: Logger | None = None,
+        render_components: CompositionRenderComponents | None = None,
+    ) -> None:
         self.config = config or ConfigParameterManager()
         if logger:
             self.logger = logger
@@ -42,98 +41,49 @@ class CompositionDesigner:
             initialize_logging()
             self.logger = get_logger("base")
 
-        self.dpi: int = int(self.config.size.dpi.value)
+        self.photoDir: Path = Path(self.config.general.photoDirectory.value).expanduser().resolve()
+        self.outputDir: Path = (self.photoDir.parent / "collages").resolve()
+        self.outputDir.mkdir(parents=True, exist_ok=True)
+
         # Load location metadata once and share it with the composition file service.
         locations_cfg_path = Path(self.config.general.locationsConfig.value)
         self.locations = Locations(locations_cfg_path).locations_dict
 
-        # mm-based -> pixel helper bound to this instance
-        self._mm_to_px = lambda mm: mm_to_px(mm, self.dpi)
-
-        # basic properties
-        self.compositionTitle: str = self.config.general.compositionTitle.value or ""
-        self.photoDir: Path = Path(self.config.general.photoDirectory.value).expanduser().resolve()
-        self.outputDir: Path = (self.photoDir.parent / "collages").resolve()
-        self.outputDir.mkdir(parents=True, exist_ok=True)
         self.file_io = CompositionIO(
             self.config,
             self.photoDir,
             self.outputDir,
             self.locations,
             self.logger,
-            self.dpi,
+            int(self.config.size.dpi.value),
         )
         self.descriptions = self._get_description(self.photoDir)
 
-        # size in pixels
-        self.width_px = self._mm_to_px(self.config.size.width.value)
-        self.height_px = self._mm_to_px(self.config.size.height.value)
-        self.use_object_recognition = self.config.layout.objectRecognition
-
-        # margins / spacing in pixels
-        self.margin_top_px = self._mm_to_px(self.config.layout.marginTop.value)
-        self.margin_bottom_px = self._mm_to_px(self.config.layout.marginBottom.value)
-        self.margin_sides_px = self._mm_to_px(self.config.layout.marginSides.value)
-        self.spacing_px = self._mm_to_px(self.config.layout.spacing.value)
-
-        # calendar sizes
-        self.horizontal_orientation = self.config.calendar.horizontalOrientation.value
-        if self.horizontal_orientation:
-            self.calendar_primary_dim_px = self._mm_to_px(self.config.size.calendarHeight.value)
-            self.calendar_secondary_dim_px = self.width_px - (2 * self.margin_sides_px)
-        else:
-            self.calendar_primary_dim_px = self._mm_to_px(self.config.size.calendarHeight.value)
-            self.calendar_secondary_dim_px = (
-                self.height_px - self.margin_top_px - self.margin_bottom_px
-            )
-
-        self.calendarObj: CalendarRenderer = CalendarRenderer.from_config(self.config)
-
-        background_color = self.config.style.backgroundColor.value.to_pil()
-
-        self.object_detector = ObjectDetector() if self.use_object_recognition else None
-
-        self.mapGenerator: MapRenderer = MapRenderer.from_config(self.config)
-        self.descGenerator: DescriptionRenderer = DescriptionRenderer.from_config(self.config)
-        self.layout = CompositionLayout(
-            config=self.config,
-            width_px=self.width_px,
-            height_px=self.height_px,
-            dpi=self.dpi,
-            margin_top_px=self.margin_top_px,
-            margin_bottom_px=self.margin_bottom_px,
-            margin_sides_px=self.margin_sides_px,
-            spacing_px=self.spacing_px,
-            calendar_primary_dim_px=self.calendar_primary_dim_px,
-            calendar_secondary_dim_px=self.calendar_secondary_dim_px,
-            horizontal_orientation=self.horizontal_orientation,
-            composition_title=self.compositionTitle,
-            description_renderer=self.descGenerator,
+        components = (
+            render_components
+            if render_components is not None
+            else CompositionRendererBuilder(self.config, self.logger).build()
         )
-
-        collage_height_px = self.layout.get_available_collage_height_px(False, False)
-        collage_width_px = self.layout.get_available_collage_width_px()
-        self.layoutManager: CollageRenderer = CollageRenderer(
-            collage_width_px,
-            collage_height_px,
-            self.spacing_px,
-            background_color,
-            self.use_object_recognition,
-            self.config.layout.useRoundedCorners.value,
-            self.config.layout.imageScoreFactor.value,
-            self.object_detector,
-        )
-        self.page_renderer = CompositionPageRenderer(
-            CompositionRenderContext(
-                config=self.config,
-                logger=self.logger,
-                layout=self.layout,
-                calendar_renderer=self.calendarObj,
-                collage_renderer=self.layoutManager,
-                description_renderer=self.descGenerator,
-                map_renderer=self.mapGenerator,
-            )
-        )
+        self.dpi = components.dpi
+        self.compositionTitle = components.composition_title
+        self.width_px = components.width_px
+        self.height_px = components.height_px
+        self.use_object_recognition = components.use_object_recognition
+        self.margin_top_px = components.margin_top_px
+        self.margin_bottom_px = components.margin_bottom_px
+        self.margin_sides_px = components.margin_sides_px
+        self.spacing_px = components.spacing_px
+        self.horizontal_orientation = components.horizontal_orientation
+        self.calendar_primary_dim_px = components.calendar_primary_dim_px
+        self.calendar_secondary_dim_px = components.calendar_secondary_dim_px
+        self.calendarObj: CalendarRenderer = components.calendar_renderer
+        self.mapGenerator: MapRenderer = components.map_renderer
+        self.descGenerator: DescriptionRenderer = components.description_renderer
+        self.object_detector: ObjectDetector | None = components.object_detector
+        self.layout: CompositionLayout = components.layout
+        self.layoutManager: CollageRenderer = components.collage_renderer
+        self.page_renderer = components.page_renderer
+        self._mm_to_px = lambda mm: mm_to_px(mm, self.dpi)
 
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:
