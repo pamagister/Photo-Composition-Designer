@@ -1,27 +1,27 @@
 # Photo_Composition_Designer/core/base.py
 from __future__ import annotations
 
-import os
-import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 from logging import Logger
 from pathlib import Path
 
 from config_cli_gui.logging import get_logger, initialize_logging
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from Photo_Composition_Designer.common.Locations import Locations
-from Photo_Composition_Designer.common.Photo import (
-    Photo,
-    get_photo_dates,
-    get_photos_from_dir,
-)
+from Photo_Composition_Designer.common.Photo import Photo
 from Photo_Composition_Designer.config.config import ConfigParameterManager
+from Photo_Composition_Designer.core.composition_io import CompositionIO
+from Photo_Composition_Designer.core.composition_layout import CompositionLayout
+from Photo_Composition_Designer.core.composition_renderer import (
+    CompositionPageRenderer,
+    CompositionRenderContext,
+)
 from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
 from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
 from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
 from Photo_Composition_Designer.image.MapRenderer import MapRenderer
-from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector  # Import ObjectDetector
+from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
 from Photo_Composition_Designer.tools.Helpers import mm_to_px
 
 
@@ -34,16 +34,16 @@ class CompositionDesigner:
     - Accesses parameters through config.<category>.<param>.value
     """
 
-    def __init__(self, config: ConfigParameterManager | None, logger: Logger = None):
+    def __init__(self, config: ConfigParameterManager | None, logger: Logger | None = None) -> None:
         self.config = config or ConfigParameterManager()
         if logger:
-            self.logger: Logger = logger
+            self.logger = logger
         else:
             initialize_logging()
-            self.logger: Logger = get_logger("base")
+            self.logger = get_logger("base")
 
         self.dpi: int = int(self.config.size.dpi.value)
-        # load locations config path and create Locations instance
+        # Load location metadata once and share it with the composition file service.
         locations_cfg_path = Path(self.config.general.locationsConfig.value)
         self.locations = Locations(locations_cfg_path).locations_dict
 
@@ -51,10 +51,18 @@ class CompositionDesigner:
         self._mm_to_px = lambda mm: mm_to_px(mm, self.dpi)
 
         # basic properties
-        self.compositionTitle: str | None = self.config.general.compositionTitle.value or ""
+        self.compositionTitle: str = self.config.general.compositionTitle.value or ""
         self.photoDir: Path = Path(self.config.general.photoDirectory.value).expanduser().resolve()
         self.outputDir: Path = (self.photoDir.parent / "collages").resolve()
-        os.makedirs(self.outputDir, exist_ok=True)
+        self.outputDir.mkdir(parents=True, exist_ok=True)
+        self.file_io = CompositionIO(
+            self.config,
+            self.photoDir,
+            self.outputDir,
+            self.locations,
+            self.logger,
+            self.dpi,
+        )
         self.descriptions = self._get_description(self.photoDir)
 
         # size in pixels
@@ -79,36 +87,54 @@ class CompositionDesigner:
                 self.height_px - self.margin_top_px - self.margin_bottom_px
             )
 
-        # colors (Color objects have .to_pil() in your calendar factory)
-        # Use the calendar factory which expects the full config object
         self.calendarObj: CalendarRenderer = CalendarRenderer.from_config(self.config)
 
-        # colors
         background_color = self.config.style.backgroundColor.value.to_pil()
 
-        # Create ObjectDetector instance once
         self.object_detector = ObjectDetector() if self.use_object_recognition else None
 
-        # Create other helpers/generators — pass config object for them to pull values from.
         self.mapGenerator: MapRenderer = MapRenderer.from_config(self.config)
         self.descGenerator: DescriptionRenderer = DescriptionRenderer.from_config(self.config)
+        self.layout = CompositionLayout(
+            config=self.config,
+            width_px=self.width_px,
+            height_px=self.height_px,
+            dpi=self.dpi,
+            margin_top_px=self.margin_top_px,
+            margin_bottom_px=self.margin_bottom_px,
+            margin_sides_px=self.margin_sides_px,
+            spacing_px=self.spacing_px,
+            calendar_primary_dim_px=self.calendar_primary_dim_px,
+            calendar_secondary_dim_px=self.calendar_secondary_dim_px,
+            horizontal_orientation=self.horizontal_orientation,
+            composition_title=self.compositionTitle,
+            description_renderer=self.descGenerator,
+        )
 
-        # startDate: if title present we keep the previous behavior (shift -7 days)
-
-        # Photo layout manager expects pixel dims: width, collage_height, spacing, backgroundColor
-        # Initial call to get_available_collage_height_px without flags, flags are per-composition
-        collage_height_px = self.get_available_collage_height_px(False, False)
-        collage_width_py = self.get_available_collage_width_px()
+        collage_height_px = self.layout.get_available_collage_height_px(False, False)
+        collage_width_px = self.layout.get_available_collage_width_px()
         self.layoutManager: CollageRenderer = CollageRenderer(
-            collage_width_py,
+            collage_width_px,
             collage_height_px,
             self.spacing_px,
             background_color,
             self.use_object_recognition,
             self.config.layout.useRoundedCorners.value,
             self.config.layout.imageScoreFactor.value,
-            self.object_detector,  # Pass the shared ObjectDetector instance
+            self.object_detector,
         )
+        self.page_renderer = CompositionPageRenderer(
+            CompositionRenderContext(
+                config=self.config,
+                logger=self.logger,
+                layout=self.layout,
+                calendar_renderer=self.calendarObj,
+                collage_renderer=self.layoutManager,
+                description_renderer=self.descGenerator,
+                map_renderer=self.mapGenerator,
+            )
+        )
+
         start_date_cfg = self.config.calendar.startDate.value
         if self.compositionTitle:
             self.startDate = start_date_cfg - timedelta(days=7)
@@ -119,81 +145,15 @@ class CompositionDesigner:
     # Helpers: unit conversions & derived sizes
     # ---------------------------------------------------------------------
     def get_available_collage_width_px(self) -> int:
-        available_width = self.width_px
-        # side margins reduce space
-        available_width -= 2 * self.margin_sides_px
-
-        if not self.horizontal_orientation and (
-            self.config.calendar.useCalendar.value or bool(self.compositionTitle)
-        ):
-            available_width -= self.calendar_primary_dim_px + self.spacing_px
-
-        return int(available_width)
+        return self.layout.get_available_collage_width_px()
 
     def get_available_collage_height_px(
         self, no_calendar_flag: bool, no_description_flag: bool
     ) -> int:
-        """
-        Compute available vertical space for the collage area in pixels.
-        This subtracts calendar and description heights when configured,
-        unless overridden by flags.
-        """
-        available_height = self.height_px - self.margin_bottom_px - self.margin_top_px
-
-        # calendar or title reduces space, unless no_calendar_flag is True
-        if (
-            self.config.calendar.useCalendar.value or bool(self.compositionTitle)
-        ) and not no_calendar_flag:
-            if self.horizontal_orientation:
-                available_height -= self.calendar_primary_dim_px
-            else:
-                # In vertical orientation, calendar takes width, not height from collage
-                pass  # height is not reduced by calendar
-
-        # description area, unless no_description_flag is True
-        if self.config.layout.usePhotoDescription.value and not no_description_flag:
-            # descGenerator should expose .height in pixels like before; if not, compute it
-            desc_height = getattr(self.descGenerator, "height", None)
-            if desc_height is None:
-                # fallback: estimate description height using layout font sizes & calendarHeight
-                desc_height = self._mm_to_px(self.config.size.calendarHeight.value // 4)
-            available_height -= desc_height
-
-        # ensure positive height
-        return max(0, int(available_height))
+        return self.layout.get_available_collage_height_px(no_calendar_flag, no_description_flag)
 
     def _process_photo_description(self, photo_description: str) -> tuple[str, bool, bool]:
-        """
-        Extracts tags from photo_description and returns the cleaned description
-        and corresponding flags.
-
-        Args:
-            photo_description: The raw description string, possibly containing tags.
-
-        Returns:
-            A tuple containing:
-            - cleaned_description: The description string with tags removed.
-            - no_calendar: True if '[no-calendar]' tag was found, False otherwise.
-            - no_description: True if '[no-description]' tag was found, False otherwise.
-        """
-        no_calendar = False
-        no_description = False
-
-        # Find and remove [no-calendar] tag
-        if "[no-calendar]" in photo_description:
-            no_calendar = True
-            photo_description = photo_description.replace("[no-calendar]", "").strip()
-
-        # Find and remove [no-description] tag
-        if "[no-description]" in photo_description:
-            no_description = True
-            photo_description = photo_description.replace("[no-description]", "").strip()
-
-        # If description is empty after tag removal, set no_description flag
-        if not photo_description:
-            no_description = True
-
-        return photo_description, no_calendar, no_description
+        return CompositionLayout.process_photo_description(photo_description)
 
     # ---------------------------------------------------------------------
     # Composition rendering
@@ -201,164 +161,22 @@ class CompositionDesigner:
     def _generate_composition(
         self,
         photos: list[Photo],
-        date,
+        date: datetime,
         photo_description: str = "",
-        is_title=False,
+        is_title: bool = False,
     ) -> Image.Image:
-        """
-        Creates a composition with pictures, a calendar and a map of Europe with photo locations.
-        """
-        background_color = self.config.style.backgroundColor.value.to_pil()
-        text_color2 = self.config.style.fontSmall.value.color.to_pil()
-
-        composition = Image.new("RGBA", (self.width_px, self.height_px), (*background_color, 255))
-
-        # Process photo description for tags
-        processed_description, no_calendar_flag, no_description_flag = (
-            self._process_photo_description(photo_description)
+        """Render a page using the dedicated page renderer."""
+        return self.page_renderer.render(
+            photos,
+            date,
+            photo_description,
+            is_title=is_title,
         )
-
-        # Calculate collage height based on flags
-        current_collage_height_px = self.get_available_collage_height_px(
-            no_calendar_flag, no_description_flag
-        )
-        self.layoutManager.height = current_collage_height_px  # Update layoutManager's height
-        self.layoutManager.width = self.get_available_collage_width_px()  # Update collage width
-
-        calendar_x, calendar_y = 0, 0
-        calendar_width, calendar_height = 0, 0
-        map_x, map_y = 0, 0
-
-        # add title or calendar
-        if is_title and self.compositionTitle:
-            if self.horizontal_orientation or True:
-                calendar_width = self.calendar_secondary_dim_px
-                calendar_height = self.calendar_primary_dim_px
-                calendar_x = self.margin_sides_px
-                calendar_y = self.height_px - self.calendar_primary_dim_px - self.margin_bottom_px
-            else:  # Vertical orientation
-                calendar_width = self.calendar_primary_dim_px
-                calendar_height = self.calendar_secondary_dim_px
-                calendar_x = self.margin_sides_px
-                calendar_y = self.margin_top_px
-
-            title_img = self.calendarObj.generateTitle(
-                self.compositionTitle, calendar_width, calendar_height
-            )
-            composition.paste(title_img, (calendar_x, calendar_y))
-
-        elif self.config.calendar.useCalendar.value and not no_calendar_flag:
-            if self.horizontal_orientation:
-                calendar_width = self.calendar_secondary_dim_px
-                calendar_height = self.calendar_primary_dim_px
-                calendar_x = self.margin_sides_px
-                calendar_y = self.height_px - self.calendar_primary_dim_px - self.margin_bottom_px
-                if self.config.geo.usePhotoLocationMaps.value:
-                    calendar_width -= self.mapGenerator.width + self.spacing_px
-            else:  # Vertical orientation
-                calendar_width = self.calendar_primary_dim_px
-                calendar_height = self.calendar_secondary_dim_px
-                calendar_x = self.margin_sides_px
-                calendar_y = self.margin_top_px
-                if self.config.geo.usePhotoLocationMaps.value:
-                    calendar_height -= self.mapGenerator.height + self.spacing_px
-
-            calendar_img = self.calendarObj.generate(date, calendar_width, calendar_height)
-            composition.paste(calendar_img, (calendar_x, calendar_y))
-
-        # add location map (if configured and not the title page)
-        # Also, if no_calendar_flag is true, no map should be displayed
-        if self.config.geo.usePhotoLocationMaps.value and not is_title and not no_calendar_flag:
-            coordinates = [loc for photo in photos if (loc := photo.get_location()) is not None]
-            imgMap = self.mapGenerator.generate(coordinates)
-
-            if self.horizontal_orientation:
-                map_x = self.width_px - self.mapGenerator.width - self.margin_sides_px
-                map_y = self.height_px - self.mapGenerator.height - self.margin_bottom_px
-            else:  # Vertical orientation
-                map_x = self.margin_sides_px
-                map_y = calendar_y + calendar_height + self.spacing_px  # Below the calendar
-
-            composition.paste(imgMap, (map_x, map_y))
-
-        # description area
-        if self.config.layout.usePhotoDescription.value and not no_description_flag:
-            alignment = "middle" if is_title else "left"
-            description_img = self.descGenerator.generate(processed_description, alignment)
-            # Use the actual rendered image size for height (and width) instead of getattr
-            desc_w, desc_h = description_img.size
-            # Center horizontally when this is the title page; otherwise align to left margin
-            x = 0
-            # Place the description above the calendar/title area, respecting bottom margin
-            # Adjust y position based on whether calendar area is present
-            if (
-                self.config.calendar.useCalendar.value or bool(self.compositionTitle)
-            ) and not no_calendar_flag:
-                if self.horizontal_orientation:
-                    y = (
-                        self.height_px
-                        - self.calendar_primary_dim_px
-                        - desc_h
-                        - self.margin_bottom_px
-                    )
-                else:  # Vertical orientation
-                    y = self.height_px - desc_h - self.margin_bottom_px  # This needs re-evaluation
-            else:
-                # If no calendar, description goes above the bottom margin
-                y = self.height_px - desc_h - self.margin_bottom_px
-            composition.alpha_composite(description_img, (x, y))
-
-        if len(photos) == 0:
-            self.logger.info("No pictures found.")
-            return composition
-
-        # Arrange image composition
-        collage = self.layoutManager.generate([photo.get_image() for photo in photos])
-
-        collage_x = self.margin_sides_px
-        collage_y = self.margin_top_px
-
-        if not self.horizontal_orientation and (not is_title and not no_calendar_flag):
-            collage_x += self.calendar_primary_dim_px + self.spacing_px
-
-        composition.paste(collage, (collage_x, collage_y))
-
-        if not is_title and not no_calendar_flag:
-            # draw the image dates in
-            date_str = get_photo_dates(photos)
-            draw = ImageDraw.Draw(composition)
-            font = self.config.style.fontAnniversaries.value.get_image_font(self.dpi)
-
-            # Anchor rd expects coordinates relative to lower-right;
-            # to put text inside margins we shift left/up
-            x = self.width_px - self.margin_sides_px
-            y = self.height_px - self.margin_bottom_px
-            draw.text((x, y), date_str, font=font, fill=text_color2, anchor="rd")
-
-        return composition.convert("RGB")
 
     @staticmethod
     def _get_description(folder_path: Path) -> list[str]:
-        """
-        Search for a .txt file in the folder and return list(lines) without leading 'Label: ' parts.
-        Returns empty string or list when none found.
-        """
-        photo_description: list[str] = [""]
-        if not folder_path.exists():
-            return photo_description
-        text_files = [
-            folder_path / file
-            for file in sorted(os.listdir(folder_path))
-            if file.lower().endswith(".txt")
-        ]
-        if text_files:
-            text_file = text_files[0]
-            with open(text_file, "r", encoding="utf-8") as f:
-                lines = [line.strip() for line in f.readlines() if line.strip()]
-                photo_description = [re.sub(r"^[^:]*:\s*", "", line) for line in lines]
-            if not photo_description:
-                photo_description = [text_file.stem]
-        return photo_description
+        """Read the optional global or folder-level text description."""
+        return CompositionIO.get_description(folder_path)
 
     def generate_compositions_from_folder(
         self,
@@ -369,26 +187,30 @@ class CompositionDesigner:
         Returns True if a composition was generated, False if skipped.
         """
         folder_path = self.photoDir / folder_name
-
         if not folder_path.is_dir():
             self.logger.info(f"{folder_path} is not a valid directory. Skipping...")
             return None
 
-        # Extract photos
-        photos = get_photos_from_dir(folder_path, self.locations)
-        if not photos:
-            self.logger.info(f"No images found in {folder_path}, skipping...")
-            return None
-
-        # Determine description (folder-level overrides global)
-        # Week index must be inferred from folder ordering
-        sorted_folders = sorted(
-            [f for f in os.listdir(self.photoDir) if (self.photoDir / f).is_dir()]
-        )
+        folder_names = self.file_io.get_photo_folders()
         try:
-            week_index = sorted_folders.index(folder_name)
+            week_index = folder_names.index(folder_name)
         except ValueError:
             self.logger.info(f"Folder '{folder_name}' not found in photoDirectory (unexpected).")
+            return None
+        return self._generate_composition_from_folder(folder_name, week_index)
+
+    def _generate_composition_from_folder(
+        self, folder_name: str, week_index: int
+    ) -> Image.Image | None:
+        """Load one photo folder and render it using its chronological position."""
+        folder_path = self.photoDir / folder_name
+        if not folder_path.is_dir():
+            self.logger.info(f"{folder_path} is not a valid directory. Skipping...")
+            return None
+
+        photos = self.file_io.load_photos(folder_path)
+        if not photos:
+            self.logger.info(f"No images found in {folder_path}, skipping...")
             return None
 
         global_description = (
@@ -404,76 +226,34 @@ class CompositionDesigner:
 
         return composition
 
-    def generate_compositions_from_folders(self):
-        sorted_folders = sorted(
-            [f for f in os.listdir(self.photoDir) if (self.photoDir / f).is_dir()]
-        )
+    def generate_compositions_from_folders(self) -> None:
+        """Render and save every photo folder, reporting progress when configured."""
+        folder_names = self.file_io.get_photo_folders()
+        total = len(folder_names)
 
-        total = len(sorted_folders)
-
-        # Initialer Fortschritt
         if hasattr(self, "progress_callback"):
             self.progress_callback(0, total)
 
-        for idx, folder_name in enumerate(sorted_folders, start=1):
+        for idx, folder_name in enumerate(folder_names, start=1):
             self.logger.info(f"Processing folder: {folder_name}")
 
-            composition = self.generate_compositions_from_folder(folder_name)
+            composition = self._generate_composition_from_folder(folder_name, idx - 1)
             if composition:
                 self.save(composition, folder_name)
 
-            # Fortschritt melden
             if hasattr(self, "progress_callback"):
                 self.progress_callback(idx, total)
 
         if self.config.layout.generatePdf.value:
             self.generate_pdf(self.outputDir)
 
-    def save(self, composition: Image.Image, element: str):
-        # save with configured quality/dpi
-        output_prefix = f"{element}"
-        output_file_name = f"{output_prefix}.jpg"
-        output_path = self.outputDir / output_file_name
-        jpg_quality = int(self.config.size.jpgQuality.value)
-        dpi_tuple = (self.dpi, self.dpi)  # Use original DPI for saving
-        composition.save(output_path, quality=jpg_quality, dpi=dpi_tuple)
-        self.logger.info(f"Composition saved: {output_path}")
+    def save(self, composition: Image.Image, element: str) -> None:
+        """Persist one composition in the configured output directory."""
+        self.file_io.save(composition, element)
 
-    def generate_pdf(self, collages_dir: Path | str, output_pdf: str = "output.pdf"):
-        """
-        Creates a PDF file from all images in a directory.
-        """
-        collages_dir = Path(collages_dir)
-        image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".gif"}
-
-        image_files = sorted(
-            [
-                f
-                for f in os.listdir(collages_dir)
-                if os.path.splitext(f)[1].lower() in image_extensions
-            ]
-        )
-
-        if not image_files:
-            self.logger.info("No images found in the directory.")
-            return
-
-        image_list: list[Image.Image] = []
-        for image_file in image_files:
-            img_path = collages_dir / image_file
-            img = Image.open(img_path).convert("RGB")
-            image_list.append(img)
-
-        first_image, *remaining_images = image_list
-        output_path = collages_dir / output_pdf
-        first_image.save(
-            str(output_path),
-            save_all=True,
-            append_images=remaining_images,
-            quality=int(self.config.size.jpgQuality.value),
-            dpi=(self.dpi, self.dpi),
-        )
-        self.logger.info(f"PDF successfully created: {output_path}")
+    def generate_pdf(self, collages_dir: Path | str, output_pdf: str = "output.pdf") -> Path | None:
+        """Create a PDF from rendered images, if any are present."""
+        return self.file_io.generate_pdf(collages_dir, output_pdf)
 
 
 if __name__ == "__main__":

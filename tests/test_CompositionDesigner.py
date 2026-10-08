@@ -1,6 +1,8 @@
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+from PIL import Image
 
 from Photo_Composition_Designer.config.config import ConfigParameterManager
 from Photo_Composition_Designer.core.base import CompositionDesigner
@@ -183,3 +185,22 @@ class TestCompositionDesigner:
         designer = CompositionDesigner(config)
 
         designer.generate_compositions_from_folders()
+
+    def test_batch_generation_scans_photo_folders_once(
+        self, designer_instance, mock_config, monkeypatch
+    ):
+        mock_config.layout.generatePdf.value = False
+        folder_names = ["week-1", "week-2"]
+        folder_scan = Mock(return_value=folder_names)
+        generate_folder = Mock(return_value=Image.new("RGB", (1, 1)))
+        save_composition = Mock()
+        monkeypatch.setattr(designer_instance.file_io, "get_photo_folders", folder_scan)
+        monkeypatch.setattr(designer_instance, "_generate_composition_from_folder", generate_folder)
+        monkeypatch.setattr(designer_instance, "save", save_composition)
+
+        designer_instance.generate_compositions_from_folders()
+
+        folder_scan.assert_called_once_with()
+        assert generate_folder.call_args_list[0].args == ("week-1", 0)
+        assert generate_folder.call_args_list[1].args == ("week-2", 1)
+        assert save_composition.call_count == 2
