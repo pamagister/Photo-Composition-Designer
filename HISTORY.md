@@ -4,6 +4,74 @@ Changelog
 
 (unreleased)
 ------------
+- Update AGENTS.md. [Paul Magister]
+- Vibe-coding session: [Paul Magister]
+
+  CompositionDesigner verwendet jetzt den CompositionFileOperations-Vertrag. Die Application-Factory bündelt den Aufbau der Datei- und Renderer-Kollaboratoren und injiziert sie; direkte Konstruktion bleibt als Kompatibilitätspfad erhalten. Echte Integrationstests rendern temporäre Fotos und prüfen JPEG- und PDF-Ausgaben. Außerdem löscht der CLI-Test keine projektweiten Collagen mehr.
+- Vibe-coding session: [Paul Magister]
+
+  Die erste große Verbesserung ist umgesetzt: CLI und GUI erstellen Composition-Workflows jetzt über einen gemeinsamen CompositionApplicationFactory. Auch Vorschauen verwenden dieselbe Designer-Factory; sie nutzen die Seitengröße des bestehenden Designers, statt dafür einen zusätzlichen Designer zu erzeugen. Die GUI greift für Verzeichnisse und Cache-Steuerung über den Workflow zu. Fortschritt wird typisiert beim Erzeugen übergeben; leere Verarbeitungsläufe lösen keinen GUI-Fehler mehr aus.
+- Vibe-coding session: [Paul Magister]
+
+  Die Renderer-Abhängigkeiten werden jetzt im neuen CompositionRendererBuilder aufgebaut und als typisierte CompositionRenderComponents an CompositionDesigner übergeben. Bestehende Aufrufe bleiben kompatibel; Tests können die Komponenten gezielt injizieren. In TODO.md habe ich den bereits vorhandenen Schnitt als erledigt markiert, die nächsten Architekturthemen priorisiert und „tests with teeth“ ergänzt.
+- Vibe-coding session: [Paul Magister]
+
+  CompositionDesigner ist jetzt in fokussierte Komponenten aufgeteilt: CompositionLayout berechnet Maße und Beschreibungsoptionen, CompositionPageRenderer rendert die Seite und CompositionIO übernimmt Fotoeingabe sowie Bild-/PDF-Ausgabe. Die Designer-Klasse koordiniert diese Aufgaben weiter; bei der Stapelverarbeitung werden Fotoordner nur noch einmal aufgelistet.
+- Vibe-coding session: [Paul Magister]
+
+  Die erste Architekturverbesserung ist umgesetzt: MainGui delegiert Kompositionsmodi, Vorschau-Erstellung und Fotoverteilung jetzt an UI-unabhängige Dienste im neuen Paket src/Photo_Composition_Designer/application/. Tkinter, Hintergrundthreads und Fortschrittsanzeige bleiben in der GUI; das bisherige Verhalten der Abläufe bleibt erhalten.
+- Fix text color: Only red text if holiday. [Paul Magister]
+- #5 vertical calendar: first approach. [Paul Magister]
+- #5 vertical calendar: first approach. [Paul Magister]
+- Add tests for new flag feature. [Paul Magister]
+- Merge pull request #2 from
+  pamagister/dependabot/github_actions/actions/setup-python-6. [Paul
+  Magister]
+
+  Bump actions/setup-python from 4 to 6
+- Merge branch 'main' into dependabot/github_actions/actions/setup-
+  python-6. [Paul Magister]
+- Bump actions/setup-python from 4 to 6. [dependabot[bot]]
+
+  Bumps [actions/setup-python](https://github.com/actions/setup-python) from 4 to 6.
+  - [Release notes](https://github.com/actions/setup-python/releases)
+  - [Commits](https://github.com/actions/setup-python/compare/v4...v6)
+
+  ---
+  updated-dependencies:
+  - dependency-name: actions/setup-python
+    dependency-version: '6'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+- #4 fix filename length. [Paul Magister]
+- Introduce flags in description:   - `[no-calendar]` — prevents a
+  calendar from being generated for this photo.   - `[no-description]` —
+  suppresses the generated photo description. [Paul Magister]
+- Merge pull request #3 from
+  pamagister/dependabot/github_actions/actions/checkout-6. [Paul
+  Magister]
+
+  Bump actions/checkout from 4 to 6
+- Bump actions/checkout from 4 to 6. [dependabot[bot]]
+
+  Bumps [actions/checkout](https://github.com/actions/checkout) from 4 to 6.
+  - [Release notes](https://github.com/actions/checkout/releases)
+  - [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/actions/checkout/compare/v4...v6)
+
+  ---
+  updated-dependencies:
+  - dependency-name: actions/checkout
+    dependency-version: '6'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+
+
+1.0.6 (2026-06-25)
+------------------
+- Docs: Update HISTORY.md for release 1.0.6. [Paul Magister]
 - Fix gui: no duplicated button frame. [Paul Magister]
 - Add documentation for new feature, fix links in README.md, new images.
   [Paul Magister]
