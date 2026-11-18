@@ -245,3 +245,6 @@ cython_debug/
 /release/locations_en.ini
 /release/Photo-Composition-Designer
 /tests/logs/
+
+# Serena (MCP code intelligence) local artifacts
+/.serena/logs/
