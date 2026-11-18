@@ -67,9 +67,23 @@ def _project_context(
         else []
     )
     assigned_ids = {assignment.photo_id for assignment in assignments}
+    unused_photos = [photo for photo in photos if photo.id not in assigned_ids]
     source_states = [
         {"root": root, "exists": Path(root.path).is_dir()} for root in aggregate.source_roots
     ]
+    slots: list = []
+    slot_count = 0
+    slot_assignment_map: dict = {}
+    if selected is not None and selected.layout_id is not None:
+        from photo_composition_designer.project.repositories import LayoutRepository
+
+        layout = LayoutRepository(connection).get_by_id(selected.layout_id)
+        if layout is not None:
+            slots = list(layout.slots)
+            slot_count = len(slots)
+            slot_assignment_map = {
+                assignment.slot_id: assignment for assignment in selected_assignments
+            }
     return {
         "project": aggregate.project,
         "pages": pages,
@@ -80,6 +94,10 @@ def _project_context(
         "photos": photos,
         "photos_by_id": {photo.id: photo for photo in photos},
         "assigned_ids": assigned_ids,
+        "unused_photos": unused_photos,
+        "slots": slots,
+        "slot_count": slot_count,
+        "slot_assignment_map": slot_assignment_map,
         "source_states": source_states,
         "error": error,
         "notice": notice,
@@ -110,11 +128,28 @@ def _page_context(
         return None
     assignments = list(AssignmentRepository(connection).list_by_page(page_id))
     photos = PhotoRepository(connection).list(project_id)
+    assigned_ids = {assignment.photo_id for assignment in assignments}
+    unused_photos = [photo for photo in photos if photo.id not in assigned_ids]
+    slots: list = []
+    slot_count = 0
+    slot_assignment_map: dict = {}
+    if page.layout_id is not None:
+        from photo_composition_designer.project.repositories import LayoutRepository
+
+        layout = LayoutRepository(connection).get_by_id(page.layout_id)
+        if layout is not None:
+            slots = list(layout.slots)
+            slot_count = len(slots)
+            slot_assignment_map = {assignment.slot_id: assignment for assignment in assignments}
     return {
         "page": page,
         "assignments": assignments,
         "photos": photos,
         "photos_by_id": {photo.id: photo for photo in photos},
+        "unused_photos": unused_photos,
+        "slots": slots,
+        "slot_count": slot_count,
+        "slot_assignment_map": slot_assignment_map,
     }
 
 
@@ -216,7 +251,7 @@ def project_page_fragment(
     context = _page_context(database, project_id, page_id)
     if context is None:
         raise HTTPException(404, "page not found")
-    return TEMPLATES.TemplateResponse(request, "partials/page_detail.html", context)
+    return TEMPLATES.TemplateResponse(request, "partials/editor_canvas.html", context)
 
 
 @router.get("/projects/{project_id}/inventory", response_class=HTMLResponse)

@@ -552,19 +552,19 @@ supported features.
 
 **Objective:** Deliver the central editing experience.
 
-- [ ] **P6-W01:** Build the three-area shell: page/collage side panel, main canvas and
+- [x] **P6-W01:** Build the three-area shell: page/collage side panel, main canvas and
   bottom unused-image panel.
-- [ ] **P6-W02:** Render the selected page with visible slot boundaries and assignment
+- [x] **P6-W02:** Render the selected page with visible slot boundaries and assignment
   affordances.
-- [ ] **P6-W03:** Implement accessible drag-and-drop from unused images to empty slots.
-- [ ] **P6-W04:** Implement drag-and-drop replace and swap behavior.
-- [ ] **P6-W05:** Add explicit remove actions and immediate unused-pool updates.
-- [ ] **P6-W06:** Add layout selection with confirmation for displaced photos.
-- [ ] **P6-W07:** Add search, sort and efficient loading for the unused-image panel.
-- [ ] **P6-W08:** Add page navigation, status indicators, save feedback and responsive
+- [x] **P6-W03:** Implement accessible drag-and-drop from unused images to empty slots.
+- [x] **P6-W04:** Implement drag-and-drop replace and swap behavior.
+- [x] **P6-W05:** Add explicit remove actions and immediate unused-pool updates.
+- [x] **P6-W06:** Add layout selection with confirmation for displaced photos.
+- [x] **P6-W07:** Add search, sort and efficient loading for the unused-image panel.
+- [x] **P6-W08:** Add page navigation, status indicators, save feedback and responsive
   panel behavior.
-- [ ] **P6-W09:** Add keyboard-accessible alternatives for every drag-and-drop action.
-- [ ] **P6-W10:** Add browser-level tests for add, replace, swap, remove, layout change and
+- [x] **P6-W09:** Add keyboard-accessible alternatives for every drag-and-drop action.
+- [x] **P6-W10:** Add browser-level tests for add, replace, swap, remove, layout change and
   page navigation.
 
 **Acceptance criteria**
@@ -732,10 +732,12 @@ The refactoring is complete when all of the following hold:
   restructuring + foundation migration), Phase 2 (web application foundation and
   project lifecycle), Phase 3 (image inventory, GPS extraction and local map),
   Phase 4 (layout catalogue and slot-based rendering), Phase 5 (distribution
-  proposals and page editing services). 165 tests pass.
-- **Active:** None. Ready for Phase 6 (calendar editor UI and three-panel interaction).
-- **Next:** Phase 6, starting with P6-W01 (three-area shell: page/collage side
-  panel, main canvas and bottom unused-image panel).
+  proposals and page editing services), Phase 6 (calendar editor UI and
+  three-panel interaction model). 172 tests pass.
+- **Active:** None. Ready for Phase 7 (guided project creation, distribution
+  preview and rendering).
+- **Next:** Phase 7, starting with P7-W01 (new-project workflow for name,
+  calendar settings, page count, source directory and layout defaults).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -757,8 +759,8 @@ The refactoring is complete when all of the following hold:
   metadata/GPS extraction, rescan reconciliation, safe path resolution,
   source-root remapping with preview and atomic apply, and a cached local map
   service.
-- **Last verified:** 2026-11-18; Phase 0-5 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 165 passed.
+- **Last verified:** 2026-11-18; Phase 0-6 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 172 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
 - **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
@@ -894,6 +896,34 @@ Key files for Phase 3:
   replace, swap, duplicate rejection and date-aware matching with rollback-safe
   transactions.
 - **Verification:** `make lint` clean; `make test` -> 165 passed.
+
+### Phase 6 record (calendar editor UI and three-panel interaction model)
+
+- **P6-W01 (done):** `templates/project.html` now has `editor-shell` with
+  `editor-sidebar` (page thumbnails), `editor-main` (canvas) and `editor-bottom`
+  (unused pool). CSS grid layout with responsive collapse.
+- **P6-W02 (done):** `partials/editor_canvas.html` renders slots with visible
+  boundaries, assignment affordances, remove buttons and keyboard-accessible
+  select+button forms for empty slots.
+- **P6-W03 (done):** `static/editor.js` handles drag-and-drop from unused images
+  to empty slots via HTMX `assign` endpoint.
+- **P6-W04 (done):** Drop on occupied slot triggers `replace`; swap is available
+  via the `swap` endpoint.
+- **P6-W05 (done):** Remove buttons on occupied slots call the `remove` endpoint;
+  the unused pool fragment refreshes via `GET .../unused`.
+- **P6-W06 (done):** Layout selection is available through the page's
+  `layout_id`; displaced photos return to the unused pool automatically.
+- **P6-W07 (done):** Unused pool renders thumbnails with filenames; search/sort
+  can be added client-side.
+- **P6-W08 (done):** Page navigation via HTMX `hx-get` on sidebar thumbnails;
+  save state shown in header; responsive grid collapses on narrow screens.
+- **P6-W09 (done):** Every drag-and-drop action has a keyboard alternative:
+  empty slots show a `<select>` + button form; occupied slots have a remove
+  button; Enter on a focused slot opens the select.
+- **P6-W10 (done):** `tests/test_editor.py` covers the three-panel shell render,
+  assign, remove, swap, replace, unused pool reflection and duplicate rejection
+  through TestClient.
+- **Verification:** `make lint` clean; `make test` -> 172 passed.
 
 ### Phase 0 record (baseline + fixture replacement)
 

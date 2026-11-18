@@ -2,6 +2,7 @@
 
 {% block head %}
 <script src="/static/source-picker.js" defer></script>
+<script src="/static/editor.js" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -21,21 +22,23 @@
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
 
-<div class="project-layout">
-  <aside class="panel page-list" aria-label="Pages">
+<div class="editor-shell">
+  <aside class="editor-sidebar" aria-label="Pages">
     <h2>Pages</h2>
-    {% for page in pages %}
-    <a href="/projects/{{ project.id }}?page={{ page.id }}"
-       hx-get="/projects/{{ project.id }}/pages/{{ page.id }}"
+    {% for pg in pages %}
+    <a href="/projects/{{ project.id }}?page={{ pg.id }}"
+       hx-get="/projects/{{ project.id }}/pages/{{ pg.id }}"
        hx-target="#page-detail"
        hx-push-url="false"
-       {% if selected_page and page.id == selected_page.id %}aria-current="page"{% endif %}>
-      {{ page.start_date }} &ndash; {{ page.end_date }}
+       class="page-thumb {% if selected_page and pg.id == selected_page.id %}active{% endif %}"
+       {% if selected_page and pg.id == selected_page.id %}aria-current="page"{% endif %}>
+      <span class="page-thumb-date">{{ pg.start_date }}</span>
+      <span class="muted">{{ pg.end_date }}</span>
     </a>
     {% endfor %}
   </aside>
 
-  <section class="project-main">
+  <section class="editor-main">
     <div class="panel">
       <h2>Source directory</h2>
       {% for state in source_states %}
@@ -57,7 +60,6 @@
         <button>Add source</button>
       </form>
       <datalist id="source-directories"></datalist>
-      <p class="muted">Type a path or choose a directory from the local suggestions.</p>
     </div>
 
     <div class="panel">
@@ -72,16 +74,16 @@
       </div>
     </div>
 
-    <div id="page-detail" class="panel">
-      {% include "partials/page_detail.html" %}
+    <div id="page-detail" class="panel editor-canvas-panel">
+      {% include "partials/editor_canvas.html" %}
     </div>
   </section>
+</div>
 
-  <aside class="panel inventory-panel" aria-label="Photo inventory">
-    <h2>Photos</h2>
-    <div id="inventory">
-      {% include "partials/inventory.html" %}
-    </div>
-  </aside>
+<div class="editor-bottom" aria-label="Unused photos">
+  <h2>Unused photos</h2>
+  <div id="unused-area">
+    {% include "partials/unused_pool.html" %}
+  </div>
 </div>
 {% endblock %}
