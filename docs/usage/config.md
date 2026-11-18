@@ -15,10 +15,10 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `calendar.collagesToGenerate` | `53` |
 | `calendar.horizontalOrientation` | `True` |
 | `style.backgroundColor` | `Color(20, 20, 20)` |
-| `style.fontLarge` | `<photo_composition_designer.core.font.Font object at 0x79b7721daa50>` |
-| `style.fontSmall` | `<photo_composition_designer.core.font.Font object at 0x79b77218ee90>` |
-| `style.fontDescription` | `<photo_composition_designer.core.font.Font object at 0x79b77218efd0>` |
-| `style.fontAnniversaries` | `<photo_composition_designer.core.font.Font object at 0x79b7721d1e00>` |
+| `style.fontLarge` | `DejaVuSans.ttf, 9, #ffffff` |
+| `style.fontSmall` | `DejaVuSans.ttf, 2.5, #969696` |
+| `style.fontDescription` | `DejaVuSans.ttf, 2.5, #969696` |
+| `style.fontAnniversaries` | `DejaVuSans.ttf, 2.0, #ff0000` |
 | `geo.usePhotoLocationMaps` | `True` |
 | `geo.minimalExtension` | `7` |
 | `size.width` | `216` |

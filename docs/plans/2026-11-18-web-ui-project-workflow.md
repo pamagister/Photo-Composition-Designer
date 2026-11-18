@@ -521,20 +521,20 @@ release work.
 
 **Objective:** Stabilize and document the finished workflow.
 
-- [ ] **P8-W01:** Add bounded undo/redo or command history if it can be implemented
+- [x] **P8-W01:** Add bounded undo/redo or command history if it can be implemented
   without excessive complexity; otherwise document the limitation.
-- [ ] **P8-W02:** Audit keyboard accessibility, focus order, ARIA labels and
+- [x] **P8-W02:** Audit keyboard accessibility, focus order, ARIA labels and
   narrow-screen drawer behavior.
-- [ ] **P8-W03:** Add a small Playwright CLI suite for add, replace, swap, remove,
+- [x] **P8-W03:** Add a small Playwright CLI suite for add, replace, swap, remove,
   layout change, page navigation and export in Chromium and Firefox; perform a
   manual browser workflow with the copied Pixabay collection.
-- [ ] **P8-W04:** Audit thumbnail and preview caching; avoid decoding all originals
+- [x] **P8-W04:** Audit thumbnail and preview caching; avoid decoding all originals
   per request.
-- [ ] **P8-W05:** Run `make lint`, `make test`, type checking where configured,
+- [x] **P8-W05:** Run `make lint`, `make test`, type checking where configured,
   packaging checks and executable workflow verification; fix regressions.
-- [ ] **P8-W06:** Update README, usage, configuration and architecture docs for the
+- [x] **P8-W06:** Update README, usage, configuration and architecture docs for the
   project workflow, output profiles and revised CLI.
-- [ ] **P8-W07:** Summarize remaining limitations and prepare a release/merge
+- [x] **P8-W07:** Summarize remaining limitations and prepare a release/merge
   recommendation.
 
 **Acceptance criteria**
@@ -673,10 +673,22 @@ The continuation is complete when all of the following hold:
   roots, missing photos, cache directories and output-profile validity without
   mutating data; removed the dead folder-workflow description generator and
   image distributor; rewrote the CLI usage documentation. `make lint` clean;
-  219 tests pass.
-- **Active:** None. Phase 7 committed and pushed.
-- **Next:** Phase 8 (hardening, accessibility, browser tests and documentation),
-  starting with P8-W01. Phase issue #35 if created, otherwise the next plan phase.
+  219 tests pass. Continuation Phase 8 complete: keyboard-accessible assign,
+  replace, move and remove controls with visible focus, labelled slot groups,
+  live status regions, a skip link and a stacked narrow-screen layout; slots keep
+  a bounded action set instead of a full undo history, which is documented as a
+  limitation; cached page previews are served without re-rendering or decoding
+  originals; a Playwright suite covers add, replace, swap, remove, layout change,
+  page navigation and export in Chromium and Firefox and skips when the browsers
+  are unavailable; the blank distribution seed no longer causes a 422; README,
+  install, web UI, configuration and architecture docs describe the shipped
+  workflow. `make lint` clean; `make test` green with 231 tests (browser tests
+  executed locally, skipped without browser binaries); `uv build` succeeds;
+  `mkdocs build` succeeds.
+- **Active:** None. Phase 8 committed and pushed; awaiting merge review.
+- **Next:** Phase gate: user acceptance and merge review. Optional follow-ups are
+  listed under "Known limitations and deferred work" in
+  `docs/architecture/web-ui-project-workflow.md`; no further plan phase exists.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
@@ -711,7 +723,8 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 219 passed.
-- **Context status:** Phase 7 complete. Phase 8 covers hardening,
-  accessibility, browser tests and documentation; a phase-boundary handoff is
-  appropriate.
+- **Last verified:** 2026-11-18; `make lint` clean; `make test` green with 231
+  tests; `uv build` and `mkdocs build` succeed; Chromium and Firefox browser
+  workflow executed locally.
+- **Context status:** Phases 0-8 complete. The plan is implemented and documented;
+  the next step is user acceptance and merge review.

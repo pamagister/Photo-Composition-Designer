@@ -1,7 +1,6 @@
 # Installation
 
-
-## 🐍 PyPI
+## PyPI
 
 ### Install the package from PyPI
 
@@ -11,36 +10,31 @@ Download from [PyPI](https://pypi.org/):
 pip install Photo-Composition-Designer
 ```
 
-### Run CLI from command line
+### Start the local web editor
+
 ```bash
-Photo-Composition-Designer [OPTIONS] path/to/file
+photo-composition-designer gui
 ```
 
-### Run GUI from command line
-```bash
-Photo-Composition-Designer-gui
-```
+Then open `http://127.0.0.1:8767/`. The editor is the primary interface; the
+command line covers scanning, distribution, rendering, export, duplication and
+diagnostics. See the [web UI guide](../usage/web-ui.md) and the
+[CLI reference](../usage/cli.md).
 
-## 🔽 Executable
+## Executable
 
 Download the latest executable:
 
-- [⬇️ Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-win.zip)
-- [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
-- [⬇️ Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-macos.zip)
+- [Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-win.zip)
+- [Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
+- [Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-macos.zip)
 
-
-## 👩🏼‍💻 Run from source
+## Run from source
 
 ### Clone the repository
 
 ```bash
-git clone
-```
-
-### Navigate to the project directory
-
-```bash
+git clone https://github.com/pamagister/Photo-Composition-Designer
 cd Photo-Composition-Designer
 ```
 
@@ -48,20 +42,28 @@ cd Photo-Composition-Designer
 
 ```bash
 uv venv
-uv pip install -e .[dev,docs]
+uv pip install -e ".[dev,docs]"
 ```
 
-
-### Run with CLI from source
+### Start the editor from source
 
 ```bash
-python -m Photo_Composition_Designer.cli [OPTIONS] path/to/file
+uv run photo-composition-designer gui
 ```
 
-
-### Run with GUI from source
+### Run the checks
 
 ```bash
-python -m Photo_Composition_Designer.gui
+make lint
+make test
 ```
 
+### Browser tests
+
+The Playwright suite covers the critical editor flows in Chromium and Firefox. It
+skips when Playwright or the browser binaries are unavailable:
+
+```bash
+uv run playwright install chromium firefox
+uv run pytest tests/test_browser_workflow.py -m browser
+```

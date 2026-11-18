@@ -18,6 +18,9 @@ DEFAULT_CONFIG_DOC = Path("docs/usage/config.md")
 
 
 def _format_value(value: object) -> str:
+    to_str = getattr(value, "to_str", None)
+    if callable(to_str):
+        return f"`{to_str()}`"
     return f"`{value!r}`"
 
 
