@@ -1,0 +1,28 @@
+key: four_quadrants
+version: 1
+name: "Four equal quadrants"
+slots:
+  - key: top_left
+    x: 0.0
+    y: 0.0
+    width: 0.5
+    height: 0.5
+    crop_mode: cover
+  - key: top_right
+    x: 0.5
+    y: 0.0
+    width: 0.5
+    height: 0.5
+    crop_mode: cover
+  - key: bottom_left
+    x: 0.0
+    y: 0.5
+    width: 0.5
+    height: 0.5
+    crop_mode: cover
+  - key: bottom_right
+    x: 0.5
+    y: 0.5
+    width: 0.5
+    height: 0.5
+    crop_mode: cover

@@ -1,0 +1,10 @@
+key: single_full
+version: 1
+name: "Single full-bleed photo"
+slots:
+  - key: main
+    x: 0.0
+    y: 0.0
+    width: 1.0
+    height: 1.0
+    crop_mode: cover

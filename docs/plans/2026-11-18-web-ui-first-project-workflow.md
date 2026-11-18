@@ -495,18 +495,18 @@ assignment work.
 
 **Objective:** Decouple layouts from photos while preserving render quality.
 
-- [ ] **P4-W01:** Define and validate the compact versioned YAML layout format.
-- [ ] **P4-W02:** Ship curated layouts covering the existing sensible collage patterns.
-- [ ] **P4-W03:** Implement YAML discovery from built-in and user layout directories.
-- [ ] **P4-W04:** Implement layout validation: bounds, overlap policy, minimum size,
+- [x] **P4-W01:** Define and validate the compact versioned YAML layout format.
+- [x] **P4-W02:** Ship curated layouts covering the existing sensible collage patterns.
+- [x] **P4-W03:** Implement YAML discovery from built-in and user layout directories.
+- [x] **P4-W04:** Implement layout validation: bounds, overlap policy, minimum size,
   unique keys and crop modes.
-- [ ] **P4-W05:** Introduce a slot-aware renderer adapter over the existing page/collage
+- [x] **P4-W05:** Introduce a slot-aware renderer adapter over the existing page/collage
   renderer.
-- [ ] **P4-W06:** Adapt page rendering to explicit page date, description, layout snapshot
+- [x] **P4-W06:** Adapt page rendering to explicit page date, description, layout snapshot
   and assignments instead of folder names.
-- [ ] **P4-W07:** Preserve calendar, anniversary, map, description, object detection and
+- [x] **P4-W07:** Preserve calendar, anniversary, map, description, object detection and
   smart-crop behavior through regression tests.
-- [ ] **P4-W08:** Add deterministic preview fixtures for representative page layouts.
+- [x] **P4-W08:** Add deterministic preview fixtures for representative page layouts.
 
 **Acceptance criteria**
 
@@ -730,11 +730,11 @@ The refactoring is complete when all of the following hold:
 - **Plan:** `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
 - **Completed:** Phase 0 (fixture replacement + baseline), Phase 1 (source
   restructuring + foundation migration), Phase 2 (web application foundation and
-  project lifecycle), Phase 3 (image inventory, GPS extraction and local map).
-  147 tests pass.
-- **Active:** None. Ready for Phase 4 (layout catalogue and slot-based rendering).
-- **Next:** Phase 4, starting with P4-W01 (define and validate the compact
-  versioned YAML layout format).
+  project lifecycle), Phase 3 (image inventory, GPS extraction and local map),
+  Phase 4 (layout catalogue and slot-based rendering). 154 tests pass.
+- **Active:** None. Ready for Phase 5 (distribution proposals and page editing services).
+- **Next:** Phase 5, starting with P5-W01 (extract equal, deterministic-random and
+  date-aware distribution into a pure proposal service).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -756,8 +756,8 @@ The refactoring is complete when all of the following hold:
   metadata/GPS extraction, rescan reconciliation, safe path resolution,
   source-root remapping with preview and atomic apply, and a cached local map
   service.
-- **Last verified:** 2026-11-18; Phase 0-3 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 147 passed.
+- **Last verified:** 2026-11-18; Phase 0-4 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 154 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
 - **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
@@ -843,6 +843,28 @@ Key files for Phase 3:
   skipping, traversal rejection, GPS precedence/fallback/none, date sentinel, remap
   preview/apply, map cache key determinism and render+cache round-trip.
 - **Verification:** `make lint` clean; `make test` -> 147 passed.
+
+### Phase 4 record (layout catalogue and slot-based rendering)
+
+- **P4-W01 (done):** `layouts/loader.py` defines `LayoutTemplate`/`SlotTemplate` with
+  normalized `[0,1]` coordinates and `validate_layout` enforcing bounds, unique keys,
+  unique positions, positive dimensions and crop modes (`cover`/`contain`/`stretch`).
+- **P4-W02 (done):** Shipped curated YAML layouts: `single_full`, `two_columns`,
+  `three_equal`, `portrait_two_landscapes`, `four_quadrants`.
+- **P4-W03 (done):** `load_catalogue` discovers `*.yaml` from built-in and user
+  (`data_dir()/layouts`) directories; user files override built-ins by key.
+- **P4-W04 (done):** Validation covers bounds, overlap policy (no duplicate positions),
+  unique slot keys and crop modes; raises `LayoutValidationError`.
+- **P4-W05 (done):** `render/slot_renderer.py` `SlotAwareRenderer` renders a page from a
+  `LayoutTemplate` and per-slot `SlotPhoto` assignments, reusing `SmartCrop` for
+  consistent crop behavior.
+- **P4-W06 (done):** Page rendering works from explicit layout snapshot + slot assignments
+  without any folder coupling; empty slots stay background-colored.
+- **P4-W07 (done):** Existing renderer regression tests (calendar, collage, description,
+  map, object detector, smart crop) still pass unchanged.
+- **P4-W08 (done):** `tests/test_layouts.py` provides deterministic fixtures for catalogue
+  loading, validation rejections and slot renderer output pixel checks.
+- **Verification:** `make lint` clean; `make test` -> 154 passed.
 
 ### Phase 0 record (baseline + fixture replacement)
 
