@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError
@@ -12,6 +13,12 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.routes.projects import _canvas_response
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.editing import PageEditingService
+from photo_composition_designer.project.rendering import ProjectRenderingService
+from photo_composition_designer.project.repositories import (
+    AssignmentRepository,
+    PageRepository,
+    PhotoRepository,
+)
 
 router = APIRouter()
 
@@ -37,6 +44,31 @@ def _open_database(request: Request) -> WorkspaceDatabase:
     return WorkspaceDatabase(request.app.state.settings.workspace_path())
 
 
+def _has_unused_photos(database: WorkspaceDatabase, project_id: int) -> bool:
+    """Return whether an available inventory photo has no assignment."""
+    connection = database.connect()
+    available = PhotoRepository(connection).list(project_id, available_only=True)
+    used = {
+        assignment.photo_id
+        for assignment in AssignmentRepository(connection).list_by_project(project_id)
+    }
+    return any(photo.id not in used for photo in available)
+
+
+def _render_project_previews(
+    request: Request, database: WorkspaceDatabase, project_id: int
+) -> None:
+    """Render reduced previews for all pages after completing photo allocation."""
+    settings = request.app.state.settings
+    rendering = ProjectRenderingService(
+        database,
+        preview_dir=settings.preview_dir(),
+        anniversaries_path=settings.anniversaries_path,
+    )
+    for page in PageRepository(database.connect()).list(project_id):
+        rendering.render_preview(project_id, page.id, max_width=320)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/assign")
 def assign_photo(
     request: Request,
@@ -48,10 +80,13 @@ def assign_photo(
     """Assign a photo to an empty slot."""
     database = _open_database(request)
     editing = PageEditingService(database)
+    had_unused_photos = _has_unused_photos(database, project_id)
     try:
         editing.assign_to_empty_slot(project_id, page_id, slot_id, photo_id)
     except ProjectError as error:
         return _error(project_id, str(error))
+    if had_unused_photos and not _has_unused_photos(database, project_id):
+        _render_project_previews(request, database, project_id)
     return _page_fragment(request, project_id, page_id, "Photo assigned.")
 
 
@@ -80,10 +115,13 @@ def replace_photo(
     """Replace the photo in an occupied slot."""
     database = _open_database(request)
     editing = PageEditingService(database)
+    had_unused_photos = _has_unused_photos(database, project_id)
     try:
         editing.replace(project_id, page_id, slot_id, photo_id)
     except ProjectError as error:
         return _error(project_id, str(error))
+    if had_unused_photos and not _has_unused_photos(database, project_id):
+        _render_project_previews(request, database, project_id)
     return _page_fragment(request, project_id, page_id, "Photo replaced.")
 
 
@@ -151,15 +189,30 @@ def unused_pool_fragment(
     request: Request,
     project_id: int,
     page_id: int,
+    filter: str = "unused",
 ) -> HTMLResponse:
-    """Return the unused-image panel fragment."""
+    """Return the filterable project photo strip."""
     database = _open_database(request)
-    editing = PageEditingService(database)
-    photos = editing.unused_pool(project_id)
+    connection = database.connect()
+    page = PageRepository(connection).get(page_id)
+    if page is None or page.project_id != project_id:
+        raise HTTPException(404, "page not found")
+    photos = PhotoRepository(connection).list(project_id)
+    usage_counts = Counter(
+        assignment.photo_id
+        for assignment in AssignmentRepository(connection).list_by_project(project_id)
+    )
+    selected_filter = "all" if filter == "all" else "unused"
+    if selected_filter == "unused":
+        photos = [
+            photo for photo in photos if photo.available and usage_counts.get(photo.id, 0) == 0
+        ]
     context = {
         "request": request,
         "project_id": project_id,
         "page_id": page_id,
         "photos": photos,
+        "usage_counts": usage_counts,
+        "photo_filter": selected_filter,
     }
     return TEMPLATES.TemplateResponse(request, "partials/unused_pool.html", context)

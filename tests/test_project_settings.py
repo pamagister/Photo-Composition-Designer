@@ -12,7 +12,9 @@ from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.app import create_app
 from photo_composition_designer.gui.settings import GuiSettings
+from photo_composition_designer.project.models import LayoutSlot
 from photo_composition_designer.project.repositories import (
+    LayoutRepository,
     PageRepository,
     ProjectRepository,
 )
@@ -210,6 +212,83 @@ def test_settings_are_isolated_between_projects(client: TestClient, gui_settings
     assert second.output_profile == OutputProfile.default().to_dict()
     assert all(page.render_revision == 1 for page in first_pages)
     assert all(page.render_revision == 0 for page in second_pages)
+
+
+def test_project_calendar_can_shift_and_extend_with_last_layout(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    with _database(gui_settings).transaction() as connection:
+        pages = PageRepository(connection).list(project_id)
+        layout = LayoutRepository(connection).add(
+            "custom",
+            1,
+            "Custom",
+            [
+                LayoutSlot(
+                    id=0,
+                    layout_id=0,
+                    slot_key="main",
+                    position=0,
+                    x=0,
+                    y=0,
+                    width=1,
+                    height=1,
+                    z_index=0,
+                    crop_mode="cover",
+                )
+            ],
+        )
+        PageRepository(connection).set_layout(pages[-1].id, layout.id, layout.version)
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(
+            **{
+                "project.name": "Renamed calendar",
+                "project.start_date": "2027-02-01",
+                "project.page_count": "3",
+            }
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    project, pages = _project_state(gui_settings, project_id)
+    assert project.name == "Renamed calendar"
+    assert project.page_count == 3
+    assert [page.start_date for page in pages] == [
+        "2027-02-01",
+        "2027-02-08",
+        "2027-02-15",
+    ]
+    assert pages[1].layout_id == pages[2].layout_id
+
+
+def test_calendar_shrink_requires_confirmation_for_page_content(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    with _database(gui_settings).transaction() as connection:
+        pages = PageRepository(connection).list(project_id)
+        PageRepository(connection).update_description(pages[-1].id, "Keep this memory")
+
+    data = _settings_form(**{"project.page_count": "1"})
+    response = client.post(f"/projects/{project_id}/settings", data=data)
+    assert response.status_code == 400
+    assert "requires confirmation" in response.text
+    assert len(_project_state(gui_settings, project_id)[1]) == 2
+
+    data["project.confirm_remove"] = "1"
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=data,
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    project, pages = _project_state(gui_settings, project_id)
+    assert project.page_count == 1
+    assert len(pages) == 1
 
 
 def test_duplicate_project_route_creates_independent_copy(

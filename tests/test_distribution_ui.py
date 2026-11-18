@@ -191,6 +191,7 @@ def test_created_project_opens_first_page_in_editor(client, tmp_path):
         first_page = PageRepository(connection).list(project_id)[0]
     assert f'data-page-id="{first_page.id}"' in response.text
     assert "page-thumb active" in response.text
-    assert "Source directories" in response.text
+    assert f'href="/projects/{project_id}/settings"' in response.text
+    assert "Source directories" not in response.text
     assert "Project created." in response.text
     assert "Distribution" in response.text

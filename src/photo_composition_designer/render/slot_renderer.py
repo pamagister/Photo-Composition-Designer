@@ -11,8 +11,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
+from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.settings import Settings
 from photo_composition_designer.layouts.loader import LayoutTemplate
 from photo_composition_designer.render.object_detector import ObjectDetector
@@ -58,12 +59,53 @@ class SlotAwareRenderer:
     ) -> Image.Image:
         """Render one page image from a layout and slot assignments."""
         page = Image.new("RGB", (page_width, page_height), background_color)
+        spacing = mm_to_px(
+            self._settings.layout.spacing.value,
+            self._settings.size.dpi.value,
+        )
+        rounded_corners = self._settings.layout.useRoundedCorners.value
 
         for slot in layout.slots:
             x0 = int(round(slot.x * page_width))
             y0 = int(round(slot.y * page_height))
             x1 = int(round((slot.x + slot.width) * page_width))
             y1 = int(round((slot.y + slot.height) * page_height))
+            neighbors = {
+                "left": any(
+                    abs(other.x + other.width - slot.x) < 1e-9
+                    and min(other.y + other.height, slot.y + slot.height) > max(other.y, slot.y)
+                    for other in layout.slots
+                    if other.key != slot.key
+                ),
+                "right": any(
+                    abs(slot.x + slot.width - other.x) < 1e-9
+                    and min(other.y + other.height, slot.y + slot.height) > max(other.y, slot.y)
+                    for other in layout.slots
+                    if other.key != slot.key
+                ),
+                "top": any(
+                    abs(other.y + other.height - slot.y) < 1e-9
+                    and min(other.x + other.width, slot.x + slot.width) > max(other.x, slot.x)
+                    for other in layout.slots
+                    if other.key != slot.key
+                ),
+                "bottom": any(
+                    abs(slot.y + slot.height - other.y) < 1e-9
+                    and min(other.x + other.width, slot.x + slot.width) > max(other.x, slot.x)
+                    for other in layout.slots
+                    if other.key != slot.key
+                ),
+            }
+            before = spacing // 2
+            after = spacing - before
+            if neighbors["left"]:
+                x0 += after
+            if neighbors["right"]:
+                x1 -= before
+            if neighbors["top"]:
+                y0 += after
+            if neighbors["bottom"]:
+                y1 -= before
             slot_width = max(1, x1 - x0)
             slot_height = max(1, y1 - y0)
 
@@ -85,7 +127,17 @@ class SlotAwareRenderer:
                 detections=detections,
             )
             cropped = self._apply_crop_overrides(cropped, assignment)
-            page.paste(cropped, (x0, y0))
+            if rounded_corners and spacing > 0:
+                mask = Image.new("L", cropped.size, 0)
+                radius = min(spacing, cropped.width // 2, cropped.height // 2)
+                ImageDraw.Draw(mask).rounded_rectangle(
+                    (0, 0, cropped.width - 1, cropped.height - 1),
+                    radius=radius,
+                    fill=255,
+                )
+                page.paste(cropped, (x0, y0), mask)
+            else:
+                page.paste(cropped, (x0, y0))
 
         return page
 

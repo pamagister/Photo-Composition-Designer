@@ -173,6 +173,78 @@ class ProjectService:
                 PageRepository(connection).increment_revisions(project_id)
         return updated
 
+    def update_calendar(
+        self,
+        project_id: int,
+        *,
+        start_date: datetime | date,
+        page_count: int,
+        name: str | None = None,
+        confirm_remove: bool = False,
+    ) -> Project:
+        """Change a project's weekly date range and page count.
+
+        Pages are identified by their index, so changing the start date keeps
+        existing assignments attached to the same relative week. New pages
+        inherit the final existing page's layout snapshot.
+        """
+        if page_count < 1:
+            raise ValueError("page_count must be at least 1")
+        if name is not None and not name.strip():
+            raise ValueError("project name must not be empty")
+        first_day = _as_date(start_date)
+
+        with self._database.transaction() as connection:
+            project_repository = ProjectRepository(connection)
+            project = project_repository.get(project_id)
+            if project is None:
+                raise ProjectNotFoundError(f"project {project_id} does not exist")
+            page_repository = PageRepository(connection)
+            pages = page_repository.list(project_id)
+
+            if page_count < len(pages):
+                if page_repository.has_content_from(project_id, page_count) and not confirm_remove:
+                    raise ValueError(
+                        "Removing pages with photos or descriptions requires confirmation"
+                    )
+                page_repository.delete_from_index(project_id, page_count)
+                pages = pages[:page_count]
+
+            last_layout = pages[-1] if pages else None
+            for page_index in range(len(pages), page_count):
+                page_start = first_day + timedelta(days=7 * page_index)
+                page_end = page_start + timedelta(days=6)
+                page_repository.create(
+                    project_id,
+                    page_index,
+                    page_start.isoformat(),
+                    page_end.isoformat(),
+                    layout_id=last_layout.layout_id if last_layout else None,
+                    layout_version=last_layout.layout_version if last_layout else None,
+                    created_at=_now(),
+                )
+
+            for page_index, page in enumerate(page_repository.list(project_id)):
+                page_start = first_day + timedelta(days=7 * page_index)
+                page_end = page_start + timedelta(days=6)
+                if (
+                    page.start_date != page_start.isoformat()
+                    or page.end_date != page_end.isoformat()
+                ):
+                    page_repository.update_dates(
+                        page.id,
+                        page_start.isoformat(),
+                        page_end.isoformat(),
+                    )
+
+            return project_repository.update(
+                project_id,
+                name=name,
+                calendar_year=first_day.year,
+                page_count=page_count,
+                updated_at=_now(),
+            )
+
     def duplicate_project(self, project_id: int, *, name: str | None = None) -> Project:
         """Deep copy a project into an independent workspace project.
 

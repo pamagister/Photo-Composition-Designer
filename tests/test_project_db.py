@@ -5,11 +5,13 @@ from __future__ import annotations
 import pytest
 
 from photo_composition_designer.db.schema import (
+    INITIAL_SCHEMA,
     SCHEMA_VERSION,
     WorkspaceDatabase,
     connect,
     ensure_schema,
     read_version,
+    write_version,
 )
 from tests.project_test_helpers import FIXED_NOW
 
@@ -55,6 +57,63 @@ def test_ensure_schema_is_idempotent_and_preserves_data(tmp_path):
 
         assert connection.execute("SELECT COUNT(*) FROM projects").fetchone()[0] == 1
         assert read_version(connection) == SCHEMA_VERSION
+
+
+def test_v1_migration_preserves_assignments_and_allows_reuse(tmp_path):
+    connection = connect(tmp_path / "workspace.sqlite3")
+    connection.executescript(INITIAL_SCHEMA)
+    write_version(connection, 1)
+    connection.execute(
+        "INSERT INTO projects(id, name, page_count, created_at, updated_at) "
+        "VALUES(1, 'Calendar', 2, ?, ?)",
+        (FIXED_NOW, FIXED_NOW),
+    )
+    connection.execute(
+        "INSERT INTO source_roots(id, project_id, path, created_at) VALUES(1, 1, '/photos', ?)",
+        (FIXED_NOW,),
+    )
+    connection.execute(
+        "INSERT INTO photos(id, project_id, source_root_id, relative_path, filename, created_at) "
+        "VALUES(1, 1, 1, 'photo.jpg', 'photo.jpg', ?)",
+        (FIXED_NOW,),
+    )
+    connection.execute(
+        "INSERT INTO layouts(id, key, version, name, created_at) "
+        "VALUES(1, 'single', 1, 'Single', ?)",
+        (FIXED_NOW,),
+    )
+    connection.execute(
+        "INSERT INTO layout_slots(id, layout_id, slot_key, position, x, y, width, height) "
+        "VALUES(1, 1, 'main', 0, 0, 0, 1, 1)"
+    )
+    connection.executemany(
+        "INSERT INTO pages("
+        "id, project_id, page_index, start_date, end_date, created_at, updated_at"
+        ") "
+        "VALUES(?, 1, ?, ?, ?, ?, ?)",
+        [
+            (1, 0, "2027-01-04", "2027-01-10", FIXED_NOW, FIXED_NOW),
+            (2, 1, "2027-01-11", "2027-01-17", FIXED_NOW, FIXED_NOW),
+        ],
+    )
+    connection.execute("UPDATE pages SET layout_id = 1, layout_version = 1 WHERE project_id = 1")
+    connection.execute(
+        "INSERT INTO assignments(project_id, page_id, slot_id, photo_id, created_at) "
+        "VALUES(1, 1, 1, 1, ?)",
+        (FIXED_NOW,),
+    )
+    connection.commit()
+
+    ensure_schema(connection)
+
+    assert read_version(connection) == SCHEMA_VERSION
+    assert connection.execute("SELECT COUNT(*) FROM assignments").fetchone()[0] == 1
+    connection.execute(
+        "INSERT INTO assignments(project_id, page_id, slot_id, photo_id, created_at) "
+        "VALUES(1, 2, 1, 1, ?)",
+        (FIXED_NOW,),
+    )
+    assert connection.execute("SELECT COUNT(*) FROM assignments").fetchone()[0] == 2
 
 
 def test_newer_schema_is_rejected(tmp_path):

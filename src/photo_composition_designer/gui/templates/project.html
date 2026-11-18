@@ -5,25 +5,38 @@
 <script src="/static/editor.js" defer></script>
 {% endblock %}
 
-{% block content %}
-<div class="project-header">
-  <div>
-    <h1>{{ project.name }}</h1>
-    <p class="muted">{{ pages | length }} pages &middot; updated {{ project.updated_at[:19] }}</p>
-  </div>
-  <form method="post" action="/projects/{{ project.id }}/rename" class="form-row">
-    <div class="field">
-      <label class="sr-only" for="rename">Project name</label>
-      <input id="rename" name="name" value="{{ project.name }}" required>
-    </div>
-    <button>Save name</button>
-  </form>
-  <a class="button" href="/projects/{{ project.id }}/preview">Preview all pages</a>
-  <a class="button" href="/projects/{{ project.id }}/export">Export</a>
-  <a class="button" href="/projects/{{ project.id }}/settings">Project settings</a>
+{% block header_context %}
+{% if project %}
+<div class="project-header-context">
+  <strong>{{ project.name }}</strong>
+  <span>{{ pages | length }} pages</span>
+  <span>updated {{ project.updated_at[:19].replace('T', ' ') }}</span>
 </div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
+
+<nav class="project-actions" aria-label="Project actions">
+  <a class="button" href="/projects/{{ project.id }}/preview">Preview</a>
+  <a class="button primary" href="/projects/{{ project.id }}/export">Export photos</a>
+  <a class="button" href="/projects/{{ project.id }}/archive">Export project (.pcd)</a>
+  <details class="project-extras">
+    <summary>Import project (.pcd)</summary>
+    <form method="post" action="/projects/import-pcd" enctype="multipart/form-data">
+      <label for="project-archive">Project archive</label>
+      <input id="project-archive" name="archive" type="file" accept=".pcd" required>
+      <button type="submit">Import project</button>
+    </form>
+  </details>
+  <a class="button" href="/projects/{{ project.id }}/settings">Settings</a>
+  <details class="project-extras">
+    <summary>Extras / Distribution</summary>
+    {% include "partials/distribution_area.html" %}
+  </details>
+</nav>
 
 <div class="editor-shell">
   <aside class="editor-sidebar" aria-label="Pages">
@@ -37,107 +50,23 @@
            src="/projects/{{ project.id }}/pages/{{ pg.id }}/preview?max_width=320&v={{ pg.render_revision }}"
            alt="" loading="lazy">
       <span class="page-thumb-date">{{ pg.start_date }}</span>
-      <span class="muted">{{ pg.end_date }}</span>
     </a>
     {% endfor %}
   </aside>
 
-  <section class="editor-main">
+  <section class="editor-main" aria-label="Calendar page editor">
     <div id="page-detail" class="panel editor-canvas-panel">
       {% include "partials/editor_canvas.html" %}
-    </div>
-
-    <div class="panel">
-      <h2>Source directories</h2>
-      {% for state in source_states %}
-      <article class="source-root">
-        <p>
-          <strong>{{ state.root.path }}</strong>
-          {% if state.root.active %}<span class="success">active</span>{% endif %}
-          <span class="{{ 'success' if state.exists else 'error' }}">
-            {{ 'available' if state.exists else 'missing' }}
-          </span>
-          {% if state.root.last_scan_at %}
-          <span class="muted">last scan {{ state.root.last_scan_at[:19] }}</span>
-          {% endif %}
-        </p>
-        <div class="form-row">
-          {% if not state.root.active %}
-          <form method="post"
-                action="/projects/{{ project.id }}/source/{{ state.root.id }}/activate">
-            <button>Make active</button>
-          </form>
-          {% endif %}
-          <form method="post"
-                action="/projects/{{ project.id }}/source/{{ state.root.id }}/remove">
-            <button class="danger" type="submit">Remove</button>
-          </form>
-        </div>
-        <details>
-          <summary>Relink or change directory</summary>
-          <form hx-get="/projects/{{ project.id }}/source/{{ state.root.id }}/remap/preview"
-                hx-target="#remap-preview-{{ state.root.id }}"
-                hx-swap="innerHTML">
-            <div class="field">
-              <label for="remap-{{ state.root.id }}">New directory</label>
-              <input id="remap-{{ state.root.id }}" name="new_root"
-                     value="{{ state.root.path }}" list="source-directories" required>
-            </div>
-            <button type="submit">Preview relink</button>
-            <span class="htmx-indicator muted">Checking files...</span>
-          </form>
-          <div id="remap-preview-{{ state.root.id }}"></div>
-        </details>
-      </article>
-      {% else %}
-      <p class="muted">No source directory configured.</p>
-      {% endfor %}
-      <form method="post" action="/projects/{{ project.id }}/source" class="form-row">
-        <div class="field">
-          <label for="source-path">Add a local directory</label>
-          <input id="source-path" name="path" list="source-directories"
-                 placeholder="/home/paul/Pictures" required>
-        </div>
-        <button>Add source</button>
-      </form>
-      <datalist id="source-directories"></datalist>
-    </div>
-
-    <div class="panel">
-      <h2>Scan</h2>
-      <form hx-post="/projects/{{ project.id }}/scan"
-            hx-target="#scan-area"
-            hx-swap="innerHTML">
-        <button class="primary" type="submit">Scan active source directory</button>
-        <span class="htmx-indicator muted">
-          Scanning... this can take a while for large directories.
-        </span>
-      </form>
-      <div id="scan-area">
-        {% include "partials/scan_result.html" %}
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Distribution</h2>
-      {% include "partials/distribution_area.html" %}
-    </div>
-
-    <div class="panel">
-      <h2>Inventory</h2>
-      <div id="inventory">
-        {% include "partials/inventory.html" %}
-      </div>
     </div>
   </section>
 </div>
 
-<div class="editor-bottom" aria-label="Unused photos">
-  <h2>Unused photos</h2>
+<div class="editor-bottom">
   <div id="unused-area"
        {% if selected_page %}
        hx-get="/projects/{{ project.id }}/pages/{{ selected_page.id }}/unused"
        hx-trigger="pcd:refresh-unused from:body"
+       hx-include="#photo-filter"
        hx-swap="innerHTML"
        {% endif %}>
     {% include "partials/unused_pool.html" %}

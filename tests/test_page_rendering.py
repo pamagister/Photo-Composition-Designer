@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -9,7 +10,9 @@ from PIL import Image
 
 from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.output_profile import OutputProfile, SizeProfile
+from photo_composition_designer.core.settings import Settings
 from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.layouts.loader import LayoutTemplate, SlotTemplate
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.models import LayoutSlot
 from photo_composition_designer.project.rendering import ProjectRenderingService
@@ -18,6 +21,8 @@ from photo_composition_designer.project.repositories import (
     PageRepository,
 )
 from photo_composition_designer.project.services import ProjectService
+from photo_composition_designer.render.page import PageComposer
+from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
 
 
 def _write_photo(path: Path, color: tuple[int, int, int] = (255, 0, 0)) -> None:
@@ -108,11 +113,72 @@ def test_render_page_contains_photo_and_calendar(tmp_path):
         red, green, blue = image.getpixel((image.width // 2, image.height // 2))
         assert red > 200 and green < 60 and blue < 60
 
-        # The calendar strip is rendered at the top of the page and contains
-        # non-background pixels even though its background matches the page.
+        # The photo fills the top content region; the calendar strip is below it.
         background = (20, 20, 20)
-        strip = image.crop((0, 0, image.width, mm_to_px(18, 300)))
+        calendar_top = image.height - mm_to_px(3, 300) - mm_to_px(18, 300)
+        strip = image.crop((0, calendar_top, image.width, image.height - mm_to_px(3, 300)))
         assert any(pixel != background for pixel in strip.getdata())
+        assert (255, 0, 0) not in strip.getdata()
+        red_pixel = image.getpixel((image.width // 2, mm_to_px(20, 300)))
+        assert red_pixel[0] > 200 and red_pixel[1:] == (0, 0)
+    finally:
+        database.close()
+
+
+def test_slot_renderer_applies_spacing_and_rounded_corners(tmp_path):
+    red_path = tmp_path / "red.jpg"
+    blue_path = tmp_path / "blue.jpg"
+    _write_photo(red_path, (255, 0, 0))
+    _write_photo(blue_path, (0, 0, 255))
+    settings = Settings()
+    layout = LayoutTemplate(
+        key="two-up",
+        version=1,
+        name="Two up",
+        slots=(
+            SlotTemplate("left", 0.0, 0.0, 0.5, 1.0),
+            SlotTemplate("right", 0.5, 0.0, 0.5, 1.0),
+        ),
+    )
+
+    image = SlotAwareRenderer(settings).render(
+        layout,
+        {
+            "left": SlotPhoto(red_path),
+            "right": SlotPhoto(blue_path),
+        },
+        page_width=100,
+        page_height=40,
+        background_color=(20, 20, 20),
+    )
+
+    assert image.getpixel((50, 20)) == (20, 20, 20)
+    assert image.getpixel((0, 20))[0] > 200
+    assert image.getpixel((99, 20))[2] > 200
+    assert image.getpixel((0, 0)) == (20, 20, 20)
+
+
+def test_render_page_shows_photo_location_map(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    map_width = mm_to_px(20, 300)
+    map_height = mm_to_px(20, 300)
+
+    with database.transaction() as connection:
+        connection.execute("UPDATE photos SET gps_lat = 51.05, gps_lon = 13.73")
+
+    composer = PageComposer(
+        map_renderer=lambda _coordinates: Image.new("RGB", (map_width, map_height), (0, 0, 255))
+    )
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            image = rendering.render_page_image(connection, page)
+
+        map_x = image.width - mm_to_px(3, 300) - map_width // 2
+        map_y = mm_to_px(6, 300) + map_height // 2
+        assert image.getpixel((map_x, map_y)) == (0, 0, 255)
     finally:
         database.close()
 
@@ -209,6 +275,34 @@ def test_preview_invalidated_by_profile_change(tmp_path):
         service.save_project(project_id, output_profile=changed.to_dict())
 
         second = rendering.render_preview(project_id, page_id)
+        assert second != first
+    finally:
+        database.close()
+
+
+def test_preview_invalidated_by_global_anniversaries_change(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    try:
+        anniversaries_path = tmp_path / "anniversaries.ini"
+        anniversaries_path.write_text("[Birthdays]\nPaul = 6.1.\n", encoding="utf-8")
+        rendering = ProjectRenderingService(
+            database,
+            preview_dir=tmp_path / "previews",
+            anniversaries_path=anniversaries_path,
+        )
+        first = rendering.render_preview(project_id, page_id)
+
+        original_stat = anniversaries_path.stat()
+        anniversaries_path.write_text(
+            "[Birthdays]\nPaul = 7.1.\n",
+            encoding="utf-8",
+        )
+        os.utime(
+            anniversaries_path,
+            ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns),
+        )
+        second = rendering.render_preview(project_id, page_id)
+
         assert second != first
     finally:
         database.close()

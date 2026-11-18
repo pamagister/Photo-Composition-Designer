@@ -20,10 +20,10 @@ pages; the web UI and application services compose around it.
 | Layer | Modules | Responsibility |
 |---|---|---|
 | Domain | `project/models.py`, `core/errors.py`, `core/output_profile.py` | Projects, source roots, photos, pages, layouts, slots, assignments, distribution proposals and the typed output profile. |
-| Application services | `project/services.py`, `project/inventory.py`, `project/distribution.py`, `project/editing.py`, `project/rendering.py`, `io/export.py` | Project lifecycle, scanning and relinking, distribution proposals, page editing, page composition inputs and export. |
+| Application services | `project/services.py`, `project/inventory.py`, `project/distribution.py`, `project/editing.py`, `project/rendering.py`, `io/export.py`, `io/project_archive.py` | Project lifecycle, scanning and relinking, distribution proposals, page editing, page composition inputs, export and reference-only archives. |
 | Persistence | `db/schema.py`, `project/repositories.py` | SQLite schema, forward migrations and repositories. No SQL in routes or renderers. |
 | Rendering | `render/page.py`, `render/slot_renderer.py`, `render/calendar.py`, `render/map.py`, `render/description.py`, `render/geoplot.py` | Full-page composition and the individual render features. |
-| Infrastructure | `io/media.py`, `io/scan.py`, `io/previews.py`, `io/export.py`, `core/settings.py` | Filesystem access, EXIF, Pillow adapters, caches, PDF output and the defaults used to seed new projects. |
+| Infrastructure | `io/media.py`, `io/scan.py`, `io/previews.py`, `io/export.py`, `io/project_archive.py`, `core/settings.py` | Filesystem access, EXIF, Pillow adapters, caches, PDF output, reference-only project archives and project defaults. |
 | Web UI | `gui/app.py`, `gui/routes/`, `gui/templates/`, `gui/static/` | FastAPI routes, Jinja templates, HTMX fragments and focused JavaScript. |
 | CLI | `cli/app.py`, `cli/commands/` | Project-oriented commands for GUI, scanning, distribution, rendering, export, duplication and diagnostics. |
 
@@ -41,20 +41,24 @@ One central SQLite workspace stores all projects:
   previews/
   cache/
   exports/
+  layouts/
 ```
 
-`PCD_DATA_DIR` and `PCD_CACHE_DIR` override the platform locations. The database
-is authoritative; thumbnails, page previews and exports are disposable and
-rebuildable.
+Global application preferences are stored under the platform configuration
+directory, including the shared anniversary file path. `PCD_DATA_DIR`,
+`PCD_CACHE_DIR` and `PCD_CONFIG_DIR` override their platform locations. The
+database is authoritative; thumbnails, page previews and exports are
+disposable and rebuildable.
 
-Schema version 1 contains `projects`, `source_roots`, `photos`, `layouts`,
+Schema version 2 contains `projects`, `source_roots`, `photos`, `layouts`,
 `layout_slots`, `pages` and `assignments`. Migrations are forward only. The
 connection enables WAL, foreign keys and a busy timeout, and one application
 process is the deployment assumption.
 
 Key invariants:
 
-* A photo is assigned at most once per project (`UNIQUE(project_id, photo_id)`).
+* A photo may be assigned to multiple slots; each slot on each page holds at
+  most one photo (`UNIQUE(page_id, slot_id)`).
 * A slot holds at most one photo (`UNIQUE(page_id, slot_id)`).
 * Assignments cannot cross projects; triggers reject mismatched rows.
 * The unused pool is derived from persisted assignments; there is no mutable
@@ -85,12 +89,13 @@ settings increments render revisions only when values actually change.
    assignments, photo paths, GPS coordinates and the project profile into a
    `PageRenderInput`.
 2. `render/page.py` (`PageComposer`) composes the page: background, slot photos
-   with per-assignment crop settings, calendar strip, local map, description,
-   anniversaries and title. The first page is treated as the title page.
+   with per-assignment crop settings, local map, calendar strip below the photos,
+   description and title. The first page is treated as the title page. The
+   application-wide anniversary file is supplied as a shared render input.
 3. `render/slot_renderer.py` remains the slot compositing component.
 4. `ProjectRenderingService.render_preview` renders a reduced-resolution JPEG and
    caches it under a key covering page revision, layout ID/version, profile hash,
-   render mode and requested width.
+   shared anniversary-file path/version, render mode and requested width.
 5. `io/export.py` renders pages in explicit project order and writes PNG pages
    plus a combined PDF.
 
@@ -100,7 +105,8 @@ is the only seam between persistence and rendering.
 ### Caching rules
 
 * Thumbnails are keyed by photo ID, source modification time and size.
-* Page previews are keyed by revision, layout version, profile hash and width.
+* Page previews are keyed by revision, layout version, profile hash, anniversary
+  file version and width.
 * A cached preview is served without re-rendering or decoding originals.
 * Any edit increments the affected page's render revision; a profile change
   increments all affected pages.
@@ -109,8 +115,9 @@ is the only seam between persistence and rendering.
 
 `project/editing.py` (`PageEditingService`) owns all page mutations:
 
-* `assign_to_empty_slot`, `replace`, `swap` and `remove` enforce the uniqueness
-  invariants and return photos to the derived unused pool.
+* `assign_to_empty_slot`, `replace`, `swap` and `remove` enforce the slot
+  uniqueness invariant and update the derived unused pool. Reusing the same
+  photo in multiple slots is supported.
 * `set_crop` stores zoom and focal point on the assignment. Source files are
   never modified.
 * `set_description` updates the page description.
@@ -145,12 +152,13 @@ repeated confirmation is a no-op.
 
 ## 9. Web UI
 
-The editor keeps three areas:
+The editor keeps three main areas:
 
 * **Sidebar:** page thumbnails, dates and the active page.
 * **Canvas:** rendered page preview, slot grid, layout change, crop, replace,
   move, remove and the page description.
-* **Bottom panel:** unused photos with counts.
+* **Bottom panel:** horizontally scrolling photos, filtered to all or unused;
+  repeated use is marked with a yellow warning indicator.
 
 HTMX performs server-confirmed fragment swaps; focused JavaScript adds
 drag-and-drop. Every drag action has a keyboard-visible equivalent. Layout change
@@ -164,13 +172,16 @@ no control is hidden at narrow widths.
 
 ## 10. Export and portability
 
-Reference-only export is the supported mode. Pages reference source photos
-through remappable roots:
+Reference-only export is the supported mode. `.pcd` archives contain project
+metadata, page snapshots, assignments and source references, but never photo
+files:
 
 * Originals are never copied, moved, renamed or deleted.
 * Another machine may require relinking the source root.
-* Self-contained `.pcd` archives and embedded assets are deferred and not
-  partially implemented.
+* The importer accepts a versioned archive manifest and does not extract paths
+  from the archive.
+* Browser image/PDF exports accept absolute local destinations and default to a
+  project-specific folder under Pictures/Bilder when available.
 
 The browser export page and the CLI share `io/export.py`; both use the project
 profile and explicit page order, and both report missing assets as actionable
@@ -201,10 +212,10 @@ Verified on 2026-11-18: `make lint` clean, `make test` green.
 ## 13. Confirmed decisions
 
 1. One central SQLite workspace database with multiple projects.
-2. Reference-only export; `.pcd` archives and embedded assets deferred.
+2. Reference-only `.pcd` archives; photo files are never embedded.
 3. No legacy folder-calendar import.
-4. Fixed YAML layout templates; manual layout authoring deferred.
-5. One photo use per project; duplicates are distinct assets.
+4. Global versioned YAML layouts; existing page snapshots remain unchanged.
+5. Photos may be reused across pages and slots.
 6. Empty slots are valid; overflow stays unassigned.
 7. Editable, persisted per-project output profiles.
 8. Per-assignment crop and focal-point controls.
@@ -218,12 +229,13 @@ Verified on 2026-11-18: `make lint` clean, `make test` green.
   no bounded edit history. Implementing durable undo requires restoring page
   snapshots and resolving conflicts when a photo was reassigned elsewhere in the
   meantime; that complexity is deferred. Re-edit the affected page manually.
-* **Reference-only export:** moving sources requires relinking; no portable
-  project archive exists yet.
+* **Reference-only archives:** moving sources requires relinking; photo files
+  are intentionally not bundled.
 * **Narrow screens:** panels stack instead of using drawers; drawers would add
   focus-trap and state complexity without a demonstrated need.
 * **Single process:** no multi-user concurrency, distributed locking or remote
   hosting.
-* **Layout catalogue:** curated YAML layouts only; no visual layout editor.
+* **Layout editor:** slot geometry is entered as normalized JSON rather than
+  manipulated with a visual drag/resize canvas.
 * **Browser coverage in CI:** the Playwright suite is local-only by default; CI
   installs the Python dependency but not browser binaries, so the suite skips.

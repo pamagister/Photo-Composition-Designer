@@ -97,14 +97,17 @@ def _seed_project(
     return project.id, pages[0].id, photo_ids, slot_ids
 
 
-def test_editor_shell_renders_three_panels(editor_client, tmp_path):
+def test_editor_shell_renders_compact_editor_and_photo_filter(editor_client, tmp_path):
     project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
     response = editor_client.get(f"/projects/{project_id}?page={page_id}")
     assert response.status_code == 200
     assert "editor-shell" in response.text
     assert "editor-sidebar" in response.text
     assert "editor-bottom" in response.text
-    assert "Unused photos" in response.text
+    assert "Photos" in response.text
+    assert 'id="photo-filter"' in response.text
+    assert "All photos" in response.text
+    assert "editor-layout-panel" in response.text
 
 
 def test_assign_photo_via_route(editor_client, tmp_path):
@@ -115,6 +118,11 @@ def test_assign_photo_via_route(editor_client, tmp_path):
     )
     assert response.status_code == 200
     assert "Photo assigned" in response.text
+    assert f"/pages/{page_id}/preview?v=2" in response.text
+
+    preview = editor_client.get(f"/projects/{project_id}/pages/{page_id}/preview?max_width=320")
+    assert preview.status_code == 200
+    assert preview.headers["content-type"] == "image/jpeg"
 
 
 def test_remove_photo_via_route(editor_client, tmp_path):
@@ -164,7 +172,7 @@ def test_unused_pool_reflects_assignments(editor_client, tmp_path):
     assert f'data-photo-id="{photo_ids[1]}"' in response.text
 
 
-def test_assign_rejects_duplicate_photo(editor_client, tmp_path):
+def test_assign_allows_reusing_photo(editor_client, tmp_path):
     project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
     editor_client.post(
         f"/projects/{project_id}/pages/{page_id}/assign",
@@ -175,8 +183,28 @@ def test_assign_rejects_duplicate_photo(editor_client, tmp_path):
         data={"slot_id": slot_ids[1], "photo_id": photo_ids[0]},
         follow_redirects=False,
     )
-    assert response.status_code == 303
-    assert "already" in response.headers.get("location", "")
+    assert response.status_code == 200
+    assert "Photo assigned" in response.text
+
+
+def test_all_photos_filter_marks_repeated_assignments(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
+    for slot_id in slot_ids:
+        response = editor_client.post(
+            f"/projects/{project_id}/pages/{page_id}/assign",
+            data={"slot_id": slot_id, "photo_id": photo_ids[0]},
+        )
+        assert response.status_code == 200
+
+    unused = editor_client.get(f"/projects/{project_id}/pages/{page_id}/unused")
+    assert f'data-photo-id="{photo_ids[0]}"' not in unused.text
+    assert f'data-photo-id="{photo_ids[1]}"' in unused.text
+
+    all_photos = editor_client.get(f"/projects/{project_id}/pages/{page_id}/unused?filter=all")
+    assert all_photos.status_code == 200
+    assert 'data-use-count="2"' in all_photos.text
+    assert 'title="This photo is used 2 times"' in all_photos.text
+    assert 'id="photo-filter"' in all_photos.text
 
 
 def test_replace_photo_via_route(editor_client, tmp_path):
@@ -231,7 +259,7 @@ def test_project_page_has_skip_link_and_live_notice(editor_client, tmp_path):
     assert 'aria-live="polite"' in page.text
 
 
-def test_empty_slot_without_unused_photos_has_no_assign_form(editor_client, tmp_path):
+def test_empty_slot_can_reuse_a_photo_when_none_are_unused(editor_client, tmp_path):
     project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path, photo_count=1)
     editor_client.post(
         f"/projects/{project_id}/pages/{page_id}/assign",
@@ -239,5 +267,6 @@ def test_empty_slot_without_unused_photos_has_no_assign_form(editor_client, tmp_
     )
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
     assert page.status_code == 200
-    assert "All photos are assigned." in page.text
-    assert f'id="assign-photo-{slot_ids[1]}"' not in page.text
+    assert "No unused photos." in page.text
+    assert f'id="assign-photo-{slot_ids[1]}"' in page.text
+    assert f'<option value="{photo_ids[0]}">' in page.text

@@ -16,7 +16,15 @@ from fastapi.staticfiles import StaticFiles
 
 from photo_composition_designer.db.schema import WorkspaceDatabase, read_version
 from photo_composition_designer.gui.dependencies import DatabaseDependency
-from photo_composition_designer.gui.routes import editor, media, project_settings, projects
+from photo_composition_designer.gui.routes import (
+    app_settings,
+    editor,
+    layouts,
+    media,
+    project_archive,
+    project_settings,
+    projects,
+)
 from photo_composition_designer.gui.routes import export as export_routes
 from photo_composition_designer.gui.settings import GuiSettings, load_gui_settings
 from photo_composition_designer.gui.templating import BASE_DIR
@@ -47,9 +55,13 @@ def create_app(settings: GuiSettings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.database = WorkspaceDatabase(settings.workspace_path())
+    app.state.export_paths = set()
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+    app.include_router(project_archive.router)
     app.include_router(projects.router)
     app.include_router(project_settings.router)
+    app.include_router(app_settings.router)
+    app.include_router(layouts.router)
     app.include_router(export_routes.router)
     app.include_router(media.router)
     app.include_router(editor.router)

@@ -8,6 +8,29 @@
 (function () {
   "use strict";
 
+  const scrollKey = "pcd-project-scroll";
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest(".page-thumb")) return;
+    const sidebar = document.querySelector(".editor-sidebar");
+    sessionStorage.setItem(
+      scrollKey,
+      JSON.stringify({
+        pageY: window.scrollY,
+        sidebarY: sidebar ? sidebar.scrollTop : 0,
+      })
+    );
+  });
+
+  window.addEventListener("pageshow", function () {
+    const saved = sessionStorage.getItem(scrollKey);
+    if (!saved) return;
+    sessionStorage.removeItem(scrollKey);
+    const position = JSON.parse(saved);
+    window.scrollTo(0, position.pageY);
+    const sidebar = document.querySelector(".editor-sidebar");
+    if (sidebar) sidebar.scrollTop = position.sidebarY;
+  });
+
   if (!document.querySelector(".editor-canvas")) return;
 
   const SOURCE_SLOT_TYPE = "application/x-pcd-slot";

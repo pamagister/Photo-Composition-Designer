@@ -40,18 +40,21 @@ class ProjectExporter:
         settings: Settings | None = None,
         *,
         composer: PageComposer | None = None,
+        anniversaries_path: Path | None = None,
     ) -> None:
         self._database = database
         self._composer = composer or PageComposer()
         self._default_profile = (
             OutputProfile.from_settings(settings) if settings is not None else None
         )
+        self._anniversaries_path = anniversaries_path
 
     def _service(self) -> ProjectRenderingService:
         return ProjectRenderingService(
             self._database,
             composer=self._composer,
             default_profile=self._default_profile,
+            anniversaries_path=self._anniversaries_path,
         )
 
     def render_page(

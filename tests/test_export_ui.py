@@ -13,6 +13,7 @@ from starlette.testclient import TestClient
 from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.app import create_app
+from photo_composition_designer.gui.routes.export import _default_export_folder
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.project.distribution import DistributionService
 from photo_composition_designer.project.inventory import InventoryService
@@ -124,7 +125,7 @@ def test_export_page_shows_effective_profile_and_actions(
     assert "Effective output settings" in response.text
     assert "100 x 80 mm" in response.text
     assert 'name="folder"' in response.text
-    assert f'value="project_{project_id}"' in response.text
+    assert f"project_{project_id}" in response.text
     assert "Source originals are" in response.text
 
 
@@ -181,7 +182,7 @@ def test_web_export_reports_missing_assets(
     assert "Exported 2 of 2 page(s)" in response.text
 
 
-def test_web_export_rejects_folders_outside_export_root(
+def test_web_export_rejects_traversal_and_accepts_absolute_destination(
     client: TestClient, gui_settings: GuiSettings, tmp_path: Path
 ):
     project_id, _ = _seed_project(gui_settings, tmp_path)
@@ -199,8 +200,14 @@ def test_web_export_rejects_folders_outside_export_root(
         f"/projects/{project_id}/export",
         data={"folder": str(tmp_path / "absolute"), "pdf": ""},
     )
-    assert response.status_code == 400
-    assert "relative path inside the export directory" in response.text
+    assert response.status_code == 200
+    assert "Exported 2 of 2 page(s)" in response.text
+    assert (tmp_path / "absolute" / "page_000.png").is_file()
+    download = client.get(
+        f"/projects/{project_id}/export/files",
+        params={"folder": str(tmp_path / "absolute"), "name": "page_000.png"},
+    )
+    assert download.status_code == 200
 
 
 def test_export_uses_each_project_profile(
@@ -221,6 +228,21 @@ def test_export_uses_each_project_profile(
         assert first_page.width == mm_to_px(100, 100)
     with Image.open(gui_settings.export_dir() / "second" / "page_000.png") as second_page:
         assert second_page.width == mm_to_px(120, 100)
+
+
+def test_export_defaults_to_os_pictures_directory(
+    gui_settings: GuiSettings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    home = tmp_path / "home"
+    pictures = home / "Pictures"
+    pictures.mkdir(parents=True)
+    monkeypatch.setenv("HOME", str(home))
+
+    assert _default_export_folder(gui_settings, 12) == (
+        pictures / "Photo-Composition-Designer" / "project_12"
+    )
 
 
 def test_preview_route_renders_pages_in_project_order(

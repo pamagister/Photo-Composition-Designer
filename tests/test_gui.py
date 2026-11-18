@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 
 from photo_composition_designer.cli.app import app as cli_app
 from photo_composition_designer.gui.app import create_app
-from photo_composition_designer.gui.settings import GuiSettings
+from photo_composition_designer.gui.settings import GuiSettings, load_gui_settings
 
 
 @pytest.fixture
@@ -21,6 +21,7 @@ def gui_settings(tmp_path, monkeypatch):
     cache_dir = tmp_path / "cache"
     monkeypatch.setenv("PCD_DATA_DIR", str(data_dir))
     monkeypatch.setenv("PCD_CACHE_DIR", str(cache_dir))
+    monkeypatch.setenv("PCD_CONFIG_DIR", str(tmp_path / "config"))
     return GuiSettings(data_dir=data_dir, cache_dir=cache_dir)
 
 
@@ -56,7 +57,7 @@ def test_health_and_index(client):
     assert response.json() == {
         "ok": True,
         "service": "photo-composition-designer",
-        "schema_version": 1,
+        "schema_version": 2,
     }
 
     response = client.get("/", follow_redirects=False)
@@ -73,7 +74,7 @@ def test_create_open_and_rename_project(client):
     response = client.get(project_url)
     assert response.status_code == 200
     assert "Family Calendar" in response.text
-    assert "No source directory configured" in response.text
+    assert "No photos scanned yet." in response.text
 
     response = client.post(
         f"{project_url}/rename",
@@ -115,9 +116,9 @@ def test_scan_inventory_and_media(client, source_dir):
     )
     assert response.status_code == 200
     assert "1 photos found" in response.text
-    assert "/media/photos/" in response.text
 
     inventory = client.get(f"{project_url}/inventory")
+    assert "/media/photos/" in inventory.text
     assert inventory.status_code == 200
     match = re.search(r"/media/photos/(\d+)", inventory.text)
     assert match is not None
@@ -179,6 +180,86 @@ def test_browse_rejects_missing_directory(client, tmp_path):
 
     assert response.status_code == 400
     assert response.json()["detail"] == "not a directory"
+
+
+def test_global_anniversaries_setting_is_saved_and_validated(client, tmp_path):
+    anniversaries = tmp_path / "anniversaries.ini"
+    anniversaries.write_text("[Birthdays]\nPaul = 6.1.\n", encoding="utf-8")
+
+    response = client.post(
+        "/settings",
+        data={"anniversaries_path": str(anniversaries)},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert client.get("/settings?saved=1").status_code == 200
+    assert str(anniversaries) in client.get("/settings").text
+    assert load_gui_settings().anniversaries_path == anniversaries.resolve()
+
+    invalid = client.post(
+        "/settings",
+        data={"anniversaries_path": str(tmp_path / "missing.ini")},
+    )
+    assert invalid.status_code == 200
+    assert "anniversaries file does not exist" in invalid.text
+    assert str(tmp_path / "missing.ini") in invalid.text
+
+
+def test_global_layout_editor_saves_new_versions(client):
+    layout_data = """[
+      {"key":"left","x":0,"y":0,"width":0.5,"height":1},
+      {"key":"right","x":0.5,"y":0,"width":0.5,"height":1}
+    ]"""
+    response = client.post(
+        "/layouts",
+        data={"key": "test_layout", "name": "Test Layout", "slots_json": layout_data},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert "key=test_layout" in response.headers["location"]
+
+    editor = client.get("/layouts?key=test_layout")
+    assert editor.status_code == 200
+    assert "Test Layout" in editor.text
+    assert "test_layout v1" in editor.text
+
+    response = client.post(
+        "/layouts",
+        data={
+            "key": "test_layout",
+            "name": "Test Layout Updated",
+            "slots_json": layout_data,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    layouts = client.get("/layouts?key=test_layout&saved=1")
+    assert "test_layout v2" in layouts.text
+    assert "Layout version saved." in layouts.text
+
+
+def test_pcd_project_export_and_import(client):
+    project_url = _create_project(client, name="Archive Calendar")
+
+    exported = client.get(f"{project_url}/archive")
+    assert exported.status_code == 200
+    assert exported.headers["content-type"] == "application/vnd.photo-composition-designer"
+    assert "filename*=UTF-8''Archive%20Calendar.pcd" in exported.headers["content-disposition"]
+
+    imported = client.post(
+        "/projects/import-pcd",
+        files={
+            "archive": (
+                "calendar.pcd",
+                exported.content,
+                "application/vnd.photo-composition-designer",
+            )
+        },
+        follow_redirects=False,
+    )
+    assert imported.status_code == 303
+    assert imported.headers["location"] != project_url
+    assert client.get(imported.headers["location"]).status_code == 200
 
 
 def test_cli_exposes_gui_command():

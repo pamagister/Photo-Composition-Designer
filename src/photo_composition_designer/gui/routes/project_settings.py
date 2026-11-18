@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import date
+from pathlib import Path
 from typing import Annotated, Any
 from urllib.parse import quote
 
@@ -169,6 +171,14 @@ def _values_from_form(form: Mapping[str, Any]) -> dict[str, Any]:
             for name in (*_INT_FIELDS, *_FLOAT_FIELDS, *_TEXT_FIELDS)
         }
     )
+    values.update(
+        {
+            "project.name": str(form.get("project.name", "")),
+            "project.start_date": str(form.get("project.start_date", "")),
+            "project.page_count": str(form.get("project.page_count", "")),
+            "project.confirm_remove": _is_checked(form.get("project.confirm_remove")),
+        }
+    )
     return values
 
 
@@ -190,8 +200,23 @@ def _settings_response(
     status_code: int = 200,
 ) -> HTMLResponse:
     """Render the project settings page."""
-    project = _get_project(service, project_id)
+    aggregate = service.open_project(project_id)
+    project = aggregate.project
     profile = profile_from_project(project)
+    page_start = aggregate.pages[0].start_date if aggregate.pages else ""
+    source_states = [
+        {"root": root, "exists": Path(root.path).is_dir()} for root in aggregate.source_roots
+    ]
+    form_values = _values_from_profile(profile) if values is None else values
+    if values is None:
+        form_values.update(
+            {
+                "project.name": project.name,
+                "project.start_date": page_start,
+                "project.page_count": len(aggregate.pages),
+                "project.confirm_remove": False,
+            }
+        )
     return TEMPLATES.TemplateResponse(
         request,
         "project_settings.html",
@@ -199,7 +224,8 @@ def _settings_response(
             "page_title": f"Settings - {project.name}",
             "project": project,
             "profile": profile,
-            "values": _values_from_profile(profile) if values is None else values,
+            "values": form_values,
+            "source_states": source_states,
             "error": error,
             "save_state": "Saved",
         },
@@ -228,6 +254,22 @@ async def save_project_settings(
     form = await request.form()
     try:
         profile = _profile_from_form(form)
+        aggregate = service.open_project(project_id)
+        current_start = aggregate.pages[0].start_date if aggregate.pages else ""
+        start_value = str(form.get("project.start_date", current_start)).strip()
+        count_value = str(form.get("project.page_count", len(aggregate.pages))).strip()
+        if not start_value:
+            raise ValueError("project.start_date is required")
+        if not count_value:
+            raise ValueError("project.page_count is required")
+        project_name = str(form.get("project.name", aggregate.project.name)).strip()
+        service.update_calendar(
+            project_id,
+            start_date=date.fromisoformat(start_value),
+            page_count=int(count_value),
+            name=project_name,
+            confirm_remove=_is_checked(form.get("project.confirm_remove")),
+        )
         service.update_output_profile(project_id, profile)
     except (ValueError, ProjectError) as exc:
         return _settings_response(

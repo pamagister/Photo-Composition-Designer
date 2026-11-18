@@ -284,7 +284,7 @@ def test_export_workflow(live_server, browser_page):
     page = browser_page
     project_id = live_server["project_id"]
     _open_editor(page, live_server, live_server["page_ids"][0])
-    page.get_by_role("link", name="Export").click()
+    page.get_by_role("link", name="Export photos").click()
     expect(page.get_by_role("heading", name="Export project")).to_be_visible()
 
     page.get_by_role("button", name="Export pages").click()

@@ -8,7 +8,6 @@ import pytest
 
 from photo_composition_designer.core.errors import (
     CrossProjectAssignmentError,
-    DuplicatePhotoAssignmentError,
     DuplicateSlotAssignmentError,
     SlotLayoutMismatchError,
 )
@@ -116,12 +115,13 @@ def test_remove_assignment_returns_photo_to_pool(connection, project, page, phot
     ]
 
 
-def test_duplicate_photo_assignment_is_rejected(connection, project, page, photo, layout):
+def test_photo_may_be_assigned_to_multiple_slots(connection, project, page, photo, layout):
     repository = AssignmentRepository(connection)
-    repository.assign(project.id, page.id, layout.slots[0].id, photo.id)
+    first = repository.assign(project.id, page.id, layout.slots[0].id, photo.id)
+    second = repository.assign(project.id, page.id, layout.slots[1].id, photo.id)
 
-    with pytest.raises(DuplicatePhotoAssignmentError):
-        repository.assign(project.id, page.id, layout.slots[1].id, photo.id)
+    assert first.photo_id == second.photo_id == photo.id
+    assert len(repository.list_by_project(project.id)) == 2
 
 
 def test_duplicate_slot_occupancy_is_rejected(

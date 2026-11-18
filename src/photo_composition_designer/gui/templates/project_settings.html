@@ -12,6 +12,36 @@
 
 <form method="post" action="/projects/{{ project.id }}/settings" class="settings-form">
   <fieldset class="settings-group">
+    <legend>Project</legend>
+    <div class="settings-grid">
+      <div class="field settings-wide">
+        <label for="project-name">Project name</label>
+        <input id="project-name" name="project.name"
+               value="{{ values['project.name'] }}" required>
+      </div>
+      <div class="field">
+        <label for="project-start-date">First page start date</label>
+        <input id="project-start-date" type="date" name="project.start_date"
+               value="{{ values['project.start_date'] }}" required>
+      </div>
+      <div class="field">
+        <label for="project-page-count">Pages</label>
+        <input id="project-page-count" type="number" min="1"
+               name="project.page_count"
+               value="{{ values['project.page_count'] }}" required>
+      </div>
+      <div class="field checkbox-field settings-wide">
+        <label for="project-confirm-remove">
+          <input id="project-confirm-remove" type="checkbox"
+                 name="project.confirm_remove" value="1"
+                 {% if values['project.confirm_remove'] %}checked{% endif %}>
+          Confirm removing pages with photos or descriptions
+        </label>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="settings-group">
     <legend>Calendar</legend>
     <div class="settings-grid">
       <div class="field checkbox-field">
@@ -230,6 +260,76 @@
     <a class="button" href="/projects/{{ project.id }}">Cancel</a>
   </div>
 </form>
+
+<section class="panel source-settings">
+  <h2>Source directories</h2>
+  <p class="muted">
+    Source directories and scans belong to this project, separately from its
+    calendar and layout settings.
+  </p>
+  {% for state in source_states %}
+  <article class="source-root">
+    <p>
+      <strong>{{ state.root.path }}</strong>
+      {% if state.root.active %}<span class="success">active</span>{% endif %}
+      <span class="{{ 'success' if state.exists else 'error' }}">
+        {{ 'available' if state.exists else 'missing' }}
+      </span>
+      {% if state.root.last_scan_at %}
+      <span class="muted">last scan {{ state.root.last_scan_at[:19] }}</span>
+      {% endif %}
+    </p>
+    <div class="form-row">
+      {% if not state.root.active %}
+      <form method="post"
+            action="/projects/{{ project.id }}/source/{{ state.root.id }}/activate">
+        <button>Make active</button>
+      </form>
+      {% endif %}
+      <form method="post" action="/projects/{{ project.id }}/source/{{ state.root.id }}/remove">
+        <button class="danger" type="submit">Remove</button>
+      </form>
+    </div>
+    <details>
+      <summary>Relink or change directory</summary>
+      <form hx-get="/projects/{{ project.id }}/source/{{ state.root.id }}/remap/preview"
+            hx-target="#remap-preview-{{ state.root.id }}"
+            hx-swap="innerHTML">
+        <div class="field">
+          <label for="remap-{{ state.root.id }}">New directory</label>
+          <input id="remap-{{ state.root.id }}" name="new_root"
+                 value="{{ state.root.path }}" list="source-directories" required>
+        </div>
+        <button type="submit">Preview relink</button>
+        <span class="htmx-indicator muted">Checking files...</span>
+      </form>
+      <div id="remap-preview-{{ state.root.id }}"></div>
+    </details>
+  </article>
+  {% else %}
+  <p class="muted">No source directory configured.</p>
+  {% endfor %}
+  <form method="post" action="/projects/{{ project.id }}/source" class="form-row">
+    <div class="field">
+      <label for="source-path">Add a local directory</label>
+      <input id="source-path" name="path" list="source-directories"
+             placeholder="/home/paul/Pictures" required>
+    </div>
+    <button>Add source</button>
+  </form>
+  <datalist id="source-directories"></datalist>
+
+  <h3>Scan</h3>
+  <form hx-post="/projects/{{ project.id }}/scan"
+        hx-target="#scan-area"
+        hx-swap="innerHTML">
+    <button class="primary" type="submit">Scan active source directory</button>
+    <span class="htmx-indicator muted">
+      Scanning... this can take a while for large directories.
+    </span>
+  </form>
+  <div id="scan-area"></div>
+</section>
 
 <section class="panel settings-duplicate">
   <h2>Duplicate project</h2>

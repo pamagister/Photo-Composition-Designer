@@ -299,7 +299,7 @@ def test_layout_apply_requires_confirmation_when_photos_are_displaced(editor_cli
     )
     assert applied.status_code == 200
     assert "Layout changed." in applied.text
-    assert f"revision {before + 1}" in applied.text
+    assert f'data-render-revision="{before + 1}"' in applied.text
     assert applied.headers["HX-Trigger"] == "pcd:refresh-unused"
 
 
@@ -370,7 +370,7 @@ def test_page_preview_route_returns_cached_jpeg(editor_client, tmp_path):
 
     assert first.status_code == 200
     assert first.headers["content-type"] == "image/jpeg"
-    assert first.headers["cache-control"] == "public, max-age=3600"
+    assert first.headers["cache-control"] == "no-cache"
     assert first.content
     assert second.content == first.content
 

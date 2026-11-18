@@ -9,7 +9,6 @@ import pytest
 from PIL import Image
 
 from photo_composition_designer.core.errors import (
-    DuplicatePhotoAssignmentError,
     DuplicateSlotAssignmentError,
 )
 from photo_composition_designer.db.schema import WorkspaceDatabase
@@ -133,7 +132,9 @@ def test_apply_proposal_persists_assignments(tmp_path: Path) -> None:
     distribution.apply(project.id, proposal)
     with database.connect() as connection:
         count = connection.execute("SELECT COUNT(*) FROM assignments").fetchone()[0]
+        revisions = [page.render_revision for page in PageRepository(connection).list(project.id)]
     assert count == 4
+    assert revisions == [2, 2]
 
 
 def test_assign_to_empty_slot_and_unused_pool(tmp_path: Path) -> None:
@@ -151,7 +152,7 @@ def test_assign_to_empty_slot_and_unused_pool(tmp_path: Path) -> None:
     assert len(pool) == 1
 
 
-def test_assign_rejects_duplicate_photo(tmp_path: Path) -> None:
+def test_assign_allows_reusing_photo(tmp_path: Path) -> None:
     database, _distribution, editing, project = _setup(
         tmp_path, page_count=1, photo_count=2, slots_per_page=2
     )
@@ -161,8 +162,14 @@ def test_assign_rejects_duplicate_photo(tmp_path: Path) -> None:
         photos = connection.execute("SELECT id FROM photos ORDER BY id").fetchall()
 
     editing.assign_to_empty_slot(project.id, page.id, layout.slots[0].id, photos[0]["id"])
-    with pytest.raises(DuplicatePhotoAssignmentError):
-        editing.assign_to_empty_slot(project.id, page.id, layout.slots[1].id, photos[0]["id"])
+    editing.assign_to_empty_slot(project.id, page.id, layout.slots[1].id, photos[0]["id"])
+
+    with database.connect() as connection:
+        rows = connection.execute(
+            "SELECT photo_id FROM assignments WHERE project_id = ? ORDER BY slot_id",
+            (project.id,),
+        ).fetchall()
+    assert [row["photo_id"] for row in rows] == [photos[0]["id"], photos[0]["id"]]
 
 
 def test_assign_rejects_occupied_slot(tmp_path: Path) -> None:

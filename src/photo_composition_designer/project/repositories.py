@@ -15,7 +15,6 @@ from typing import Any
 from photo_composition_designer.core.errors import (
     CrossProjectAssignmentError,
     DuplicateAssignmentError,
-    DuplicatePhotoAssignmentError,
     DuplicateSlotAssignmentError,
     ProjectNotFoundError,
     SlotLayoutMismatchError,
@@ -125,6 +124,8 @@ class ProjectRepository:
         project_id: int,
         *,
         name: str | None = None,
+        calendar_year: int | None = None,
+        page_count: int | None = None,
         settings: dict[str, Any] | None = None,
         output_profile: dict[str, Any] | None = None,
         updated_at: str | None = None,
@@ -135,10 +136,12 @@ class ProjectRepository:
             raise ProjectNotFoundError(f"project {project_id} does not exist")
 
         self._connection.execute(
-            "UPDATE projects SET name = ?, settings_json = ?, output_profile_json = ?, "
-            "updated_at = ? WHERE id = ?",
+            "UPDATE projects SET name = ?, calendar_year = ?, page_count = ?, "
+            "settings_json = ?, output_profile_json = ?, updated_at = ? WHERE id = ?",
             (
                 current.name if name is None else name,
+                current.calendar_year if calendar_year is None else calendar_year,
+                current.page_count if page_count is None else page_count,
                 _dump_json(current.settings if settings is None else settings),
                 _dump_json(current.output_profile if output_profile is None else output_profile),
                 updated_at or _now(),
@@ -438,6 +441,37 @@ class PageRepository:
         ).fetchall()
         return [self._row_to_page(row) for row in rows]
 
+    def update_dates(self, page_id: int, start_date: str, end_date: str) -> CalendarPage:
+        """Update a page's date range and invalidate its preview."""
+        self._connection.execute(
+            "UPDATE pages SET start_date = ?, end_date = ?, "
+            "render_revision = render_revision + 1, updated_at = ? WHERE id = ?",
+            (start_date, end_date, _now(), page_id),
+        )
+        page = self.get(page_id)
+        if page is None:
+            raise ProjectNotFoundError(f"page {page_id} does not exist")
+        return page
+
+    def has_content_from(self, project_id: int, page_index: int) -> bool:
+        """Return whether truncated pages contain assignments or descriptions."""
+        row = self._connection.execute(
+            "SELECT EXISTS(SELECT 1 FROM pages p "
+            "LEFT JOIN assignments a ON a.page_id = p.id "
+            "WHERE p.project_id = ? AND p.page_index >= ? "
+            "AND (a.id IS NOT NULL OR p.description <> ''))",
+            (project_id, page_index),
+        ).fetchone()
+        return bool(row[0])
+
+    def delete_from_index(self, project_id: int, page_index: int) -> int:
+        """Delete a project's pages from an index onward."""
+        cursor = self._connection.execute(
+            "DELETE FROM pages WHERE project_id = ? AND page_index >= ?",
+            (project_id, page_index),
+        )
+        return cursor.rowcount
+
     def update_description(self, page_id: int, description: str) -> CalendarPage:
         """Update a page description and increment its render revision."""
         self._connection.execute(
@@ -617,17 +651,6 @@ class AssignmentRepository:
         if slot_row is None or page_row["layout_id"] != slot_row["layout_id"]:
             raise SlotLayoutMismatchError(
                 f"slot {slot_id} does not belong to the layout of page {page_id}"
-            )
-
-        if (
-            self._connection.execute(
-                "SELECT 1 FROM assignments WHERE project_id = ? AND photo_id = ?",
-                (project_id, photo_id),
-            ).fetchone()
-            is not None
-        ):
-            raise DuplicatePhotoAssignmentError(
-                f"photo {photo_id} is already assigned in project {project_id}"
             )
 
         if (

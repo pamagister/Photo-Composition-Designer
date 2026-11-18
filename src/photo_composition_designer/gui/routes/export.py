@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote
@@ -30,8 +32,18 @@ def _export_folder(
     project_id: int,
     folder: str,
 ) -> tuple[Path, str]:
-    """Resolve a relative export folder inside the workspace export directory."""
-    relative = Path(folder.strip() or f"project_{project_id}")
+    """Resolve a chosen local export folder or a workspace-relative folder."""
+    normalized = folder.strip()
+    if normalized:
+        chosen = Path(normalized).expanduser()
+        if chosen.is_absolute():
+            target = chosen.resolve()
+            if target == Path(target.anchor):
+                raise ValueError("export folder cannot be a filesystem root")
+            return target, str(target)
+        relative = chosen
+    else:
+        relative = Path(f"project_{project_id}")
     if relative.is_absolute() or any(part in {"", ".", ".."} for part in relative.parts):
         raise ValueError("export folder must be a relative path inside the export directory")
     root = settings.export_dir().resolve()
@@ -39,6 +51,34 @@ def _export_folder(
     if not target.is_relative_to(root) or target == root:
         raise ValueError("export folder must stay inside the export directory")
     return target, relative.as_posix()
+
+
+def _pictures_directory() -> Path | None:
+    """Return the configured OS pictures directory when it exists."""
+    home = Path.home()
+    candidates: list[Path] = []
+    if os.name == "nt":
+        candidates.append(Path(os.environ.get("USERPROFILE", home)) / "Pictures")
+    elif sys.platform == "darwin":
+        candidates.append(home / "Pictures")
+    else:
+        user_dirs = home / ".config" / "user-dirs.dirs"
+        if user_dirs.is_file():
+            for line in user_dirs.read_text(encoding="utf-8").splitlines():
+                if line.startswith("XDG_PICTURES_DIR="):
+                    configured = line.split("=", 1)[1].strip().strip('"')
+                    candidates.append(Path(configured.replace("$HOME", str(home))).expanduser())
+                    break
+        candidates.extend((home / "Pictures", home / "Bilder"))
+    return next((candidate for candidate in candidates if candidate.is_dir()), None)
+
+
+def _default_export_folder(settings: GuiSettings, project_id: int) -> Path:
+    """Choose a project-specific directory under Pictures when available."""
+    pictures = _pictures_directory()
+    if pictures is not None:
+        return pictures / "Photo-Composition-Designer" / f"project_{project_id}"
+    return settings.export_dir() / f"project_{project_id}"
 
 
 def _export_file_url(project_id: int, folder: str, path: Path) -> str:
@@ -55,7 +95,7 @@ def _export_context(
     error: str = "",
 ) -> dict[str, object]:
     """Build the template context for export pages and fragments."""
-    default_folder = folder.strip() or f"project_{project_id}"
+    default_folder = folder.strip() or str(_default_export_folder(settings, project_id))
     file_rows: list[dict[str, object]] = []
     pdf_url = ""
     if result is not None:
@@ -139,12 +179,17 @@ def run_export(
     project = _get_project(service, project_id)
     profile = profile_from_project(project)
     try:
-        target, relative_folder = _export_folder(settings, project_id, folder)
-        result = ProjectExporter(database).render_project(
+        requested_folder = folder.strip() or str(_default_export_folder(settings, project_id))
+        target, relative_folder = _export_folder(settings, project_id, requested_folder)
+        result = ProjectExporter(
+            database,
+            anniversaries_path=settings.anniversaries_path,
+        ).render_project(
             project_id,
             target,
             write_pdf=bool(pdf),
         )
+        request.app.state.export_paths.add(target.resolve())
     except (OSError, ValueError, ProjectError) as exc:
         context = _export_context(
             settings,
@@ -215,6 +260,7 @@ def _export_response(
 
 @router.get("/projects/{project_id}/export/files")
 def export_file(
+    request: Request,
     project_id: int,
     settings: SettingsDependency,
     folder: str = "",
@@ -225,6 +271,8 @@ def export_file(
         target, _ = _export_folder(settings, project_id, folder)
     except ValueError as exc:
         raise HTTPException(404, "export file not found") from exc
+    if target.resolve() not in request.app.state.export_paths:
+        raise HTTPException(404, "export file not found")
     filename = Path(name)
     if not name or filename.name != name:
         raise HTTPException(404, "export file not found")

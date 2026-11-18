@@ -4,7 +4,7 @@
 {% elif result %}
 <p class="success" role="status">
   Exported {{ result.rendered | length }} of {{ result.pages }} page(s) to
-  <code>{{ export_root }}/{{ folder }}</code>.
+  <code>{{ folder }}</code>.
 </p>
 {% if result.warnings %}
 <div class="export-warnings">

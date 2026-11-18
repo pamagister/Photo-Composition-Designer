@@ -1,7 +1,7 @@
 """Page editing services: assign, remove, replace, swap and unused pool.
 
 All operations are transactional and enforce the project invariants: a photo
-is assigned at most once per project, and a slot holds at most one photo.
+may be assigned repeatedly, and a slot holds at most one photo.
 Every mutation increments the affected page's render revision so cached
 previews are invalidated.
 """
@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from photo_composition_designer.core.errors import (
-    DuplicatePhotoAssignmentError,
     DuplicateSlotAssignmentError,
     ProjectError,
 )
@@ -114,7 +113,6 @@ class PageEditingService:
         """Assign a photo to an empty slot.
 
         Raises:
-            DuplicatePhotoAssignmentError: If the photo is already assigned.
             DuplicateSlotAssignmentError: If the slot is occupied.
             ProjectError: If the page, slot or layout is invalid.
         """
@@ -125,10 +123,6 @@ class PageEditingService:
                 raise ProjectError(f"slot {slot_id} does not belong to page {page_id} layout")
 
             assignments = AssignmentRepository(connection)
-            if any(a.photo_id == photo_id for a in assignments.list(project_id)):
-                raise DuplicatePhotoAssignmentError(
-                    f"photo {photo_id} is already assigned in project {project_id}"
-                )
             if any(a.slot_id == slot_id for a in assignments.list_by_page(page_id)):
                 raise DuplicateSlotAssignmentError(
                     f"slot {slot_id} on page {page_id} is already occupied"
@@ -164,14 +158,6 @@ class PageEditingService:
                 raise ProjectError(f"slot {slot_id} does not belong to page {page_id} layout")
 
             assignments = AssignmentRepository(connection)
-            if any(
-                a.photo_id == photo_id and a.slot_id != slot_id
-                for a in assignments.list(project_id)
-            ):
-                raise DuplicatePhotoAssignmentError(
-                    f"photo {photo_id} is assigned to a different slot"
-                )
-
             assignments.remove_by_page_slot(page_id, slot_id)
             assignments.assign(
                 project_id=project_id,

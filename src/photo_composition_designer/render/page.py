@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from PIL import Image
 
+from photo_composition_designer.core.anniversaries import Anniversaries
 from photo_composition_designer.core.color import Color
 from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.output_profile import OutputProfile
@@ -41,6 +42,7 @@ class PageRenderInput:
     gps_coordinates: tuple[tuple[float, float], ...] = ()
     title: str = ""
     title_page: bool = False
+    anniversaries: Anniversaries | None = None
 
 
 class PageComposer:
@@ -70,12 +72,9 @@ class PageComposer:
         margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
         spacing = mm_to_px(profile.layout.spacing, dpi)
 
-        content_top = margin_top
         calendar_height = mm_to_px(profile.size.calendar_height, dpi)
-        if calendar_height > 0 and profile.calendar.use_calendar:
-            strip = self._render_calendar_strip(page, profile, settings, page_width)
-            canvas.paste(strip, (0, content_top))
-            content_top += calendar_height + spacing
+        show_calendar = calendar_height > 0 and profile.calendar.use_calendar
+        content_top = margin_top
 
         description_image: Image.Image | None = None
         if profile.layout.use_photo_description and page.description:
@@ -93,7 +92,9 @@ class PageComposer:
         content_bottom = page_height - margin_bottom
         if description_image is not None:
             content_bottom -= description_image.height
-        content_height = max(1, content_bottom - content_top)
+        calendar_top = content_bottom - calendar_height if show_calendar else content_bottom
+        photo_bottom = calendar_top - spacing if show_calendar else calendar_top
+        content_height = max(1, photo_bottom - content_top)
 
         map_image = self._render_map(page, profile, content_width, content_height, spacing)
         slots_width = content_width
@@ -113,6 +114,10 @@ class PageComposer:
         if map_image is not None:
             map_x = content_left + slots_width + spacing
             canvas.paste(map_image, (map_x, content_top))
+
+        if show_calendar:
+            strip = self._render_calendar_strip(page, profile, settings, page_width)
+            canvas.paste(strip, (0, calendar_top))
 
         if description_image is not None:
             canvas.paste(
@@ -143,6 +148,7 @@ class PageComposer:
             useShortDayNames=profile.calendar.use_short_day_names,
             useShortMonthNames=profile.calendar.use_short_month_names,
             marginSides=margin_sides,
+            anniversaries=page.anniversaries,
             dpi=profile.size.dpi,
             horizontal=profile.calendar.horizontal_orientation,
         )

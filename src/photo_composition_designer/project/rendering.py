@@ -15,7 +15,9 @@ from pathlib import Path
 
 from PIL import Image
 
+from photo_composition_designer.core.anniversaries import Anniversaries
 from photo_composition_designer.core.errors import ProjectNotFoundError
+from photo_composition_designer.core.helpers import get_base_path
 from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.io.media import resolve_source_path
@@ -103,11 +105,15 @@ class ProjectRenderingService:
         composer: PageComposer | None = None,
         preview_dir: Path | None = None,
         default_profile: OutputProfile | None = None,
+        anniversaries_path: Path | None = None,
     ) -> None:
         self._database = database
         self._composer = composer or PageComposer()
         self._preview_dir = Path(preview_dir) if preview_dir is not None else None
         self._default_profile = default_profile
+        self._anniversaries_path = (
+            Path(anniversaries_path) if anniversaries_path is not None else None
+        )
 
     def profile_for(self, connection, project_id: int) -> OutputProfile:
         """Return the output profile for a project."""
@@ -168,6 +174,7 @@ class ProjectRenderingService:
             gps_coordinates=tuple(coordinates),
             title=profile.calendar.title,
             title_page=page.page_index == 0,
+            anniversaries=Anniversaries(self._anniversaries_path),
         )
 
     def render_page_image(self, connection, page: CalendarPage) -> Image.Image:
@@ -220,11 +227,21 @@ class ProjectRenderingService:
             "layout_id": page.layout_id,
             "layout_version": page.layout_version,
             "profile": profile.profile_hash(),
+            "anniversaries": self._anniversaries_signature(),
             "mode": mode,
             "max_width": max_width,
         }
         encoded = json.dumps(payload, sort_keys=True).encode()
         return hashlib.sha256(encoded).hexdigest()[:24]
+
+    def _anniversaries_signature(self) -> tuple[str, int, int, str]:
+        path = self._anniversaries_path or (get_base_path() / "anniversaries.ini")
+        try:
+            stat = path.stat()
+        except FileNotFoundError:
+            return (str(path), 0, 0, "")
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        return (str(path), stat.st_mtime_ns, stat.st_size, digest)
 
     def render_preview(
         self,

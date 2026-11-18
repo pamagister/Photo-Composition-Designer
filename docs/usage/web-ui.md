@@ -21,6 +21,16 @@ originals are only read, never moved, renamed or modified.
 The project snapshots the current output-profile defaults at creation time. Later
 changes to workspace defaults therefore cannot alter an existing project.
 
+## Global settings and layouts
+
+**App settings** configures the shared `anniversaries.ini` path. The file stays
+outside projects and is read by previews and exports; changing its contents
+invalidates cached page previews.
+
+**Layouts** opens the global layout editor. Define normalized slot rectangles in
+the JSON slot list and save a new version. Applying a later version is explicit:
+pages already using an older version keep their existing layout snapshots.
+
 ## Add and scan sources
 
 * Add one or more local directories under **Source directories**. Exactly one
@@ -35,12 +45,12 @@ changes to workspace defaults therefore cannot alter an existing project.
 
 ## Preview and apply a distribution
 
-Choose a strategy (`Equal`, `Random` with an optional seed, or `Date aware`) and
-select **Preview distribution**. The preview shows per-page samples, filled and
-empty slots, overflow and the total unassigned count without changing the
-project. **Apply distribution** persists the reviewed proposal in one
-transaction; repeating the same confirmation is a no-op and a stale preview is
-rejected.
+Choose a strategy (`Equal`, `Random` with an optional seed, or `Date aware`) in
+**Extras / Distribution**, then select **Preview distribution**. The preview
+shows per-page samples, filled and empty slots, overflow and the total
+unassigned count without changing the project. **Apply distribution** persists
+the reviewed proposal in one transaction; repeating the same confirmation is a
+no-op and a stale preview is rejected.
 
 Photos that exceed the available slots stay in the unused pool. Empty slots are
 valid and are reported explicitly.
@@ -64,6 +74,8 @@ slot grid on the canvas, and the unused photos below it.
   **Preview change**. Assignments are preserved where possible, and displaced
   photos are listed before you confirm.
 * **Change page** – select a page thumbnail. The sidebar marks the active page.
+* **Photos** – switch the horizontal photo strip between all photos and unused
+  photos. A yellow `!` marks photos used more than once.
 
 Every edit is committed in one transaction, increments the page render revision
 and refreshes the page preview and unused pool. Adding or removing a photo never
@@ -80,17 +92,20 @@ list becomes a horizontal strip; no control is hidden in a drawer.
 ## Page previews and caching
 
 Sidebar thumbnails and the canvas preview are rendered from project data at
-reduced resolution. Previews are cached by page revision, layout version, output
-profile hash and requested width, and photo thumbnails are cached by photo and
+reduced resolution. Slot spacing and rounded photo corners follow the project
+output profile; the calendar strip is composed below the photos. Previews are
+cached by page revision, layout version, output profile hash, shared anniversary
+file version and requested width. Photo thumbnails are cached by photo and
 source modification time. A cached preview is served without decoding the
 originals again. Editing a page invalidates its cached preview.
 
 ## Project settings
 
-**Project settings** edits the project's output profile: calendar language and
-holiday countries, page size and DPI, margins and spacing, fonts and colors, map
-options, and description/PDF toggles. Settings are validated before saving, and
-only actual changes increment page render revisions.
+**Project settings** edits the name, start date, page count and output profile:
+calendar language and holiday countries, page size and DPI, margins and
+spacing, fonts and colors, map options, and description/PDF toggles. Removing
+pages with saved content requires confirmation. Settings are validated before
+saving, and actual render-affecting changes increment page revisions.
 
 ## Duplicate a project
 
@@ -103,9 +118,14 @@ source references remain relative and relinkable.
 
 * **Preview all pages** renders every page in project order and opens the first
   page.
-* **Export** renders PNG pages and, when enabled, a combined PDF into the export
-  directory. Choose a relative folder name and start the export; progress and the
-  resulting file links appear in place.
+* **Export photos** renders PNG pages and, when enabled, a combined PDF. The
+  default is a project-specific folder under the OS Pictures/Bilder directory
+  when it exists; an absolute local path or workspace-relative folder can be
+  entered instead.
+* **Export project (.pcd)** downloads a reference-only project archive.
+  **Import project (.pcd)** creates a new project from such an archive. Archives
+  include layout snapshots, assignments and source references, not photo files;
+  source directories may need relinking on another computer.
 * Exported pages and the PDF follow the exact project page order and use the
   project's stored output profile.
 * Missing or unavailable assets produce actionable warnings instead of silent

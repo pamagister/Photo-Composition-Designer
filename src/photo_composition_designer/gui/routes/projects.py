@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Annotated
@@ -55,6 +56,7 @@ def _project_context(
     aggregate: ProjectAggregate,
     *,
     selected_page_id: int | None = None,
+    photo_filter: str = "unused",
     error: str = "",
     notice: str = "",
 ) -> dict[str, object]:
@@ -71,8 +73,10 @@ def _project_context(
         if selected
         else []
     )
-    assigned_ids = {assignment.photo_id for assignment in assignments}
+    usage_counts = Counter(assignment.photo_id for assignment in assignments)
+    assigned_ids = set(usage_counts)
     unused_photos = [photo for photo in photos if photo.id not in assigned_ids]
+    available_photos = [photo for photo in photos if photo.available]
     source_states = [
         {"root": root, "exists": Path(root.path).is_dir()} for root in aggregate.source_roots
     ]
@@ -100,7 +104,10 @@ def _project_context(
         "photos": photos,
         "photos_by_id": {photo.id: photo for photo in photos},
         "assigned_ids": assigned_ids,
+        "usage_counts": usage_counts,
         "unused_photos": unused_photos,
+        "available_photos": available_photos,
+        "photo_filter": "all" if photo_filter == "all" else "unused",
         "slots": slots,
         "slot_count": slot_count,
         "slot_assignment_map": slot_assignment_map,
@@ -109,17 +116,6 @@ def _project_context(
         "error": error,
         "notice": notice,
         "save_state": f"Saved {aggregate.project.updated_at[:19].replace('T', ' ')}",
-    }
-
-
-def _inventory_context(database: WorkspaceDatabase, project_id: int) -> dict[str, object]:
-    """Build the template context for the inventory fragment."""
-    connection = database.connect()
-    photos = PhotoRepository(connection).list(project_id)
-    assignments = AssignmentRepository(connection).list_by_project(project_id)
-    return {
-        "photos": photos,
-        "assigned_ids": {assignment.photo_id for assignment in assignments},
     }
 
 
@@ -196,7 +192,9 @@ def _page_context(
     assignments = list(AssignmentRepository(connection).list_by_page(page_id))
     photos = PhotoRepository(connection).list(project_id)
     assigned_ids = {assignment.photo_id for assignment in assignments}
+    usage_counts = Counter(assignment.photo_id for assignment in assignments)
     unused_photos = [photo for photo in photos if photo.id not in assigned_ids]
+    available_photos = [photo for photo in photos if photo.available]
     slots: list = []
     slot_count = 0
     slot_assignment_map: dict = {}
@@ -215,12 +213,25 @@ def _page_context(
         "photos": photos,
         "photos_by_id": {photo.id: photo for photo in photos},
         "unused_photos": unused_photos,
+        "available_photos": available_photos,
+        "usage_counts": usage_counts,
         "slots": slots,
         "slot_count": slot_count,
         "slot_assignment_map": slot_assignment_map,
         "catalogue": load_catalogue(),
     }
     return context
+
+
+def _inventory_context(database: WorkspaceDatabase, project_id: int) -> dict[str, object]:
+    """Build the legacy full-inventory fragment context."""
+    connection = database.connect()
+    photos = PhotoRepository(connection).list(project_id)
+    assignments = AssignmentRepository(connection).list_by_project(project_id)
+    return {
+        "photos": photos,
+        "assigned_ids": {assignment.photo_id for assignment in assignments},
+    }
 
 
 def _canvas_response(
@@ -395,6 +406,7 @@ def project_detail(
     service: ProjectServiceDependency,
     database: DatabaseDependency,
     page: Annotated[int | None, Query(description="Selected page id.")] = None,
+    photos: Annotated[str, Query(description="Photo inventory filter.")] = "unused",
     error: str = "",
 ) -> HTMLResponse:
     """Show one project with its pages, source roots and photo inventory."""
@@ -426,6 +438,7 @@ def project_detail(
         database,
         aggregate,
         selected_page_id=page,
+        photo_filter=photos,
         error=error,
         notice=notice,
     )
@@ -459,7 +472,11 @@ def page_preview(
     max_width: Annotated[int, Query(ge=120, le=1600)] = 640,
 ) -> FileResponse:
     """Return a cached reduced-resolution render of one page."""
-    rendering = ProjectRenderingService(database, preview_dir=settings.preview_dir())
+    rendering = ProjectRenderingService(
+        database,
+        preview_dir=settings.preview_dir(),
+        anniversaries_path=settings.anniversaries_path,
+    )
     try:
         path = rendering.render_preview(project_id, page_id, max_width=max_width)
     except ProjectNotFoundError as exc:
@@ -467,7 +484,7 @@ def page_preview(
     return FileResponse(
         path,
         media_type="image/jpeg",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "no-cache"},
     )
 
 
@@ -482,7 +499,11 @@ def preview_project(
     aggregate = _load_project(service, project_id)
     if not aggregate.pages:
         return _error_redirect(project_id, "this project has no pages to preview")
-    rendering = ProjectRenderingService(database, preview_dir=settings.preview_dir())
+    rendering = ProjectRenderingService(
+        database,
+        preview_dir=settings.preview_dir(),
+        anniversaries_path=settings.anniversaries_path,
+    )
     for page in aggregate.pages:
         rendering.render_preview(project_id, page.id, max_width=320)
     first_page = aggregate.pages[0]
@@ -675,7 +696,6 @@ def scan_project(
     request: Request,
     project_id: int,
     inventory: InventoryServiceDependency,
-    database: DatabaseDependency,
 ) -> HTMLResponse | RedirectResponse:
     """Scan the active source root and return a summary fragment."""
     try:
@@ -686,14 +706,13 @@ def scan_project(
             return TEMPLATES.TemplateResponse(
                 request,
                 "partials/scan_result.html",
-                {"summary": None, "error": message, **_inventory_context(database, project_id)},
+                {"summary": None, "error": message},
             )
         return _error_redirect(project_id, message)
 
     context = {
         "summary": summary,
         "error": "",
-        **_inventory_context(database, project_id),
     }
     if request.headers.get("HX-Request") == "true":
         return TEMPLATES.TemplateResponse(request, "partials/scan_result_update.html", context)
@@ -751,6 +770,7 @@ def apply_distribution(
     request: Request,
     project_id: int,
     database: DatabaseDependency,
+    settings: SettingsDependency,
     strategy: Annotated[str, Form()] = "equal",
     seed: Annotated[str, Form()] = "",
     proposal_digest: Annotated[str, Form()] = "",
@@ -798,6 +818,13 @@ def apply_distribution(
         distribution.apply(project_id, proposal)
     except (ValueError, ProjectError) as exc:
         return response(error=str(exc))
+    rendering = ProjectRenderingService(
+        database,
+        preview_dir=settings.preview_dir(),
+        anniversaries_path=settings.anniversaries_path,
+    )
+    for page in PageRepository(database.connect()).list(project_id):
+        rendering.render_preview(project_id, page.id, max_width=320)
     return response(notice="Distribution applied.")
 
 

@@ -33,9 +33,9 @@
         action="/projects/{{ project.id }}/export">
     <div class="form-row">
       <div class="field">
-        <label for="export-folder">Export folder</label>
+        <label for="export-folder">Export folder (absolute path or workspace-relative)</label>
         <input id="export-folder" name="folder" value="{{ folder }}"
-               placeholder="project_{{ project.id }}">
+               placeholder="{{ export_root }}/project_{{ project.id }}">
       </div>
       <div class="field checkbox-field">
         <label for="export-pdf">
@@ -47,10 +47,7 @@
       </div>
       <button class="primary" type="submit">Export pages</button>
     </div>
-    <p class="muted">
-      Output is written below <code>{{ export_root }}</code>. Source originals are
-      read only and are never copied or modified.
-    </p>
+    <p class="muted">Source originals are read only and are never copied or modified.</p>
     <span id="export-progress" class="htmx-indicator muted">
       Rendering pages... this can take a moment.
     </span>

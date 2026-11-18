@@ -258,3 +258,4 @@ class DistributionService:
                         slot_id=slot.id,
                         photo_id=photo_id,
                     )
+            PageRepository(connection).increment_revisions(project_id)

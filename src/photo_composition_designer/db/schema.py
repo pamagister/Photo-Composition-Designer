@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from types import TracebackType
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 INITIAL_SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -142,8 +142,57 @@ BEGIN
 END;
 """
 
+REPEATED_PHOTO_ASSIGNMENTS = """
+CREATE TABLE assignments_new (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id    INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    page_id       INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    slot_id       INTEGER NOT NULL REFERENCES layout_slots(id) ON DELETE CASCADE,
+    photo_id      INTEGER NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
+    crop_zoom     REAL NOT NULL DEFAULT 1.0,
+    crop_focus_x  REAL NOT NULL DEFAULT 0.5,
+    crop_focus_y  REAL NOT NULL DEFAULT 0.5,
+    created_at    TEXT NOT NULL,
+    UNIQUE(page_id, slot_id)
+);
+
+INSERT INTO assignments_new (
+    id, project_id, page_id, slot_id, photo_id, crop_zoom,
+    crop_focus_x, crop_focus_y, created_at
+)
+SELECT id, project_id, page_id, slot_id, photo_id, crop_zoom,
+       crop_focus_x, crop_focus_y, created_at
+FROM assignments;
+
+DROP TABLE assignments;
+ALTER TABLE assignments_new RENAME TO assignments;
+
+CREATE INDEX idx_assignments_page ON assignments(page_id);
+CREATE INDEX idx_assignments_project_photo ON assignments(project_id, photo_id);
+
+CREATE TRIGGER assignments_same_project_insert
+BEFORE INSERT ON assignments
+FOR EACH ROW
+BEGIN
+    SELECT CASE WHEN (
+        (SELECT project_id FROM pages WHERE id = NEW.page_id) IS NOT NEW.project_id
+        OR (SELECT project_id FROM photos WHERE id = NEW.photo_id) IS NOT NEW.project_id
+    ) THEN RAISE(ABORT, 'cross-project assignment') END;
+END;
+
+CREATE TRIGGER assignments_slot_layout_insert
+BEFORE INSERT ON assignments
+FOR EACH ROW
+BEGIN
+    SELECT CASE WHEN (
+        (SELECT layout_id FROM pages WHERE id = NEW.page_id) IS NOT
+        (SELECT layout_id FROM layout_slots WHERE id = NEW.slot_id)
+    ) THEN RAISE(ABORT, 'slot does not belong to page layout') END;
+END;
+"""
+
 #: Version -> SQL script. Add new versions here and bump ``SCHEMA_VERSION``.
-MIGRATIONS: dict[int, str] = {1: INITIAL_SCHEMA}
+MIGRATIONS: dict[int, str] = {1: INITIAL_SCHEMA, 2: REPEATED_PHOTO_ASSIGNMENTS}
 
 
 def connect(db_path: str | Path) -> sqlite3.Connection:
