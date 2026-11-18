@@ -40,8 +40,12 @@ scan it, preview a distribution, and curate pages in the editor.
 
 ```
 photo-composition-designer gui       # start the local web editor
+photo-composition-designer scan      # reconcile a project's photo inventory
+photo-composition-designer distribute  # preview or apply a distribution
 photo-composition-designer render    # render a project's pages to PNG + PDF
 photo-composition-designer export    # export a project as PDF
+photo-composition-designer duplicate # copy a project within the workspace
+photo-composition-designer doctor    # check workspace and project health
 ```
 
 ## Storage

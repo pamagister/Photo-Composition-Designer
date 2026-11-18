@@ -1,60 +1,90 @@
-# Command Line Interface
+# Command line interface
 
-Command line options for app
-
-```bash
-python -m app [OPTIONS] photoDirectory
-```
-
-## Options
-
-| Option                    | Type      | Description                                                                             | Default                               | Choices       |
-|---------------------------|-----------|-----------------------------------------------------------------------------------------|---------------------------------------|---------------|
-| `photoDirectory`          | PosixPath | Path to the directory containing photos (absolute, or relative to this config.ini file) | *required*                            | -             |
-| `--startDate`             | datetime  | Start date of the calendar                                                              | datetime.datetime(2025, 12, 29, 0, 0) | -             |
-| `--horizontalOrientation` | bool      | Align the calendar horizontally (False means vertical)                                  | True                                  | [True, False] |
-| `--width`                 | int       | Width of the collage in mm                                                              | 216                                   | -             |
-| `--height`                | int       | Height of the collage in mm                                                             | 154                                   | -             |
-| `--dpi`                   | int       | Resolution of the image in dpi                                                          | 300                                   | -             |
-
-
-## Examples
-
-
-### 1. Basic usage
+The `photo-composition-designer` command manages projects in the local SQLite
+workspace. Run it through `uv` inside the repository:
 
 ```bash
-python -m app photoDirectory
+uv run photo-composition-designer --help
 ```
 
-### 2. With verbose logging
+All commands except `gui` and `doctor` take a project ID. The workspace file and
+cache live under the platform data directory; set `PCD_DATA_DIR` and
+`PCD_CACHE_DIR` to isolate a run.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `gui` | Start the local web editor. |
+| `scan` | Reconcile a project's source inventory. |
+| `distribute` | Preview or apply a photo distribution proposal. |
+| `render` | Render a project's pages to PNG and optionally PDF. |
+| `export` | Render pages and always write a combined PDF. |
+| `duplicate` | Copy a project, including pages, layouts and assignments. |
+| `doctor` | Check workspace paths, schema, sources, photos and profiles. |
+
+## `gui`
 
 ```bash
-python -m app -v photoDirectory
-python -m app --verbose photoDirectory
+uv run photo-composition-designer gui
+uv run photo-composition-designer gui --host 0.0.0.0 --port 8767 --log-level info
 ```
 
-### 3. With quiet mode
+Options: `--host` (default `127.0.0.1`), `--port` (default `8767`) and
+`--log-level` (default `info`).
+
+## `scan`
 
 ```bash
-python -m app -q photoDirectory
-python -m app --quiet photoDirectory
+uv run photo-composition-designer scan 1
+uv run photo-composition-designer scan 1 --source-root-id 3
 ```
 
-### 4. With startDate parameter
+Scans the active source root, or the root given by `--source-root-id`, and
+records added, updated and unavailable photos. Source files are read only.
+
+## `distribute`
 
 ```bash
-python -m app --startDate 2025-12-29 00:00:00 photoDirectory
+uv run photo-composition-designer distribute 1 --dry-run
+uv run photo-composition-designer distribute 1 --strategy date_aware
+uv run photo-composition-designer distribute 1 --strategy random --seed 42
 ```
 
-### 5. With horizontalOrientation parameter
+Strategies are `equal` (default), `random` and `date_aware`. `--dry-run`
+prints the proposal counts and per-page photo counts without changing
+assignments.
+
+## `render` and `export`
 
 ```bash
-python -m app --horizontalOrientation True photoDirectory
+uv run photo-composition-designer render 1 --output-dir ./out
+uv run photo-composition-designer render 1 --no-pdf
+uv run photo-composition-designer export 1
 ```
 
-### 6. With width parameter
+Both commands use the project's stored output profile and page order. `render`
+writes PNG pages and, by default, a combined PDF; `export` always writes the
+PDF. Without `--output-dir` the output goes to
+`<data directory>/exports/project_<id>`.
+
+## `duplicate`
 
 ```bash
-python -m app --width 216 photoDirectory
+uv run photo-composition-designer duplicate 1
+uv run photo-composition-designer duplicate 1 --name "Calendar 2028"
 ```
+
+The copy is independent: pages, layouts, assignments, source roots, inventory
+and output profile are copied, while the original project is unchanged.
+
+## `doctor`
+
+```bash
+uv run photo-composition-designer doctor
+```
+
+Reports workspace paths, schema version mismatches, missing source roots,
+missing photo files, unavailable assignments, cache directories and invalid
+output profiles. It exits with status `1` when a blocking error is found and
+does not modify project data.

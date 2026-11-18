@@ -7,9 +7,13 @@ from typing import Annotated
 
 import typer
 
+from photo_composition_designer.cli.commands import distribute as distribute_command
+from photo_composition_designer.cli.commands import doctor as doctor_command
+from photo_composition_designer.cli.commands import duplicate as duplicate_command
 from photo_composition_designer.cli.commands import export as export_command
 from photo_composition_designer.cli.commands import gui as gui_command
 from photo_composition_designer.cli.commands import render as render_command
+from photo_composition_designer.cli.commands import scan as scan_command
 
 app = typer.Typer(
     help="Local-first calendar composition designer.",
@@ -54,6 +58,56 @@ def export(
 ) -> None:
     """Export a project as rendered pages and a PDF."""
     raise typer.Exit(code=export_command.run(project_id, output_dir=output_dir))
+
+
+@app.command()
+def scan(
+    project_id: Annotated[int, typer.Argument(help="Project ID to scan.")],
+    source_root_id: Annotated[
+        int | None, typer.Option(help="Specific source root ID; defaults to the active root.")
+    ] = None,
+) -> None:
+    """Scan a project source directory and reconcile its photo inventory."""
+    raise typer.Exit(code=scan_command.run(project_id, source_root_id=source_root_id))
+
+
+@app.command()
+def distribute(
+    project_id: Annotated[int, typer.Argument(help="Project ID to distribute.")],
+    strategy: Annotated[
+        str, typer.Option(help="Distribution strategy: equal, random or date_aware.")
+    ] = "equal",
+    seed: Annotated[int | None, typer.Option(help="Random distribution seed.")] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Preview the proposal without applying it.")
+    ] = False,
+) -> None:
+    """Preview or apply a photo distribution proposal."""
+    raise typer.Exit(
+        code=distribute_command.run(
+            project_id,
+            strategy=strategy,
+            seed=seed,
+            dry_run=dry_run,
+        )
+    )
+
+
+@app.command()
+def duplicate(
+    project_id: Annotated[int, typer.Argument(help="Project ID to duplicate.")],
+    name: Annotated[
+        str | None, typer.Option(help="Name for the duplicate; defaults to the source name.")
+    ] = None,
+) -> None:
+    """Duplicate a project within the workspace."""
+    raise typer.Exit(code=duplicate_command.run(project_id, name=name))
+
+
+@app.command()
+def doctor() -> None:
+    """Check workspace paths, schema, sources, photos and output profiles."""
+    raise typer.Exit(code=doctor_command.run())
 
 
 def main() -> None:

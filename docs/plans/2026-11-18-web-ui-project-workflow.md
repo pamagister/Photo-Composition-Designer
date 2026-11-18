@@ -500,13 +500,13 @@ release work.
 
 **Objective:** Provide a coherent project-oriented CLI.
 
-- [ ] **P7-W01:** Add `scan`, `distribute`, `duplicate` and `doctor` commands;
+- [x] **P7-W01:** Add `scan`, `distribute`, `duplicate` and `doctor` commands;
   keep `gui`, `render` and `export`.
-- [ ] **P7-W02:** Implement `doctor` checks for schema version, workspace paths,
+- [x] **P7-W02:** Implement `doctor` checks for schema version, workspace paths,
   source roots, missing photos, cache directories and output-profile validity.
-- [ ] **P7-W03:** Remove dead code and stale documentation references from the old
+- [x] **P7-W03:** Remove dead code and stale documentation references from the old
   folder workflow and `config-cli-gui`.
-- [ ] **P7-W04:** Add CLI tests for the new commands and their exit codes.
+- [x] **P7-W04:** Add CLI tests for the new commands and their exit codes.
 
 **Acceptance criteria**
 
@@ -667,10 +667,16 @@ The continuation is complete when all of the following hold:
   summary, relative export folder and PDF toggle, HTMX progress and result
   fragments, safe file downloads, ordered page/PDF output, actionable
   missing-asset warnings, and a full-project preview route that opens the first
-  page. `make lint` clean; 215 tests pass.
-- **Active:** None. Phase 6 committed and pushed.
-- **Next:** Phase 7 (CLI completion and cleanup), starting with P7-W01. Phase
-  issue #34.
+  page. `make lint` clean; 215 tests pass. Continuation Phase 7 complete:
+  project-oriented `scan`, `distribute`, `duplicate` and `doctor` commands with
+  actionable exit codes; `doctor` checks schema version, workspace paths, source
+  roots, missing photos, cache directories and output-profile validity without
+  mutating data; removed the dead folder-workflow description generator and
+  image distributor; rewrote the CLI usage documentation. `make lint` clean;
+  219 tests pass.
+- **Active:** None. Phase 7 committed and pushed.
+- **Next:** Phase 8 (hardening, accessibility, browser tests and documentation),
+  starting with P8-W01. Phase issue #35 if created, otherwise the next plan phase.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
@@ -693,10 +699,11 @@ The continuation is complete when all of the following hold:
   - `src/photo_composition_designer/gui/templates/project.html`
   - `src/photo_composition_designer/gui/static/editor.js`
   - `src/photo_composition_designer/layouts/layouts/two_rows.yaml`
-  - `src/photo_composition_designer/cli/app.py:26-56`
+  - `src/photo_composition_designer/cli/app.py`
+  - `src/photo_composition_designer/cli/commands/`
   - `tests/test_gui.py`, `tests/test_editor.py`, `tests/test_editing.py`,
     `tests/test_layouts.py`, `tests/test_guided_creation.py`,
-    `tests/test_export.py`, `tests/test_inventory.py`
+    `tests/test_export.py`, `tests/test_inventory.py`, `tests/test_cli.py`
 - **Decisions:** Full feature parity; reference-only export only; `.pcd` and
   self-contained assets deferred; workspace-level Duplicate Project; editable output
   profiles; per-assignment crop controls; editable page descriptions; deterministic
@@ -704,6 +711,7 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 215 passed.
-- **Context status:** Phase 6 complete. Phase 7 covers CLI completion and
-  cleanup; a phase-boundary handoff is appropriate.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 219 passed.
+- **Context status:** Phase 7 complete. Phase 8 covers hardening,
+  accessibility, browser tests and documentation; a phase-boundary handoff is
+  appropriate.
