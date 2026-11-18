@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from photo_composition_designer.core.errors import ProjectNotFoundError
+from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.project.models import Project, ProjectAggregate
 from photo_composition_designer.project.repositories import (
@@ -49,6 +50,12 @@ class ProjectService:
         if page_count < 1:
             raise ValueError("page_count must be at least 1")
 
+        # New projects snapshot the current application defaults so later
+        # workspace changes can never alter an existing project.
+        profile = (
+            OutputProfile.from_dict(output_profile) if output_profile else OutputProfile.default()
+        )
+
         first_day = _as_date(start_date)
         year = calendar_year if calendar_year is not None else first_day.year
 
@@ -60,7 +67,7 @@ class ProjectService:
                 page_count=page_count,
                 calendar_year=year,
                 settings=settings or {},
-                output_profile=output_profile or {},
+                output_profile=profile.to_dict(),
                 import_metadata=import_metadata or {},
                 created_at=_now(),
             )

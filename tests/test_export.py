@@ -95,9 +95,9 @@ def test_render_project_writes_pdf(tmp_path, monkeypatch):
     assert result.pdf_path.read_bytes().startswith(b"%PDF-")
 
 
-def test_render_page_with_no_assignments_is_skipped(tmp_path, monkeypatch):
+def test_render_page_without_assignments_still_renders_calendar(tmp_path, monkeypatch):
     database, project_id = _setup_project(tmp_path, monkeypatch)
-    # Remove all assignments to make pages unrenderable
+    # Remove all assignments so the page has no photos.
     editing = PageEditingService(database)
     with database.connect() as connection:
         from photo_composition_designer.project.repositories import AssignmentRepository
@@ -111,5 +111,5 @@ def test_render_page_with_no_assignments_is_skipped(tmp_path, monkeypatch):
 
     exporter = ProjectExporter(database)
     result = exporter.render_project(project_id, tmp_path / "out", write_pdf=False)
-    assert len(result.rendered) == 0
-    assert len(result.warnings) == 2
+    assert len(result.rendered) == 2
+    assert len(result.warnings) == 0

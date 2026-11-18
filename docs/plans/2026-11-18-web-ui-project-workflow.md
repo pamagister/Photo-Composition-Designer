@@ -340,20 +340,20 @@ output-profile ownership are clear.
 
 **Objective:** Make project pages render the complete calendar, not only photos.
 
-- [ ] **P1-W01:** Define a typed `OutputProfile` with calendar, style, geo, size and
+- [x] **P1-W01:** Define a typed `OutputProfile` with calendar, style, geo, size and
   layout sections plus JSON serialization/validation. Provide a factory that
   snapshots `core.settings.Settings` defaults.
-- [ ] **P1-W02:** Add a page composition service (`render/page.py` or equivalent)
+- [x] **P1-W02:** Add a page composition service (`render/page.py` or equivalent)
   that composes background, slot photos, calendar strip, map, description,
   anniversaries and title from a `PageRenderInput`.
-- [ ] **P1-W03:** Add `project/rendering.py` to resolve assignments, photos,
+- [x] **P1-W03:** Add `project/rendering.py` to resolve assignments, photos,
   source paths and the project profile, then invoke the composer. The renderer must
   not query SQLite.
-- [ ] **P1-W04:** Add reduced-resolution page preview rendering and a cache key that
+- [x] **P1-W04:** Add reduced-resolution page preview rendering and a cache key that
   includes page render revision, layout version, output-profile hash and render mode.
-- [ ] **P1-W05:** Snapshot the output profile on project creation and expose a
+- [x] **P1-W05:** Snapshot the output profile on project creation and expose a
   read-time default for existing projects without mutating their rows.
-- [ ] **P1-W06:** Add tests for calendar rendering, map rendering, description,
+- [x] **P1-W06:** Add tests for calendar rendering, map rendering, description,
   anniversaries, no-GPS default behavior, profile isolation and preview
   invalidation.
 
@@ -640,12 +640,13 @@ The continuation is complete when all of the following hold:
 - **Plan:** `docs/plans/2026-11-18-web-ui-project-workflow.md`
 - **Completed:** Predecessor plan
   `docs/plans/2026-11-18-web-ui-first-project-workflow.md` Phases 0-9 are complete
-  and merged to `main`. This continuation Phase 0 is complete: baseline reconciled,
-  gap list recorded, scope confirmed and baseline verified.
-- **Active:** None. This revision changes only the plan; implementation has not
-  started.
-- **Next:** Phase 1 (full-page rendering and output profiles). Create one GitHub
-  issue for Phase 1 before implementation, then start with P1-W01.
+  and merged to `main`. Continuation Phase 0 complete. Continuation Phase 1
+  complete: typed `OutputProfile`, full-page `PageComposer`, project rendering
+  service with cached previews, profile snapshot on creation and export/preview
+  now use the per-project profile. `make lint` clean; 173 tests pass.
+- **Active:** None. Phase 1 committed and pushed.
+- **Next:** Phase 2 (page editing completion and previews), starting with P2-W01
+  (`PageEditingService.change_layout`). Phase issue #31.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
@@ -675,6 +676,6 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 160 passed.
-- **Context status:** Plan revised only. No implementation files changed. Start a
-  fresh session for Phase 1 and use this handoff block as the contract.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 173 passed.
+- **Context status:** Phase 1 complete. Next phase (Phase 2) is independent; a
+  fresh session is recommended before starting P2-W01.

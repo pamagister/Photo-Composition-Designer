@@ -70,7 +70,9 @@ def test_close_and_reopen_preserves_project_state(service):
         "calendar": {"language": "de_DE"},
         "style": {"theme": "dark"},
     }
-    assert reopened.project.output_profile == {"size": {"dpi": 300}}
+    assert reopened.project.output_profile["size"]["dpi"] == 300
+    assert reopened.project.output_profile["size"]["width"] == 216
+    assert reopened.project.output_profile["calendar"]["language"] == "de_DE"
     assert len(reopened.pages) == 2
     assert [page.page_index for page in reopened.pages] == [0, 1]
 
