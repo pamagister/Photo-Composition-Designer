@@ -56,10 +56,8 @@ size:
   height: 154
   # Height of the calendar area in mm | type=int
   calendarHeight: 18
-  # Width of the locations map in mm | type=int
-  mapWidth: 20
-  # Height of the locations map in mm | type=int
-  mapHeight: 20
+  # Size of the locations map in mm: width for horizontal calendars, height for vertical ones | type=int
+  mapSize: 20
   # Resolution of the image in dpi | type=int | [CLI]
   dpi: 300
   # JPG compression quality (1-100) | type=int

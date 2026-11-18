@@ -22,11 +22,7 @@ from photo_composition_designer.project.repositories import (
     PageRepository,
 )
 from photo_composition_designer.project.services import ProjectService
-from photo_composition_designer.render.page import (
-    DEFAULT_MAP_COORDINATES,
-    PageComposer,
-    PageRenderInput,
-)
+from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
 
 
@@ -289,8 +285,9 @@ def test_slot_renderer_applies_spacing_and_rounded_corners(tmp_path):
 
 def test_render_page_shows_photo_location_map(tmp_path):
     database, project_id, page_id = _setup(tmp_path)
-    map_width = mm_to_px(20, 300)
-    map_height = mm_to_px(20, 300)
+    profile = OutputProfile.default()
+    map_width = mm_to_px(profile.geo.map_size, 300)
+    map_height = mm_to_px(profile.size.calendar_height, 300)
 
     with database.transaction() as connection:
         connection.execute("UPDATE photos SET gps_lat = 51.05, gps_lon = 13.73")
@@ -307,22 +304,24 @@ def test_render_page_shows_photo_location_map(tmp_path):
             render_input = replace(rendering.build_input(connection, page), title_page=False)
             image = composer.render(render_input)
 
-        map_x = image.width - mm_to_px(3, 300) - map_width // 2
-        map_y = mm_to_px(6, 300) + map_height // 2
-        assert image.getpixel((map_x, map_y)) == (0, 0, 255)
+        margin_sides = mm_to_px(profile.layout.margin_sides, 300)
+        margin_bottom = mm_to_px(profile.layout.margin_bottom, 300)
+        map_x = image.width - margin_sides - map_width
+        map_y = image.height - margin_bottom - map_height // 2
+        assert image.getpixel((map_x + map_width // 2, map_y)) == (0, 0, 255)
+        # The calendar strip ends where the map begins.
+        assert image.getpixel((map_x - 1, map_y)) != (0, 0, 255)
     finally:
         database.close()
 
 
-def test_render_page_uses_default_berlin_map_without_coordinates(tmp_path):
+def test_render_page_uses_empty_map_without_coordinates(tmp_path):
     database, project_id, page_id = _setup(tmp_path)
-    map_width = mm_to_px(20, 300)
-    map_height = mm_to_px(20, 300)
     calls: list[list[tuple[float, float]]] = []
 
     def renderer(coordinates: list[tuple[float, float]]):
         calls.append(coordinates)
-        return Image.new("RGB", (map_width, map_height), (0, 0, 255))
+        return Image.new("RGB", (10, 10), (0, 0, 255))
 
     with database.transaction() as connection:
         connection.execute("UPDATE pages SET hide_local_map = 0 WHERE id = ?", (page_id,))
@@ -336,7 +335,7 @@ def test_render_page_uses_default_berlin_map_without_coordinates(tmp_path):
             render_input = replace(rendering.build_input(connection, page), title_page=False)
             composer.render(render_input)
 
-        assert calls == [list(DEFAULT_MAP_COORDINATES)]
+        assert calls == [[]]
     finally:
         database.close()
 

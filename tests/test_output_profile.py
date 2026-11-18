@@ -67,6 +67,14 @@ def test_from_dict_rejects_invalid_values():
         OutputProfile.from_dict({"style": {"background_color": "red"}})
 
 
+def test_geo_map_size_replaces_legacy_map_dimensions():
+    profile = OutputProfile.from_dict({"geo": {"map_width": 30, "map_height": 12}})
+
+    assert profile.geo.map_size == 30
+    assert profile.to_dict()["geo"]["map_size"] == 30
+    assert "map_width" not in profile.to_dict()["geo"]
+
+
 def test_profiles_are_independent():
     first = OutputProfile.default()
     second = OutputProfile.default()

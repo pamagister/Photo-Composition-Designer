@@ -231,15 +231,13 @@ class GeoProfile:
 
     use_photo_location_maps: bool = True
     minimal_extension: int = 7
-    map_width: int = 20
-    map_height: int = 20
+    map_size: int = 20
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "use_photo_location_maps": self.use_photo_location_maps,
             "minimal_extension": self.minimal_extension,
-            "map_width": self.map_width,
-            "map_height": self.map_height,
+            "map_size": self.map_size,
         }
 
     @classmethod
@@ -247,6 +245,11 @@ class GeoProfile:
         defaults = cls()
         if not isinstance(data, dict):
             return defaults
+        # Older profiles stored separate map width and height values. Treat the
+        # former width as the single map size so existing projects keep it.
+        raw_size = data.get("map_size")
+        if raw_size is None:
+            raw_size = data.get("map_width")
         return cls(
             use_photo_location_maps=_bool_or(
                 data.get("use_photo_location_maps"),
@@ -259,10 +262,7 @@ class GeoProfile:
                 defaults.minimal_extension,
                 minimum=0,
             ),
-            map_width=_int_or(data.get("map_width"), "map_width", defaults.map_width, minimum=1),
-            map_height=_int_or(
-                data.get("map_height"), "map_height", defaults.map_height, minimum=1
-            ),
+            map_size=_int_or(raw_size, "map_size", defaults.map_size, minimum=1),
         )
 
 
@@ -423,8 +423,7 @@ class OutputProfile:
             geo=GeoProfile(
                 use_photo_location_maps=settings.geo.usePhotoLocationMaps.value,
                 minimal_extension=settings.geo.minimalExtension.value,
-                map_width=settings.size.mapWidth.value,
-                map_height=settings.size.mapHeight.value,
+                map_size=settings.size.mapSize.value,
             ),
             size=SizeProfile(
                 width=settings.size.width.value,
@@ -464,8 +463,7 @@ class OutputProfile:
         settings.size.width.value = self.size.width
         settings.size.height.value = self.size.height
         settings.size.calendarHeight.value = self.size.calendar_height
-        settings.size.mapWidth.value = self.geo.map_width
-        settings.size.mapHeight.value = self.geo.map_height
+        settings.size.mapSize.value = self.geo.map_size
         settings.size.dpi.value = self.size.dpi
         settings.size.jpgQuality.value = self.size.jpeg_quality
         settings.layout.marginTop.value = self.layout.margin_top

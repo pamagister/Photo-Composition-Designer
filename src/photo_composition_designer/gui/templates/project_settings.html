@@ -210,14 +210,12 @@
                value="{{ values['geo.minimal_extension'] }}" required>
       </div>
       <div class="field">
-        <label for="geo-width">Map width</label>
-        <input id="geo-width" type="number" min="1" name="geo.map_width"
-               value="{{ values['geo.map_width'] }}" required>
-      </div>
-      <div class="field">
-        <label for="geo-height">Map height</label>
-        <input id="geo-height" type="number" min="1" name="geo.map_height"
-               value="{{ values['geo.map_height'] }}" required>
+        <label for="geo-size">Map size</label>
+        <input id="geo-size" type="number" min="1" name="geo.map_size"
+               value="{{ values['geo.map_size'] }}" required>
+        <p class="muted">
+          Width for a horizontal calendar, height for a vertical calendar.
+        </p>
       </div>
     </div>
   </fieldset>

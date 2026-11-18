@@ -29,10 +29,6 @@ if TYPE_CHECKING:
 
 MapRendererFactory = Callable[[list[tuple[float, float]]], Image.Image]
 
-#: Shown when a page has no resolvable photo coordinates. Keeping the map
-#: visible gives every calendar page a stable location preview.
-DEFAULT_MAP_COORDINATES: tuple[tuple[float, float], ...] = ((52.5200, 13.4050),)
-
 
 @dataclass(frozen=True)
 class PageRenderInput:
@@ -92,8 +88,27 @@ class PageComposer:
                 dpi=dpi,
             ).generate(page.description)
 
+        map_image: Image.Image | None = None
+        map_x = 0
+        calendar_width = page_width
+        if show_calendar:
+            map_width, map_height = self._map_dimensions(profile, calendar_height)
+            map_x = page_width - margin_sides - map_width
+            min_calendar_width = 2 * margin_sides + spacing
+            if (
+                not page.title_page
+                and not page.hide_local_map
+                and profile.geo.use_photo_location_maps
+                and map_width > 0
+                and map_height > 0
+                and map_x >= min_calendar_width
+            ):
+                map_image = self._render_map(page, profile, map_width, map_height)
+                if map_image is not None:
+                    calendar_width = map_x
+
         calendar_strip = (
-            self._render_calendar_strip(page, profile, settings, page_width)
+            self._render_calendar_strip(page, profile, settings, calendar_width)
             if show_calendar
             else None
         )
@@ -116,9 +131,14 @@ class PageComposer:
         calendar_top = content_bottom - calendar_height if show_calendar else content_bottom
 
         if description_image is not None:
-            description_bottom = (
-                calendar_top + calendar_ink_top if show_calendar else content_bottom
-            )
+            if show_calendar:
+                # With a map in the bottom-right corner the description must end
+                # above it instead of using the calendar's blank upper margin.
+                description_bottom = calendar_top + (
+                    0 if map_image is not None else calendar_ink_top
+                )
+            else:
+                description_bottom = content_bottom
             description_top = description_bottom - description_ink_bottom
             photo_bottom = description_top
         else:
@@ -126,24 +146,18 @@ class PageComposer:
             photo_bottom = calendar_top - spacing if show_calendar else content_bottom
         content_height = max(1, photo_bottom - content_top)
 
-        map_image = self._render_map(page, profile, content_width, content_height, spacing)
-        slots_width = content_width
-        if map_image is not None:
-            slots_width = max(1, content_width - map_image.width - spacing)
-
         if page.layout is not None:
             collage = SlotAwareRenderer(settings, object_detector=self._object_detector).render(
                 page.layout,
                 dict(page.assigned_photos),
-                page_width=slots_width,
+                page_width=content_width,
                 page_height=content_height,
                 background_color=background,
             )
             canvas.paste(collage, (content_left, content_top))
 
         if map_image is not None:
-            map_x = content_left + slots_width + spacing
-            canvas.paste(map_image, (map_x, content_top))
+            canvas.paste(map_image, (map_x, calendar_top))
 
         if calendar_strip is not None:
             canvas.paste(calendar_strip, (0, calendar_top))
@@ -162,7 +176,7 @@ class PageComposer:
         page: PageRenderInput,
         profile: OutputProfile,
         settings,
-        page_width: int,
+        width: int,
     ) -> Image.Image:
         calendar_height = mm_to_px(profile.size.calendar_height, profile.size.dpi)
         margin_sides = mm_to_px(profile.layout.margin_sides, profile.size.dpi)
@@ -182,36 +196,44 @@ class PageComposer:
             horizontal=profile.calendar.horizontal_orientation,
         )
         if page.title_page and page.title:
-            return renderer.generateTitle(page.title, page_width, calendar_height)
-        return renderer.generate(
-            datetime.combine(page.page_date, time.min), page_width, calendar_height
-        )
+            return renderer.generateTitle(page.title, width, calendar_height)
+        return renderer.generate(datetime.combine(page.page_date, time.min), width, calendar_height)
+
+    @staticmethod
+    def _map_dimensions(
+        profile: OutputProfile,
+        calendar_height: int,
+    ) -> tuple[int, int]:
+        """Return the map width and height for the calendar orientation."""
+        map_size = mm_to_px(profile.geo.map_size, profile.size.dpi)
+        if profile.calendar.horizontal_orientation:
+            return map_size, calendar_height
+        # A vertical calendar is a tall strip; its width is the calendar's
+        # cross-axis size, so the map matches that width and uses map_size as
+        # its height.
+        return calendar_height, map_size
 
     def _render_map(
         self,
         page: PageRenderInput,
         profile: OutputProfile,
-        content_width: int,
-        content_height: int,
-        spacing: int,
+        map_width: int,
+        map_height: int,
     ) -> Image.Image | None:
-        if page.title_page or page.hide_local_map or not profile.geo.use_photo_location_maps:
-            return None
-        map_width = mm_to_px(profile.geo.map_width, profile.size.dpi)
-        map_height = mm_to_px(profile.geo.map_height, profile.size.dpi)
-        if map_height > content_height or map_width + spacing >= content_width:
-            return None
-        renderer = self._map_renderer or self._default_map_renderer(profile)
-        coordinates = list(page.gps_coordinates) or list(DEFAULT_MAP_COORDINATES)
-        return renderer(coordinates)
+        renderer = self._map_renderer or self._default_map_renderer(profile, map_width, map_height)
+        return renderer(list(page.gps_coordinates))
 
     @staticmethod
-    def _default_map_renderer(profile: OutputProfile) -> MapRendererFactory:
+    def _default_map_renderer(
+        profile: OutputProfile,
+        map_width: int,
+        map_height: int,
+    ) -> MapRendererFactory:
         from photo_composition_designer.render.map import MapRenderer
 
         renderer = MapRenderer(
-            mapHeight=mm_to_px(profile.geo.map_height, profile.size.dpi),
-            mapWidth=mm_to_px(profile.geo.map_width, profile.size.dpi),
+            mapHeight=map_height,
+            mapWidth=map_width,
             minimalExtension=profile.geo.minimal_extension,
             backgroundColor=Color.from_hex(profile.style.background_color).to_pil(),
             textColor1=profile.style.font_large.to_font().color.to_pil(),

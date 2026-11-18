@@ -138,11 +138,12 @@ class GeoPlotter:
         size_marker = self.size_marker
 
         # Kartengrenzen berechnen
+        draw_points = bool(coordinates)
         if not coordinates:
-            points_gdf = self._create_geodataframe([(51.0504, 13.7373)])
+            # Empty location maps show Europe centered on Berlin without a marker.
+            points_gdf = self._create_geodataframe([(52.5200, 13.4050)])
             self.minimalExtension = 25
             bounds = self._calculate_bounds(points_gdf)
-            size_marker = 0
         else:
             # GeoDataFrame für GPS-Punkte erstellen
             points_gdf = self._create_geodataframe(coordinates)
@@ -182,7 +183,10 @@ class GeoPlotter:
                     label=layer_name,
                 )
 
-        points_gdf.plot(ax=ax, marker="o", color="red", edgecolors="red", markersize=size_marker)
+        if draw_points:
+            points_gdf.plot(
+                ax=ax, marker="o", color="red", edgecolors="red", markersize=size_marker
+            )
 
         # Set axes to the calculated limits
         ax.set_xlim(bounds[0], bounds[2])

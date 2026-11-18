@@ -28,8 +28,13 @@ class MapRenderer:
     @classmethod
     def from_config(cls, config: ConfigParameterManager) -> MapRenderer:
         """Creates a MapRenderer from a ConfigParameterManager instance."""
-        map_height_px = mm_to_px(config.size.mapHeight.value, config.size.dpi.value)
-        map_width_px = mm_to_px(config.size.mapWidth.value, config.size.dpi.value)
+        dpi = config.size.dpi.value
+        map_size_px = mm_to_px(config.size.mapSize.value, dpi)
+        calendar_height_px = mm_to_px(config.size.calendarHeight.value, dpi)
+        if config.calendar.horizontalOrientation.value:
+            map_width_px, map_height_px = map_size_px, calendar_height_px
+        else:
+            map_width_px, map_height_px = calendar_height_px, map_size_px
 
         return cls(
             mapHeight=map_height_px,

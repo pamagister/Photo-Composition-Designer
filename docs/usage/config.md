@@ -24,8 +24,7 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `size.width` | `216` |
 | `size.height` | `154` |
 | `size.calendarHeight` | `18` |
-| `size.mapWidth` | `20` |
-| `size.mapHeight` | `20` |
+| `size.mapSize` | `20` |
 | `size.dpi` | `300` |
 | `size.jpgQuality` | `90` |
 | `layout.marginTop` | `6` |

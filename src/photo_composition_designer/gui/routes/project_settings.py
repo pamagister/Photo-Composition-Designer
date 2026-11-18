@@ -34,8 +34,7 @@ _BOOL_FIELDS = (
 
 _INT_FIELDS = (
     "geo.minimal_extension",
-    "geo.map_width",
-    "geo.map_height",
+    "geo.map_size",
     "size.width",
     "size.height",
     "size.calendar_height",
@@ -145,8 +144,7 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
         "style.font_anniversaries.color": profile.style.font_anniversaries.color,
         "geo.use_photo_location_maps": profile.geo.use_photo_location_maps,
         "geo.minimal_extension": profile.geo.minimal_extension,
-        "geo.map_width": profile.geo.map_width,
-        "geo.map_height": profile.geo.map_height,
+        "geo.map_size": profile.geo.map_size,
         "size.width": profile.size.width,
         "size.height": profile.size.height,
         "size.calendar_height": profile.size.calendar_height,

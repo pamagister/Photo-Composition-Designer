@@ -117,8 +117,7 @@ class SizeConfig:
     width: Param[int] = field(default_factory=lambda: Param(216, "width"))
     height: Param[int] = field(default_factory=lambda: Param(154, "height"))
     calendarHeight: Param[int] = field(default_factory=lambda: Param(18, "calendarHeight"))
-    mapWidth: Param[int] = field(default_factory=lambda: Param(20, "mapWidth"))
-    mapHeight: Param[int] = field(default_factory=lambda: Param(20, "mapHeight"))
+    mapSize: Param[int] = field(default_factory=lambda: Param(20, "mapSize"))
     dpi: Param[int] = field(default_factory=lambda: Param(300, "dpi"))
     jpgQuality: Param[int] = field(default_factory=lambda: Param(90, "jpgQuality"))
 

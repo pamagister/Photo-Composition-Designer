@@ -42,3 +42,20 @@ def test_generate_map_creates_image_file(temp_dir):
     # Basic pixel check – ensures image is not empty/corrupt
     px = opened.getpixel((10, 10))
     assert isinstance(px, tuple), "Pixel data invalid, image may be corrupted."
+
+
+def test_empty_map_has_no_marker():
+    map_gen = MapRenderer(
+        mapHeight=120,
+        mapWidth=160,
+        minimalExtension=7,
+        backgroundColor=(30, 30, 30),
+        textColor1=(150, 250, 150),
+    )
+
+    image = map_gen.generate([]).convert("RGB")
+
+    red_marker_pixels = [
+        pixel for pixel in image.getdata() if pixel[0] > 200 and pixel[1] < 60 and pixel[2] < 60
+    ]
+    assert red_marker_pixels == []
