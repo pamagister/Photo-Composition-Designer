@@ -288,12 +288,12 @@ Work packages are ordered by dependency. Each package should be independently re
 
 **Objective:** Create the persistent project model without introducing the web UI yet.
 
-- [ ] **P1-W01:** Define typed domain models for Project, SourceRoot, PhotoAsset, CalendarPage, LayoutDefinition, LayoutSlot, PhotoAssignment and DistributionProposal.
-- [ ] **P1-W02:** Implement SQLite connection management, schema creation, schema versioning and forward migrations.
-- [ ] **P1-W03:** Implement repositories for projects, source roots, photos, pages, layouts and assignments. Keep SQL isolated from domain and web code.
-- [ ] **P1-W04:** Add foreign keys, unique constraints and transaction-level invariants for unique photo assignment and unique slot occupancy.
-- [ ] **P1-W05:** Add project create/open/close/save services and project settings snapshots.
-- [ ] **P1-W06:** Add tests for database initialization, migration, constraints, rollback, reopen and persistence.
+- [x] **P1-W01:** Define typed domain models for Project, SourceRoot, PhotoAsset, CalendarPage, LayoutDefinition, LayoutSlot, PhotoAssignment and DistributionProposal.
+- [x] **P1-W02:** Implement SQLite connection management, schema creation, schema versioning and forward migrations.
+- [x] **P1-W03:** Implement repositories for projects, source roots, photos, pages, layouts and assignments. Keep SQL isolated from domain and web code.
+- [x] **P1-W04:** Add foreign keys, unique constraints and transaction-level invariants for unique photo assignment and unique slot occupancy.
+- [x] **P1-W05:** Add project create/open/close/save services and project settings snapshots.
+- [x] **P1-W06:** Add tests for database initialization, migration, constraints, rollback, reopen and persistence.
 
 **Acceptance criteria**
 
@@ -576,24 +576,25 @@ The refactoring is complete when all of the following hold:
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-project-workflow.md`
-- **Completed:** Phase 0 complete (P0-W01 to P0-W04). CI now runs on every branch push (`e17c6e6`, issue #12 closed). Architecture baseline recorded in `docs/architecture/web-ui-project-workflow.md`. Baseline `make test` is green: Ruff checks passed and 106 tests passed.
-- **Active:** None. Phase 0 is complete and committed.
-- **Next:** Phase 1 (issue #15): typed domain models, SQLite schema/versioning/migrations, repositories, constraints and project lifecycle services with tests. Then Phase 2 (issue #14): source scanning, references, rescan/relink and thumbnail cache. Directory-picker work stays deferred to Phase 6.
+- **Completed:** Phase 0 and Phase 1 complete. Phase 0 architecture baseline in `docs/architecture/web-ui-project-workflow.md` (`0c1408d`). Phase 1 project package with domain models, SQLite schema/migrations, repositories, constraints and lifecycle services; 23 new tests; full suite 129 passed.
+- **Active:** None. Phase 1 is complete and committed.
+- **Next:** Phase 2 (issue #14): recursive image discovery, metadata extraction, source-relative persistence, safe path resolution, rescan/reconcile, source-root remapping and thumbnail cache. Directory-picker work stays deferred to Phase 6.
 - **Relevant files:**
   - `docs/architecture/web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `.github/workflows/main.yml`
+  - `src/Photo_Composition_Designer/project/models.py`
+  - `src/Photo_Composition_Designer/project/db.py`
+  - `src/Photo_Composition_Designer/project/repositories.py`
+  - `src/Photo_Composition_Designer/project/services.py`
+  - `tests/test_project_db.py`
+  - `tests/test_project_repositories.py`
+  - `tests/test_project_services.py`
+  - `src/Photo_Composition_Designer/common/Photo.py`
   - `src/Photo_Composition_Designer/core/base.py`
-  - `src/Photo_Composition_Designer/core/composition_renderer.py`
-  - `src/Photo_Composition_Designer/core/composition_layout.py`
   - `src/Photo_Composition_Designer/core/composition_io.py`
-  - `src/Photo_Composition_Designer/application/composition_workflow.py`
-  - `src/Photo_Composition_Designer/application/photo_distribution_workflow.py`
   - `src/Photo_Composition_Designer/tools/ImageDistributor.py`
-  - `src/Photo_Composition_Designer/gui/gui.py`
-  - `src/image_triage/gui/app.py` (reference repository)
-  - `src/image_triage/db/repository.py` (reference repository)
 - **Decisions:** One workspace SQLite database; portable `.pcd` archives; reference-only default and self-contained export; no legacy calendar import; preserve provider sizing/scaling and existing layout catalogue; fixed slots; one photo use per project; editable page descriptions; per-assignment crop controls; local FastAPI/Jinja/HTMX UI; remove Tkinter/config-cli-gui; project-oriented CLI; source-directory picker deferred to Phase 6.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make test` green (106 passed) and CI successful for `e17c6e6`.
-- **Context status:** clean; continue with Phase 1 in this session.
+- **Last verified:** 2026-11-18; `make test` green (129 passed) after Phase 1 implementation.
+- **Context status:** clean; continue with Phase 2 in this session.
