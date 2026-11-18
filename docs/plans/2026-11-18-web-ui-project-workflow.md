@@ -548,7 +548,7 @@ The refactoring is complete when all of the following hold:
 ## Progress / Handoff
 
 - **Mode:** autopilot
-- **Plan:** `docs/plans/2026-11-18-web-ui-calendar-project-workflow.md`
+- **Plan:** `docs/plans/2026-11-18-web-ui-project-workflow.md`
 - **Completed:** Planning and repository reconnaissance only; no implementation work.
 - **Active:** Awaiting user review and decisions before Phase 0 completion.
 - **Next:** Confirm the project storage model, legacy import/compatibility expectations, page capacity, photo reuse and layout editing scope. Then execute P0-W01 through P0-W04.
