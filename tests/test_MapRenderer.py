@@ -1,6 +1,6 @@
 from PIL import Image
 
-from Photo_Composition_Designer.image.MapRenderer import MapRenderer
+from photo_composition_designer.render.map import MapRenderer
 
 from .TestHelper import temp_dir
 

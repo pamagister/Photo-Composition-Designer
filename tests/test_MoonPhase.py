@@ -3,8 +3,8 @@ from datetime import datetime
 import pytest
 
 # Monkeypatch target for astral.moon.phase
-import Photo_Composition_Designer.common.MoonPhase as mpModule
-from Photo_Composition_Designer.common.MoonPhase import MoonPhase
+import photo_composition_designer.core.moon_phase as mpModule
+from photo_composition_designer.core.moon_phase import MoonPhase
 
 # --- Helpers ---------------------------------------------------------------
 

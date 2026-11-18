@@ -1,0 +1,25 @@
+{% if page %}
+<h2>{{ page.start_date }} &ndash; {{ page.end_date }}</h2>
+<p class="muted">Page {{ page.page_index + 1 }} &middot; revision {{ page.render_revision }}</p>
+<p>Description: {{ page.description or 'not set' }}</p>
+<p>{{ assignments | length }} assigned photos</p>
+{% if assignments %}
+<ul>
+  {% for assignment in assignments %}
+  {% set photo = photos_by_id.get(assignment.photo_id) %}
+  <li>
+    {% if photo %}
+    <a href="/media/photos/{{ photo.id }}/original">{{ photo.filename }}</a>
+    {% else %}
+    Photo #{{ assignment.photo_id }}
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+<p class="muted">
+  Layout: {{ page.layout_id if page.layout_id else 'not assigned' }}
+</p>
+{% else %}
+<p class="muted">No page selected.</p>
+{% endif %}

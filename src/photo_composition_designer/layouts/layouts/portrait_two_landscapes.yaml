@@ -1,0 +1,22 @@
+key: portrait_two_landscapes
+version: 1
+name: "One portrait, two stacked landscapes"
+slots:
+  - key: portrait
+    x: 0.0
+    y: 0.0
+    width: 0.5
+    height: 1.0
+    crop_mode: cover
+  - key: landscape_top
+    x: 0.5
+    y: 0.0
+    width: 0.5
+    height: 0.5
+    crop_mode: cover
+  - key: landscape_bottom
+    x: 0.5
+    y: 0.5
+    width: 0.5
+    height: 0.5
+    crop_mode: cover

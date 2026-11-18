@@ -1,22 +1,57 @@
-from config_cli_gui.docs import DocumentationGenerator
+"""Generate a configuration reference from the typed settings defaults.
 
-from Photo_Composition_Designer.config.config import ConfigParameterManager
+Replaces the old ``config_cli_gui``-based generator. The configuration system
+is now the typed :class:`Settings` dataclass in
+``photo_composition_designer.core.settings``; this script writes a Markdown
+reference of the default values so the documentation stays in sync without a
+runtime dependency on the removed config framework.
+"""
 
-"""function to generate config file and documentation."""
+from __future__ import annotations
+
+from dataclasses import fields, is_dataclass
+from pathlib import Path
+
+from photo_composition_designer.core.settings import Settings
+
+DEFAULT_CONFIG_DOC = Path("docs/usage/config.md")
 
 
-default_config: str = "config.yaml"
-default_cli_doc: str = "docs/usage/cli.md"
-default_config_doc: str = "docs/usage/config.md"
+def _format_value(value: object) -> str:
+    return f"`{value!r}`"
 
-config_manager = ConfigParameterManager()
 
-docGen = DocumentationGenerator(config_manager)
-docGen.generate_default_config_file(output_file=default_config)
-print(f"Generated: {default_config}")
+def _walk(category: object, prefix: str, rows: list[tuple[str, str]]) -> None:
+    for field in fields(category):  # type: ignore[arg-type]
+        value = getattr(category, field.name)
+        name = f"{prefix}{field.name}"
+        if hasattr(value, "value"):
+            rows.append((name, _format_value(value.value)))
+        elif is_dataclass(value) and not isinstance(value, type):
+            _walk(value, f"{name}.", rows)
 
-docGen.generate_config_markdown_doc(output_file=default_config_doc)
-print(f"Generated: {default_config_doc}")
 
-docGen.generate_cli_markdown_doc(output_file=default_cli_doc)
-print(f"Generated: {default_cli_doc}")
+def main() -> None:
+    """Write the configuration reference Markdown file."""
+    settings = Settings()
+    rows: list[tuple[str, str]] = []
+    _walk(settings, "", rows)
+
+    lines = [
+        "# Configuration reference",
+        "",
+        "Generated from `photo_composition_designer.core.settings.Settings` defaults.",
+        "",
+        "| Parameter | Default |",
+        "| --- | --- |",
+    ]
+    for name, value in rows:
+        lines.append(f"| `{name}` | {value} |")
+
+    DEFAULT_CONFIG_DOC.parent.mkdir(parents=True, exist_ok=True)
+    DEFAULT_CONFIG_DOC.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Generated: {DEFAULT_CONFIG_DOC}")
+
+
+if __name__ == "__main__":
+    main()

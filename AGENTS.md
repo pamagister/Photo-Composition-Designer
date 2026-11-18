@@ -1,4 +1,4 @@
-# AGENTS.md
+``# AGENTS.md
 
 ## Core Principles
 
@@ -81,6 +81,31 @@ Run only commands that exist and are appropriate for the task. Check the project
 - Keep tests deterministic and independent of external services unless integration testing explicitly requires them. 
 - Use mock only if really required. Implement "Tests with Teeth"
 - Do not weaken or remove tests merely to make them pass.
+
+
+## Browser UI Inspection
+
+`playwright-cli` (Playwright CLI + Skills) is available for inspecting the local web UI. The skill is
+committed at `.agents/skills/playwright-cli`; install the CLI and Chromium with
+`npm install -g --prefix ~/.local @playwright/cli@latest` and `playwright-cli install-browser chromium`.
+See `docs/develop/tools.md` for the full setup.
+
+Start the GUI with `uv run photo-composition-designer gui` (default `http://127.0.0.1:8767/`). Validate changes from
+cheapest to most realistic:
+
+- **HTTP with curl:** `curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' <url>` for status and
+  redirects; use `-d`/`-X POST` when reproducing form submissions.
+- **FastAPI TestClient:** `uv run pytest tests/test_gui.py -k <pattern> -x` for in-process endpoint and
+  template checks, without starting a server or browser.
+- **Chromium via Playwright CLI:** `playwright-cli open <url>`, then `find <text>`, `snapshot`,
+  `click`, `fill`, `console`, `requests` and `screenshot`; close with `playwright-cli close`.
+  Headless by default, `--headed` for visual checks.
+- **Firefox:** system Firefox 159 and geckodriver 0.37 are available; `uv run pytest
+  tests/test_browser_review.py` drives a real Firefox workflow. Playwright CLI needs
+  `playwright-cli install-browser firefox` before `playwright-cli open --browser firefox <url>` works.
+
+Close browser sessions and stop the GUI when done. Transient Playwright output goes to the ignored
+`.playwright-cli/` directory.
 
 ## Decision Rules
 

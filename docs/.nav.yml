@@ -9,6 +9,7 @@
 
 nav:
   - index.md
+  - architecture
   - develop
   - getting-started
   - usage

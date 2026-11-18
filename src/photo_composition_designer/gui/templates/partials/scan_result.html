@@ -1,0 +1,21 @@
+{% if error %}
+<p class="error" role="alert">{{ error }}</p>
+{% elif summary %}
+<p class="success" role="status">
+  Scanned {{ summary.source_path }}: {{ summary.discovered }} photos found,
+  {{ summary.added }} added, {{ summary.updated }} updated,
+  {{ summary.unavailable }} unavailable.
+</p>
+{% if summary.warnings %}
+<details>
+  <summary>{{ summary.warnings | length }} warnings</summary>
+  <ul>
+    {% for warning in summary.warnings %}
+    <li class="muted">{{ warning }}</li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+{% else %}
+<p class="muted">No scan has been run in this session.</p>
+{% endif %}

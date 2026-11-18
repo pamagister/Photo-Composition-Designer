@@ -1,0 +1,38 @@
+{% if summary %}
+<div class="distribution-preview">
+  <h3>Distribution preview</h3>
+  <p class="muted">
+    Strategy: <strong>{{ strategy }}</strong>
+    {% if seed %} &middot; seed: {{ seed }}{% endif %}
+  </p>
+  <dl class="distribution-stats">
+    <dt>Pages</dt><dd>{{ summary.pages }}</dd>
+    <dt>Assigned</dt><dd>{{ summary.assigned }}</dd>
+    <dt>Unassigned</dt><dd>{{ summary.unassigned }}</dd>
+  </dl>
+  {% if proposal %}
+  <table class="distribution-table">
+    <thead>
+      <tr><th>Page</th><th>Photos</th></tr>
+    </thead>
+    <tbody>
+      {% for group in proposal.pages %}
+      <tr>
+        <td>Page {{ loop.index }}</td>
+        <td>{{ group | length }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  <form hx-post="/projects/{{ project_id }}/distribute/apply"
+        hx-target="closest .distribution-area"
+        hx-swap="outerHTML">
+    <input type="hidden" name="strategy" value="{{ strategy }}">
+    {% if seed %}<input type="hidden" name="seed" value="{{ seed }}">{% endif %}
+    <button class="primary" type="submit">Apply distribution</button>
+  </form>
+</div>
+{% else %}
+<p class="error">Could not build a distribution proposal.</p>
+{% endif %}

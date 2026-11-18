@@ -1,0 +1,22 @@
+key: three_equal
+version: 1
+name: "Three equal columns"
+slots:
+  - key: left
+    x: 0.0
+    y: 0.0
+    width: 0.3333
+    height: 1.0
+    crop_mode: cover
+  - key: center
+    x: 0.3333
+    y: 0.0
+    width: 0.3333
+    height: 1.0
+    crop_mode: cover
+  - key: right
+    x: 0.6666
+    y: 0.0
+    width: 0.3333
+    height: 1.0
+    crop_mode: cover

@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from Photo_Composition_Designer.common.Photo import Photo
-from Photo_Composition_Designer.tools.ImageDistributor import ImageDistributor
+from photo_composition_designer.core.image_distributor import ImageDistributor
+from photo_composition_designer.core.photo import Photo
 
 
 class TestImageDistributor:

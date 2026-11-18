@@ -1,0 +1,16 @@
+key: two_columns
+version: 1
+name: "Two equal columns"
+slots:
+  - key: left
+    x: 0.0
+    y: 0.0
+    width: 0.5
+    height: 1.0
+    crop_mode: cover
+  - key: right
+    x: 0.5
+    y: 0.0
+    width: 0.5
+    height: 1.0
+    crop_mode: cover

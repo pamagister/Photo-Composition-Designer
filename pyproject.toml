@@ -1,7 +1,7 @@
 [project]
-name = "Photo-Composition-Designer"
+name = "photo-composition-designer"
 dynamic = ["version"]
-description = "Feature-rich Python project template for Photo-Composition-Designer."
+description = "Local-first, browser-based calendar composition designer."
 authors = [
     {name = "pamagister"}
 ]
@@ -9,18 +9,21 @@ readme = "docs/index.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "astral>=3.2",
-    "config-cli-gui>=0.3.7",
-    "ttkbootstrap>=1.20.3",
     "exifread>=3.5.1",
+    "fastapi>=0.115.0",
     "geopandas>=1.1.1",
     "holidays>=0.84",
+    "jinja2>=3.1.4",
     "matplotlib>=3.10.7",
     "pillow>=12.0.0",
     "pytz>=2025.2",
+    "python-multipart>=0.0.9",
     "shapely>=2.1.1",
     "onnxruntime>=1.26.0",
     "numpy>=2.4.6",
     "babel>=2.18.0",
+    "typer>=0.12.0",
+    "uvicorn>=0.30.0",
 ]
 
 # Dev dependencies as optional dependencies
@@ -37,7 +40,8 @@ dev = [
     "gitchangelog>=3.0.4",
     "pyinstaller>=5.8",
     "pre-commit>=4.2.0",
-    "ruff>=0.11.13"
+    "ruff>=0.11.13",
+    "httpx>=0.28.1",
 ]
 
 docs = [
@@ -47,15 +51,21 @@ docs = [
 ]
 
 [project.scripts]
-Photo-Composition-Designer = "Photo_Composition_Designer.cli.cli:main"
-Photo-Composition-Designer-gui = "Photo_Composition_Designer.gui.gui:main"
+photo-composition-designer = "photo_composition_designer.cli.app:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.package-data]
+photo_composition_designer = [
+    "gui/templates/*.html",
+    "gui/templates/partials/*.html",
+    "gui/static/*",
+]
+
 [tool.setuptools_scm]
-write_to = "src/Photo_Composition_Designer/_version.py"
+write_to = "src/photo_composition_designer/_version.py"
 
 [tool.deptry]
 pep621_dev_dependency_groups = ["dev", "docs"]
@@ -63,7 +73,7 @@ pep621_dev_dependency_groups = ["dev", "docs"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-exclude = ["src/Photo_Composition_Designer/_version.py"]
+exclude = ["src/photo_composition_designer/_version.py"]
 
 [tool.ruff.lint]
 select = [

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title | default("Photo Composition Designer") }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/htmx.min.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="app-header">
+    <nav aria-label="Main navigation">
+      <a class="brand" href="/">PCD</a>
+      <a href="/projects">Projects</a>
+    </nav>
+    <p class="save-state" data-save-state>{{ save_state | default("Saved") }}</p>
+  </header>
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{% if photos %}
+<div class="unused-pool"
+     data-project-id="{{ project.id if project else project_id }}"
+     data-page-id="{{ selected_page.id if selected_page else page_id }}">
+  {% for photo in photos %}
+  {% set assigned = photo.id in assigned_ids if assigned_ids else false %}
+  {% if not assigned %}
+  <figure class="unused-item" draggable="true" data-photo-id="{{ photo.id }}">
+    <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" loading="lazy">
+    <figcaption class="meta">{{ photo.filename }}</figcaption>
+  </figure>
+  {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">All photos are assigned.</p>
+{% endif %}

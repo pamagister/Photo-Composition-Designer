@@ -1,6 +1,6 @@
 import shutil
 
-from Photo_Composition_Designer.tools.DescriptionsFileGenerator import DescriptionsFileGenerator
+from photo_composition_designer.core.descriptions_file_generator import DescriptionsFileGenerator
 
 from .TestHelper import temp_dir
 

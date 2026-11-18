@@ -7,14 +7,13 @@ name: CI
 #   - adding --all to the commit subject or pull request title
 #   - running this workflow manually with all=true
 #
-# A feature branch under ci/** also runs on push, which makes it possible to
-# validate CI changes before opening a pull request.
+# Every push to any branch runs CI, so feature and plan branches get feedback
+# before a pull request exists.
 
 on:
   push:
     branches:
-      - main
-      - 'ci/**'
+      - '**'
     paths-ignore:
       - 'HISTORY.md'
   pull_request:

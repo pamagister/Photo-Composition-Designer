@@ -1,0 +1,55 @@
+{% if page %}
+<div class="editor-canvas"
+     data-project-id="{{ project_id }}"
+     data-page-id="{{ page.id }}">
+  <div class="editor-toolbar">
+    <h2>{{ page.start_date }} &ndash; {{ page.end_date }}</h2>
+    <span class="muted">revision {{ page.render_revision }}</span>
+    {% if notice %}<span class="success" role="status">{{ notice }}</span>{% endif %}
+  </div>
+
+  {% if page.layout_id %}
+  <div class="slot-grid" style="grid-template-columns: repeat({{ slot_count | default(2) }}, 1fr);">
+    {% for slot in slots %}
+    {% set assignment = slot_assignment_map.get(slot.id) %}
+    {% set photo = photos_by_id.get(assignment.photo_id) if assignment else None %}
+    <div class="slot {% if photo %}occupied{% else %}empty{% endif %}"
+         data-slot-id="{{ slot.id }}"
+         data-slot-key="{{ slot.slot_key }}"
+         tabindex="0"
+         role="button"
+         aria-label="Slot {{ slot.slot_key }}{% if photo %}: {{ photo.filename }}{% else %}: empty{% endif %}">
+      {% if photo %}
+      <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" draggable="true"
+           data-photo-id="{{ photo.id }}">
+      <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/remove"
+            hx-target="closest .editor-canvas"
+            hx-swap="outerHTML">
+        <input type="hidden" name="slot_id" value="{{ slot.id }}">
+        <button type="submit" class="remove-btn" aria-label="Remove photo">x</button>
+      </form>
+      {% else %}
+      <span class="slot-placeholder">Empty slot</span>
+      <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/assign"
+            hx-target="closest .editor-canvas"
+            hx-swap="outerHTML"
+            class="slot-assign-form">
+        <input type="hidden" name="slot_id" value="{{ slot.id }}">
+        <select name="photo_id" aria-label="Choose photo for slot {{ slot.slot_key }}">
+          {% for candidate in unused_photos %}
+          <option value="{{ candidate.id }}">{{ candidate.filename }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Assign</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">This page has no layout assigned.</p>
+  {% endif %}
+</div>
+{% else %}
+<p class="muted">No page selected.</p>
+{% endif %}
