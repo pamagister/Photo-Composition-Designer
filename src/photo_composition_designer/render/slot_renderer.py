@@ -84,6 +84,31 @@ class SlotAwareRenderer:
                 target_height=slot_height,
                 detections=detections,
             )
+            cropped = self._apply_crop_overrides(cropped, assignment)
             page.paste(cropped, (x0, y0))
 
         return page
+
+    @staticmethod
+    def _apply_crop_overrides(image: Image.Image, assignment: SlotPhoto) -> Image.Image:
+        """Apply per-assignment zoom and focal-point overrides to a cropped image.
+
+        ``crop_zoom`` of 1.0 and a focal point of ``(0.5, 0.5)`` leave the
+        smart-cropped image unchanged. Values are clamped so the crop window
+        always stays inside the image.
+        """
+        zoom = assignment.crop_zoom if assignment.crop_zoom and assignment.crop_zoom > 0 else 1.0
+        focus_x = min(1.0, max(0.0, assignment.crop_focus_x))
+        focus_y = min(1.0, max(0.0, assignment.crop_focus_y))
+        if abs(zoom - 1.0) < 1e-6 and abs(focus_x - 0.5) < 1e-6 and abs(focus_y - 0.5) < 1e-6:
+            return image
+
+        width, height = image.size
+        crop_width = max(1, min(width, int(round(width / zoom))))
+        crop_height = max(1, min(height, int(round(height / zoom))))
+        left = int(round(focus_x * width - crop_width / 2))
+        top = int(round(focus_y * height - crop_height / 2))
+        left = max(0, min(left, width - crop_width))
+        top = max(0, min(top, height - crop_height))
+        cropped = image.crop((left, top, left + crop_width, top + crop_height))
+        return cropped.resize((width, height), Image.Resampling.LANCZOS)

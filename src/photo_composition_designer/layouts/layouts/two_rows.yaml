@@ -1,0 +1,16 @@
+key: two_rows
+version: 1
+name: "Two stacked landscapes"
+slots:
+  - key: top
+    x: 0.0
+    y: 0.0
+    width: 1.0
+    height: 0.5
+    crop_mode: cover
+  - key: bottom
+    x: 0.0
+    y: 0.5
+    width: 1.0
+    height: 0.5
+    crop_mode: cover

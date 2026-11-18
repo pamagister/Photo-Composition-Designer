@@ -1,12 +1,45 @@
 {% if page %}
 <div class="editor-canvas"
      data-project-id="{{ project_id }}"
-     data-page-id="{{ page.id }}">
+     data-page-id="{{ page.id }}"
+     data-render-revision="{{ page.render_revision }}">
+  {% if oob_page_thumb %}
+  <img id="page-thumb-preview-{{ page.id }}"
+       class="page-thumb-preview"
+       src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?max_width=320&v={{ page.render_revision }}"
+       alt="" loading="lazy" hx-swap-oob="outerHTML">
+  {% endif %}
   <div class="editor-toolbar">
     <h2>{{ page.start_date }} &ndash; {{ page.end_date }}</h2>
     <span class="muted">revision {{ page.render_revision }}</span>
+    <span class="save-state" data-save-state>{{ "Saved" if notice else "Up to date" }}</span>
     {% if notice %}<span class="success" role="status">{{ notice }}</span>{% endif %}
   </div>
+
+  <div class="page-preview">
+    <img src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?v={{ page.render_revision }}"
+         alt="Rendered preview for {{ page.start_date }}" loading="lazy">
+  </div>
+
+  <details class="layout-change">
+    <summary>Change layout</summary>
+    <form hx-get="/projects/{{ project_id }}/pages/{{ page.id }}/layout/preview"
+          hx-target="#layout-change-preview"
+          hx-swap="innerHTML">
+      <select name="layout_key" aria-label="Page layout">
+        {% for key, template in catalogue.items() %}
+        <option value="{{ key }}">{{ template.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Preview change</button>
+      <button type="button"
+              hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/layout"
+              hx-include="closest form"
+              hx-target="closest .editor-canvas"
+              hx-swap="outerHTML">Apply layout</button>
+    </form>
+    <div id="layout-change-preview"></div>
+  </details>
 
   {% if page.layout_id %}
   <div class="slot-grid" style="grid-template-columns: repeat({{ slot_count | default(2) }}, 1fr);">
@@ -28,6 +61,27 @@
         <input type="hidden" name="slot_id" value="{{ slot.id }}">
         <button type="submit" class="remove-btn" aria-label="Remove photo">x</button>
       </form>
+      <details class="crop-controls">
+        <summary>Crop</summary>
+        <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/crop"
+              hx-target="closest .editor-canvas"
+              hx-swap="outerHTML">
+          <input type="hidden" name="slot_id" value="{{ slot.id }}">
+          <label>Zoom
+            <input type="range" name="crop_zoom" min="1" max="3" step="0.1"
+                   value="{{ assignment.crop_zoom }}">
+          </label>
+          <label>Focus X
+            <input type="range" name="crop_focus_x" min="0" max="1" step="0.05"
+                   value="{{ assignment.crop_focus_x }}">
+          </label>
+          <label>Focus Y
+            <input type="range" name="crop_focus_y" min="0" max="1" step="0.05"
+                   value="{{ assignment.crop_focus_y }}">
+          </label>
+          <button type="submit">Save crop</button>
+        </form>
+      </details>
       {% else %}
       <span class="slot-placeholder">Empty slot</span>
       <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/assign"
@@ -49,6 +103,15 @@
   {% else %}
   <p class="muted">This page has no layout assigned.</p>
   {% endif %}
+
+  <form class="description-form"
+        hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/description"
+        hx-target="closest .editor-canvas"
+        hx-swap="outerHTML">
+    <label for="page-description">Description</label>
+    <textarea id="page-description" name="description" rows="3">{{ page.description }}</textarea>
+    <button type="submit">Save description</button>
+  </form>
 </div>
 {% else %}
 <p class="muted">No page selected.</p>

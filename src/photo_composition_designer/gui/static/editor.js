@@ -7,18 +7,7 @@
 (function () {
   "use strict";
 
-  const canvas = document.querySelector(".editor-canvas");
-  if (!canvas) return;
-
-  const projectId = canvas.dataset.projectId;
-  const pageId = canvas.dataset.pageId;
-
-  function refresh() {
-    window.htmx.ajax("GET", `/projects/${projectId}/pages/${pageId}/unused`, {
-      target: "#unused-area",
-      swap: "innerHTML",
-    });
-  }
+  if (!document.querySelector(".editor-canvas")) return;
 
   document.addEventListener("dragstart", function (event) {
     const item = event.target.closest(".unused-item, .slot img");
@@ -47,13 +36,16 @@
     const photoId = event.dataTransfer.getData("text/plain");
     if (!photoId) return;
 
+    const canvas = document.querySelector(".editor-canvas");
+    if (!canvas) return;
     const occupied = slot.classList.contains("occupied");
     const action = occupied ? "replace" : "assign";
-    window.htmx.ajax("POST", `/projects/${projectId}/pages/${pageId}/${action}`, {
+    const url = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}/${action}`;
+    window.htmx.ajax("POST", url, {
       values: { slot_id: slot.dataset.slotId, photo_id: photoId },
       target: canvas,
       swap: "outerHTML",
-    }).then(refresh);
+    });
   });
 
   /* Keyboard: Enter on a focused empty slot opens the select dropdown. */

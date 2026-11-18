@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError
 from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.gui.routes.projects import _canvas_response
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.editing import PageEditingService
-from photo_composition_designer.project.repositories import (
-    AssignmentRepository,
-    PageRepository,
-)
 
 router = APIRouter()
 
@@ -31,25 +30,7 @@ def _page_fragment(
     message: str | None = None,
 ) -> HTMLResponse:
     database = _open_database(request)
-    with database.connect() as connection:
-        page = PageRepository(connection).get(page_id)
-        if page is None:
-            return _error(project_id, "page not found")
-        assignments = AssignmentRepository(connection).list_by_page(page_id)
-        photos_by_id = {
-            row["id"]: row
-            for row in connection.execute("SELECT id, filename FROM photos").fetchall()
-        }
-
-    context = {
-        "request": request,
-        "project_id": project_id,
-        "page": page,
-        "assignments": assignments,
-        "photos_by_id": photos_by_id,
-        "notice": message,
-    }
-    return TEMPLATES.TemplateResponse(request, "partials/editor_canvas.html", context)
+    return _canvas_response(request, database, project_id, page_id, message or "")
 
 
 def _open_database(request: Request) -> WorkspaceDatabase:
@@ -119,6 +100,50 @@ def swap_photos(
     editing = PageEditingService(database)
     editing.swap(project_id, page_id, slot_a, slot_b)
     return _page_fragment(request, project_id, page_id, "Photos swapped.")
+
+
+@router.post("/projects/{project_id}/pages/{page_id}/crop")
+def set_crop(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    slot_id: int = Form(...),
+    crop_zoom: float = Form(1.0),
+    crop_focus_x: float = Form(0.5),
+    crop_focus_y: float = Form(0.5),
+) -> HTMLResponse:
+    """Update the crop zoom and focal point for one assigned slot."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        editing.set_crop(
+            project_id,
+            page_id,
+            slot_id,
+            crop_zoom=crop_zoom,
+            crop_focus_x=crop_focus_x,
+            crop_focus_y=crop_focus_y,
+        )
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    return _page_fragment(request, project_id, page_id, "Crop updated.")
+
+
+@router.post("/projects/{project_id}/pages/{page_id}/description")
+def update_description(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    description: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    """Update the page description."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        editing.set_description(project_id, page_id, description)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    return _page_fragment(request, project_id, page_id, "Description saved.")
 
 
 @router.get("/projects/{project_id}/pages/{page_id}/unused")

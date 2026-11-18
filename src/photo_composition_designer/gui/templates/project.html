@@ -32,6 +32,10 @@
        hx-push-url="false"
        class="page-thumb {% if selected_page and pg.id == selected_page.id %}active{% endif %}"
        {% if selected_page and pg.id == selected_page.id %}aria-current="page"{% endif %}>
+      <img id="page-thumb-preview-{{ pg.id }}"
+           class="page-thumb-preview"
+           src="/projects/{{ project.id }}/pages/{{ pg.id }}/preview?max_width=320&v={{ pg.render_revision }}"
+           alt="" loading="lazy">
       <span class="page-thumb-date">{{ pg.start_date }}</span>
       <span class="muted">{{ pg.end_date }}</span>
     </a>
@@ -82,7 +86,12 @@
 
 <div class="editor-bottom" aria-label="Unused photos">
   <h2>Unused photos</h2>
-  <div id="unused-area">
+  <div id="unused-area"
+       {% if selected_page %}
+       hx-get="/projects/{{ project.id }}/pages/{{ selected_page.id }}/unused"
+       hx-trigger="pcd:refresh-unused from:body"
+       hx-swap="innerHTML"
+       {% endif %}>
     {% include "partials/unused_pool.html" %}
   </div>
 </div>

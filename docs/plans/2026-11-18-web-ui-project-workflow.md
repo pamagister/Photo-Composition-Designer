@@ -373,21 +373,21 @@ editing and export work depends on it.
 
 **Objective:** Expose every page-level editing action in the browser.
 
-- [ ] **P2-W01:** Implement `PageEditingService.change_layout` with deterministic
+- [x] **P2-W01:** Implement `PageEditingService.change_layout` with deterministic
   slot mapping, preserved assignments, displaced-photo handling and a preview
   payload.
-- [ ] **P2-W02:** Add a layout-change route and UI with displaced-photo confirmation.
-- [ ] **P2-W03:** Implement `PageEditingService.set_crop` for zoom and focal point;
+- [x] **P2-W02:** Add a layout-change route and UI with displaced-photo confirmation.
+- [x] **P2-W03:** Implement `PageEditingService.set_crop` for zoom and focal point;
   add a route and compact per-slot crop controls.
-- [ ] **P2-W04:** Add page-description editing with a route and form; use
+- [x] **P2-W04:** Add page-description editing with a route and form; use
   `PageRepository.update_description` and increment the render revision.
-- [ ] **P2-W05:** Add a cached page-preview endpoint and render page thumbnails in
+- [x] **P2-W05:** Add a cached page-preview endpoint and render page thumbnails in
   the sidebar.
-- [ ] **P2-W06:** Refresh previews and the unused pool after each committed edit;
+- [x] **P2-W06:** Refresh previews and the unused pool after each committed edit;
   show the current render revision and save state.
-- [ ] **P2-W07:** Add tests for layout change, crop updates, description editing,
+- [x] **P2-W07:** Add tests for layout change, crop updates, description editing,
   preview invalidation and rollback on invalid operations.
-- [ ] **P2-W08:** Audit the curated YAML layout catalogue against the established
+- [x] **P2-W08:** Audit the curated YAML layout catalogue against the established
   collage patterns and add missing common arrangements; validate every snapshot.
 
 **Acceptance criteria**
@@ -643,10 +643,14 @@ The continuation is complete when all of the following hold:
   and merged to `main`. Continuation Phase 0 complete. Continuation Phase 1
   complete: typed `OutputProfile`, full-page `PageComposer`, project rendering
   service with cached previews, profile snapshot on creation and export/preview
-  now use the per-project profile. `make lint` clean; 173 tests pass.
-- **Active:** None. Phase 1 committed and pushed.
-- **Next:** Phase 2 (page editing completion and previews), starting with P2-W01
-  (`PageEditingService.change_layout`). Phase issue #31.
+  now use the per-project profile. Continuation Phase 2 complete: deterministic
+  layout changes with displaced-photo preview and confirmation, per-assignment
+  crop/focal-point controls, page-description editing, cached page previews with
+  sidebar thumbnails, unused-pool and preview refresh after edits, and a
+  `two_rows` catalogue layout. `make lint` clean; 187 tests pass.
+- **Active:** None. Phase 2 committed and pushed.
+- **Next:** Phase 3 (source management UX and reliability), starting with
+  P3-W01. Phase issue #29.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
@@ -661,13 +665,17 @@ The continuation is complete when all of the following hold:
   - `src/photo_composition_designer/core/settings.py:42-169`
   - `src/photo_composition_designer/project/models.py:13-25,112-123`
   - `src/photo_composition_designer/project/services.py:34-121`
-  - `src/photo_composition_designer/project/editing.py:43-174`
+  - `src/photo_composition_designer/project/editing.py:43-410`
   - `src/photo_composition_designer/project/inventory.py:196-278`
-  - `src/photo_composition_designer/gui/routes/projects.py:188-280,402-480`
-  - `src/photo_composition_designer/gui/routes/editor.py:59-140`
+  - `src/photo_composition_designer/gui/routes/projects.py:125-450`
+  - `src/photo_composition_designer/gui/routes/editor.py:35-170`
   - `src/photo_composition_designer/gui/templates/partials/editor_canvas.html`
+  - `src/photo_composition_designer/gui/templates/project.html`
+  - `src/photo_composition_designer/gui/static/editor.js`
+  - `src/photo_composition_designer/layouts/layouts/two_rows.yaml`
   - `src/photo_composition_designer/cli/app.py:26-56`
-  - `tests/test_gui.py`, `tests/test_editor.py`, `tests/test_guided_creation.py`,
+  - `tests/test_gui.py`, `tests/test_editor.py`, `tests/test_editing.py`,
+    `tests/test_layouts.py`, `tests/test_guided_creation.py`,
     `tests/test_export.py`, `tests/test_inventory.py`
 - **Decisions:** Full feature parity; reference-only export only; `.pcd` and
   self-contained assets deferred; workspace-level Duplicate Project; editable output
@@ -676,6 +684,6 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 173 passed.
-- **Context status:** Phase 1 complete. Next phase (Phase 2) is independent; a
-  fresh session is recommended before starting P2-W01.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 187 passed.
+- **Context status:** Phase 2 complete. Next phase (Phase 3) is independent; a
+  fresh session is recommended before starting P3-W01.

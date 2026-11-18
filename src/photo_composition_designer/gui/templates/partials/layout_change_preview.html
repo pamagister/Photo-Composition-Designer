@@ -1,0 +1,29 @@
+{% if error %}
+<p class="error" role="alert">{{ error }}</p>
+{% elif plan %}
+<div class="layout-change-preview" role="status">
+  <p>
+    Switching to <strong>{{ plan.layout_name }}</strong> ({{ plan.slot_count }} slots)
+    keeps {{ plan.preserved | length }} photo(s).
+  </p>
+  {% if plan.displaced %}
+  <p class="error">
+    {{ plan.displaced | length }} photo(s) will return to the unused pool:
+  </p>
+  <ul>
+    {% for photo in plan.displaced %}
+    <li>{{ photo.filename }}</li>
+    {% endfor %}
+  </ul>
+  <form hx-post="/projects/{{ project_id }}/pages/{{ page_id }}/layout"
+        hx-target="closest .editor-canvas"
+        hx-swap="outerHTML">
+    <input type="hidden" name="layout_key" value="{{ plan.layout_key }}">
+    <input type="hidden" name="confirm" value="1">
+    <button type="submit">Confirm layout change</button>
+  </form>
+  {% else %}
+  <p class="success">No photos will be displaced.</p>
+  {% endif %}
+</div>
+{% endif %}

@@ -672,6 +672,22 @@ class AssignmentRepository:
         )
         return cursor.rowcount > 0
 
+    def update_crop(
+        self,
+        assignment_id: int,
+        *,
+        crop_zoom: float,
+        crop_focus_x: float,
+        crop_focus_y: float,
+    ) -> None:
+        """Update the per-assignment crop settings."""
+        cursor = self._connection.execute(
+            "UPDATE assignments SET crop_zoom = ?, crop_focus_x = ?, crop_focus_y = ? WHERE id = ?",
+            (crop_zoom, crop_focus_x, crop_focus_y, assignment_id),
+        )
+        if cursor.rowcount != 1:
+            raise ProjectNotFoundError(f"assignment {assignment_id} does not exist")
+
     def list_by_page(self, page_id: int) -> list[PhotoAssignment]:
         """Return all assignments for a page ordered by slot ID."""
         rows = self._connection.execute(

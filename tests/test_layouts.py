@@ -19,11 +19,23 @@ from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, S
 
 def test_catalogue_loads_curated_layouts() -> None:
     catalogue = load_catalogue()
-    assert "single_full" in catalogue
-    assert "two_columns" in catalogue
-    assert "four_quadrants" in catalogue
+    assert {
+        "single_full",
+        "two_columns",
+        "two_rows",
+        "three_equal",
+        "four_quadrants",
+        "portrait_two_landscapes",
+    } <= set(catalogue)
     assert catalogue["two_columns"].version == 1
     assert len(catalogue["two_columns"].slots) == 2
+    assert len(catalogue["two_rows"].slots) == 2
+
+
+def test_every_catalogue_snapshot_roundtrips() -> None:
+    for template in load_catalogue().values():
+        snapshot = validate_layout(template.as_dict())
+        assert snapshot == template
 
 
 def test_validate_rejects_out_of_bounds_slot() -> None:

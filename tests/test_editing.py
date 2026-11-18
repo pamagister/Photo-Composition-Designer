@@ -1,0 +1,435 @@
+"""Tests for page editing: layout changes, crops, descriptions and previews."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from pathlib import Path
+
+import pytest
+from PIL import Image
+from starlette.testclient import TestClient
+
+from photo_composition_designer.core.appdata import data_dir
+from photo_composition_designer.core.errors import ProjectError
+from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.gui.app import create_app
+from photo_composition_designer.gui.settings import GuiSettings
+from photo_composition_designer.project.editing import PageEditingService
+from photo_composition_designer.project.inventory import InventoryService
+from photo_composition_designer.project.repositories import (
+    AssignmentRepository,
+    LayoutRepository,
+    PageRepository,
+)
+from photo_composition_designer.project.services import ProjectService
+
+
+@pytest.fixture()
+def editor_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
+    return TestClient(create_app(GuiSettings()))
+
+
+def _write_photo(path: Path, color: tuple[int, int, int]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (40, 30), color).save(path)
+
+
+def _seed(
+    tmp_path: Path,
+    *,
+    photo_count: int = 4,
+    layout_key: str = "four_quadrants",
+) -> tuple[WorkspaceDatabase, PageEditingService, int, int, list[int], list[int]]:
+    """Create a one-page project with a persisted catalogue layout snapshot."""
+    database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
+    project = ProjectService(database).create_project(
+        name="Editing",
+        page_count=1,
+        start_date=datetime(2027, 1, 4),
+    )
+
+    source = tmp_path / "source"
+    for index in range(photo_count):
+        _write_photo(source / f"photo_{index:02d}.jpg", (index * 50, 0, 0))
+    inventory = InventoryService(database)
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    with database.connect() as connection:
+        page = PageRepository(connection).list(project.id)[0]
+
+    editing = PageEditingService(database)
+    editing.change_layout(project.id, page.id, layout_key)
+
+    with database.connect() as connection:
+        page = PageRepository(connection).get(page.id)
+        assert page is not None and page.layout_id is not None
+        layout = LayoutRepository(connection).get_by_id(page.layout_id)
+        assert layout is not None
+        photo_ids = [
+            row["id"] for row in connection.execute("SELECT id FROM photos ORDER BY id").fetchall()
+        ]
+        slot_ids = [slot.id for slot in layout.slots]
+
+    return database, editing, project.id, page.id, photo_ids, slot_ids
+
+
+def _assign_all(
+    editing: PageEditingService,
+    project_id: int,
+    page_id: int,
+    photo_ids: list[int],
+    slot_ids: list[int],
+) -> None:
+    for photo_id, slot_id in zip(photo_ids, slot_ids, strict=True):
+        editing.assign_to_empty_slot(project_id, page_id, slot_id, photo_id)
+
+
+def _page_revision(database: WorkspaceDatabase, page_id: int) -> int:
+    with database.connect() as connection:
+        page = PageRepository(connection).get(page_id)
+        assert page is not None
+        return page.render_revision
+
+
+def _stored_revision(page_id: int) -> int:
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        return _page_revision(database, page_id)
+    finally:
+        database.close()
+
+
+def test_change_layout_preview_is_deterministic_and_reports_displaced(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        _assign_all(editing, project_id, page_id, photo_ids, slot_ids)
+
+        preview = editing.plan_layout_change(project_id, page_id, "two_columns")
+        repeated = editing.plan_layout_change(project_id, page_id, "two_columns")
+
+        assert preview == repeated
+        assert preview.layout_key == "two_columns"
+        assert preview.slot_count == 2
+        assert len(preview.preserved) == 2
+        assert {photo.id for photo in preview.displaced} == {
+            photo_ids[2],
+            photo_ids[3],
+        }
+        assert preview.has_displaced
+
+        # Previewing never mutates assignments.
+        with database.connect() as connection:
+            assert len(AssignmentRepository(connection).list_by_page(page_id)) == 4
+    finally:
+        database.close()
+
+
+def test_change_layout_applies_mapping_and_returns_displaced_to_pool(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        _assign_all(editing, project_id, page_id, photo_ids, slot_ids)
+        before_revision = _page_revision(database, page_id)
+
+        result = editing.change_layout(project_id, page_id, "two_columns")
+
+        assert result.layout_key == "two_columns"
+        assert len(result.preserved) == 2
+        assert _page_revision(database, page_id) > before_revision
+
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None and layout.key == "two_columns"
+            assert len(layout.slots) == 2
+
+            assignments = AssignmentRepository(connection).list_by_page(page_id)
+            assert {assignment.photo_id for assignment in assignments} == {
+                photo_ids[0],
+                photo_ids[1],
+            }
+            assert {assignment.slot_id for assignment in assignments} == {
+                slot.id for slot in layout.slots
+            }
+
+        unused_ids = {photo.id for photo in editing.unused_pool(project_id)}
+        assert unused_ids == {photo_ids[2], photo_ids[3]}
+    finally:
+        database.close()
+
+
+def test_change_layout_preserves_crop_settings(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[0], photo_ids[0])
+        editing.set_crop(
+            project_id,
+            page_id,
+            slot_ids[0],
+            crop_zoom=1.8,
+            crop_focus_x=0.25,
+            crop_focus_y=0.75,
+        )
+
+        editing.change_layout(project_id, page_id, "two_columns")
+
+        with database.connect() as connection:
+            assignments = AssignmentRepository(connection).list_by_page(page_id)
+            assert len(assignments) == 1
+            assignment = assignments[0]
+            assert assignment.photo_id == photo_ids[0]
+            assert assignment.crop_zoom == pytest.approx(1.8)
+            assert assignment.crop_focus_x == pytest.approx(0.25)
+            assert assignment.crop_focus_y == pytest.approx(0.75)
+    finally:
+        database.close()
+
+
+def test_change_layout_rejects_unknown_layout_without_side_effects(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        _assign_all(editing, project_id, page_id, photo_ids, slot_ids)
+        before_revision = _page_revision(database, page_id)
+
+        with pytest.raises(ProjectError):
+            editing.change_layout(project_id, page_id, "does_not_exist")
+
+        assert _page_revision(database, page_id) == before_revision
+        with database.connect() as connection:
+            assignments = AssignmentRepository(connection).list_by_page(page_id)
+            assert {assignment.photo_id for assignment in assignments} == set(photo_ids)
+    finally:
+        database.close()
+
+
+def test_set_crop_persists_values_and_increments_revision(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[0], photo_ids[0])
+        before_revision = _page_revision(database, page_id)
+
+        editing.set_crop(
+            project_id,
+            page_id,
+            slot_ids[0],
+            crop_zoom=2.5,
+            crop_focus_x=0.1,
+            crop_focus_y=0.9,
+        )
+
+        with database.connect() as connection:
+            assignment = AssignmentRepository(connection).list_by_page(page_id)[0]
+        assert assignment.crop_zoom == pytest.approx(2.5)
+        assert assignment.crop_focus_x == pytest.approx(0.1)
+        assert assignment.crop_focus_y == pytest.approx(0.9)
+        assert _page_revision(database, page_id) == before_revision + 1
+    finally:
+        database.close()
+
+
+def test_set_crop_rejects_invalid_values_without_side_effects(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[0], photo_ids[0])
+        before_revision = _page_revision(database, page_id)
+
+        with pytest.raises(ProjectError):
+            editing.set_crop(project_id, page_id, slot_ids[0], crop_zoom=0.5)
+        with pytest.raises(ProjectError):
+            editing.set_crop(project_id, page_id, slot_ids[0], crop_focus_x=1.5)
+
+        with database.connect() as connection:
+            assignment = AssignmentRepository(connection).list_by_page(page_id)[0]
+        assert assignment.crop_zoom == pytest.approx(1.0)
+        assert assignment.crop_focus_x == pytest.approx(0.5)
+        assert _page_revision(database, page_id) == before_revision
+    finally:
+        database.close()
+
+
+def test_set_description_persists_text_and_increments_revision(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        before_revision = _page_revision(database, page_id)
+
+        editing.set_description(project_id, page_id, "A calm week by the lake.")
+
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+        assert page is not None
+        assert page.description == "A calm week by the lake."
+        assert page.render_revision == before_revision + 1
+    finally:
+        database.close()
+
+
+def test_layout_preview_route_lists_displaced_photos(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_via_client(tmp_path)
+    response = editor_client.get(
+        f"/projects/{project_id}/pages/{page_id}/layout/preview",
+        params={"layout_key": "two_columns"},
+    )
+
+    assert response.status_code == 200
+    assert "will return to the unused pool" in response.text
+    assert "photo_02.jpg" in response.text
+    assert "photo_03.jpg" in response.text
+
+
+def test_layout_apply_requires_confirmation_when_photos_are_displaced(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_via_client(tmp_path)
+    before = _stored_revision(page_id)
+
+    blocked = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "two_columns"},
+    )
+    assert blocked.status_code == 200
+    assert "will return to the unused pool" in blocked.text
+    assert blocked.headers["HX-Retarget"] == "#layout-change-preview"
+    assert blocked.headers["HX-Reswap"] == "innerHTML"
+    assert _stored_revision(page_id) == before
+
+    applied = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "two_columns", "confirm": "1"},
+    )
+    assert applied.status_code == 200
+    assert "Layout changed." in applied.text
+    assert f"revision {before + 1}" in applied.text
+    assert applied.headers["HX-Trigger"] == "pcd:refresh-unused"
+
+
+def test_crop_route_persists_values(editor_client, tmp_path):
+    project_id, page_id, _, slot_ids = _seed_via_client(tmp_path, photo_count=1, slots=1)
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/crop",
+        data={
+            "slot_id": slot_ids[0],
+            "crop_zoom": "2.0",
+            "crop_focus_x": "0.25",
+            "crop_focus_y": "0.8",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Crop updated." in response.text
+    assert response.headers["HX-Trigger"] == "pcd:refresh-unused"
+    assert f'id="page-thumb-preview-{page_id}"' in response.text
+    assert 'hx-swap-oob="outerHTML"' in response.text
+
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            assignment = AssignmentRepository(connection).list_by_page(page_id)[0]
+    finally:
+        database.close()
+    assert assignment.crop_zoom == pytest.approx(2.0)
+    assert assignment.crop_focus_x == pytest.approx(0.25)
+    assert assignment.crop_focus_y == pytest.approx(0.8)
+
+
+def test_description_route_updates_page_and_revision(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_via_client(tmp_path, photo_count=1, slots=1)
+    before = _stored_revision(page_id)
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/description",
+        data={"description": "First week of spring."},
+    )
+
+    assert response.status_code == 200
+    assert "Description saved." in response.text
+    assert _stored_revision(page_id) == before + 1
+
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+    finally:
+        database.close()
+    assert page is not None
+    assert page.description == "First week of spring."
+
+
+def test_page_preview_route_returns_cached_jpeg(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_via_client(tmp_path, photo_count=1, slots=1)
+
+    first = editor_client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview",
+        params={"max_width": 320},
+    )
+    second = editor_client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview",
+        params={"max_width": 320},
+    )
+
+    assert first.status_code == 200
+    assert first.headers["content-type"] == "image/jpeg"
+    assert first.headers["cache-control"] == "public, max-age=3600"
+    assert first.content
+    assert second.content == first.content
+
+
+def test_project_page_renders_sidebar_preview_thumbnails(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_via_client(tmp_path, photo_count=1, slots=1)
+
+    response = editor_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert response.status_code == 200
+    assert f"/projects/{project_id}/pages/{page_id}/preview?max_width=320" in response.text
+    assert "page-thumb-preview" in response.text
+    assert 'hx-swap-oob="outerHTML"' not in response.text
+
+
+def _seed_via_client(
+    tmp_path: Path,
+    *,
+    photo_count: int = 4,
+    slots: int | None = None,
+) -> tuple[int, int, list[int], list[int]]:
+    """Seed the client workspace and optionally assign photos to the first slots."""
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        project = ProjectService(database).create_project(
+            name="Routes",
+            page_count=1,
+            start_date=datetime(2027, 1, 4),
+        )
+
+        source = tmp_path / "route-source"
+        for index in range(photo_count):
+            _write_photo(source / f"photo_{index:02d}.jpg", (index * 50, 0, 0))
+        inventory = InventoryService(database)
+        root = inventory.add_source_root(project.id, source)
+        inventory.scan(project.id, source_root_id=root.id)
+
+        with database.connect() as connection:
+            page = PageRepository(connection).list(project.id)[0]
+
+        editing = PageEditingService(database)
+        layout_key = "four_quadrants" if (slots is None or slots > 2) else "two_columns"
+        editing.change_layout(project.id, page.id, layout_key)
+
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page.id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            photo_ids = [
+                row["id"]
+                for row in connection.execute("SELECT id FROM photos ORDER BY id").fetchall()
+            ]
+            slot_ids = [slot.id for slot in layout.slots]
+
+        limit = slots if slots is not None else len(photo_ids)
+        for photo_id, slot_id in zip(photo_ids[:limit], slot_ids[:limit], strict=True):
+            editing.assign_to_empty_slot(project.id, page.id, slot_id, photo_id)
+
+        return project.id, page.id, photo_ids, slot_ids
+    finally:
+        database.close()

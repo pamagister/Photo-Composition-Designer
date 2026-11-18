@@ -8,7 +8,7 @@ from typing import Annotated
 from urllib.parse import quote
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
 from photo_composition_designer.db.schema import WorkspaceDatabase
@@ -16,9 +16,13 @@ from photo_composition_designer.gui.dependencies import (
     DatabaseDependency,
     InventoryServiceDependency,
     ProjectServiceDependency,
+    SettingsDependency,
 )
 from photo_composition_designer.gui.templating import TEMPLATES
+from photo_composition_designer.layouts.loader import load_catalogue
+from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
+from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     PageRepository,
@@ -86,6 +90,7 @@ def _project_context(
             }
     return {
         "project": aggregate.project,
+        "project_id": aggregate.project.id,
         "pages": pages,
         "selected_page": selected,
         "page": selected,
@@ -98,6 +103,7 @@ def _project_context(
         "slots": slots,
         "slot_count": slot_count,
         "slot_assignment_map": slot_assignment_map,
+        "catalogue": load_catalogue(),
         "source_states": source_states,
         "error": error,
         "notice": notice,
@@ -141,8 +147,9 @@ def _page_context(
             slots = list(layout.slots)
             slot_count = len(slots)
             slot_assignment_map = {assignment.slot_id: assignment for assignment in assignments}
-    return {
+    context = {
         "page": page,
+        "project_id": project_id,
         "assignments": assignments,
         "photos": photos,
         "photos_by_id": {photo.id: photo for photo in photos},
@@ -150,7 +157,29 @@ def _page_context(
         "slots": slots,
         "slot_count": slot_count,
         "slot_assignment_map": slot_assignment_map,
+        "catalogue": load_catalogue(),
     }
+    return context
+
+
+def _canvas_response(
+    request: Request,
+    database: WorkspaceDatabase,
+    project_id: int,
+    page_id: int,
+    message: str,
+) -> HTMLResponse:
+    """Render the editor canvas fragment for one page."""
+    context = _page_context(database, project_id, page_id)
+    if context is None:
+        raise HTTPException(404, "page not found")
+    context = {**context, "notice": message, "oob_page_thumb": True}
+    return TEMPLATES.TemplateResponse(
+        request,
+        "partials/editor_canvas.html",
+        context,
+        headers={"HX-Trigger": "pcd:refresh-unused"},
+    )
 
 
 @router.get("/projects", response_class=HTMLResponse)
@@ -325,6 +354,95 @@ def project_page_fragment(
     if context is None:
         raise HTTPException(404, "page not found")
     return TEMPLATES.TemplateResponse(request, "partials/editor_canvas.html", context)
+
+
+@router.get("/projects/{project_id}/pages/{page_id}/preview")
+def page_preview(
+    project_id: int,
+    page_id: int,
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+    max_width: Annotated[int, Query(ge=120, le=1600)] = 640,
+) -> FileResponse:
+    """Return a cached reduced-resolution render of one page."""
+    rendering = ProjectRenderingService(database, preview_dir=settings.preview_dir())
+    try:
+        path = rendering.render_preview(project_id, page_id, max_width=max_width)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return FileResponse(
+        path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+def _layout_preview_response(
+    request: Request,
+    context: dict[str, object],
+    *,
+    status_code: int = 200,
+) -> HTMLResponse:
+    """Render the layout preview into the preview panel rather than the canvas."""
+    return TEMPLATES.TemplateResponse(
+        request,
+        "partials/layout_change_preview.html",
+        context,
+        status_code=status_code,
+        headers={"HX-Retarget": "#layout-change-preview", "HX-Reswap": "innerHTML"},
+    )
+
+
+@router.get("/projects/{project_id}/pages/{page_id}/layout/preview", response_class=HTMLResponse)
+def preview_layout_change(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    database: DatabaseDependency,
+    layout_key: Annotated[str, Query()],
+) -> HTMLResponse:
+    """Preview a layout change without mutating the project."""
+    editing = PageEditingService(database)
+    try:
+        plan = editing.plan_layout_change(project_id, page_id, layout_key)
+    except ProjectError as exc:
+        return _layout_preview_response(
+            request,
+            {"project_id": project_id, "page_id": page_id, "error": str(exc)},
+            status_code=400,
+        )
+    return _layout_preview_response(
+        request,
+        {"project_id": project_id, "page_id": page_id, "plan": plan},
+    )
+
+
+@router.post("/projects/{project_id}/pages/{page_id}/layout", response_model=None)
+def apply_layout_change(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    database: DatabaseDependency,
+    layout_key: Annotated[str, Form()],
+    confirm: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    """Apply a layout change, asking for confirmation when photos are displaced."""
+    editing = PageEditingService(database)
+    try:
+        plan = editing.plan_layout_change(project_id, page_id, layout_key)
+        if plan.has_displaced and confirm != "1":
+            return _layout_preview_response(
+                request,
+                {"project_id": project_id, "page_id": page_id, "plan": plan},
+            )
+        editing.change_layout(project_id, page_id, layout_key)
+    except ProjectError as exc:
+        return _layout_preview_response(
+            request,
+            {"project_id": project_id, "page_id": page_id, "error": str(exc)},
+            status_code=400,
+        )
+    return _canvas_response(request, database, project_id, page_id, "Layout changed.")
 
 
 @router.get("/projects/{project_id}/inventory", response_class=HTMLResponse)
