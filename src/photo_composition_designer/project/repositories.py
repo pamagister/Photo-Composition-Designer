@@ -391,6 +391,7 @@ class PageRepository:
             render_revision=int(row["render_revision"]),
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
+            hide_local_map=bool(row["hide_local_map"]),
         )
 
     def create(
@@ -403,6 +404,7 @@ class PageRepository:
         description: str = "",
         layout_id: int | None = None,
         layout_version: int | None = None,
+        hide_local_map: bool = False,
         created_at: str | None = None,
     ) -> CalendarPage:
         """Insert one page."""
@@ -410,8 +412,8 @@ class PageRepository:
         cursor = self._connection.execute(
             "INSERT INTO pages("
             "project_id, page_index, start_date, end_date, description, layout_id, "
-            "layout_version, render_revision, created_at, updated_at"
-            ") VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+            "layout_version, render_revision, hide_local_map, created_at, updated_at"
+            ") VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
             (
                 project_id,
                 page_index,
@@ -420,6 +422,7 @@ class PageRepository:
                 description,
                 layout_id,
                 layout_version,
+                int(hide_local_map),
                 timestamp,
                 timestamp,
             ),
@@ -504,6 +507,18 @@ class PageRepository:
             "UPDATE pages SET render_revision = render_revision + 1, updated_at = ? WHERE id = ?",
             (_now(), page_id),
         )
+
+    def set_hide_local_map(self, page_id: int, hide_local_map: bool) -> CalendarPage:
+        """Override the global local-map setting for one page."""
+        self._connection.execute(
+            "UPDATE pages SET hide_local_map = ?, render_revision = render_revision + 1, "
+            "updated_at = ? WHERE id = ?",
+            (int(hide_local_map), _now(), page_id),
+        )
+        page = self.get(page_id)
+        if page is None:
+            raise ProjectNotFoundError(f"page {page_id} does not exist")
+        return page
 
     def increment_revisions(self, project_id: int) -> int:
         """Increment every page revision in a project and return the page count."""

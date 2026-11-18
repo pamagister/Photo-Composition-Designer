@@ -22,7 +22,6 @@ from photo_composition_designer.gui.dependencies import (
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.layouts.loader import load_catalogue
 from photo_composition_designer.project.editing import PageEditingService
-from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
 from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import (
@@ -291,6 +290,7 @@ def create_project(
     request: Request,
     service: ProjectServiceDependency,
     database: DatabaseDependency,
+    inventory: InventoryServiceDependency,
     name: Annotated[str, Form()],
     page_count: Annotated[int, Form()],
     start_date: Annotated[str, Form()],
@@ -344,7 +344,6 @@ def create_project(
 
     source_error = ""
     if source_path.strip():
-        inventory = InventoryService(database)
         try:
             root = inventory.add_source_root(project.id, source_path)
             inventory.scan(project.id, source_root_id=root.id)

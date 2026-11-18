@@ -519,6 +519,24 @@ summary {
   font-size: 1rem;
 }
 
+.map-toggle {
+  margin-left: auto;
+}
+
+.map-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.map-toggle input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
 .editor-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 23rem);
@@ -845,6 +863,18 @@ summary {
 
 .settings-actions {
   align-items: center;
+}
+
+.ini-preview {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: 0.8rem/1.45 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  white-space: pre;
 }
 
 .settings-duplicate {

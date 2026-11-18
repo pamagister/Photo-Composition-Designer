@@ -7,11 +7,28 @@
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
   <form method="post" action="/settings" class="settings-form">
-    <label for="anniversaries-path">Shared anniversaries.ini path</label>
-    <input id="anniversaries-path" name="anniversaries_path"
-           type="text" value="{{ anniversaries_path }}"
-           placeholder="Leave empty to use the bundled default">
-    <p class="muted">The file is read during rendering and is not copied into projects.</p>
+    <div class="field">
+      <label for="anniversaries-path">Shared anniversaries.ini path</label>
+      <input id="anniversaries-path" name="anniversaries_path"
+             type="text" value="{{ anniversaries_path }}"
+             placeholder="Leave empty to use the bundled default">
+      <p class="muted">The file is read during rendering and is not copied into projects.</p>
+      <a class="button" href="/settings/built-in/anniversaries.ini"
+         target="_blank" rel="noopener">Show built-in format</a>
+    </div>
+    <div class="field">
+      <label for="locations-path">Shared locations.ini path</label>
+      <input id="locations-path" name="locations_path"
+             type="text" value="{{ locations_path }}"
+             placeholder="Leave empty to use the bundled German and English locations">
+      <p class="muted">
+        The bundled files are always loaded. Entries in your own file are merged on
+        top and override built-in names with the same spelling. Scan the active
+        source directory after changes to refresh photo coordinates.
+      </p>
+      <a class="button" href="/settings/built-in/locations.ini"
+         target="_blank" rel="noopener">Show built-in format</a>
+    </div>
     <button class="primary" type="submit">Save application settings</button>
   </form>
 </section>

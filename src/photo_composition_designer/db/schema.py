@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from types import TracebackType
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 INITIAL_SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -192,7 +192,11 @@ END;
 """
 
 #: Version -> SQL script. Add new versions here and bump ``SCHEMA_VERSION``.
-MIGRATIONS: dict[int, str] = {1: INITIAL_SCHEMA, 2: REPEATED_PHOTO_ASSIGNMENTS}
+MIGRATIONS: dict[int, str] = {
+    1: INITIAL_SCHEMA,
+    2: REPEATED_PHOTO_ASSIGNMENTS,
+    3: "ALTER TABLE pages ADD COLUMN hide_local_map INTEGER NOT NULL DEFAULT 0;",
+}
 
 
 def connect(db_path: str | Path) -> sqlite3.Connection:

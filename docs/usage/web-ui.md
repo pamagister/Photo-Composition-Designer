@@ -23,9 +23,17 @@ changes to workspace defaults therefore cannot alter an existing project.
 
 ## Global settings and layouts
 
-**App settings** configures the shared `anniversaries.ini` path. The file stays
-outside projects and is read by previews and exports; changing its contents
-invalidates cached page previews.
+**App settings** configures the shared `anniversaries.ini` and `locations.ini`
+paths. The bundled anniversary file and the merged German and English location
+files are always loaded; a custom location file is layered on top and its
+entries override built-ins with the same spelling. The files stay outside
+projects and are read during scanning and rendering. Each setting has a
+**Show built-in format** action that displays the bundled file format.
+
+Location names are resolved during a source scan: EXIF GPS wins, then a
+case-insensitive whole-word match against the configured location names in the
+filename. If no coordinate can be resolved, pages render a small default map
+centered on Berlin.
 
 **Layouts** opens the global layout editor. Define normalized slot rectangles in
 the JSON slot list and save a new version. Applying a later version is explicit:
@@ -70,6 +78,9 @@ slot grid on the canvas, and the unused photos below it.
 * **Crop** – open **Crop** in an occupied slot to adjust zoom and focal point.
   Crop settings are assignment properties; the source file is untouched.
 * **Description** – edit the page description at the bottom of the canvas.
+* **Hide local map** – the small toolbar checkbox overrides the project's
+  `Render local photo maps` setting for one page. The title page never shows a
+  map, so the checkbox is omitted there.
 * **Layout** – open **Change layout**, choose a layout and select
   **Preview change**. Assignments are preserved where possible, and displaced
   photos are listed before you confirm.

@@ -11,11 +11,13 @@ from typing import Any
 
 from PIL import Image
 
+from photo_composition_designer.core.locations import Locations
 from photo_composition_designer.core.photo import Photo
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.io.scan import find_image_files
 from photo_composition_designer.project.models import PhotoAsset, SourceRoot
 from photo_composition_designer.project.repositories import (
+    PageRepository,
     PhotoRepository,
     ProjectRepository,
     SourceRootRepository,
@@ -75,8 +77,14 @@ class ScanSummary:
 class InventoryService:
     """Manage source roots and the persisted photo inventory for a project."""
 
-    def __init__(self, database: WorkspaceDatabase) -> None:
+    def __init__(
+        self,
+        database: WorkspaceDatabase,
+        *,
+        locations: Locations | None = None,
+    ) -> None:
         self._database = database
+        self._locations = locations if locations is not None else Locations()
 
     def add_source_root(
         self,
@@ -202,7 +210,7 @@ class InventoryService:
                 stat = path.stat()
                 with Image.open(path) as image:
                     width, height = image.size
-                photo = Photo(path)
+                photo = Photo(path, locations=self._locations.locations_dict)
                 captured = photo.get_date()
                 captured_at = (
                     None if captured == datetime.max else captured.isoformat(timespec="seconds")
@@ -235,6 +243,21 @@ class InventoryService:
         discovered = {asset.relative_path for asset in assets}
         added = sum(1 for asset in assets if asset.relative_path not in existing)
         photo_repository.upsert_many(assets)
+        # A scan can add or change GPS coordinates, which changes the local map.
+        # Invalidate page previews only when stored photo data changed.
+        new_assets = {asset.relative_path: asset for asset in assets}
+        map_or_availability_changed = False
+        for relative_path, photo in existing.items():
+            asset = new_assets.get(relative_path)
+            if asset is None or (
+                photo.gps_lat,
+                photo.gps_lon,
+                photo.available,
+            ) != (asset.gps_lat, asset.gps_lon, asset.available):
+                map_or_availability_changed = True
+                break
+        if map_or_availability_changed:
+            PageRepository(connection).increment_revisions(project_id)
 
         unavailable = 0
         for relative_path, photo in existing.items():

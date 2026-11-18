@@ -57,7 +57,7 @@ def test_health_and_index(client):
     assert response.json() == {
         "ok": True,
         "service": "photo-composition-designer",
-        "schema_version": 2,
+        "schema_version": 3,
     }
 
     response = client.get("/", follow_redirects=False)
@@ -203,6 +203,60 @@ def test_global_anniversaries_setting_is_saved_and_validated(client, tmp_path):
     assert invalid.status_code == 200
     assert "anniversaries file does not exist" in invalid.text
     assert str(tmp_path / "missing.ini") in invalid.text
+
+
+def test_global_locations_setting_is_saved_and_validated(client, tmp_path):
+    locations = tmp_path / "locations.ini"
+    locations.write_text("[CUSTOM]\nWeimar = 50.9795, 11.3235\n", encoding="utf-8")
+
+    response = client.post(
+        "/settings",
+        data={"locations_path": str(locations)},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert str(locations) in client.get("/settings").text
+    assert load_gui_settings().locations_path == locations.resolve()
+
+    invalid = client.post(
+        "/settings",
+        data={"locations_path": str(tmp_path / "missing.ini")},
+    )
+    assert invalid.status_code == 200
+    assert "locations file does not exist" in invalid.text
+    assert str(tmp_path / "missing.ini") in invalid.text
+
+
+def test_built_in_settings_show_the_bundled_format(client):
+    anniversaries = client.get("/settings/built-in/anniversaries.ini")
+    assert anniversaries.status_code == 200
+    assert "[Birthdays]" in anniversaries.text
+
+    locations = client.get("/settings/built-in/locations.ini")
+    assert locations.status_code == 200
+    assert "Frankfurt = 50.1109, 8.6821" in locations.text
+    assert "locations_de.ini" in locations.text
+    assert "locations_en.ini" in locations.text
+
+    assert client.get("/settings/built-in/unknown.ini").status_code == 404
+
+
+def test_page_map_toggle_overrides_global_setting(client):
+    project_url = _create_project(client)
+    project_page = client.get(project_url)
+    page_ids = re.findall(r"[?&]page=(\d+)", project_page.text)
+    assert page_ids
+    page_id = page_ids[-1]
+
+    response = client.post(
+        f"{project_url}/pages/{page_id}/map",
+        data={"hide_local_map": "1"},
+        headers={"HX-Request": "true"},
+    )
+
+    assert response.status_code == 200
+    assert "Local map hidden." in response.text
+    assert "checked" in response.text
 
 
 def test_global_layout_editor_saves_new_versions(client):

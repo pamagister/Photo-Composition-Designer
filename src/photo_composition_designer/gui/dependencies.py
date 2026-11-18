@@ -7,6 +7,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
+from photo_composition_designer.core.locations import Locations
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.project.inventory import InventoryService
@@ -36,9 +37,15 @@ def project_service(database: DatabaseDependency) -> ProjectService:
     return ProjectService(database)
 
 
-def inventory_service(database: DatabaseDependency) -> InventoryService:
-    """Build an inventory service for one request."""
-    return InventoryService(database)
+def inventory_service(
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> InventoryService:
+    """Build an inventory service using the configured location overrides."""
+    return InventoryService(
+        database,
+        locations=Locations.with_overrides(settings.locations_path),
+    )
 
 
 ProjectServiceDependency = Annotated[ProjectService, Depends(project_service)]

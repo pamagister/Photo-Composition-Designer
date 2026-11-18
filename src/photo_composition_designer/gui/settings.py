@@ -36,6 +36,7 @@ class GuiSettings:
     cache_dir: Path = field(default_factory=default_cache_dir)
     database_path: Path | None = None
     anniversaries_path: Path | None = None
+    locations_path: Path | None = None
 
     def workspace_path(self) -> Path:
         """Return the central SQLite workspace path."""
@@ -76,6 +77,7 @@ def load_gui_settings() -> GuiSettings:
     with preferences_path.open("r", encoding="utf-8") as handle:
         preferences = json.load(handle)
     anniversaries_path = preferences.get("anniversaries_path")
+    locations_path = preferences.get("locations_path")
     return GuiSettings(
         host=settings.host,
         port=settings.port,
@@ -84,15 +86,27 @@ def load_gui_settings() -> GuiSettings:
         cache_dir=settings.cache_dir,
         database_path=settings.database_path,
         anniversaries_path=Path(anniversaries_path) if anniversaries_path else None,
+        locations_path=Path(locations_path) if locations_path else None,
     )
 
 
-def save_anniversaries_path(path: str) -> Path | None:
-    """Persist the app-wide anniversary file path and return its resolved value."""
-    normalized = path.strip()
-    anniversaries_path = Path(normalized).expanduser().resolve() if normalized else None
-    if anniversaries_path is not None and not anniversaries_path.is_file():
-        raise ValueError(f"anniversaries file does not exist: {anniversaries_path}")
+def _normalize_config_path(value: str, label: str) -> Path | None:
+    """Resolve an optional configuration file path and require it to exist."""
+    normalized = value.strip()
+    path = Path(normalized).expanduser().resolve() if normalized else None
+    if path is not None and not path.is_file():
+        raise ValueError(f"{label} file does not exist: {path}")
+    return path
+
+
+def save_paths(
+    *,
+    anniversaries_path: str = "",
+    locations_path: str = "",
+) -> tuple[Path | None, Path | None]:
+    """Persist the app-wide anniversary and location file paths."""
+    anniversaries = _normalize_config_path(anniversaries_path, "anniversaries")
+    locations = _normalize_config_path(locations_path, "locations")
 
     directory = config_dir()
     directory.mkdir(parents=True, exist_ok=True)
@@ -101,7 +115,10 @@ def save_anniversaries_path(path: str) -> Path | None:
     try:
         with temporary.open("w", encoding="utf-8") as handle:
             json.dump(
-                {"anniversaries_path": str(anniversaries_path) if anniversaries_path else ""},
+                {
+                    "anniversaries_path": str(anniversaries) if anniversaries else "",
+                    "locations_path": str(locations) if locations else "",
+                },
                 handle,
                 indent=2,
             )
@@ -110,4 +127,17 @@ def save_anniversaries_path(path: str) -> Path | None:
     finally:
         if temporary.exists():
             temporary.unlink()
-    return anniversaries_path
+    return anniversaries, locations
+
+
+def save_anniversaries_path(path: str) -> Path | None:
+    """Backward-compatible wrapper that updates only the anniversary path."""
+    preferences_path = config_dir() / "preferences.json"
+    locations_path = ""
+    if preferences_path.is_file():
+        try:
+            stored = json.loads(preferences_path.read_text(encoding="utf-8"))
+            locations_path = str(stored.get("locations_path", ""))
+        except (OSError, json.JSONDecodeError):
+            locations_path = ""
+    return save_paths(anniversaries_path=path, locations_path=locations_path)[0]

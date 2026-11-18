@@ -36,6 +36,9 @@ from photo_composition_designer.render.slot_renderer import SlotPhoto
 
 DEFAULT_PREVIEW_WIDTH = 640
 
+#: Bump when page composition changes without a project/profile revision change.
+RENDER_CACHE_VERSION = 2
+
 
 def profile_from_project(
     project: Project,
@@ -174,6 +177,7 @@ class ProjectRenderingService:
             gps_coordinates=tuple(coordinates),
             title=profile.calendar.title,
             title_page=page.page_index == 0,
+            hide_local_map=page.hide_local_map,
             anniversaries=Anniversaries(self._anniversaries_path),
         )
 
@@ -222,6 +226,7 @@ class ProjectRenderingService:
     ) -> str:
         """Return a deterministic cache key for one page preview."""
         payload = {
+            "cache_version": RENDER_CACHE_VERSION,
             "page_index": page.page_index,
             "revision": page.render_revision,
             "layout_id": page.layout_id,

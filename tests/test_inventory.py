@@ -9,12 +9,14 @@ import pytest
 from PIL import Image
 
 from photo_composition_designer.core.appdata import cache_dir
+from photo_composition_designer.core.locations import Locations
 from photo_composition_designer.core.photo import Photo
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.io.maps import MapRequest, MapService, map_cache_key
 from photo_composition_designer.io.media import resolve_source_path
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.models import Project
+from photo_composition_designer.project.repositories import PageRepository
 from photo_composition_designer.project.services import ProjectService
 
 
@@ -94,6 +96,70 @@ def test_gps_none_when_no_exif_and_no_location(tmp_path: Path) -> None:
     _write_photo(path)
     photo = Photo(path, locations={"Dresden": (51.05, 13.73)})
     assert photo.get_location() is None
+
+
+def test_scan_uses_bundled_location_from_filename(tmp_path: Path) -> None:
+    database, inventory, project = _make_project(tmp_path)
+    source = tmp_path / "source"
+    _write_photo(source / "Frankfurt-2024.jpg")
+
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    with database.connect() as connection:
+        row = connection.execute(
+            "SELECT gps_lat, gps_lon FROM photos WHERE filename = ?",
+            ("Frankfurt-2024.jpg",),
+        ).fetchone()
+    assert row is not None
+    assert (row["gps_lat"], row["gps_lon"]) == (50.1109, 8.6821)
+
+
+def test_rescan_with_new_location_invalidates_page_revisions(tmp_path: Path) -> None:
+    database, inventory, project = _make_project(tmp_path)
+    source = tmp_path / "source"
+    _write_photo(source / "photo.jpg")
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    with database.connect() as connection:
+        page = PageRepository(connection).list(project.id)[0]
+        assert page is not None
+        revision_before = page.render_revision
+
+    (source / "photo.jpg").rename(source / "Frankfurt.jpg")
+    inventory.scan(project.id, source_root_id=root.id)
+
+    with database.connect() as connection:
+        page = PageRepository(connection).list(project.id)[0]
+    assert page is not None
+    assert page.render_revision > revision_before
+
+
+def test_scan_uses_custom_location_override(tmp_path: Path) -> None:
+    database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
+    project = ProjectService(database).create_project(
+        name="Locations",
+        page_count=1,
+        start_date=datetime(2027, 1, 4),
+    )
+    custom = tmp_path / "locations.ini"
+    custom.write_text("[CUSTOM]\nWeimar = 50.9795, 11.3235\n", encoding="utf-8")
+    inventory = InventoryService(database, locations=Locations.with_overrides(custom))
+
+    source = tmp_path / "source"
+    _write_photo(source / "Weimar-2024.jpg")
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    with database.connect() as connection:
+        row = connection.execute(
+            "SELECT gps_lat, gps_lon FROM photos WHERE filename = ?",
+            ("Weimar-2024.jpg",),
+        ).fetchone()
+    assert row is not None
+    assert (row["gps_lat"], row["gps_lon"]) == (50.9795, 11.3235)
+    database.close()
 
 
 def test_photo_date_fallback_sentinel(tmp_path: Path) -> None:

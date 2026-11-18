@@ -29,6 +29,10 @@ if TYPE_CHECKING:
 
 MapRendererFactory = Callable[[list[tuple[float, float]]], Image.Image]
 
+#: Shown when a page has no resolvable photo coordinates. Keeping the map
+#: visible gives every calendar page a stable location preview.
+DEFAULT_MAP_COORDINATES: tuple[tuple[float, float], ...] = ((52.5200, 13.4050),)
+
 
 @dataclass(frozen=True)
 class PageRenderInput:
@@ -42,6 +46,7 @@ class PageRenderInput:
     gps_coordinates: tuple[tuple[float, float], ...] = ()
     title: str = ""
     title_page: bool = False
+    hide_local_map: bool = False
     anniversaries: Anniversaries | None = None
 
 
@@ -190,14 +195,15 @@ class PageComposer:
         content_height: int,
         spacing: int,
     ) -> Image.Image | None:
-        if not profile.geo.use_photo_location_maps or not page.gps_coordinates:
+        if page.title_page or page.hide_local_map or not profile.geo.use_photo_location_maps:
             return None
         map_width = mm_to_px(profile.geo.map_width, profile.size.dpi)
         map_height = mm_to_px(profile.geo.map_height, profile.size.dpi)
         if map_height > content_height or map_width + spacing >= content_width:
             return None
         renderer = self._map_renderer or self._default_map_renderer(profile)
-        return renderer(list(page.gps_coordinates))
+        coordinates = list(page.gps_coordinates) or list(DEFAULT_MAP_COORDINATES)
+        return renderer(coordinates)
 
     @staticmethod
     def _default_map_renderer(profile: OutputProfile) -> MapRendererFactory:

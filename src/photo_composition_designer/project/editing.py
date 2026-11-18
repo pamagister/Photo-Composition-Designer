@@ -418,6 +418,14 @@ class PageEditingService:
                 raise ProjectError(f"page {page_id} does not exist")
             PageRepository(connection).update_description(page_id, description)
 
+    def set_local_map_hidden(self, project_id: int, page_id: int, hidden: bool) -> None:
+        """Override the global local-map setting for one page."""
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            PageRepository(connection).set_hide_local_map(page_id, hidden)
+
     def unused_pool(self, project_id: int) -> list[PhotoAsset]:
         """Return photos that are not assigned to any slot in the project."""
         with self._database.transaction() as connection:

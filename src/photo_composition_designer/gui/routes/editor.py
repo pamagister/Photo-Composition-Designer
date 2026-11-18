@@ -184,6 +184,29 @@ def update_description(
     return _page_fragment(request, project_id, page_id, "Description saved.")
 
 
+@router.post("/projects/{project_id}/pages/{page_id}/map")
+def set_local_map(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    hide_local_map: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    """Override the global local-map setting for one page."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    hidden = hide_local_map.strip().lower() in {"1", "on", "true", "yes"}
+    try:
+        editing.set_local_map_hidden(project_id, page_id, hidden)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    return _page_fragment(
+        request,
+        project_id,
+        page_id,
+        "Local map hidden." if hidden else "Local map shown.",
+    )
+
+
 @router.get("/projects/{project_id}/pages/{page_id}/unused")
 def unused_pool_fragment(
     request: Request,

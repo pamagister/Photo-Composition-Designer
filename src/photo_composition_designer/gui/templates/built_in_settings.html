@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel settings-page">
+  <h1>Built-in {{ file_name }}</h1>
+  <p class="muted">
+    These bundled files are always loaded. A custom file from Application Settings is
+    merged on top of them.
+  </p>
+  {% for section in sections %}
+  <h2>{{ section.name }}</h2>
+  <pre class="ini-preview">{{ section.text }}</pre>
+  {% endfor %}
+  <p><a class="button" href="/settings">Back to application settings</a></p>
+</section>
+{% endblock %}

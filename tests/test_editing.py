@@ -433,3 +433,23 @@ def _seed_via_client(
         return project.id, page.id, photo_ids, slot_ids
     finally:
         database.close()
+
+
+def test_local_map_override_persists_and_invalidates_preview(tmp_path):
+    database, editing, project_id, page_id, *_ = _seed(tmp_path)
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            assert page.hide_local_map is False
+            revision = page.render_revision
+
+        editing.set_local_map_hidden(project_id, page_id, True)
+
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+        assert page is not None
+        assert page.hide_local_map is True
+        assert page.render_revision == revision + 1
+    finally:
+        database.close()

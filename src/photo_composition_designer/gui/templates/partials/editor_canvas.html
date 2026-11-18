@@ -12,6 +12,19 @@
   <header class="editor-toolbar">
     <h2>{{ page.start_date }}</h2>
     <span class="muted">Page {{ page.page_index + 1 }}</span>
+    {% if page.page_index != 0 %}
+    <form class="map-toggle"
+          hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/map"
+          hx-trigger="change"
+          hx-target="closest .editor-canvas"
+          hx-swap="outerHTML">
+      <label title="Override the global local-map setting for this page">
+        <input type="checkbox" name="hide_local_map" value="1"
+               {% if page.hide_local_map %}checked{% endif %}>
+        Hide local map
+      </label>
+    </form>
+    {% endif %}
     <span class="save-state" data-save-state>
       {{ "Saved" if notice else "Up to date" }}
     </span>

@@ -3,6 +3,10 @@ from collections import defaultdict
 
 from photo_composition_designer.core.helpers import get_base_path
 
+#: Bundled location files that are always loaded. English and German city and
+#: country names are merged so filenames in either language resolve.
+DEFAULT_LOCATION_FILES = ("locations_en.ini", "locations_de.ini")
+
 
 class Locations:
     """
@@ -18,19 +22,25 @@ class Locations:
     [AMERICA]
     United States = 37.0902, -95.7129
 
+    By default the bundled English and German files are merged. An explicitly
+    supplied file is loaded on its own so callers can parse a custom file in
+    isolation; :meth:`with_overrides` adds such a file on top of the defaults.
     """
 
     def __init__(self, locations_file=None):
-        if not locations_file:
-            base_path = get_base_path()
-            locations_file = base_path / "locations_en.ini"
+        self.locations_dict: dict[str, tuple[float, float]] = defaultdict(tuple)
+        if locations_file:
+            self._load_file(locations_file)
+            return
 
-        self.locations_dict = defaultdict(tuple)  # Dictionary for the locations
+        for name in DEFAULT_LOCATION_FILES:
+            self._load_file(get_base_path() / name)
 
+    def _load_file(self, locations_file: str | os.PathLike[str]) -> None:
+        """Load one ini file into the location dictionary."""
         if not os.path.exists(locations_file):
             return
 
-        # Preprocess the config file to remove comments and parse lines
         with open(locations_file, "r", encoding="utf-8") as file:
             current_category = None
             for line in file:
@@ -65,6 +75,18 @@ class Locations:
         Adds an entry to the dictionary under the given category.
         """
         self.locations_dict[city.lower()] = coordinates
+
+    def merge(self, other: "Locations") -> None:
+        """Overlay another location set; entries from ``other`` win."""
+        self.locations_dict.update(other.locations_dict)
+
+    @classmethod
+    def with_overrides(cls, locations_file=None) -> "Locations":
+        """Return the bundled locations with an optional custom file on top."""
+        locations = cls()
+        if locations_file:
+            locations.merge(cls(locations_file))
+        return locations
 
     def __getitem__(self, key):
         return self.locations_dict.get(key)

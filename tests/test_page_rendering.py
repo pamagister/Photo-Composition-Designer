@@ -22,7 +22,11 @@ from photo_composition_designer.project.repositories import (
     PageRepository,
 )
 from photo_composition_designer.project.services import ProjectService
-from photo_composition_designer.render.page import PageComposer, PageRenderInput
+from photo_composition_designer.render.page import (
+    DEFAULT_MAP_COORDINATES,
+    PageComposer,
+    PageRenderInput,
+)
 from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
 
 
@@ -66,7 +70,8 @@ def _setup(tmp_path: Path) -> tuple[WorkspaceDatabase, int, int]:
         ]
         layout = layout_repo.add("single_full", 1, "Single", slots)
         page_repo.set_layout(page.id, layout.id, layout.version)
-        updated = page_repo.get(page.id)
+        # Tests that are not about maps keep the page free of the default map.
+        updated = page_repo.set_hide_local_map(page.id, True)
         assert updated is not None
         page_id = updated.id
 
@@ -289,6 +294,7 @@ def test_render_page_shows_photo_location_map(tmp_path):
 
     with database.transaction() as connection:
         connection.execute("UPDATE photos SET gps_lat = 51.05, gps_lon = 13.73")
+        connection.execute("UPDATE pages SET hide_local_map = 0 WHERE id = ?", (page_id,))
 
     composer = PageComposer(
         map_renderer=lambda _coordinates: Image.new("RGB", (map_width, map_height), (0, 0, 255))
@@ -298,11 +304,85 @@ def test_render_page_shows_photo_location_map(tmp_path):
         with database.connect() as connection:
             page = PageRepository(connection).get(page_id)
             assert page is not None
-            image = rendering.render_page_image(connection, page)
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+            image = composer.render(render_input)
 
         map_x = image.width - mm_to_px(3, 300) - map_width // 2
         map_y = mm_to_px(6, 300) + map_height // 2
         assert image.getpixel((map_x, map_y)) == (0, 0, 255)
+    finally:
+        database.close()
+
+
+def test_render_page_uses_default_berlin_map_without_coordinates(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    map_width = mm_to_px(20, 300)
+    map_height = mm_to_px(20, 300)
+    calls: list[list[tuple[float, float]]] = []
+
+    def renderer(coordinates: list[tuple[float, float]]):
+        calls.append(coordinates)
+        return Image.new("RGB", (map_width, map_height), (0, 0, 255))
+
+    with database.transaction() as connection:
+        connection.execute("UPDATE pages SET hide_local_map = 0 WHERE id = ?", (page_id,))
+
+    composer = PageComposer(map_renderer=renderer)
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+            composer.render(render_input)
+
+        assert calls == [list(DEFAULT_MAP_COORDINATES)]
+    finally:
+        database.close()
+
+
+def test_title_page_never_renders_map(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    calls: list[list[tuple[float, float]]] = []
+
+    def renderer(coordinates: list[tuple[float, float]]):
+        calls.append(coordinates)
+        return Image.new("RGB", (10, 10), (0, 0, 255))
+
+    with database.transaction() as connection:
+        connection.execute("UPDATE pages SET hide_local_map = 0 WHERE id = ?", (page_id,))
+
+    composer = PageComposer(map_renderer=renderer)
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            composer.render(rendering.build_input(connection, page))
+
+        assert calls == []
+    finally:
+        database.close()
+
+
+def test_page_local_map_override_hides_map(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    calls: list[list[tuple[float, float]]] = []
+
+    def renderer(coordinates: list[tuple[float, float]]):
+        calls.append(coordinates)
+        return Image.new("RGB", (10, 10), (0, 0, 255))
+
+    composer = PageComposer(map_renderer=renderer)
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+            composer.render(render_input)
+
+        assert calls == []
     finally:
         database.close()
 

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from photo_composition_designer.core.appdata import data_dir
 from photo_composition_designer.core.errors import ProjectError
+from photo_composition_designer.core.locations import Locations
 from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.gui.settings import load_gui_settings
 from photo_composition_designer.project.inventory import InventoryService
 
 
@@ -12,7 +14,11 @@ def run(project_id: int, *, source_root_id: int | None = None) -> int:
     """Scan one source root and print the reconciliation summary."""
     database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
     try:
-        summary = InventoryService(database).scan(
+        settings = load_gui_settings()
+        summary = InventoryService(
+            database,
+            locations=Locations.with_overrides(settings.locations_path),
+        ).scan(
             project_id,
             source_root_id=source_root_id,
         )

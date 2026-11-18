@@ -78,6 +78,7 @@ class CalendarPage:
     render_revision: int
     created_at: str
     updated_at: str
+    hide_local_map: bool = False
 
 
 @dataclass(slots=True)
