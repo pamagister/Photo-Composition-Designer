@@ -1,0 +1,34 @@
+{% if error %}
+<p class="error" role="alert">{{ error }}</p>
+{% elif preview %}
+<div class="remap-preview" role="status">
+  <p>
+    Relink to <strong>{{ preview.new_root }}</strong>:
+    {{ preview.matched }} of {{ preview.total }} photo(s) matched.
+  </p>
+  {% if preview.ambiguous %}
+  <p class="error">{{ preview.ambiguous | length }} ambiguous basename(s) will stay unchanged:</p>
+  <ul>
+    {% for filename in preview.ambiguous %}
+    <li class="muted">{{ filename }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if preview.missing %}
+  <p class="error">{{ preview.missing | length }} missing file(s) will stay unavailable:</p>
+  <ul>
+    {% for filename in preview.missing %}
+    <li class="muted">{{ filename }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/projects/{{ project_id }}/source/{{ source_root_id }}/remap">
+    <input type="hidden" name="new_root" value="{{ preview.new_root }}">
+    <button class="primary" type="submit">Confirm relink and rescan</button>
+  </form>
+  <p class="muted">
+    Ambiguous and missing files keep their current link until a unique match exists.
+    Existing assignments are preserved.
+  </p>
+</div>
+{% endif %}

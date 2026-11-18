@@ -405,15 +405,15 @@ the browser.
 
 **Objective:** Make source changes safe and understandable in the browser.
 
-- [ ] **P3-W01:** Add a source-root remapping UI that previews matched, ambiguous
+- [x] **P3-W01:** Add a source-root remapping UI that previews matched, ambiguous
   and missing basenames before confirmation.
-- [ ] **P3-W02:** Show per-photo availability and missing-source state; allow rescan
+- [x] **P3-W02:** Show per-photo availability and missing-source state; allow rescan
   without deleting assignments.
-- [ ] **P3-W03:** Improve scan progress/summary reporting for large directories and
+- [x] **P3-W03:** Improve scan progress/summary reporting for large directories and
   surface the symlink policy.
-- [ ] **P3-W04:** Support adding, changing, activating and removing source roots with
+- [x] **P3-W04:** Support adding, changing, activating and removing source roots with
   validation and duplicate-basename handling.
-- [ ] **P3-W05:** Add tests for remap preview/apply through the UI, missing files,
+- [x] **P3-W05:** Add tests for remap preview/apply through the UI, missing files,
   source switching and rescan reconciliation.
 
 **Acceptance criteria**
@@ -647,8 +647,15 @@ The continuation is complete when all of the following hold:
   layout changes with displaced-photo preview and confirmation, per-assignment
   crop/focal-point controls, page-description editing, cached page previews with
   sidebar thumbnails, unused-pool and preview refresh after edits, and a
-  `two_rows` catalogue layout. `make lint` clean; 187 tests pass.
-- **Active:** None. Phase 2 committed and pushed.
+  `two_rows` catalogue layout. `make lint` clean; 187 tests pass. Continuation
+  Phase 3 complete: browser relink preview with matched/ambiguous/missing
+  basenames, transactional remap that preserves assignments, source-root add /
+  change / activate / remove with duplicate handling, missing-photo inventory
+  state, scan duration and symlink policy reporting, and source-management tests.
+  `make lint` clean; 192 tests pass.
+- **Active:** None. Phase 3 committed and pushed.
+- **Next:** Phase 4 (distribution and project creation UX), starting with
+  P4-W01. Phase issue #32.
 - **Next:** Phase 3 (source management UX and reliability), starting with
   P3-W01. Phase issue #29.
 - **Relevant files:**
@@ -684,6 +691,6 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 187 passed.
-- **Context status:** Phase 2 complete. Next phase (Phase 3) is independent; a
-  fresh session is recommended before starting P3-W01.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 192 passed.
+- **Context status:** Phase 3 complete. Phase 4 builds on the distribution preview
+  created in the predecessor plan.

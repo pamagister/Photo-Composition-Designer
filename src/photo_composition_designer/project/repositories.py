@@ -251,6 +251,14 @@ class SourceRootRepository:
         if cursor.rowcount != 1:
             raise ProjectNotFoundError(f"source root {source_root_id} does not exist")
 
+    def remove(self, source_root_id: int) -> None:
+        """Delete a source root and its unassigned photo inventory."""
+        cursor = self._connection.execute(
+            "DELETE FROM source_roots WHERE id = ?", (source_root_id,)
+        )
+        if cursor.rowcount != 1:
+            raise ProjectNotFoundError(f"source root {source_root_id} does not exist")
+
 
 class PhotoRepository:
     """Persistence for project photo inventory."""
@@ -346,6 +354,15 @@ class PhotoRepository:
         self._connection.execute(
             "UPDATE photos SET available = ? WHERE id = ?", (int(available), photo_id)
         )
+
+    def update_relative_path(self, photo_id: int, relative_path: str) -> None:
+        """Relink a photo to a new relative path inside its source root."""
+        cursor = self._connection.execute(
+            "UPDATE photos SET relative_path = ? WHERE id = ?",
+            (relative_path, photo_id),
+        )
+        if cursor.rowcount != 1:
+            raise ProjectNotFoundError(f"photo {photo_id} does not exist")
 
 
 class PageRepository:

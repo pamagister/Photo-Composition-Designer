@@ -110,6 +110,21 @@ button.primary {
   font-weight: 600;
 }
 
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* HTMX shows elements with this class only while a request is running. */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  display: inline;
+}
+
 input,
 select,
 textarea {
@@ -220,6 +235,42 @@ label {
   font-size: 0.75rem;
   color: var(--muted);
   word-break: break-all;
+}
+
+.inventory-item.missing {
+  border-style: dashed;
+}
+
+.missing-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 6rem;
+  background: var(--bg);
+  color: var(--danger);
+  font-size: 1.5rem;
+}
+
+.remap-preview {
+  margin-top: 0.6rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+}
+
+.source-root {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.source-root:last-of-type {
+  border-bottom: 0;
+}
+
+.source-root p {
+  margin: 0 0 0.4rem;
 }
 
 .sr-only {

@@ -44,14 +44,47 @@
 
   <section class="editor-main">
     <div class="panel">
-      <h2>Source directory</h2>
+      <h2>Source directories</h2>
       {% for state in source_states %}
-      <p>
-        <span>{{ state.root.path }}</span>
-        <span class="{{ 'success' if state.exists else 'error' }}">
-          {{ 'available' if state.exists else 'missing' }}
-        </span>
-      </p>
+      <article class="source-root">
+        <p>
+          <strong>{{ state.root.path }}</strong>
+          {% if state.root.active %}<span class="success">active</span>{% endif %}
+          <span class="{{ 'success' if state.exists else 'error' }}">
+            {{ 'available' if state.exists else 'missing' }}
+          </span>
+          {% if state.root.last_scan_at %}
+          <span class="muted">last scan {{ state.root.last_scan_at[:19] }}</span>
+          {% endif %}
+        </p>
+        <div class="form-row">
+          {% if not state.root.active %}
+          <form method="post"
+                action="/projects/{{ project.id }}/source/{{ state.root.id }}/activate">
+            <button>Make active</button>
+          </form>
+          {% endif %}
+          <form method="post"
+                action="/projects/{{ project.id }}/source/{{ state.root.id }}/remove">
+            <button class="danger" type="submit">Remove</button>
+          </form>
+        </div>
+        <details>
+          <summary>Relink or change directory</summary>
+          <form hx-get="/projects/{{ project.id }}/source/{{ state.root.id }}/remap/preview"
+                hx-target="#remap-preview-{{ state.root.id }}"
+                hx-swap="innerHTML">
+            <div class="field">
+              <label for="remap-{{ state.root.id }}">New directory</label>
+              <input id="remap-{{ state.root.id }}" name="new_root"
+                     value="{{ state.root.path }}" list="source-directories" required>
+            </div>
+            <button type="submit">Preview relink</button>
+            <span class="htmx-indicator muted">Checking files...</span>
+          </form>
+          <div id="remap-preview-{{ state.root.id }}"></div>
+        </details>
+      </article>
       {% else %}
       <p class="muted">No source directory configured.</p>
       {% endfor %}
@@ -71,10 +104,20 @@
       <form hx-post="/projects/{{ project.id }}/scan"
             hx-target="#scan-area"
             hx-swap="innerHTML">
-        <button class="primary" type="submit">Scan source directory</button>
+        <button class="primary" type="submit">Scan active source directory</button>
+        <span class="htmx-indicator muted">
+          Scanning... this can take a while for large directories.
+        </span>
       </form>
       <div id="scan-area">
         {% include "partials/scan_result.html" %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Inventory</h2>
+      <div id="inventory">
+        {% include "partials/inventory.html" %}
       </div>
     </div>
 

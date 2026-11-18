@@ -21,6 +21,7 @@ from photo_composition_designer.gui.dependencies import (
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.layouts.loader import load_catalogue
 from photo_composition_designer.project.editing import PageEditingService
+from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
 from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import (
@@ -233,6 +234,20 @@ def create_project(
         "layout_key": layout_key,
         "source_path": source_path,
     }
+    catalogue = load_catalogue()
+    if layout_key and layout_key not in catalogue:
+        return TEMPLATES.TemplateResponse(
+            request,
+            "new_project.html",
+            {
+                "page_title": "New project",
+                "save_state": "Unsaved",
+                "error": f"unknown layout: {layout_key}",
+                "form": form,
+                "catalogue": catalogue,
+            },
+            status_code=400,
+        )
     try:
         project = service.create_project(
             name=name,
@@ -240,8 +255,6 @@ def create_project(
             start_date=date.fromisoformat(start_date),
         )
     except (ValueError, ProjectError) as exc:
-        from photo_composition_designer.layouts.loader import load_catalogue
-
         return TEMPLATES.TemplateResponse(
             request,
             "new_project.html",
@@ -250,23 +263,28 @@ def create_project(
                 "save_state": "Unsaved",
                 "error": str(exc),
                 "form": form,
-                "catalogue": load_catalogue(),
+                "catalogue": catalogue,
             },
             status_code=400,
         )
 
     if layout_key:
         _assign_layout_to_all_pages(database, project.id, layout_key)
-    if source_path.strip():
-        from photo_composition_designer.project.inventory import InventoryService
 
+    source_error = ""
+    if source_path.strip():
         inventory = InventoryService(database)
         try:
             root = inventory.add_source_root(project.id, source_path)
             inventory.scan(project.id, source_root_id=root.id)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            source_error = str(exc)
 
+    if source_error:
+        return RedirectResponse(
+            f"/projects/{project.id}?error={quote(source_error)}",
+            status_code=303,
+        )
     return RedirectResponse(f"/projects/{project.id}", status_code=303)
 
 
@@ -328,6 +346,14 @@ def project_detail(
         notice = "Project name saved."
     elif request.query_params.get("scanned") == "1":
         notice = "Source directory scanned."
+    elif request.query_params.get("remapped") == "1":
+        notice = "Source directory relinked and rescanned."
+    elif request.query_params.get("activated") == "1":
+        notice = "Source directory activated."
+    elif request.query_params.get("removed") == "1":
+        notice = "Source directory removed."
+    elif request.query_params.get("distributed") == "1":
+        notice = "Distribution applied."
     context = _project_context(
         database,
         aggregate,
@@ -471,6 +497,88 @@ def add_source_root(
     except ValueError as exc:
         return _error_redirect(project_id, str(exc))
     return RedirectResponse(f"/projects/{project_id}?added=1", status_code=303)
+
+
+@router.get(
+    "/projects/{project_id}/source/{source_root_id}/remap/preview",
+    response_class=HTMLResponse,
+)
+def preview_source_remap(
+    request: Request,
+    project_id: int,
+    source_root_id: int,
+    inventory: InventoryServiceDependency,
+    new_root: Annotated[str, Query()] = "",
+) -> HTMLResponse:
+    """Preview relinking a source root without mutating project state."""
+    context: dict[str, object] = {
+        "project_id": project_id,
+        "source_root_id": source_root_id,
+        "new_root": new_root.strip(),
+        "preview": None,
+        "error": "",
+    }
+    if not new_root.strip():
+        context["error"] = "Enter a directory to relink this source root."
+    else:
+        try:
+            context["preview"] = inventory.preview_remap(
+                project_id,
+                source_root_id=source_root_id,
+                new_root=new_root,
+            )
+        except ValueError as exc:
+            context["error"] = str(exc)
+    return TEMPLATES.TemplateResponse(request, "partials/source_remap_preview.html", context)
+
+
+@router.post("/projects/{project_id}/source/{source_root_id}/remap", response_class=HTMLResponse)
+def remap_source_root(
+    project_id: int,
+    source_root_id: int,
+    inventory: InventoryServiceDependency,
+    new_root: Annotated[str, Form()],
+) -> RedirectResponse:
+    """Relink a source root to a new directory and rescan atomically."""
+    try:
+        inventory.apply_remap(project_id, source_root_id=source_root_id, new_root=new_root)
+    except ValueError as exc:
+        return _error_redirect(project_id, str(exc))
+    return RedirectResponse(f"/projects/{project_id}?remapped=1", status_code=303)
+
+
+@router.post(
+    "/projects/{project_id}/source/{source_root_id}/activate",
+    response_class=HTMLResponse,
+)
+def activate_source_root(
+    project_id: int,
+    source_root_id: int,
+    inventory: InventoryServiceDependency,
+) -> RedirectResponse:
+    """Make one source root the active scan target."""
+    try:
+        inventory.set_active_source_root(project_id, source_root_id)
+    except ValueError as exc:
+        return _error_redirect(project_id, str(exc))
+    return RedirectResponse(f"/projects/{project_id}?activated=1", status_code=303)
+
+
+@router.post(
+    "/projects/{project_id}/source/{source_root_id}/remove",
+    response_class=HTMLResponse,
+)
+def remove_source_root(
+    project_id: int,
+    source_root_id: int,
+    inventory: InventoryServiceDependency,
+) -> RedirectResponse:
+    """Remove a source root that has no assigned photos."""
+    try:
+        inventory.remove_source_root(project_id, source_root_id)
+    except ValueError as exc:
+        return _error_redirect(project_id, str(exc))
+    return RedirectResponse(f"/projects/{project_id}?removed=1", status_code=303)
 
 
 @router.post("/projects/{project_id}/scan", response_model=None)

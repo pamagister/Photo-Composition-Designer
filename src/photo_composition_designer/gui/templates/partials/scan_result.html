@@ -2,10 +2,12 @@
 <p class="error" role="alert">{{ error }}</p>
 {% elif summary %}
 <p class="success" role="status">
-  Scanned {{ summary.source_path }}: {{ summary.discovered }} photos found,
+  Scanned {{ summary.source_path }} in {{ "%.2f"|format(summary.duration_seconds) }} s:
+  {{ summary.discovered }} photos found,
   {{ summary.added }} added, {{ summary.updated }} updated,
   {{ summary.unavailable }} unavailable.
 </p>
+<p class="muted">{{ summary.symlink_policy }} Link targets are never followed.</p>
 {% if summary.warnings %}
 <details>
   <summary>{{ summary.warnings | length }} warnings</summary>
