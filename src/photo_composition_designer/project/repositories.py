@@ -238,6 +238,19 @@ class SourceRootRepository:
             (last_scan_at or _now(), source_root_id),
         )
 
+    def update_path(self, source_root_id: int, path: str) -> None:
+        """Point a source root at a new directory.
+
+        Raises:
+            ProjectNotFoundError: If the source root does not exist.
+        """
+        cursor = self._connection.execute(
+            "UPDATE source_roots SET path = ? WHERE id = ?",
+            (path, source_root_id),
+        )
+        if cursor.rowcount != 1:
+            raise ProjectNotFoundError(f"source root {source_root_id} does not exist")
+
 
 class PhotoRepository:
     """Persistence for project photo inventory."""

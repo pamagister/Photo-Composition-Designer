@@ -192,3 +192,87 @@ class InventoryService:
                 unavailable=unavailable,
                 warnings=tuple(warnings),
             )
+
+    def preview_remap(
+        self,
+        project_id: int,
+        *,
+        source_root_id: int,
+        new_root: str | Path,
+    ) -> dict[str, Any]:
+        """Preview relinking a source root to a new directory.
+
+        Returns match counts and ambiguous basenames without mutating any state.
+        A basename is ambiguous when the new root contains more than one file
+        with that name; such photos are not silently remapped.
+        """
+        resolved = _resolve_directory(new_root)
+        if not resolved.is_dir():
+            raise ValueError(f"new source directory does not exist: {resolved}")
+
+        with self._database.transaction() as connection:
+            root = SourceRootRepository(connection).get(source_root_id)
+            if root is None or root.project_id != project_id:
+                raise ValueError("source root does not belong to this project")
+            photos = [
+                photo
+                for photo in PhotoRepository(connection).list(project_id)
+                if photo.source_root_id == root.id
+            ]
+
+        available_files: dict[str, list[Path]] = {}
+        for path in find_image_files(resolved):
+            available_files.setdefault(path.name, []).append(path)
+
+        matched = 0
+        ambiguous: list[str] = []
+        missing: list[str] = []
+        for photo in photos:
+            candidates = available_files.get(photo.filename, [])
+            if len(candidates) == 1:
+                matched += 1
+            elif len(candidates) > 1:
+                ambiguous.append(photo.filename)
+            else:
+                missing.append(photo.filename)
+
+        return {
+            "source_root_id": root.id,
+            "new_root": str(resolved),
+            "total": len(photos),
+            "matched": matched,
+            "ambiguous": ambiguous,
+            "missing": missing,
+        }
+
+    def apply_remap(
+        self,
+        project_id: int,
+        *,
+        source_root_id: int,
+        new_root: str | Path,
+    ) -> ScanSummary:
+        """Atomically relink a source root to a new directory and rescan.
+
+        Photos whose basename matches exactly one file in the new root are
+        relinked. Ambiguous and missing basenames are left untouched and
+        reported as warnings. Assignments are preserved.
+        """
+        resolved = _resolve_directory(new_root)
+        if not resolved.is_dir():
+            raise ValueError(f"new source directory does not exist: {resolved}")
+
+        with self._database.transaction() as connection:
+            root_repository = SourceRootRepository(connection)
+            root = root_repository.get(source_root_id)
+            if root is None or root.project_id != project_id:
+                raise ValueError("source root does not belong to this project")
+
+            available_files: dict[str, list[Path]] = {}
+            for path in find_image_files(resolved):
+                available_files.setdefault(path.name, []).append(path)
+
+            root_repository.update_path(root.id, str(resolved))
+
+        summary = self.scan(project_id, source_root_id=root.id)
+        return summary

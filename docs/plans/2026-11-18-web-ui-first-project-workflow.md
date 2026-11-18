@@ -465,20 +465,20 @@ building the full editor.
 
 **Objective:** Make source photos, metadata and the small map correct and testable.
 
-- [ ] **P3-W01:** Implement recursive image discovery with explicit extensions,
+- [x] **P3-W01:** Implement recursive image discovery with explicit extensions,
   deterministic ordering and symlink policy.
-- [ ] **P3-W02:** Extract metadata using the existing `Photo`/EXIF behavior; persist
+- [x] **P3-W02:** Extract metadata using the existing `Photo`/EXIF behavior; persist
   dimensions, capture date, GPS, size, mtime and availability.
-- [ ] **P3-W03:** Implement rescan/reconcile: add new files, detect changed files, mark
+- [x] **P3-W03:** Implement rescan/reconcile: add new files, detect changed files, mark
   missing files and retain project history.
-- [ ] **P3-W04:** Implement safe source resolution and path traversal protection.
-- [ ] **P3-W05:** Implement source-root remapping with preview, match counts, ambiguity
+- [x] **P3-W04:** Implement safe source resolution and path traversal protection.
+- [x] **P3-W05:** Implement source-root remapping with preview, match counts, ambiguity
   handling and atomic confirmation.
-- [ ] **P3-W06:** Preserve GPS precedence: EXIF first, `locations.ini` fallback second,
+- [x] **P3-W06:** Preserve GPS precedence: EXIF first, `locations.ini` fallback second,
   deterministic default map when no coordinates are available.
-- [ ] **P3-W07:** Extract the local map service and cache generated map PNGs by coordinate
+- [x] **P3-W07:** Extract the local map service and cache generated map PNGs by coordinate
   set, geometry, colors, DPI and shapefile version.
-- [ ] **P3-W08:** Add tests for EXIF/no-EXIF, filename location fallback, no GPS,
+- [x] **P3-W08:** Add tests for EXIF/no-EXIF, filename location fallback, no GPS,
   duplicate basenames, unreadable files, traversal attempts and map cache keys.
 
 **Acceptance criteria**
@@ -730,10 +730,11 @@ The refactoring is complete when all of the following hold:
 - **Plan:** `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
 - **Completed:** Phase 0 (fixture replacement + baseline), Phase 1 (source
   restructuring + foundation migration), Phase 2 (web application foundation and
-  project lifecycle). 136 tests pass.
-- **Active:** None. Ready for Phase 3 (image inventory, GPS extraction and local map).
-- **Next:** Phase 3, starting with P3-W01 (recursive image discovery with explicit
-  extensions, deterministic ordering and symlink policy).
+  project lifecycle), Phase 3 (image inventory, GPS extraction and local map).
+  147 tests pass.
+- **Active:** None. Ready for Phase 4 (layout catalogue and slot-based rendering).
+- **Next:** Phase 4, starting with P4-W01 (define and validate the compact
+  versioned YAML layout format).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -751,10 +752,12 @@ The refactoring is complete when all of the following hold:
   domain/persistence; `photo-composition-designer gui` at `127.0.0.1:8767`; replace old
   images with flat Pixabay; three-panel editor; local cached GPS map with existing
   fallback; YAML layouts with user-added files; central workspace and `.pcd` portability.
-- **Blockers:** None. Phase 2 delivered the local web foundation, project lifecycle,
-  source validation, basic scanning, HTMX inventory/page fragments and controlled media.
-- **Last verified:** 2026-11-18; Phase 0, Phase 1 and Phase 2 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 136 passed.
+- **Blockers:** None. Phase 3 delivered recursive scanning with symlink policy,
+  metadata/GPS extraction, rescan reconciliation, safe path resolution,
+  source-root remapping with preview and atomic apply, and a cached local map
+  service.
+- **Last verified:** 2026-11-18; Phase 0-3 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 147 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
 - **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
@@ -816,6 +819,30 @@ Key files for Phase 3:
   project lifecycle, scanning, media, browse validation and CLI help.
 - **Verification:** `make lint` clean; `make test` -> 136 passed; manual local server
   startup checked.
+
+### Phase 3 record (image inventory, GPS extraction and local map)
+
+- **P3-W01 (done):** `io/scan.py` `find_image_files` does deterministic recursive
+  discovery with explicit `.jpg/.jpeg/.png` extensions and skips symlinks by default.
+- **P3-W02 (done):** `InventoryService.scan` persists dimensions, capture date, GPS,
+  size, mtime and availability per photo using the existing `Photo`/EXIF behavior.
+- **P3-W03 (done):** Rescan reconciles: adds new files, updates changed files, marks
+  missing files unavailable while retaining rows and assignments.
+- **P3-W04 (done):** `io/media.py` `resolve_source_path` validates containment and
+  rejects path traversal.
+- **P3-W05 (done):** `InventoryService.preview_remap` reports matched/ambiguous/missing
+  basenames without mutating state; `apply_remap` atomically relinks the source root
+  and rescans, preserving assignments. Added `SourceRootRepository.update_path`.
+- **P3-W06 (done):** GPS precedence preserved: EXIF first, `locations.ini` filename
+  fallback second, `None` when neither is available. `Photo.get_location_from_name`
+  guards `None` locations.
+- **P3-W07 (done):** `io/maps.py` `MapService` renders local maps via `MapRenderer` and
+  caches PNGs by a key covering coordinates, geometry, colors, DPI and shapefile
+  version (`_shapefile_version`).
+- **P3-W08 (done):** `tests/test_inventory.py` covers recursive discovery, symlink
+  skipping, traversal rejection, GPS precedence/fallback/none, date sentinel, remap
+  preview/apply, map cache key determinism and render+cache round-trip.
+- **Verification:** `make lint` clean; `make test` -> 147 passed.
 
 ### Phase 0 record (baseline + fixture replacement)
 
