@@ -749,9 +749,39 @@ The refactoring is complete when all of the following hold:
   images with flat Pixabay; three-panel editor; local cached GPS map with existing
   fallback; YAML layouts with user-added files; central workspace and `.pcd` portability.
 - **Blockers:** None. No implementation has started.
-- **Last verified:** 2026-11-18; repository, existing plan, Phase 0/1 code and
-  image-triage reference were inspected. No tests were changed or run.
-- **Context status:** clean; ready for user approval and Phase 0 execution.
+- **Last verified:** 2026-11-18; Phase 0 and Phase 1 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. CI green on both (runs 44278785400,
+  44280507206). `make lint` clean; `uv run pytest -q` -> 127 passed.
+- **Context status:** Phase 0+1 complete. Starting fresh session for Phase 2
+  (web application foundation). Handoff block is the contract.
+
+### Phase 2 next steps (web application foundation)
+
+1. **P2-W01:** Add FastAPI app factory (`gui/app.py`), static mount, Jinja base
+   template (`gui/templates/base.html`), health endpoint (`GET /health`), and
+   appdata/settings lifecycle.
+2. **P2-W02:** Replace the argparse stub in `cli/app.py` and `cli/commands/gui.py`
+   with a Typer app (or keep argparse) that launches uvicorn pointing at the
+   FastAPI factory. Default `http://127.0.0.1:8767/`.
+3. **P2-W03..W08:** Project create/open workflow, source dir chooser, scanning,
+   HTMX partials, media endpoints, TestClient tests.
+
+Key files for Phase 2:
+- `src/photo_composition_designer/gui/app.py` (to create)
+- `src/photo_composition_designer/gui/templates/base.html` (to create)
+- `src/photo_composition_designer/gui/routes/` (to create)
+- `src/photo_composition_designer/gui/static/` (to create)
+- `src/photo_composition_designer/cli/app.py` (update to launch uvicorn)
+- `src/photo_composition_designer/cli/commands/gui.py` (update to run uvicorn)
+- `src/photo_composition_designer/core/appdata.py` (workspace path helper exists)
+- `src/photo_composition_designer/core/settings.py` (typed settings exist)
+- `src/photo_composition_designer/project/services.py` (ProjectService exists)
+- `src/photo_composition_designer/db/schema.py` (WorkspaceDatabase exists)
+
+Dependencies already in pyproject.toml: `fastapi`, `uvicorn`, `jinja2`,
+`python-multipart`. Use `uvicorn.run(app, host, port)` or `uvicorn
+Config` programmatically. For tests, use `fastapi.testclient.TestClient` with
+`PCD_DATA_DIR` env override to isolate appdata.
 
 ### Phase 0 record (baseline + fixture replacement)
 
