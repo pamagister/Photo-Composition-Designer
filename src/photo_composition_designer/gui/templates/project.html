@@ -20,7 +20,7 @@
 {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
 
 <nav class="project-actions" aria-label="Project actions">
-  <a class="button" href="/projects/{{ project.id }}/preview">Preview</a>
+  <a class="button" href="/projects/{{ project.id }}/preview{% if selected_page %}?page={{ selected_page.id }}{% endif %}">Preview</a>
   <a class="button primary" href="/projects/{{ project.id }}/export">Export photos</a>
   <a class="button" href="/projects/{{ project.id }}/archive">Export project (.pcd)</a>
   <details class="project-extras">

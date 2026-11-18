@@ -110,6 +110,32 @@ def test_editor_shell_renders_compact_editor_and_photo_filter(editor_client, tmp
     assert "editor-layout-panel" in response.text
 
 
+def test_preview_action_keeps_selected_page_and_refreshes_large_preview(editor_client, tmp_path):
+    project_id, first_page_id, _, _ = _seed_project(tmp_path, page_count=2)
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            second_page_id = PageRepository(connection).list(project_id)[1].id
+    finally:
+        database.close()
+
+    assert second_page_id != first_page_id
+    response = editor_client.get(
+        f"/projects/{project_id}/preview?page={second_page_id}",
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert f"page={second_page_id}" in response.headers["location"]
+    assert "previewed=1" in response.headers["location"]
+
+    preview = editor_client.get(f"/projects/{project_id}/pages/{second_page_id}/preview")
+    assert preview.status_code == 200
+    assert preview.headers["content-type"] == "image/jpeg"
+
+    page = editor_client.get(f"/projects/{project_id}?page={second_page_id}")
+    assert f'href="/projects/{project_id}/preview?page={second_page_id}"' in page.text
+
+
 def test_assign_photo_via_route(editor_client, tmp_path):
     project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
     response = editor_client.post(

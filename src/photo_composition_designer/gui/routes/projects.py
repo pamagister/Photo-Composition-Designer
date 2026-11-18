@@ -494,8 +494,9 @@ def preview_project(
     service: ProjectServiceDependency,
     database: DatabaseDependency,
     settings: SettingsDependency,
+    page: Annotated[int | None, Query(description="Page whose large preview to refresh.")] = None,
 ) -> RedirectResponse:
-    """Render previews for all pages in project order and open the first page."""
+    """Render cached previews and open the selected page."""
     aggregate = _load_project(service, project_id)
     if not aggregate.pages:
         return _error_redirect(project_id, "this project has no pages to preview")
@@ -504,11 +505,14 @@ def preview_project(
         preview_dir=settings.preview_dir(),
         anniversaries_path=settings.anniversaries_path,
     )
-    for page in aggregate.pages:
-        rendering.render_preview(project_id, page.id, max_width=320)
-    first_page = aggregate.pages[0]
+    pages_by_id = {candidate.id: candidate for candidate in aggregate.pages}
+    selected = pages_by_id.get(page) if page is not None else None
+    target = selected or aggregate.pages[0]
+    for candidate in aggregate.pages:
+        rendering.render_preview(project_id, candidate.id, max_width=320)
+    rendering.render_preview(project_id, target.id)
     return RedirectResponse(
-        f"/projects/{project_id}?page={first_page.id}&previewed=1",
+        f"/projects/{project_id}?page={target.id}&previewed=1",
         status_code=303,
     )
 

@@ -264,4 +264,4 @@ def test_preview_route_renders_pages_in_project_order(
     assert response.status_code == 200
     assert "Page previews refreshed." in response.text
     previews = list((gui_settings.preview_dir() / "pages").glob("*.jpg"))
-    assert len(previews) == 2
+    assert len(previews) == 3  # one thumbnail per page plus the large selected preview
