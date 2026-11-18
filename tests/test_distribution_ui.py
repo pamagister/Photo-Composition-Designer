@@ -94,6 +94,23 @@ def test_preview_reports_overflow(client, tmp_path):
     assert _assignment_count(project_id) == 0
 
 
+def test_preview_accepts_empty_seed_from_the_form(client, tmp_path):
+    source = tmp_path / "photos"
+    _write_photo(source / "p0.jpg")
+    project_id = _create_project(client, source)
+
+    response = client.get(f"/projects/{project_id}/distribute/preview?strategy=equal&seed=")
+
+    assert response.status_code == 200
+    assert "Distribution preview" in response.text
+    assert _assignment_count(project_id) == 0
+
+    invalid = client.get(f"/projects/{project_id}/distribute/preview?strategy=random&seed=abc")
+
+    assert invalid.status_code == 200
+    assert "Random seed must be a whole number." in invalid.text
+
+
 def test_regeneration_is_reproducible_and_does_not_save(client, tmp_path):
     source = tmp_path / "photos"
     for index in range(4):

@@ -720,10 +720,29 @@ def preview_distribution(
     project_id: int,
     database: DatabaseDependency,
     strategy: str = "equal",
-    seed: int | None = None,
+    seed: str = "",
 ) -> HTMLResponse:
-    """Preview a distribution proposal without mutating project state."""
-    context = _distribution_context(database, project_id, strategy=strategy, seed=seed)
+    """Preview a distribution proposal without mutating project state.
+
+    The seed arrives as an empty string when the optional field is left blank;
+    that is a normal request and must preview an unseeded proposal instead of
+    failing query validation.
+    """
+    effective_seed: int | None = None
+    error = ""
+    raw_seed = seed.strip()
+    if raw_seed:
+        try:
+            effective_seed = int(raw_seed)
+        except ValueError:
+            error = "Random seed must be a whole number."
+    context = _distribution_context(
+        database,
+        project_id,
+        strategy=strategy,
+        seed=effective_seed,
+        error=error,
+    )
     return TEMPLATES.TemplateResponse(request, "partials/distribution_area.html", context)
 
 
@@ -744,7 +763,10 @@ def apply_distribution(
     from photo_composition_designer.project.distribution import DistributionService
 
     distribution = DistributionService(database)
-    effective_seed = int(seed) if seed else None
+    try:
+        effective_seed = int(seed) if seed.strip() else None
+    except ValueError:
+        effective_seed = None
 
     def response(notice: str = "", error: str = "") -> HTMLResponse | RedirectResponse:
         if request.headers.get("HX-Request") == "true":
