@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="/static/source-picker.js" defer></script>
+{% endblock %}
+
 {% block content %}
 <h1>New project</h1>
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
@@ -17,8 +21,25 @@
       <label for="start_date">First page start date</label>
       <input id="start_date" name="start_date" type="date" value="{{ form.start_date | default('2027-01-04') }}" required>
     </div>
-    <button class="primary" type="submit">Create project</button>
+    <div class="field">
+      <label for="layout_key">Default layout</label>
+      <select id="layout_key" name="layout_key">
+        {% for key, layout in catalogue.items() %}
+        <option value="{{ key }}" {% if form.layout_key | default('') == key %}selected{% endif %}>
+          {{ layout.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
+  <div class="field">
+    <label for="source_path">Source directory (optional)</label>
+    <input id="source_path" name="source_path" list="source-directories"
+           placeholder="/home/paul/Pictures" value="{{ form.source_path | default('') }}">
+    <datalist id="source-directories"></datalist>
+    <p class="muted">You can add or change the source directory later.</p>
+  </div>
+  <button class="primary" type="submit">Create project</button>
 </form>
 <p class="muted">Each page covers seven days starting on the chosen date.</p>
 {% endblock %}

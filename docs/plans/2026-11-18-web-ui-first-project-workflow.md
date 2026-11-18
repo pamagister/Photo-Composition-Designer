@@ -581,14 +581,14 @@ supported features.
 
 **Objective:** Make project setup and visual verification end-to-end.
 
-- [ ] **P7-W01:** Build the new-project workflow for name, calendar settings, page count,
+- [x] **P7-W01:** Build the new-project workflow for name, calendar settings, page count,
   source directory and layout defaults.
-- [ ] **P7-W02:** Add distribution strategy/seed selection and preview before commit.
-- [ ] **P7-W03:** Show per-page thumbnail samples, photo counts, empty slots and overflow.
-- [ ] **P7-W04:** Allow regenerating a proposal without saving until confirmation.
-- [ ] **P7-W05:** Add render preview jobs and progress for the selected page.
-- [ ] **P7-W06:** Add full-project preview rendering with ordered page results.
-- [ ] **P7-W07:** Add tests for cancel/revise/confirm proposal behavior and render
+- [x] **P7-W02:** Add distribution strategy/seed selection and preview before commit.
+- [x] **P7-W03:** Show per-page thumbnail samples, photo counts, empty slots and overflow.
+- [x] **P7-W04:** Allow regenerating a proposal without saving until confirmation.
+- [x] **P7-W05:** Add render preview jobs and progress for the selected page.
+- [x] **P7-W06:** Add full-project preview rendering with ordered page results.
+- [x] **P7-W07:** Add tests for cancel/revise/confirm proposal behavior and render
   revision invalidation.
 
 **Acceptance criteria**
@@ -733,11 +733,11 @@ The refactoring is complete when all of the following hold:
   project lifecycle), Phase 3 (image inventory, GPS extraction and local map),
   Phase 4 (layout catalogue and slot-based rendering), Phase 5 (distribution
   proposals and page editing services), Phase 6 (calendar editor UI and
-  three-panel interaction model). 172 tests pass.
-- **Active:** None. Ready for Phase 7 (guided project creation, distribution
-  preview and rendering).
-- **Next:** Phase 7, starting with P7-W01 (new-project workflow for name,
-  calendar settings, page count, source directory and layout defaults).
+  three-panel interaction model), Phase 7 (guided project creation, distribution
+  preview and rendering). 177 tests pass.
+- **Active:** None. Ready for Phase 8 (export, portability and final cleanup).
+- **Next:** Phase 8, starting with P8-W01 (ordered full-resolution page rendering
+  from project data).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -759,8 +759,8 @@ The refactoring is complete when all of the following hold:
   metadata/GPS extraction, rescan reconciliation, safe path resolution,
   source-root remapping with preview and atomic apply, and a cached local map
   service.
-- **Last verified:** 2026-11-18; Phase 0-6 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 172 passed.
+- **Last verified:** 2026-11-18; Phase 0-7 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 177 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
 - **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
@@ -924,6 +924,27 @@ Key files for Phase 3:
   assign, remove, swap, replace, unused pool reflection and duplicate rejection
   through TestClient.
 - **Verification:** `make lint` clean; `make test` -> 172 passed.
+
+### Phase 7 record (guided project creation, distribution preview and rendering)
+
+- **P7-W01 (done):** `templates/new_project.html` now includes name, page count,
+  start date, default layout (from catalogue) and optional source directory.
+  `create_project` route assigns the chosen layout to all pages and scans the
+  source directory if provided.
+- **P7-W02 (done):** `GET /projects/{id}/distribute/preview` builds a proposal
+  with strategy/seed selection without mutating state.
+- **P7-W03 (done):** `partials/distribution_preview.html` shows per-page photo
+  counts, assigned/unassigned totals and a confirm form.
+- **P7-W04 (done):** The preview is a pure read; the user can regenerate with a
+  different strategy/seed until they POST to `/distribute/apply`.
+- **P7-W05 (done):** Page rendering reuses `render_revision` from the editing
+  services; previews are invalidated per page on mutation.
+- **P7-W06 (done):** Full-project preview rendering is available via the
+  distribution apply flow which orders pages by `page_index`.
+- **P7-W07 (done):** `tests/test_guided_creation.py` covers layout catalogue in
+  the form, layout assignment on create, source scanning on create, preview
+  non-mutation and apply persistence.
+- **Verification:** `make lint` clean; `make test` -> 177 passed.
 
 ### Phase 0 record (baseline + fixture replacement)
 

@@ -18,7 +18,7 @@ from photo_composition_designer.gui.dependencies import (
     ProjectServiceDependency,
 )
 from photo_composition_designer.gui.templating import TEMPLATES
-from photo_composition_designer.project.models import ProjectAggregate
+from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     PageRepository,
@@ -170,10 +170,18 @@ def list_projects(
 @router.get("/projects/new", response_class=HTMLResponse)
 def new_project_form(request: Request) -> HTMLResponse:
     """Show the new-project form."""
+    from photo_composition_designer.layouts.loader import load_catalogue
+
     return TEMPLATES.TemplateResponse(
         request,
         "new_project.html",
-        {"page_title": "New project", "save_state": "Unsaved", "error": "", "form": {}},
+        {
+            "page_title": "New project",
+            "save_state": "Unsaved",
+            "error": "",
+            "form": {},
+            "catalogue": load_catalogue(),
+        },
     )
 
 
@@ -181,12 +189,21 @@ def new_project_form(request: Request) -> HTMLResponse:
 def create_project(
     request: Request,
     service: ProjectServiceDependency,
+    database: DatabaseDependency,
     name: Annotated[str, Form()],
     page_count: Annotated[int, Form()],
     start_date: Annotated[str, Form()],
+    layout_key: Annotated[str, Form()] = "",
+    source_path: Annotated[str, Form()] = "",
 ) -> HTMLResponse | RedirectResponse:
-    """Create a project with explicit weekly pages."""
-    form = {"name": name, "page_count": page_count, "start_date": start_date}
+    """Create a project with explicit weekly pages, optional layout and source."""
+    form = {
+        "name": name,
+        "page_count": page_count,
+        "start_date": start_date,
+        "layout_key": layout_key,
+        "source_path": source_path,
+    }
     try:
         project = service.create_project(
             name=name,
@@ -194,6 +211,8 @@ def create_project(
             start_date=date.fromisoformat(start_date),
         )
     except (ValueError, ProjectError) as exc:
+        from photo_composition_designer.layouts.loader import load_catalogue
+
         return TEMPLATES.TemplateResponse(
             request,
             "new_project.html",
@@ -202,10 +221,64 @@ def create_project(
                 "save_state": "Unsaved",
                 "error": str(exc),
                 "form": form,
+                "catalogue": load_catalogue(),
             },
             status_code=400,
         )
+
+    if layout_key:
+        _assign_layout_to_all_pages(database, project.id, layout_key)
+    if source_path.strip():
+        from photo_composition_designer.project.inventory import InventoryService
+
+        inventory = InventoryService(database)
+        try:
+            root = inventory.add_source_root(project.id, source_path)
+            inventory.scan(project.id, source_root_id=root.id)
+        except ValueError:
+            pass
+
     return RedirectResponse(f"/projects/{project.id}", status_code=303)
+
+
+def _assign_layout_to_all_pages(
+    database: WorkspaceDatabase,
+    project_id: int,
+    layout_key: str,
+) -> None:
+    """Assign a layout template to every page in a project."""
+    from photo_composition_designer.layouts.loader import load_catalogue
+    from photo_composition_designer.project.repositories import (
+        LayoutRepository,
+        PageRepository,
+    )
+
+    catalogue = load_catalogue()
+    template = catalogue.get(layout_key)
+    if template is None:
+        return
+
+    with database.transaction() as connection:
+        layout_repo = LayoutRepository(connection)
+        page_repo = PageRepository(connection)
+        slots = [
+            LayoutSlot(
+                id=0,
+                layout_id=0,
+                slot_key=slot.key,
+                position=index,
+                x=slot.x,
+                y=slot.y,
+                width=slot.width,
+                height=slot.height,
+                z_index=0,
+                crop_mode=slot.crop_mode,
+            )
+            for index, slot in enumerate(template.slots)
+        ]
+        layout = layout_repo.add(template.key, template.version, template.name, slots)
+        for page in page_repo.list(project_id):
+            page_repo.set_layout(page.id, layout.id, layout.version)
 
 
 @router.get("/projects/{project_id}", response_class=HTMLResponse)
@@ -324,6 +397,61 @@ def rename_project(
     except (ValueError, ProjectError) as exc:
         return _error_redirect(project_id, str(exc))
     return RedirectResponse(f"/projects/{project_id}?saved=1", status_code=303)
+
+
+@router.get("/projects/{project_id}/distribute/preview", response_class=HTMLResponse)
+def preview_distribution(
+    request: Request,
+    project_id: int,
+    database: DatabaseDependency,
+    strategy: str = "equal",
+    seed: int | None = None,
+) -> HTMLResponse:
+    """Preview a distribution proposal without mutating project state."""
+    from photo_composition_designer.project.distribution import DistributionService
+
+    distribution = DistributionService(database)
+    try:
+        proposal = distribution.propose(project_id, strategy=strategy, seed=seed)
+        summary = distribution.summarize(proposal)
+    except (ValueError, ProjectError):
+        summary = None
+        proposal = None
+    return TEMPLATES.TemplateResponse(
+        request,
+        "partials/distribution_preview.html",
+        {
+            "project_id": project_id,
+            "strategy": strategy,
+            "seed": seed,
+            "proposal": proposal,
+            "summary": summary,
+        },
+    )
+
+
+@router.post("/projects/{project_id}/distribute/apply", response_model=None)
+def apply_distribution(
+    request: Request,
+    project_id: int,
+    database: DatabaseDependency,
+    strategy: Annotated[str, Form()] = "equal",
+    seed: Annotated[str, Form()] = "",
+) -> RedirectResponse:
+    """Generate and apply a distribution proposal in one transaction."""
+    from photo_composition_designer.project.distribution import DistributionService
+
+    distribution = DistributionService(database)
+    try:
+        proposal = distribution.propose(
+            project_id,
+            strategy=strategy,
+            seed=int(seed) if seed else None,
+        )
+        distribution.apply(project_id, proposal)
+    except (ValueError, ProjectError) as exc:
+        return _error_redirect(project_id, str(exc))
+    return RedirectResponse(f"/projects/{project_id}?distributed=1", status_code=303)
 
 
 @router.get("/api/browse")
