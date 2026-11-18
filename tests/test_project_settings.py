@@ -169,6 +169,56 @@ def test_settings_save_persists_profile_and_invalidates_pages(
     assert all(page.render_revision == 1 for page in pages_after_repeat)
 
 
+def test_settings_save_persists_nested_font_values(client: TestClient, gui_settings: GuiSettings):
+    project_id = _create_project(client)
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(
+            **{
+                "style.font_large.size": "7.5",
+                "style.font_large.color": "#123456",
+                "style.font_small.size": "3.5",
+                "style.font_small.color": "#654321",
+                "style.font_description.size": "4.5",
+                "style.font_description.color": "#00ff00",
+                "style.font_anniversaries.size": "1.5",
+                "style.font_anniversaries.color": "#ff00ff",
+            }
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    project, _ = _project_state(gui_settings, project_id)
+    style = project.output_profile["style"]
+    assert style["font_large"] == {
+        "name": "DejaVuSans.ttf",
+        "size": 7.5,
+        "color": "#123456",
+    }
+    assert style["font_small"] == {
+        "name": "DejaVuSans.ttf",
+        "size": 3.5,
+        "color": "#654321",
+    }
+    assert style["font_description"] == {
+        "name": "DejaVuSans.ttf",
+        "size": 4.5,
+        "color": "#00ff00",
+    }
+    assert style["font_anniversaries"] == {
+        "name": "DejaVuSans.ttf",
+        "size": 1.5,
+        "color": "#ff00ff",
+    }
+
+    page = client.get(f"/projects/{project_id}/settings").text
+    assert 'name="style.font_large.size"' in page
+    assert 'value="7.5"' in page
+    assert 'value="#123456"' in page
+
+
 def test_settings_reject_invalid_values_without_changes(
     client: TestClient, gui_settings: GuiSettings
 ):

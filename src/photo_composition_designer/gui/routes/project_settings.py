@@ -71,12 +71,18 @@ _TEXT_FIELDS = (
 )
 
 
-def _split_field(name: str) -> tuple[str, str]:
-    """Split a dotted form field name into its profile section and key."""
-    section, _, field = name.partition(".")
-    if not section or not field:
+def _assign_field(payload: dict[str, Any], name: str, value: Any) -> None:
+    """Store a dotted form field as nested profile data."""
+    parts = name.split(".")
+    if len(parts) < 2 or any(not part for part in parts):
         raise OutputProfileError(f"invalid settings field: {name}")
-    return section, field
+    node = payload
+    for part in parts[:-1]:
+        child = node.setdefault(part, {})
+        if not isinstance(child, dict):
+            raise OutputProfileError(f"conflicting settings field: {name}")
+        node = child
+    node[parts[-1]] = value
 
 
 def _is_checked(value: Any) -> bool:
@@ -86,20 +92,16 @@ def _is_checked(value: Any) -> bool:
 
 def _profile_from_form(form: Mapping[str, Any]) -> OutputProfile:
     """Build a validated output profile from submitted settings fields."""
-    payload: dict[str, dict[str, Any]] = {}
+    payload: dict[str, Any] = {}
     for name in _BOOL_FIELDS:
-        section, field = _split_field(name)
-        payload.setdefault(section, {})[field] = _is_checked(form.get(name))
+        _assign_field(payload, name, _is_checked(form.get(name)))
     for name in _INT_FIELDS:
-        section, field = _split_field(name)
-        payload.setdefault(section, {})[field] = _number_from_form(form, name, int)
+        _assign_field(payload, name, _number_from_form(form, name, int))
     for name in _FLOAT_FIELDS:
-        section, field = _split_field(name)
-        payload.setdefault(section, {})[field] = _number_from_form(form, name, float)
+        _assign_field(payload, name, _number_from_form(form, name, float))
     for name in _TEXT_FIELDS:
-        section, field = _split_field(name)
         value = form.get(name)
-        payload.setdefault(section, {})[field] = "" if value is None else str(value).strip()
+        _assign_field(payload, name, "" if value is None else str(value).strip())
     return OutputProfile.from_dict(payload)
 
 
