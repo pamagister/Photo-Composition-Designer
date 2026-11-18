@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image, ImageDraw, ImageFont
 
-from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
+from photo_composition_designer.render.collage import CollageRenderer
 
 from .TestHelper import temp_dir
 

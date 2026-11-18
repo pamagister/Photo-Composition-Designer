@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from Photo_Composition_Designer.project.db import (
+from photo_composition_designer.db.schema import (
     SCHEMA_VERSION,
     WorkspaceDatabase,
     connect,

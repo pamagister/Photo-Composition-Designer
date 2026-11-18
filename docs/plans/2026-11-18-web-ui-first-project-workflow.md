@@ -412,15 +412,15 @@ committed and verified.
 **Objective:** Move the existing project foundation into the new package layout without
 changing its public behavior.
 
-- [ ] **P1-W01:** Create `src/photo_composition_designer/` with the target subpackages.
-- [ ] **P1-W02:** Move project models, DB, migrations, repositories and services from
+- [x] **P1-W01:** Create `src/photo_composition_designer/` with the target subpackages.
+- [x] **P1-W02:** Move project models, DB, migrations, repositories and services from
   `src/Photo_Composition_Designer/project/`; update imports and packaging.
-- [ ] **P1-W03:** Move reusable rendering modules into `render/` and preserve behavior
+- [x] **P1-W03:** Move reusable rendering modules into `render/` and preserve behavior
   through existing regression tests.
-- [ ] **P1-W04:** Add typed core models/settings and XDG-aware appdata paths.
-- [ ] **P1-W05:** Update `pyproject.toml`, `Makefile`, `.idea/runConfigurations` and docs
+- [x] **P1-W04:** Add typed core models/settings and XDG-aware appdata paths.
+- [x] **P1-W05:** Update `pyproject.toml`, `Makefile`, `.idea/runConfigurations` and docs
   generation for the new package and entry points.
-- [ ] **P1-W06:** Remove obsolete Tkinter/config modules and their dependencies from the
+- [x] **P1-W06:** Remove obsolete Tkinter/config modules and their dependencies from the
   runtime path.
 
 **Acceptance criteria**
@@ -728,9 +728,11 @@ The refactoring is complete when all of the following hold:
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
-- **Completed:** None. This plan is a planning artifact only; no implementation is done.
-- **Active:** None. Awaiting approval to start Phase 0.
-- **Next:** Phase 0, starting with P0-W01 image fixture replacement.
+- **Completed:** Phase 0 (fixture replacement + baseline), Phase 1 (source
+  restructuring + foundation migration). 127 tests pass.
+- **Active:** None. Ready for Phase 2 (web application foundation).
+- **Next:** Phase 2, starting with P2-W01 (FastAPI app factory, Jinja base
+  template, health endpoint, appdata/settings lifecycle).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -782,3 +784,36 @@ The refactoring is complete when all of the following hold:
   `src/photo_composition_designer/` with `cli`, `core`, `db`, `io`, `layouts`,
   `render`, `project`, `gui` subpackages. Entry point:
   `photo-composition-designer = "photo_composition_designer.cli.app:main"`.
+
+### Phase 1 record (source restructuring + foundation migration)
+
+- **P1-W01 (done):** Created `src/photo_composition_designer/` with subpackages:
+  `cli/`, `cli/commands/`, `core/`, `db/`, `io/`, `layouts/`, `render/`,
+  `project/`, `application/`, `gui/` (scaffold).
+- **P1-W02 (done):** Moved project models/services/repositories to
+  `project/`; moved `db.py` to `db/schema.py`; moved `errors.py` to
+  `core/errors.py`. Updated all internal imports.
+- **P1-W03 (done):** Moved renderer modules to `render/` (`calendar.py`,
+  `collage.py`, `description.py`, `map.py`, `object_detector.py`,
+  `smart_crop.py`, `geoplot.py`). Preserved behavior; all renderer component
+  tests pass.
+- **P1-W04 (done):** Added `core/settings.py` (typed `Settings` with `.value`
+  shape mirroring the old `ConfigParameterManager`), `core/color.py`,
+  `core/font.py` (self-contained Color/Font replacing `config_cli_gui`
+  types), `core/appdata.py` (XDG-aware paths), `core/logging_utils.py`
+  (stdlib logging shim replacing `config_cli_gui.logging`).
+- **P1-W05 (done):** Updated `pyproject.toml` (new package name, entry point
+  `photo-composition-designer = photo_composition_designer.cli.app:main`,
+  removed `config-cli-gui`/`ttkbootstrap`, added `fastapi`/`uvicorn`/`jinja2`/
+  `typer`/`python-multipart`). Updated `Makefile` (name, hidden-imports).
+  Replaced `.idea/runConfigurations/*.xml` with a single `gui.xml`. Replaced
+  `scripts/generate_config_docs.py` with a typed-settings-based generator.
+- **P1-W06 (done):** Removed old `Photo_Composition_Designer` package,
+  `src/main.py`, `src/firewall_handler.py`, `src/path_handler.py`, Tkinter
+  GUI, `config/`, and `config_cli_gui`/`ttkbootstrap` dependencies.
+  Removed `tests/test_cli.py` (tested removed folder CLI) and the Tkinter
+  `MainGui` progress test. Inlined `get_base_path` into `core/helpers.py`.
+- **Verification:** `make lint` clean; `uv run pytest -q` -> `127 passed`;
+  `uv run photo-composition-designer --help` works; no production module
+  imports `Photo_Composition_Designer`, `config_cli_gui`, Tkinter or
+  `ttkbootstrap`.

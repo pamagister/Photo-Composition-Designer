@@ -5,15 +5,15 @@ from unittest.mock import Mock
 
 from PIL import Image
 
-from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core import composition_builder
-from Photo_Composition_Designer.core.base import CompositionDesigner
-from Photo_Composition_Designer.core.composition_io import CompositionIO
-from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
-from Photo_Composition_Designer.image.CollageRenderer import CollageRenderer
-from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
-from Photo_Composition_Designer.image.MapRenderer import MapRenderer
-from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
+from photo_composition_designer.core import composition_builder
+from photo_composition_designer.core.composition_designer import CompositionDesigner
+from photo_composition_designer.core.composition_io import CompositionIO
+from photo_composition_designer.core.settings import Settings as ConfigParameterManager
+from photo_composition_designer.render.calendar import CalendarRenderer
+from photo_composition_designer.render.collage import CollageRenderer
+from photo_composition_designer.render.description import DescriptionRenderer
+from photo_composition_designer.render.map import MapRenderer
+from photo_composition_designer.render.object_detector import ObjectDetector
 
 
 def make_composition_io(tmp_path: Path) -> CompositionIO:

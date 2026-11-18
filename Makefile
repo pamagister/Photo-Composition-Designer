@@ -63,7 +63,7 @@ test: lint        ## Run tests and generate coverage report.
 # ==========================
 
 # Projektname
-NAME := Photo-Composition-Designer
+NAME := photo-composition-designer
 
 # Version automatisch aus git extrahieren
 VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
@@ -84,8 +84,7 @@ COMMON_PYI_OPTS = \
 	--add-data "res:res" \
 	--add-data "docs:docs" \
 	--add-data "images:images" \
-	--hidden-import Photo_Composition_Designer.cli.cli \
-	--hidden-import Photo_Composition_Designer.gui.gui \
+	--hidden-import photo_composition_designer.cli.app \
 	--collect-all=holidays \
     --hidden-import=holidays.countries \
     --hidden-import=holidays.countries.* \

@@ -3,7 +3,7 @@ import pytest
 from pyogrio.errors import DataSourceError
 from shapely.geometry import Point
 
-from Photo_Composition_Designer.tools.GeoPlotter import GeoPlotter
+from photo_composition_designer.render.geoplot import GeoPlotter
 
 
 @pytest.fixture

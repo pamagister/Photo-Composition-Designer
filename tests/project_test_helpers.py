@@ -5,20 +5,20 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from Photo_Composition_Designer.project.db import WorkspaceDatabase
-from Photo_Composition_Designer.project.models import (
+from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.project.models import (
     LayoutDefinition,
     LayoutSlot,
     PhotoAsset,
     Project,
     SourceRoot,
 )
-from Photo_Composition_Designer.project.repositories import (
+from photo_composition_designer.project.repositories import (
     LayoutRepository,
     PhotoRepository,
     SourceRootRepository,
 )
-from Photo_Composition_Designer.project.services import ProjectService
+from photo_composition_designer.project.services import ProjectService
 
 FIXED_NOW = "2026-11-18T00:00:00+00:00"
 

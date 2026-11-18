@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from config_cli_gui.configtypes.color import Color
-from config_cli_gui.configtypes.font import Font
 from PIL import Image
 
-from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
+from photo_composition_designer.core.color import Color
+from photo_composition_designer.core.font import Font
+from photo_composition_designer.render.description import DescriptionRenderer
 
 
 def test_generate_description_creates_image_in_temp():

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PIL import Image
 
-from Photo_Composition_Designer.common.Photo import Photo
+from photo_composition_designer.core.photo import Photo
 
 EXAMPLE_IMAGE_1 = (
     Path(__file__).parent.parent

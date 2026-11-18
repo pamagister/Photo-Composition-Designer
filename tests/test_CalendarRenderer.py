@@ -1,8 +1,8 @@
 import holidays
 import pytest
 
-from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.image.CalendarRenderer import CalendarRenderer
+from photo_composition_designer.core.settings import Settings as ConfigParameterManager
+from photo_composition_designer.render.calendar import CalendarRenderer
 
 from .TestHelper import temp_dir
 

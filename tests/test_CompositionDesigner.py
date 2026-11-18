@@ -4,9 +4,9 @@ from unittest.mock import Mock, call
 import pytest
 from PIL import Image
 
-from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.base import CompositionDesigner
-from Photo_Composition_Designer.image.DescriptionRenderer import DescriptionRenderer
+from photo_composition_designer.core.composition_designer import CompositionDesigner
+from photo_composition_designer.core.settings import Settings as ConfigParameterManager
+from photo_composition_designer.render.description import DescriptionRenderer
 
 
 class TestCompositionDesigner:

@@ -6,13 +6,13 @@ import sqlite3
 
 import pytest
 
-from Photo_Composition_Designer.project.errors import (
+from photo_composition_designer.core.errors import (
     CrossProjectAssignmentError,
     DuplicatePhotoAssignmentError,
     DuplicateSlotAssignmentError,
     SlotLayoutMismatchError,
 )
-from Photo_Composition_Designer.project.repositories import (
+from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     LayoutRepository,
     PageRepository,

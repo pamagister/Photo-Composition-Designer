@@ -6,8 +6,8 @@ from pathlib import Path
 
 from PIL import Image
 
-from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
-from Photo_Composition_Designer.image.SmartCrop import SmartCrop
+from photo_composition_designer.render.object_detector import ObjectDetector
+from photo_composition_designer.render.smart_crop import SmartCrop
 
 from .TestHelper import temp_dir
 

@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import numpy as np
 from PIL import Image, ImageDraw
 
-from Photo_Composition_Designer.image.ObjectDetector import ObjectDetector
+from photo_composition_designer.render.object_detector import ObjectDetector
 
 from .TestHelper import temp_dir
 

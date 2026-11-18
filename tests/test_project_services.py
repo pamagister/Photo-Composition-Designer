@@ -6,8 +6,8 @@ from datetime import datetime
 
 import pytest
 
-from Photo_Composition_Designer.project.errors import ProjectNotFoundError
-from Photo_Composition_Designer.project.repositories import PageRepository
+from photo_composition_designer.core.errors import ProjectNotFoundError
+from photo_composition_designer.project.repositories import PageRepository
 from tests.project_test_helpers import make_database, make_service
 
 

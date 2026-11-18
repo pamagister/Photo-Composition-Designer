@@ -10,16 +10,15 @@ from unittest.mock import Mock
 import pytest
 from PIL import Image
 
-from Photo_Composition_Designer.application import CompositionApplicationFactory
-from Photo_Composition_Designer.application.composition_workflow import (
+from photo_composition_designer.application import CompositionApplicationFactory
+from photo_composition_designer.application.composition_workflow import (
     CompositionWorkflow,
 )
-from Photo_Composition_Designer.application.photo_distribution_workflow import (
+from photo_composition_designer.application.photo_distribution_workflow import (
     PhotoDistributionWorkflow,
 )
-from Photo_Composition_Designer.config.config import ConfigParameterManager
-from Photo_Composition_Designer.core.base import CompositionDesigner
-from Photo_Composition_Designer.gui.gui import MainGui
+from photo_composition_designer.core.composition_designer import CompositionDesigner
+from photo_composition_designer.core.settings import Settings as ConfigParameterManager
 
 
 def make_config() -> SimpleNamespace:
@@ -230,18 +229,6 @@ def test_real_workflow_renders_photo_files_and_creates_pdf(tmp_path: Path) -> No
         assert blue > 180
 
 
-def test_gui_progress_update_handles_empty_workloads() -> None:
-    gui = MainGui.__new__(MainGui)
-    gui.root = Mock()
-    gui.progress = Mock()
-
-    gui._progress_update(0, 0)
-
-    callback = gui.root.after.call_args.args[1]
-    callback()
-    gui.progress.configure.assert_called_once_with(value=0)
-
-
 def test_distribute_copies_grouped_photos_into_week_folders(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -249,7 +236,7 @@ def test_distribute_copies_grouped_photos_into_week_folders(
     source_file.write_bytes(b"photo")
     photo = SimpleNamespace(file_path=source_file)
     monkeypatch.setattr(
-        "Photo_Composition_Designer.application.photo_distribution_workflow.get_photos_from_dir",
+        "photo_composition_designer.application.photo_distribution_workflow.get_photos_from_dir",
         lambda directory: [photo],
     )
 
@@ -261,7 +248,7 @@ def test_distribute_copies_grouped_photos_into_week_folders(
             return [[photo], []]
 
     monkeypatch.setattr(
-        "Photo_Composition_Designer.application.photo_distribution_workflow.ImageDistributor",
+        "photo_composition_designer.application.photo_distribution_workflow.ImageDistributor",
         FakeDistributor,
     )
     config = make_config()

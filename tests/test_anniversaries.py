@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 
-from Photo_Composition_Designer.common.Anniversaries import Anniversaries
+from photo_composition_designer.core.anniversaries import Anniversaries
 
 
 class TestAnniversaries:
