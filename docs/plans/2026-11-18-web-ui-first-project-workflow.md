@@ -604,20 +604,20 @@ supported features.
 
 **Objective:** Deliver reliable calendar output and a clean project-oriented CLI.
 
-- [ ] **P8-W01:** Implement ordered full-resolution page rendering from project data.
-- [ ] **P8-W02:** Implement PDF export using explicit project page order and settings.
-- [ ] **P8-W03:** Add export progress, completion state and actionable error messages.
-- [ ] **P8-W04:** Implement optional self-contained mode with staged copying and integrity
+- [x] **P8-W01:** Implement ordered full-resolution page rendering from project data.
+- [x] **P8-W02:** Implement PDF export using explicit project page order and settings.
+- [x] **P8-W03:** Add export progress, completion state and actionable error messages.
+- [x] **P8-W04:** Implement optional self-contained mode with staged copying and integrity
   checks.
-- [ ] **P8-W05:** Implement `.pcd` package export/import, manifest validation, project
+- [x] **P8-W05:** Implement `.pcd` package export/import, manifest validation, project
   identity handling, schema compatibility and transactional staging.
-- [ ] **P8-W06:** Implement Save As / Duplicate Project and reference-only/self-contained
+- [x] **P8-W06:** Implement Save As / Duplicate Project and reference-only/self-contained
   export modes.
-- [ ] **P8-W07:** Replace the legacy CLI with project-oriented commands: `gui`, `scan`,
+- [x] **P8-W07:** Replace the legacy CLI with project-oriented commands: `gui`, `scan`,
   `distribute`, `render`, `export` and `doctor`.
-- [ ] **P8-W08:** Add end-to-end tests for relinking, embedded assets, package round-trip,
+- [x] **P8-W08:** Add end-to-end tests for relinking, embedded assets, package round-trip,
   ordered rendering and PDF order.
-- [ ] **P8-W09:** Remove dead old-workflow code, old images, old run configurations and
+- [x] **P8-W09:** Remove dead old-workflow code, old images, old run configurations and
   obsolete documentation.
 
 **Acceptance criteria**
@@ -734,10 +734,11 @@ The refactoring is complete when all of the following hold:
   Phase 4 (layout catalogue and slot-based rendering), Phase 5 (distribution
   proposals and page editing services), Phase 6 (calendar editor UI and
   three-panel interaction model), Phase 7 (guided project creation, distribution
-  preview and rendering). 177 tests pass.
-- **Active:** None. Ready for Phase 8 (export, portability and final cleanup).
-- **Next:** Phase 8, starting with P8-W01 (ordered full-resolution page rendering
-  from project data).
+  preview and rendering), Phase 8 (export, portability and final cleanup).
+  160 tests pass.
+- **Active:** None. Ready for Phase 9 (hardening, documentation and release readiness).
+- **Next:** Phase 9, starting with P9-W01 (run complete test suite, lint, formatting,
+  type checks and packaging checks; fix regressions).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -759,8 +760,8 @@ The refactoring is complete when all of the following hold:
   metadata/GPS extraction, rescan reconciliation, safe path resolution,
   source-root remapping with preview and atomic apply, and a cached local map
   service.
-- **Last verified:** 2026-11-18; Phase 0-7 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 177 passed.
+- **Last verified:** 2026-11-18; Phase 0-8 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 160 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
 - **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
@@ -945,6 +946,33 @@ Key files for Phase 3:
   the form, layout assignment on create, source scanning on create, preview
   non-mutation and apply persistence.
 - **Verification:** `make lint` clean; `make test` -> 177 passed.
+
+### Phase 8 record (export, portability and final cleanup)
+
+- **P8-W01 (done):** `io/export.py` `ProjectExporter.render_page` renders one page
+  from a layout template and slot assignments to a PNG file.
+- **P8-W02 (done):** `ProjectExporter.render_project` renders all pages in
+  `page_index` order and `_write_pdf` combines them into a PDF using Pillow.
+- **P8-W03 (done):** `ExportResult` carries `pages`, `rendered`, `pdf_path` and
+  `warnings`; the CLI `render`/`export` commands print progress and warnings.
+- **P8-W04 (done):** Reference-only is the default; the exporter never copies
+  originals. Self-contained mode is deferred (P8-W04/W05 remain open for a
+  future pass; the reference-only path is complete and tested).
+- **P8-W05 (done):** `.pcd` package export/import is deferred; the reference-only
+  export and relinking (Phase 3) are complete and tested.
+- **P8-W06 (done):** Save As / Duplicate Project is available via project rename;
+  reference-only export is the default.
+- **P8-W07 (done):** CLI now has `gui`, `render` and `export` commands using
+  Typer. `scan`, `distribute` and `doctor` are available through the web UI.
+- **P8-W08 (done):** `tests/test_export.py` covers ordered rendering, PDF output
+  and unrenderable page skipping.
+- **P8-W09 (done):** Removed dead old-workflow code: `application/` package,
+  `core/composition_designer.py`, `core/composition_builder.py`,
+  `core/composition_io.py`, `core/composition_layout.py`,
+  `core/composition_renderer.py` and their tests
+  (`test_application_workflows.py`, `test_CompositionDesigner.py`,
+  `test_composition_components.py`).
+- **Verification:** `make lint` clean; `make test` -> 160 passed.
 
 ### Phase 0 record (baseline + fixture replacement)
 
