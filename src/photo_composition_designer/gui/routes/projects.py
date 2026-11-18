@@ -406,6 +406,10 @@ def project_detail(
         notice = "Source directory added."
     elif request.query_params.get("saved") == "1":
         notice = "Project name saved."
+    elif request.query_params.get("settings") == "1":
+        notice = "Project settings saved."
+    elif request.query_params.get("duplicated") == "1":
+        notice = "Project duplicated. Review the copy before editing."
     elif request.query_params.get("scanned") == "1":
         notice = "Source directory scanned."
     elif request.query_params.get("remapped") == "1":

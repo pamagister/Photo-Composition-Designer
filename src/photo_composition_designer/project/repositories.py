@@ -182,14 +182,15 @@ class SourceRootRepository:
         *,
         active: bool = False,
         source_identity: str | None = None,
+        last_scan_at: str | None = None,
         created_at: str | None = None,
     ) -> SourceRoot:
         """Add a source root to a project."""
         cursor = self._connection.execute(
             "INSERT INTO source_roots("
-            "project_id, path, active, source_identity, created_at"
-            ") VALUES(?, ?, ?, ?, ?)",
-            (project_id, path, int(active), source_identity, created_at or _now()),
+            "project_id, path, active, source_identity, last_scan_at, created_at"
+            ") VALUES(?, ?, ?, ?, ?, ?)",
+            (project_id, path, int(active), source_identity, last_scan_at, created_at or _now()),
         )
         root = self.get(_require_row_id(cursor))
         if root is None:
@@ -469,6 +470,15 @@ class PageRepository:
             "UPDATE pages SET render_revision = render_revision + 1, updated_at = ? WHERE id = ?",
             (_now(), page_id),
         )
+
+    def increment_revisions(self, project_id: int) -> int:
+        """Increment every page revision in a project and return the page count."""
+        cursor = self._connection.execute(
+            "UPDATE pages SET render_revision = render_revision + 1, updated_at = ? "
+            "WHERE project_id = ?",
+            (_now(), project_id),
+        )
+        return cursor.rowcount
 
 
 class LayoutRepository:

@@ -18,6 +18,7 @@
     </div>
     <button>Save name</button>
   </form>
+  <a class="button" href="/projects/{{ project.id }}/settings">Project settings</a>
 </div>
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}

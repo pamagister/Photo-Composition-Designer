@@ -8,9 +8,11 @@ from typing import Any
 from photo_composition_designer.core.errors import ProjectNotFoundError
 from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
-from photo_composition_designer.project.models import Project, ProjectAggregate
+from photo_composition_designer.project.models import PhotoAsset, Project, ProjectAggregate
 from photo_composition_designer.project.repositories import (
+    AssignmentRepository,
     PageRepository,
+    PhotoRepository,
     ProjectRepository,
     SourceRootRepository,
 )
@@ -130,6 +132,154 @@ class ProjectService:
     def rename_project(self, project_id: int, name: str) -> Project:
         """Rename a project."""
         return self.save_project(project_id, name=name)
+
+    def update_output_profile(
+        self,
+        project_id: int,
+        output_profile: OutputProfile | dict[str, Any],
+    ) -> Project:
+        """Validate and persist a project output profile.
+
+        The stored profile is a complete snapshot. Every page revision is
+        incremented only when an output-affecting value actually changed, so
+        previews and exports are invalidated together.
+
+        Raises:
+            ProjectNotFoundError: If the project does not exist.
+            OutputProfileError: If the supplied profile is invalid.
+        """
+        profile = (
+            output_profile
+            if isinstance(output_profile, OutputProfile)
+            else OutputProfile.from_dict(output_profile)
+        )
+
+        with self._database.transaction() as connection:
+            project_repository = ProjectRepository(connection)
+            current = project_repository.get(project_id)
+            if current is None:
+                raise ProjectNotFoundError(f"project {project_id} does not exist")
+            current_profile = (
+                OutputProfile.from_dict(current.output_profile)
+                if current.output_profile
+                else OutputProfile.default()
+            )
+            updated = project_repository.update(
+                project_id,
+                output_profile=profile.to_dict(),
+                updated_at=_now(),
+            )
+            if profile.profile_hash() != current_profile.profile_hash():
+                PageRepository(connection).increment_revisions(project_id)
+        return updated
+
+    def duplicate_project(self, project_id: int, *, name: str | None = None) -> Project:
+        """Deep copy a project into an independent workspace project.
+
+        Pages, layout snapshots, assignments, source roots, inventory and the
+        output profile are copied in one transaction. Source files stay in
+        place and source-root paths remain relative and relinkable.
+
+        Raises:
+            ProjectNotFoundError: If the source project does not exist.
+            ValueError: If the duplicate name is empty.
+        """
+        with self._database.transaction() as connection:
+            project_repository = ProjectRepository(connection)
+            source = project_repository.get(project_id)
+            if source is None:
+                raise ProjectNotFoundError(f"project {project_id} does not exist")
+
+            duplicate_name = (name if name is not None else f"{source.name} (copy)").strip()
+            if not duplicate_name:
+                raise ValueError("project name must not be empty")
+
+            timestamp = _now()
+            duplicate = project_repository.create(
+                name=duplicate_name,
+                page_count=source.page_count,
+                calendar_year=source.calendar_year,
+                settings=source.settings,
+                output_profile=source.output_profile,
+                import_metadata=source.import_metadata,
+                created_at=timestamp,
+            )
+
+            source_root_repository = SourceRootRepository(connection)
+            duplicate_root_ids: dict[int, int] = {}
+            for root in source_root_repository.list(project_id):
+                copied_root = source_root_repository.add(
+                    duplicate.id,
+                    root.path,
+                    active=root.active,
+                    source_identity=root.source_identity,
+                    last_scan_at=root.last_scan_at,
+                    created_at=timestamp,
+                )
+                duplicate_root_ids[root.id] = copied_root.id
+
+            photo_repository = PhotoRepository(connection)
+            source_photos = photo_repository.list(project_id)
+            photo_repository.upsert_many(
+                PhotoAsset(
+                    id=0,
+                    project_id=duplicate.id,
+                    source_root_id=duplicate_root_ids[photo.source_root_id],
+                    relative_path=photo.relative_path,
+                    filename=photo.filename,
+                    file_size=photo.file_size,
+                    mtime=photo.mtime,
+                    digest=photo.digest,
+                    width=photo.width,
+                    height=photo.height,
+                    captured_at=photo.captured_at,
+                    gps_lat=photo.gps_lat,
+                    gps_lon=photo.gps_lon,
+                    available=photo.available,
+                    created_at=timestamp,
+                )
+                for photo in source_photos
+            )
+            duplicate_photo_ids = {
+                (photo.source_root_id, photo.relative_path): photo.id
+                for photo in photo_repository.list(duplicate.id)
+            }
+            duplicate_photo_id_by_source: dict[int, int] = {
+                photo.id: duplicate_photo_ids[
+                    (duplicate_root_ids[photo.source_root_id], photo.relative_path)
+                ]
+                for photo in source_photos
+            }
+
+            page_repository = PageRepository(connection)
+            duplicate_page_ids: dict[int, int] = {}
+            for page in page_repository.list(project_id):
+                copied_page = page_repository.create(
+                    duplicate.id,
+                    page.page_index,
+                    page.start_date,
+                    page.end_date,
+                    description=page.description,
+                    layout_id=page.layout_id,
+                    layout_version=page.layout_version,
+                    created_at=timestamp,
+                )
+                duplicate_page_ids[page.id] = copied_page.id
+
+            assignment_repository = AssignmentRepository(connection)
+            for assignment in assignment_repository.list_by_project(project_id):
+                assignment_repository.assign(
+                    duplicate.id,
+                    duplicate_page_ids[assignment.page_id],
+                    assignment.slot_id,
+                    duplicate_photo_id_by_source[assignment.photo_id],
+                    crop_zoom=assignment.crop_zoom,
+                    crop_focus_x=assignment.crop_focus_x,
+                    crop_focus_y=assignment.crop_focus_y,
+                    created_at=timestamp,
+                )
+
+        return duplicate
 
     def get_project(self, project_id: int) -> Project:
         """Return one project or raise a domain error."""

@@ -452,16 +452,16 @@ export and release work.
 
 **Objective:** Make output settings and project lifecycle first-class.
 
-- [ ] **P5-W01:** Add a project settings UI for calendar language/country, page
+- [x] **P5-W01:** Add a project settings UI for calendar language/country, page
   size/DPI, margins, fonts/colors, map options, layout defaults and description/PDF
   toggles.
-- [ ] **P5-W02:** Persist settings changes to the project output profile and
+- [x] **P5-W02:** Persist settings changes to the project output profile and
   increment affected page render revisions.
-- [ ] **P5-W03:** Implement `ProjectService.duplicate_project` as a transactional
+- [x] **P5-W03:** Implement `ProjectService.duplicate_project` as a transactional
   deep copy of pages, layout snapshots, assignments, source roots and profile.
-- [ ] **P5-W04:** Add Save As / Duplicate Project UI. Do not implement `.pcd`
+- [x] **P5-W04:** Add Save As / Duplicate Project UI. Do not implement `.pcd`
   packaging in this plan.
-- [ ] **P5-W05:** Add tests for settings persistence, duplicate independence,
+- [x] **P5-W05:** Add tests for settings persistence, duplicate independence,
   revision invalidation and invalid settings rejection.
 
 **Acceptance criteria**
@@ -656,12 +656,16 @@ The continuation is complete when all of the following hold:
   panel with strategy/seed preview, per-page thumbnail samples, filled/empty slot
   counts and overflow, digest-guarded confirm that rejects stale previews and
   treats repeats as no-ops, and a created-project review notice that opens the
-  editor on the first page. `make lint` clean; 198 tests pass.
-- **Active:** None. Phase 4 committed and pushed.
-- **Next:** Phase 5 (project settings, lifecycle and duplication), starting with
-  P5-W01. Phase issue #28.
-- **Next:** Phase 3 (source management UX and reliability), starting with
-  P3-W01. Phase issue #29.
+  editor on the first page. `make lint` clean; 198 tests pass. Continuation
+  Phase 5 complete: per-project settings page for calendar, page size/DPI,
+  margins, fonts/colors, map options and description/PDF toggles; validated
+  profile persistence with revision invalidation only on actual changes;
+  transactional project duplication covering pages, layout snapshots,
+  assignments, source roots, inventory and profile; settings and duplicate UI
+  with discovery links and notices. `make lint` clean; 209 tests pass.
+- **Active:** None. Phase 5 committed and pushed.
+- **Next:** Phase 6 (web export and preview jobs), starting with P6-W01. Phase
+  issue #33.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
@@ -695,6 +699,6 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 198 passed.
-- **Context status:** Phase 4 complete. Phase 5 covers project settings, lifecycle
-  and duplication.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 209 passed.
+- **Context status:** Phase 5 complete. Phase 6 covers web export and preview
+  jobs; a phase-boundary handoff is appropriate.

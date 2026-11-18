@@ -7,8 +7,20 @@ from datetime import datetime
 import pytest
 
 from photo_composition_designer.core.errors import ProjectNotFoundError
-from photo_composition_designer.project.repositories import PageRepository
-from tests.project_test_helpers import make_database, make_service
+from photo_composition_designer.core.output_profile import OutputProfile, OutputProfileError
+from photo_composition_designer.project.repositories import (
+    AssignmentRepository,
+    LayoutRepository,
+    PageRepository,
+    PhotoRepository,
+    SourceRootRepository,
+)
+from tests.project_test_helpers import (
+    make_database,
+    make_layout,
+    make_photo,
+    make_service,
+)
 
 
 @pytest.fixture
@@ -129,3 +141,167 @@ def test_list_projects_returns_created_projects(service):
 def test_open_missing_project_raises(service):
     with pytest.raises(ProjectNotFoundError):
         service.open_project(999)
+
+
+def _seed_project_with_assignment(service, database):
+    """Create a project with a source root, photo, layout and one assignment."""
+    project = service.create_project(
+        name="Family Calendar",
+        page_count=2,
+        start_date=datetime(2027, 1, 4),
+        settings={"calendar": {"language": "de_DE"}},
+        output_profile={"size": {"dpi": 150}},
+    )
+    with database.transaction() as connection:
+        root = SourceRootRepository(connection).add(
+            project.id,
+            "/photos",
+            active=True,
+            source_identity="/photos",
+            last_scan_at="2026-11-18T00:00:00+00:00",
+        )
+        photo = make_photo(PhotoRepository(connection), project.id, root.id)
+        layout = make_layout(LayoutRepository(connection), key="grid-2", slot_count=2)
+        page_repository = PageRepository(connection)
+        first_page = page_repository.list(project.id)[0]
+        page_repository.set_layout(first_page.id, layout.id, layout.version)
+        page_repository.update_description(first_page.id, "First week")
+        AssignmentRepository(connection).assign(
+            project.id,
+            first_page.id,
+            layout.slots[0].id,
+            photo.id,
+            crop_zoom=1.4,
+            crop_focus_x=0.25,
+            crop_focus_y=0.75,
+        )
+    return project, layout
+
+
+def test_update_output_profile_snapshots_and_invalidates_pages(service, database):
+    project = _seed_project_with_assignment(service, database)[0]
+    before_revisions = [
+        page.render_revision for page in PageRepository(database.connect()).list(project.id)
+    ]
+
+    updated = service.update_output_profile(
+        project.id,
+        {"size": {"dpi": 150}, "calendar": {"language": "en_US"}},
+    )
+
+    pages = PageRepository(database.connect()).list(project.id)
+    assert updated.output_profile["size"]["dpi"] == 150
+    assert updated.output_profile["size"]["width"] == 216
+    assert updated.output_profile["calendar"]["language"] == "en_US"
+    assert [page.render_revision for page in pages] == [
+        revision + 1 for revision in before_revisions
+    ]
+
+    service.update_output_profile(project.id, updated.output_profile)
+    assert [
+        page.render_revision for page in PageRepository(database.connect()).list(project.id)
+    ] == [revision + 1 for revision in before_revisions]
+
+
+def test_update_output_profile_rejects_invalid_values(service, database):
+    project = _seed_project_with_assignment(service, database)[0]
+    before = service.get_project(project.id)
+    revisions = [
+        page.render_revision for page in PageRepository(database.connect()).list(project.id)
+    ]
+
+    with pytest.raises(OutputProfileError, match="dpi"):
+        service.update_output_profile(project.id, {"size": {"dpi": 0}})
+    with pytest.raises(OutputProfileError, match="background_color"):
+        service.update_output_profile(project.id, {"style": {"background_color": "red"}})
+
+    assert service.get_project(project.id).output_profile == before.output_profile
+    assert [
+        page.render_revision for page in PageRepository(database.connect()).list(project.id)
+    ] == revisions
+
+
+def test_update_output_profile_is_project_scoped(service, database):
+    first = service.create_project(name="First", page_count=1, start_date=datetime(2027, 1, 4))
+    second = service.create_project(name="Second", page_count=1, start_date=datetime(2027, 1, 4))
+
+    service.update_output_profile(first.id, {"size": {"dpi": 150}})
+
+    second_after = service.get_project(second.id)
+    assert second_after.output_profile == OutputProfile.default().to_dict()
+    assert PageRepository(database.connect()).list(second.id)[0].render_revision == 0
+
+
+def test_duplicate_project_copies_state_and_stays_independent(service, database):
+    project, layout = _seed_project_with_assignment(service, database)
+
+    duplicate = service.duplicate_project(project.id)
+
+    assert duplicate.id != project.id
+    assert duplicate.name == "Family Calendar (copy)"
+    assert duplicate.output_profile == service.get_project(project.id).output_profile
+    assert duplicate.settings == project.settings
+
+    with database.connect() as connection:
+        source_pages = PageRepository(connection).list(project.id)
+        copied_pages = PageRepository(connection).list(duplicate.id)
+        source_roots = SourceRootRepository(connection).list(project.id)
+        copied_roots = SourceRootRepository(connection).list(duplicate.id)
+        source_photos = PhotoRepository(connection).list(project.id)
+        copied_photos = PhotoRepository(connection).list(duplicate.id)
+        source_assignments = AssignmentRepository(connection).list_by_project(project.id)
+        copied_assignments = AssignmentRepository(connection).list_by_project(duplicate.id)
+
+    assert [page.start_date for page in copied_pages] == [page.start_date for page in source_pages]
+    assert [page.description for page in copied_pages] == [
+        page.description for page in source_pages
+    ]
+    assert copied_pages[0].description == "First week"
+    assert copied_pages[0].layout_id == layout.id
+    assert copied_pages[0].layout_version == layout.version
+    assert copied_pages[0].id != source_pages[0].id
+
+    assert [(root.path, root.active) for root in copied_roots] == [
+        (root.path, root.active) for root in source_roots
+    ]
+    assert copied_roots[0].last_scan_at == source_roots[0].last_scan_at
+    assert copied_roots[0].id != source_roots[0].id
+
+    assert [photo.relative_path for photo in copied_photos] == [
+        photo.relative_path for photo in source_photos
+    ]
+    assert copied_photos[0].source_root_id == copied_roots[0].id
+    assert copied_photos[0].id != source_photos[0].id
+
+    assert len(copied_assignments) == len(source_assignments) == 1
+    copied_assignment = copied_assignments[0]
+    assert copied_assignment.project_id == duplicate.id
+    assert copied_assignment.page_id == copied_pages[0].id
+    assert copied_assignment.photo_id == copied_photos[0].id
+    assert copied_assignment.slot_id == source_assignments[0].slot_id
+    assert (copied_assignment.crop_zoom, copied_assignment.crop_focus_x) == (1.4, 0.25)
+    assert copied_assignment.crop_focus_y == 0.75
+
+    service.update_output_profile(duplicate.id, {"size": {"dpi": 200}})
+    service.rename_project(duplicate.id, "Duplicate")
+    with database.connect() as connection:
+        AssignmentRepository(connection).remove(copied_assignment.id)
+
+    source_after = service.get_project(project.id)
+    assert source_after.name == "Family Calendar"
+    assert source_after.output_profile["size"]["dpi"] == 150
+    with database.connect() as connection:
+        assert len(AssignmentRepository(connection).list_by_project(project.id)) == 1
+        assert len(AssignmentRepository(connection).list_by_project(duplicate.id)) == 0
+
+
+def test_duplicate_project_requires_existing_project_and_name(service, database):
+    project = service.create_project(
+        name="Family Calendar", page_count=1, start_date=datetime(2027, 1, 4)
+    )
+
+    with pytest.raises(ProjectNotFoundError):
+        service.duplicate_project(999)
+    with pytest.raises(ValueError, match="name"):
+        service.duplicate_project(project.id, name="   ")
+    assert len(service.list_projects()) == 1
