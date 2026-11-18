@@ -5,12 +5,12 @@
       "serena": {
         "type": "local",
         "command": [
-          "/home/paul/.local/bin/serena",
+          "{env:HOME}/.local/bin/serena",
           "start-mcp-server",
           "--context",
           "ide",
           "--project",
-          "/home/paul/PycharmProjects/Photo-Composition-Designer"
+          "{env:HOME}/PycharmProjects/Photo-Composition-Designer"
         ]
       }
     }
