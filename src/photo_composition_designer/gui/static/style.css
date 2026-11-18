@@ -273,6 +273,42 @@ label {
   margin: 0 0 0.4rem;
 }
 
+.distribution-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
+.distribution-page {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+}
+
+.distribution-page header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.4rem;
+}
+
+.distribution-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.distribution-samples img {
+  width: 2.6rem;
+  height: 2.6rem;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #000;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

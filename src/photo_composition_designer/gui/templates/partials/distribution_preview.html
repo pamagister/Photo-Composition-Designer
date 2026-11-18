@@ -4,35 +4,57 @@
   <p class="muted">
     Strategy: <strong>{{ strategy }}</strong>
     {% if seed %} &middot; seed: {{ seed }}{% endif %}
+    &middot; confirm to persist this proposal
   </p>
   <dl class="distribution-stats">
     <dt>Pages</dt><dd>{{ summary.pages }}</dd>
     <dt>Assigned</dt><dd>{{ summary.assigned }}</dd>
+    <dt>Overflow</dt><dd>{{ summary.overflow }}</dd>
     <dt>Unassigned</dt><dd>{{ summary.unassigned }}</dd>
   </dl>
-  {% if proposal %}
-  <table class="distribution-table">
-    <thead>
-      <tr><th>Page</th><th>Photos</th></tr>
-    </thead>
-    <tbody>
-      {% for group in proposal.pages %}
-      <tr>
-        <td>Page {{ loop.index }}</td>
-        <td>{{ group | length }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+  {% if page_rows %}
+  <div class="distribution-pages">
+    {% for row in page_rows %}
+    <article class="distribution-page">
+      <header>
+        <strong>Page {{ row.page.page_index + 1 }}</strong>
+        <span class="muted">{{ row.page.start_date }} &middot; {{ row.page.end_date }}</span>
+      </header>
+      <div class="distribution-samples">
+        {% for photo in row.samples %}
+        <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" loading="lazy">
+        {% endfor %}
+        {% if row.extra_samples %}
+        <span class="muted">+{{ row.extra_samples }} more</span>
+        {% endif %}
+        {% if not row.samples %}
+        <span class="muted">No photos proposed for this page.</span>
+        {% endif %}
+      </div>
+      <p class="muted">
+        {{ row.assigned }} of {{ row.capacity }} slots filled
+        {% if row.empty %} &middot; {{ row.empty }} empty{% endif %}
+      </p>
+    </article>
+    {% endfor %}
+  </div>
   {% endif %}
+
+  {% if summary.overflow %}
+  <p class="muted">
+    {{ summary.overflow }} photo(s) exceed the available slots and stay in the unused pool.
+  </p>
+  {% endif %}
+
   <form hx-post="/projects/{{ project_id }}/distribute/apply"
         hx-target="closest .distribution-area"
         hx-swap="outerHTML">
     <input type="hidden" name="strategy" value="{{ strategy }}">
     {% if seed %}<input type="hidden" name="seed" value="{{ seed }}">{% endif %}
+    <input type="hidden" name="proposal_digest" value="{{ proposal_digest }}">
     <button class="primary" type="submit">Apply distribution</button>
+    <span class="htmx-indicator muted">Applying...</span>
   </form>
 </div>
-{% else %}
-<p class="error">Could not build a distribution proposal.</p>
 {% endif %}

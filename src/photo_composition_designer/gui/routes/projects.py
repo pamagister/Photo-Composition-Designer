@@ -123,6 +123,66 @@ def _inventory_context(database: WorkspaceDatabase, project_id: int) -> dict[str
     }
 
 
+def _distribution_context(
+    database: WorkspaceDatabase,
+    project_id: int,
+    *,
+    strategy: str,
+    seed: int | None,
+    notice: str = "",
+    error: str = "",
+) -> dict[str, object]:
+    """Build the distribution panel context without mutating project state."""
+    from photo_composition_designer.project.distribution import DistributionService
+    from photo_composition_designer.project.repositories import LayoutRepository
+
+    distribution = DistributionService(database)
+    proposal = None
+    summary = None
+    digest = ""
+    page_rows: list[dict[str, object]] = []
+    try:
+        proposal = distribution.propose(project_id, strategy=strategy, seed=seed)
+        connection = database.connect()
+        pages = PageRepository(connection).list(project_id)
+        photos_by_id = {photo.id: photo for photo in PhotoRepository(connection).list(project_id)}
+        layout_repository = LayoutRepository(connection)
+        capacities: list[int] = []
+        for page in pages:
+            layout = (
+                layout_repository.get_by_id(page.layout_id) if page.layout_id is not None else None
+            )
+            capacities.append(len(layout.slots) if layout is not None else 0)
+        summary = distribution.summarize(proposal, capacities=capacities)
+        digest = distribution.digest(proposal)
+        for page, photo_ids, capacity in zip(pages, proposal.pages, capacities, strict=False):
+            photos = [photos_by_id[photo_id] for photo_id in photo_ids if photo_id in photos_by_id]
+            page_rows.append(
+                {
+                    "page": page,
+                    "samples": photos[:4],
+                    "extra_samples": max(0, len(photos) - 4),
+                    "assigned": len(photo_ids),
+                    "capacity": capacity,
+                    "empty": max(0, capacity - len(photo_ids)),
+                }
+            )
+    except (ValueError, ProjectError) as exc:
+        error = error or str(exc)
+
+    return {
+        "project_id": project_id,
+        "strategy": strategy,
+        "seed": seed,
+        "proposal": proposal,
+        "summary": summary,
+        "proposal_digest": digest,
+        "page_rows": page_rows,
+        "distribution_notice": notice,
+        "distribution_error": error,
+    }
+
+
 def _page_context(
     database: WorkspaceDatabase,
     project_id: int,
@@ -282,10 +342,10 @@ def create_project(
 
     if source_error:
         return RedirectResponse(
-            f"/projects/{project.id}?error={quote(source_error)}",
+            f"/projects/{project.id}?created=1&error={quote(source_error)}",
             status_code=303,
         )
-    return RedirectResponse(f"/projects/{project.id}", status_code=303)
+    return RedirectResponse(f"/projects/{project.id}?created=1", status_code=303)
 
 
 def _assign_layout_to_all_pages(
@@ -340,7 +400,9 @@ def project_detail(
     """Show one project with its pages, source roots and photo inventory."""
     aggregate = _load_project(service, project_id)
     notice = ""
-    if request.query_params.get("added") == "1":
+    if request.query_params.get("created") == "1":
+        notice = "Project created. Review the first page, then distribute photos."
+    elif request.query_params.get("added") == "1":
         notice = "Source directory added."
     elif request.query_params.get("saved") == "1":
         notice = "Project name saved."
@@ -634,26 +696,8 @@ def preview_distribution(
     seed: int | None = None,
 ) -> HTMLResponse:
     """Preview a distribution proposal without mutating project state."""
-    from photo_composition_designer.project.distribution import DistributionService
-
-    distribution = DistributionService(database)
-    try:
-        proposal = distribution.propose(project_id, strategy=strategy, seed=seed)
-        summary = distribution.summarize(proposal)
-    except (ValueError, ProjectError):
-        summary = None
-        proposal = None
-    return TEMPLATES.TemplateResponse(
-        request,
-        "partials/distribution_preview.html",
-        {
-            "project_id": project_id,
-            "strategy": strategy,
-            "seed": seed,
-            "proposal": proposal,
-            "summary": summary,
-        },
-    )
+    context = _distribution_context(database, project_id, strategy=strategy, seed=seed)
+    return TEMPLATES.TemplateResponse(request, "partials/distribution_area.html", context)
 
 
 @router.post("/projects/{project_id}/distribute/apply", response_model=None)
@@ -663,21 +707,49 @@ def apply_distribution(
     database: DatabaseDependency,
     strategy: Annotated[str, Form()] = "equal",
     seed: Annotated[str, Form()] = "",
-) -> RedirectResponse:
-    """Generate and apply a distribution proposal in one transaction."""
+    proposal_digest: Annotated[str, Form()] = "",
+) -> HTMLResponse | RedirectResponse:
+    """Apply a previewed distribution proposal in one transaction.
+
+    A supplied digest must match the freshly computed proposal. This rejects
+    stale previews and makes a repeated confirmation a no-op.
+    """
     from photo_composition_designer.project.distribution import DistributionService
 
     distribution = DistributionService(database)
+    effective_seed = int(seed) if seed else None
+
+    def response(notice: str = "", error: str = "") -> HTMLResponse | RedirectResponse:
+        if request.headers.get("HX-Request") == "true":
+            context = _distribution_context(
+                database,
+                project_id,
+                strategy=strategy,
+                seed=effective_seed,
+                notice=notice,
+                error=error,
+            )
+            return TEMPLATES.TemplateResponse(request, "partials/distribution_area.html", context)
+        query = f"?error={quote(error)}" if error else "?distributed=1"
+        return RedirectResponse(f"/projects/{project_id}{query}", status_code=303)
+
     try:
-        proposal = distribution.propose(
-            project_id,
-            strategy=strategy,
-            seed=int(seed) if seed else None,
+        proposal = distribution.propose(project_id, strategy=strategy, seed=effective_seed)
+    except (ValueError, ProjectError) as exc:
+        return response(error=str(exc))
+
+    if not any(proposal.pages) and not proposal.unassigned:
+        return response(notice="All available photos are already distributed.")
+    if proposal_digest and proposal_digest != distribution.digest(proposal):
+        return response(
+            error="This preview is out of date. Review the refreshed proposal before applying."
         )
+
+    try:
         distribution.apply(project_id, proposal)
     except (ValueError, ProjectError) as exc:
-        return _error_redirect(project_id, str(exc))
-    return RedirectResponse(f"/projects/{project_id}?distributed=1", status_code=303)
+        return response(error=str(exc))
+    return response(notice="Distribution applied.")
 
 
 @router.get("/api/browse")

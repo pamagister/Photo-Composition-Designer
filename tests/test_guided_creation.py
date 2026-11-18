@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 from PIL import Image
@@ -50,7 +51,7 @@ def test_create_project_with_layout_assigns_slots(guided_client, tmp_path):
         follow_redirects=False,
     )
     assert response.status_code == 303
-    project_id = int(response.headers["location"].split("/")[-1])
+    project_id = int(urlsplit(response.headers["location"]).path.split("/")[-1])
 
     database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
     with database.connect() as connection:
@@ -75,7 +76,7 @@ def test_create_project_with_source_scans(guided_client, tmp_path):
         follow_redirects=False,
     )
     assert response.status_code == 303
-    project_id = int(response.headers["location"].split("/")[-1])
+    project_id = int(urlsplit(response.headers["location"]).path.split("/")[-1])
 
     database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
     with database.connect() as connection:

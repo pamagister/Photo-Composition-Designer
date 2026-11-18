@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
@@ -45,7 +46,7 @@ def _create_project(client: TestClient, *, name: str = "Family Calendar") -> str
         follow_redirects=False,
     )
     assert response.status_code == 303
-    return response.headers["location"]
+    return urlsplit(response.headers["location"]).path
 
 
 def test_health_and_index(client):

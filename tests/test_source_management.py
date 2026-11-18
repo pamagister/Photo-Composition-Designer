@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 
 import pytest
 from PIL import Image
@@ -53,7 +53,7 @@ def _create_project(
         follow_redirects=False,
     )
     assert response.status_code == 303
-    return int(response.headers["location"].split("/")[-1])
+    return int(urlsplit(response.headers["location"]).path.split("/")[-1])
 
 
 def _add_source(client: TestClient, project_id: int, path: Path) -> None:

@@ -13,6 +13,8 @@ Strategies:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import random
 from dataclasses import dataclass
 from datetime import datetime
@@ -185,17 +187,49 @@ class DistributionService:
         overflow = [photo_id for photo_id, _ in dated if photo_id not in used]
         return grouped, overflow
 
-    def summarize(self, proposal: DistributionProposal) -> ProposalSummary:
-        """Return counts for a proposal preview."""
+    def summarize(
+        self,
+        proposal: DistributionProposal,
+        *,
+        capacities: list[int] | None = None,
+    ) -> ProposalSummary:
+        """Return counts for a proposal preview.
+
+        When page slot capacities are supplied, the summary also reports how
+        many slots remain empty per page.
+        """
         total = sum(len(group) for group in proposal.pages)
+        empty_slots = (
+            [
+                max(0, capacity - len(group))
+                for capacity, group in zip(capacities, proposal.pages, strict=False)
+            ]
+            if capacities is not None
+            else []
+        )
         return ProposalSummary(
             pages=len(proposal.pages),
             total_photos=total,
             assigned=total,
             unassigned=len(proposal.unassigned),
-            empty_slots_per_page=[],
+            empty_slots_per_page=empty_slots,
             overflow=len(proposal.unassigned),
         )
+
+    def digest(self, proposal: DistributionProposal) -> str:
+        """Return a stable fingerprint for a previewed proposal.
+
+        The fingerprint lets the confirm endpoint reject stale previews and
+        makes repeated confirmation a no-op instead of a state change.
+        """
+        payload = {
+            "strategy": proposal.strategy,
+            "seed": proposal.seed,
+            "pages": proposal.pages,
+            "unassigned": proposal.unassigned,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        return hashlib.sha256(encoded).hexdigest()[:16]
 
     def apply(self, project_id: int, proposal: DistributionProposal) -> None:
         """Atomically replace assignments for a project with this proposal."""

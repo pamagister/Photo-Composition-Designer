@@ -1,0 +1,37 @@
+{% set current_strategy = strategy | default('equal') %}
+{% set current_seed = seed if seed is defined and seed else '' %}
+<div class="distribution-area">
+  <form hx-get="/projects/{{ project_id }}/distribute/preview"
+        hx-target="closest .distribution-area"
+        hx-swap="outerHTML"
+        class="form-row">
+    <div class="field">
+      <label for="distribution-strategy">Strategy</label>
+      <select id="distribution-strategy" name="strategy">
+        <option value="equal" {% if current_strategy == 'equal' %}selected{% endif %}>Equal</option>
+        <option value="random" {% if current_strategy == 'random' %}selected{% endif %}>Random</option>
+        <option value="date_aware" {% if current_strategy == 'date_aware' %}selected{% endif %}>Date aware</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distribution-seed">Random seed</label>
+      <input id="distribution-seed" name="seed" type="number" min="0"
+             value="{{ current_seed }}" placeholder="Optional">
+    </div>
+    <button type="submit">Preview distribution</button>
+    <span class="htmx-indicator muted">Building proposal...</span>
+  </form>
+
+  {% if distribution_notice %}
+  <p class="success" role="status">{{ distribution_notice }}</p>
+  {% endif %}
+  {% if distribution_error %}
+  <p class="error" role="alert">{{ distribution_error }}</p>
+  {% endif %}
+
+  {% if summary is defined and summary %}
+    {% include "partials/distribution_preview.html" %}
+  {% else %}
+  <p class="muted">Preview a distribution to review page assignments before applying.</p>
+  {% endif %}
+</div>
