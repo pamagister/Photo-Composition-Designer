@@ -271,10 +271,10 @@ Work packages are ordered by dependency. Each package should be independently re
 
 **Objective:** Establish a tested baseline and resolve decisions that would otherwise force schema or UI rework.
 
-- [ ] **P0-W01:** Inspect all current rendering, layout, configuration, folder distribution, GUI, CLI and PDF export paths. Map existing tests to those responsibilities.
-- [ ] **P0-W02:** Inspect Image Triage GUI startup, routing, template structure, media serving, CSS conventions, SQLite migrations and test fixtures. Record which patterns can be reused without copying domain-specific code.
-- [ ] **P0-W03:** Write concise architecture decision records or an architecture section in project docs for project storage, image identity, layout schema, page capacity, project settings and compatibility.
-- [ ] **P0-W04:** Establish baseline verification using repository-supported commands; record existing failures separately from regressions.
+- [x] **P0-W01:** Inspect all current rendering, layout, configuration, folder distribution, GUI, CLI and PDF export paths. Map existing tests to those responsibilities.
+- [x] **P0-W02:** Inspect Image Triage GUI startup, routing, template structure, media serving, CSS conventions, SQLite migrations and test fixtures. Record which patterns can be reused without copying domain-specific code.
+- [x] **P0-W03:** Write concise architecture decision records or an architecture section in project docs for project storage, image identity, layout schema, page capacity, project settings and compatibility.
+- [x] **P0-W04:** Establish baseline verification using repository-supported commands; record existing failures separately from regressions.
 
 **Acceptance criteria**
 
@@ -545,7 +545,7 @@ The refactoring is complete when all of the following hold:
 8. **Layout freedom:** Confirmed: fixed templates initially, with a broad catalogue at least as extensive as the existing layouts. Manual layout authoring is deferred.
 9. **Crop editing:** Confirmed: per-assignment crop controls (zoom and focal-point/pan adjustment), without modifying source photos.
 10. **Runtime/deployment:** Confirmed: local-only web application. Remove Tkinter; replace the CLI with a cleaner project-oriented CLI. Remove config-cli-gui.
-11. **Directory selection:** Resolve a safe local directory-picker approach for supported desktop platforms during Phase 0.
+11. **Directory selection:** Deferred to Phase 6. Phase 0-2 introduce no web UI and accept a validated absolute source path in the service layer.
 
 ### Recommended defaults if no contrary decision
 
@@ -576,10 +576,13 @@ The refactoring is complete when all of the following hold:
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-project-workflow.md`
-- **Completed:** Planning and repository reconnaissance only; no implementation work.
-- **Active:** Planning baseline updated with user-confirmed architecture and workflow decisions.
-- **Next:** Execute Phase 0 reconnaissance, especially cataloguing provider dimensions, scaling values and all existing layouts. Resolve local directory-picker approach, then implement the workspace schema in Phase 1.
+- **Completed:** Phase 0 complete (P0-W01 to P0-W04). CI now runs on every branch push (`e17c6e6`, issue #12 closed). Architecture baseline recorded in `docs/architecture/web-ui-project-workflow.md`. Baseline `make test` is green: Ruff checks passed and 106 tests passed.
+- **Active:** None. Phase 0 is complete and committed.
+- **Next:** Phase 1 (issue #15): typed domain models, SQLite schema/versioning/migrations, repositories, constraints and project lifecycle services with tests. Then Phase 2 (issue #14): source scanning, references, rescan/relink and thumbnail cache. Directory-picker work stays deferred to Phase 6.
 - **Relevant files:**
+  - `docs/architecture/web-ui-project-workflow.md`
+  - `docs/plans/2026-11-18-web-ui-project-workflow.md`
+  - `.github/workflows/main.yml`
   - `src/Photo_Composition_Designer/core/base.py`
   - `src/Photo_Composition_Designer/core/composition_renderer.py`
   - `src/Photo_Composition_Designer/core/composition_layout.py`
@@ -590,7 +593,7 @@ The refactoring is complete when all of the following hold:
   - `src/Photo_Composition_Designer/gui/gui.py`
   - `src/image_triage/gui/app.py` (reference repository)
   - `src/image_triage/db/repository.py` (reference repository)
-- **Decisions:** One workspace SQLite database; portable `.pcd` archives; reference-only default and self-contained export; no legacy calendar import; preserve provider sizing/scaling and existing layout catalogue; fixed slots; one photo use per project; editable page descriptions; per-assignment crop controls; local FastAPI/Jinja/HTMX UI; remove Tkinter/config-cli-gui; project-oriented CLI.
-- **Blockers:** No blocking product decisions. Directory-picker implementation and exact layout/settings inventory are Phase 0 investigation items.
-- **Last verified:** 2026-11-18; repository source inspected through GitHub. No local test commands executed.
-- **Context status:** clean
+- **Decisions:** One workspace SQLite database; portable `.pcd` archives; reference-only default and self-contained export; no legacy calendar import; preserve provider sizing/scaling and existing layout catalogue; fixed slots; one photo use per project; editable page descriptions; per-assignment crop controls; local FastAPI/Jinja/HTMX UI; remove Tkinter/config-cli-gui; project-oriented CLI; source-directory picker deferred to Phase 6.
+- **Blockers:** None. No blocking product decisions.
+- **Last verified:** 2026-11-18; `make test` green (106 passed) and CI successful for `e17c6e6`.
+- **Context status:** clean; continue with Phase 1 in this session.
