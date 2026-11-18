@@ -30,7 +30,7 @@ The existing renderer remains the source of truth for final page rendering and P
 - Local web UI based on the proven Image Triage stack: FastAPI, Jinja2, HTMX, vanilla JavaScript and CSS.
 - Project lifecycle: create, open, save, rename and close projects.
 - Directory selection and recursive image discovery, with clear supported-format and error reporting.
-- Project-local SQLite database with versioned schema and migrations.
+- One central workspace SQLite database with versioned schema and migrations; projects are independently exportable as portable `.pcd` archives.
 - Image inventory containing stable photo identity, relative path, metadata and availability state.
 - Default reference-only storage; optional copy-into-project mode.
 - Initial distribution across N calendar pages using the existing distribution strategies, with a preview/confirmation step.
@@ -98,37 +98,57 @@ Use a small layered architecture:
 
 Route handlers should validate requests and call application services. They must not contain distribution algorithms or direct multi-table SQL.
 
-### 4.2 Project storage
+### 4.2 Workspace database and portable project packages
 
-Recommended default: a project is a directory containing a SQLite database and project-managed generated assets, for example:
+Use one central SQLite database for the local workspace. It contains multiple independent projects and is the normal working store.
+
+The workspace owns:
 
 ```text
-MyCalendar/
-  calendar.sqlite3
+~/.local/share/photo-composition-designer/
+  workspace.sqlite3
+  thumbnails/
   previews/
-  renders/
+  cache/
   exports/
-  assets/              # only when project uses embedded/copy mode
 ```
 
-The database is authoritative for project state. Generated previews and renders are disposable/rebuildable cache/output files, not the source of truth.
+Use an XDG-aware/platformdirs data location. Cache and preview files are disposable and rebuildable, not authoritative project data.
 
-The user should be able to create a project at a chosen project path independently of the selected photo source directory.
+A project is a logical aggregate in the workspace database, not a separate database file. It must nevertheless be independently portable through a versioned `.pcd` archive (ZIP container). The archive contains a manifest, a project-only SQLite snapshot or equivalent project-scoped data export, immutable layout snapshots and optional embedded assets. Never include unrelated workspace projects or caches.
 
-Use SQLite from the Python standard library unless repository inspection demonstrates a compelling reason for another ORM. Follow Image Triage's explicit repository/schema/migration approach, but keep the calendar schema substantially smaller.
+Suggested archive structure:
+
+```text
+family-calendar-2027.pcd
+  manifest.json
+  project.sqlite3
+  layouts/                 # if layout snapshots are not embedded in DB
+  assets/                  # only for self-contained export
+  preview/                 # optional cover/overview previews
+```
+
+Export from a consistent database snapshot, not by copying the live workspace database. Import validates the manifest/schema version, stages and verifies assets, handles duplicate project IDs explicitly and inserts the project in a controlled transaction.
+
+Provide New Project, Open Project (open an existing workspace project or import a `.pcd` archive), automatic Save, Duplicate Project and Save As/Export. Save As creates an independent project snapshot/archive. Export modes are Reference-only (default) and Self-contained.
+
+Reference-only packages preserve source-root metadata and relative paths; another machine may require source-root relinking. Self-contained packages copy all required originals into `assets/`, rewrite package references and verify integrity. Originals are never moved or modified.
+
+Use SQLite from the Python standard library with explicit repositories and migrations.
 
 ### 4.3 Proposed relational model
 
 Use stable integer or UUID primary keys consistently. Suggested logical tables:
 
-- `project`: name, schema version, created/updated timestamps, project settings JSON or normalized settings fields, storage mode.
-- `source_roots`: configured root path, active state, last scan timestamp and source identity.
-- `photos`: stable project-local ID, relative path, filename, file size, mtime, optional content digest, dimensions, capture date, GPS metadata and availability state.
-- `pages`: page index, calendar date/range, description, selected layout ID, page-specific overrides and render revision.
-- `layouts`: stable layout ID, name, version and layout definition.
-- `layout_slots`: layout ID, slot ID/order and normalized geometry/crop defaults.
-- `assignments`: page ID, slot ID, photo ID, ordering and optional per-assignment crop/focal-point overrides.
-- Optional `project_assets` or storage metadata for embedded photos.
+- `projects`: project ID, name, calendar year/range, page count, timestamps, settings snapshot, output profile and import metadata.
+- `source_roots`: project ID, configured root path, active state, last scan timestamp and source identity.
+- `photos`: project ID, stable photo ID, relative path or embedded asset key, filename, file size, mtime, optional digest, dimensions, capture date, GPS metadata and availability.
+- `pages`: project ID, page index, date/range, editable description, selected layout snapshot/version, overrides and render revision.
+- `layouts` / `layout_slots`: built-in catalogue plus project-owned immutable snapshots with normalized geometry, slot IDs/order and crop defaults.
+- `assignments`: project/page/slot/photo IDs, ordering and per-assignment crop/focal-point overrides.
+- Optional `project_assets` metadata for embedded photos and integrity hashes.
+
+All project-owned rows are scoped by `project_id`; repositories prevent cross-project assignments. Output-affecting settings and layout snapshots travel with the project package.
 
 Use foreign keys and unique constraints to enforce that a photo is assigned at most once in a project and that a slot has at most one assigned photo. If product requirements later permit reuse, make that a deliberate schema/domain change rather than silently allowing duplicates.
 
@@ -140,7 +160,7 @@ Persist a layout definition/version with the project or retain an immutable layo
 
 ### 4.4 Image references and portability
 
-Default reference mode:
+Default reference mode (workspace and `.pcd` export):
 
 - Store a canonical source-root path in `source_roots`.
 - Store each image path relative to that root, using normalized POSIX-style separators in the database.
@@ -151,7 +171,7 @@ Default reference mode:
 
 If files are moved, show a clear source status and offer **Relink source folder**. The user selects a new root; the application validates a sample or all stored relative paths, reports matched/missing/ambiguous files, and only then commits the root change. Never silently bind a project photo to a different file with the same basename. Use relative path plus size/date and, where needed, digest to establish a match.
 
-Optional self-contained mode copies original photos into `assets/` on explicit import/copy. It must never move originals. Copying should be transactional or resumable, with integrity checks and clear disk-space reporting. Switching from reference mode to embedded mode is an explicit project operation.
+Optional self-contained mode copies original photos into package `assets/` on explicit export. It must never move originals. Copying is staged/resumable, with integrity checks and clear disk-space reporting. Reference-only export remains the default. Importing a self-contained `.pcd` works without the original source directory.
 
 ### 4.5 Image inventory and previews
 
@@ -237,11 +257,11 @@ Use one application process as the initial deployment assumption. Configure SQLi
 
 ### 4.11 Configuration compatibility
 
-Keep global rendering defaults and project-specific settings distinct. Existing `config.yaml` values should seed new projects and remain usable by the legacy CLI.
+Keep workspace defaults and project settings distinct. Inspect existing `config.yaml` values and migrate them into workspace defaults/project creation defaults; do not retain runtime coupling to config-cli-gui. Existing photo-provider page dimensions, DPI/scaling, margins, bleed/safe areas, typography and print settings are critical compatibility requirements and must be catalogued and preserved as named output profiles.
 
-Project settings should snapshot the values that affect the final output. Later changes to the global config must not silently mutate an existing calendar project.
+Every project snapshots all values affecting final output, including exact provider dimensions/scaling, DPI, margins/bleed, typography, image quality, calendar/anniversary/map settings and rendering options. Later workspace-default changes must not silently mutate existing projects.
 
-Preserve anniversaries and location configuration as external inputs initially, but store their resolved paths/settings in the project. Decide later whether their contents should be snapshotted into the project for reproducibility.
+Page descriptions are editable in the web editor and persisted as page data. Legacy descriptions-file migration is not required. Anniversary/location inputs belong in project settings; self-contained export must embed required data or clearly report external dependencies.
 
 ## 5. Implementation phases and work packages
 
@@ -381,7 +401,7 @@ Work packages are ordered by dependency. Each package should be independently re
 - [ ] **P6-W05:** Add server-side page routes and HTMX partials for project, inventory and page navigation.
 - [ ] **P6-W06:** Add controlled thumbnail/media endpoints with cache headers and correct content types.
 - [ ] **P6-W07:** Add API/UI integration tests using FastAPI TestClient and temporary project/source directories.
-- [ ] **P6-W08:** Add a new GUI entry point and packaging dependencies; retain the CLI entry point.
+- [ ] **P6-W08:** Add the local web-app entry point and packaging dependencies; remove the Tkinter GUI and its GUI-specific dependencies.
 
 **Acceptance criteria**
 
@@ -446,16 +466,17 @@ Work packages are ordered by dependency. Each package should be independently re
 - [ ] **P9-W03:** Add export progress, completion state and actionable error messages.
 - [ ] **P9-W04:** Implement optional self-contained mode by copying originals into project assets with integrity checks and resumable behavior.
 - [ ] **P9-W05:** Add project backup/restore guidance and validate project portability between machines.
-- [ ] **P9-W06:** Decide and implement the required legacy project/folder import path, if existing user projects must be migrated.
-- [ ] **P9-W07:** Keep the CLI functional; either adapt it to project rendering or preserve the folder-based path behind a compatibility adapter with deprecation documentation.
-- [ ] **P9-W08:** Add end-to-end tests covering source relinking, missing assets, embedded mode, rendering and PDF page order.
+- [ ] **P9-W06:** Implement `.pcd` package export/import, manifest validation, project identity handling, schema compatibility and transactional staging.
+- [ ] **P9-W07:** Implement Save As / Duplicate Project and Reference-only / Self-contained export modes.
+- [ ] **P9-W08:** Replace the legacy CLI with focused workspace/project commands for source scan, distribution, render, export and local web-server startup. Remove config-cli-gui and obsolete Tkinter dependencies.
+- [ ] **P9-W09:** Add end-to-end tests for source relinking, embedded assets, package round-trip, rendering and PDF order.
 
 **Acceptance criteria**
 
 - Exported pages and PDF follow the exact project page order.
 - Reference mode never copies originals.
 - Embedded mode is explicit, verified and never destructive to source files.
-- Existing CLI workflows remain available or are deliberately replaced with documented migration instructions.
+- The new CLI operates on workspace projects and offers documented project, scan, distribution, render and export commands. Tkinter and config-cli-gui are no longer runtime dependencies.
 - A project can be reopened after its source folder is moved and successfully relinked.
 
 **Phase gate:** Export, persistence and portability are ready for normal use.
@@ -514,14 +535,17 @@ The refactoring is complete when all of the following hold:
 
 ### Decisions to confirm before implementation
 
-1. **Project file location:** Recommended: a project directory chosen by the user, containing `calendar.sqlite3`, previews, renders and optional assets. Confirm whether this is preferable to a central application database with separately named project files.
-2. **Existing calendars:** Must the new application import existing folder-based calendar projects, or is it acceptable to keep the old workflow available only through the CLI during transition?
-3. **Page capacity:** Should every layout have a fixed number of slots, with overflow always remaining unassigned? Recommended: yes.
-4. **Photo reuse:** Should a photo be allowed on more than one calendar page? Recommended default: no, because the unassigned pool and requested workflow imply one use per project.
-5. **Project self-contained mode:** Recommended: reference-only by default, with an explicit "Copy photos into project" option at creation or later.
-6. **Description semantics:** Should page descriptions be editable directly in the editor, and should existing per-folder/global description text be migrated to page descriptions? Recommended: yes.
-7. **Directory selection:** The web app is local-only. Confirm supported platforms for a native directory picker; otherwise provide a path input plus browse helper where available.
-8. **Layout freedom:** For the first version, should users choose from fixed templates only, or also manually resize/reposition slots? Recommended: fixed templates first; manual layout authoring is a later phase.
+1. **Workspace database:** Confirmed: one central SQLite workspace database containing multiple projects.
+2. **Portable project format:** Confirmed direction: `.pcd` ZIP archive with manifest, project-only data snapshot, layout snapshots and optional embedded assets. Provide Open/Import, Save As/Export and Duplicate Project.
+3. **Legacy calendars:** No import of existing folder-based calendars is required. Preserve existing provider dimensions, scaling, print settings and established layout catalogue/style.
+4. **Page capacity:** Confirmed: fixed slot count per layout; empty slots are valid and overflow remains unassigned.
+5. **Photo reuse:** Confirmed: one use per project. To repeat a title photo, the user can place a separate copy in the watched source directory; these are distinct assets.
+6. **Self-contained mode:** Reference-only is the default; self-contained `.pcd` export embeds copies of all required images.
+7. **Descriptions:** Confirmed: page descriptions are editable and persisted directly in the editor. No legacy descriptions-file migration is required.
+8. **Layout freedom:** Confirmed: fixed templates initially, with a broad catalogue at least as extensive as the existing layouts. Manual layout authoring is deferred.
+9. **Crop editing:** Confirmed: per-assignment crop controls (zoom and focal-point/pan adjustment), without modifying source photos.
+10. **Runtime/deployment:** Confirmed: local-only web application. Remove Tkinter; replace the CLI with a cleaner project-oriented CLI. Remove config-cli-gui.
+11. **Directory selection:** Resolve a safe local directory-picker approach for supported desktop platforms during Phase 0.
 
 ### Recommended defaults if no contrary decision
 
@@ -529,12 +553,15 @@ The refactoring is complete when all of the following hold:
 - Each layout has a fixed set of slots; empty slots are valid.
 - No automatic reflow when adding/removing photos.
 - Layout changes preserve as many assignments as possible and preview any displaced photos.
-- Source references are relative to one remappable source root.
-- Project database and generated files live together in a user-selected project directory.
+- One central workspace SQLite database stores all projects.
+- `.pcd` is the portable project package; Save As/Export and Open/Import provide portability.
+- Source references are relative to a remappable source root; self-contained export embeds required assets.
+- Output settings and immutable layout snapshots travel with `.pcd` packages.
 - FastAPI + Jinja2 + HTMX + vanilla JS; no SPA framework.
-- SQLite standard library with explicit migrations and repository layer.
+- One workspace SQLite database using the standard library with explicit migrations and repositories.
 - Fixed layout templates first; custom layout editor deferred.
-- The existing folder workflow remains available through a compatibility path until the project workflow reaches feature parity.
+- No legacy calendar import; preserve provider sizing/scaling and existing layout catalogue.
+- Remove Tkinter and config-cli-gui; replace CLI with project-oriented commands.
 
 ## 8. Handoff protocol
 
@@ -550,8 +577,8 @@ The refactoring is complete when all of the following hold:
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-project-workflow.md`
 - **Completed:** Planning and repository reconnaissance only; no implementation work.
-- **Active:** Awaiting user review and decisions before Phase 0 completion.
-- **Next:** Confirm the project storage model, legacy import/compatibility expectations, page capacity, photo reuse and layout editing scope. Then execute P0-W01 through P0-W04.
+- **Active:** Planning baseline updated with user-confirmed architecture and workflow decisions.
+- **Next:** Execute Phase 0 reconnaissance, especially cataloguing provider dimensions, scaling values and all existing layouts. Resolve local directory-picker approach, then implement the workspace schema in Phase 1.
 - **Relevant files:**
   - `src/Photo_Composition_Designer/core/base.py`
   - `src/Photo_Composition_Designer/core/composition_renderer.py`
@@ -563,7 +590,7 @@ The refactoring is complete when all of the following hold:
   - `src/Photo_Composition_Designer/gui/gui.py`
   - `src/image_triage/gui/app.py` (reference repository)
   - `src/image_triage/db/repository.py` (reference repository)
-- **Decisions:** Planning baseline recommends project-local SQLite, relative source references, derived unassigned pool, fixed-slot layouts and local FastAPI/Jinja/HTMX UI.
-- **Blockers:** User decisions listed in Section 7; no implementation blocker.
+- **Decisions:** One workspace SQLite database; portable `.pcd` archives; reference-only default and self-contained export; no legacy calendar import; preserve provider sizing/scaling and existing layout catalogue; fixed slots; one photo use per project; editable page descriptions; per-assignment crop controls; local FastAPI/Jinja/HTMX UI; remove Tkinter/config-cli-gui; project-oriented CLI.
+- **Blockers:** No blocking product decisions. Directory-picker implementation and exact layout/settings inventory are Phase 0 investigation items.
 - **Last verified:** 2026-11-18; repository source inspected through GitHub. No local test commands executed.
 - **Context status:** clean
