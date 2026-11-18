@@ -1,600 +1,680 @@
 # Web UI and Project-Based Calendar Editor
 
-**Status:** Planning baseline  
-**Created:** 2026-11-18  
-**Target branch:** `plan/web-ui-calendar-project-workflow`  
-**Repository:** `pamagister/Photo-Composition-Designer`  
-**Reference implementation:** `pamagister/image-triage`  
+**Status:** Revised continuation baseline
+**Created:** 2026-11-18
+**Revised:** 2026-11-18
+**Target branch:** `main`
+**Repository:** `pamagister/Photo-Composition-Designer`
+**Reference implementation:** `pamagister/image-triage`
 **Execution mode:** autopilot, with phase-boundary handoffs and explicit user decisions where required
+**Predecessor plan (complete):** `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
 
 ## 1. Objective and desired outcome
 
-Refactor Photo Composition Designer from a folder-driven desktop workflow into a local-first, project-based calendar editor with a browser UI.
+Photo Composition Designer is already a local-first, browser-based calendar editor.
+The web UI, project persistence, source inventory, YAML layouts, distribution
+proposals, three-panel editor, reference-only export and PDF export are implemented
+and covered by tests.
 
-The application must retain and reuse the existing image composition and rendering capabilities wherever practical. The new workflow must separate:
+This continuation plan closes the remaining quality and feature gaps instead of
+repeating completed work. The goal is a coherent product where:
 
-1. **Project and page settings** — calendar format, dates, page count, DPI, margins, calendar settings and output settings.
-2. **Image source and inventory** — a selected directory containing the original photos, scanned and referenced in place.
-3. **Page composition** — per-page layout selection and ordered assignments of source photos to layout slots.
+1. A project renders a complete calendar page from explicit project data,
+   including the calendar strip, map, description, anniversaries and photo slots.
+2. Every output-affecting value is stored in a per-project output profile, so
+   workspace defaults and application updates cannot silently change a project.
+3. All page editing actions are available in the browser: assign, remove, replace,
+   swap, change layout, crop/focal-point adjustment and edit the page description.
+4. Source roots can be safely relinked through the UI when photos move.
+5. Distribution proposals can be previewed with per-page samples, regenerated and
+   confirmed without leaving partial state.
+6. Projects can be duplicated within the workspace, previewed and exported from the
+   browser, and managed through a project-oriented CLI.
+7. Critical browser flows are covered by both FastAPI TestClient tests and a small
+   Playwright suite.
 
-A new project selects a source directory and a target number of calendar pages. Existing distribution algorithms generate a previewable initial assignment of images to pages without copying or moving images into intermediate folders.
-
-The editor then allows the user to curate each page, replace/remove/add images, change layouts, inspect all pages and see all unassigned images. The project is saved in SQLite. By default, only references to original photos are stored; optional self-contained projects may copy originals into project-managed storage.
-
-The existing renderer remains the source of truth for final page rendering and PDF generation.
+The existing renderer remains the source of truth for final output. The work here
+adds composition and integration layers around it; it does not rewrite the renderer.
 
 ## 2. Scope, constraints and non-goals
 
 ### Mandatory scope
 
-- Local web UI based on the proven Image Triage stack: FastAPI, Jinja2, HTMX, vanilla JavaScript and CSS.
-- Project lifecycle: create, open, save, rename and close projects.
-- Directory selection and recursive image discovery, with clear supported-format and error reporting.
-- One central workspace SQLite database with versioned schema and migrations; projects are independently exportable as portable `.pcd` archives.
-- Image inventory containing stable photo identity, relative path, metadata and availability state.
-- Default reference-only storage; optional copy-into-project mode.
-- Initial distribution across N calendar pages using the existing distribution strategies, with a preview/confirmation step.
-- Independent page layout and photo assignment models.
-- Per-page layout selection and image-slot management.
-- Drag-and-drop image replacement, removal and addition from the unassigned pool.
-- Page thumbnail/navigation sidebar and rendered current-page preview.
-- Preview rendering, final page rendering and PDF export.
-- Recovery from moved source directories through an explicit source-root remapping workflow.
-- Tests, documentation and migration notes.
+- Full-page rendering from project data: background, photo slots, calendar strip,
+  local map, description, anniversaries and title where applicable.
+- Typed per-project output profile covering calendar, style, geo, size and layout
+  settings, snapshotted at project creation and editable through the UI.
+- Page preview rendering at reduced resolution with revision-aware caching.
+- Page editing completion: layout change with deterministic slot mapping,
+  per-assignment crop/focal-point controls and editable page descriptions.
+- Source-root remapping through the browser with match/ambiguity preview.
+- Distribution preview with per-page samples, counts, empty slots and overflow.
+- Project settings UI, Save As / Duplicate Project within the workspace.
+- Web export with progress, warnings and ordered PDF output from the browser.
+- Project-oriented CLI commands: `gui`, `scan`, `distribute`, `render`, `export`,
+  `duplicate` and `doctor`.
+- FastAPI TestClient coverage plus a small Playwright browser suite.
+- Documentation and packaging updates for the web UI.
 
 ### Explicit constraints
 
 - Original source photos are read-only. Never move, rename, delete or modify them.
-- No intermediate per-page/per-week photo folders in the new project workflow.
-- No automatic layout changes when adding an image to a page.
-- No automatic reassignment of photos when a user manually edits a page, except for the explicitly defined layout-change rules.
-- Preserve existing calendar, anniversary, location/map, description and smart-crop functionality where compatible.
-- Keep the application local-first. Do not introduce cloud storage or external image services.
-- Keep code and documentation in English, follow repository AGENTS.md, use uv, pytest and Ruff, 4-space indentation and a 100-character line limit.
+- No intermediate per-page/per-week photo folders.
+- Adding or removing a photo never changes the current layout.
+- The unassigned pool is derived from persisted assignments, not a mutable flag.
+- One photo can be assigned at most once per project.
+- A slot holds at most one photo; empty slots are valid.
+- Keep the application local-first. No cloud storage, accounts or runtime network
+  map services.
+- Preserve existing calendar, anniversary, location/map, description and smart-crop
+  behavior. If a behavior cannot be preserved, document the difference explicitly.
+- Keep code and documentation in English. Follow repository `AGENTS.md`, use `uv`,
+  `pytest`, `ruff`, 4-space indentation and a 100-character line limit.
+- Stage and commit only work-package files and plan updates. Preserve unrelated or
+  pre-existing user changes.
 
-### Non-goals for this refactoring
+### Non-goals
 
 - Multi-user collaboration, accounts, remote hosting or cloud synchronization.
 - A general-purpose image-management or photo-rating application.
-- Replacing Pillow or rewriting the collage algorithms without evidence that this is necessary.
-- A full free-form desktop publishing editor with arbitrary vector objects.
-- Editing original image pixels or destructive source-file operations.
-- Requiring Image Triage as a runtime dependency. Its Pixabay images are a development/demo fixture source, not a runtime dependency.
+- Rewriting Pillow/collage rendering without evidence that an adapter is insufficient.
+- Manual free-form vector layout authoring. YAML files remain the extension point.
+- Legacy folder-calendar import. Existing render behavior is preserved, not the old
+  folder workflow.
+- Interactive browser maps or third-party map tiles.
+- Self-contained `.pcd` packages and embedded assets. These are explicitly deferred
+  by user decision; reference-only export remains the supported mode.
 
-## 3. Existing implementation findings
+## 3. Current implementation baseline
 
-The current repository already has useful separation in its rendering stack:
+The predecessor plan `docs/plans/2026-11-18-web-ui-first-project-workflow.md` is
+complete. Its Phases 0-9 are implemented on `main`.
 
-- `CompositionRendererBuilder` constructs the render components.
-- `CompositionLayout` calculates page dimensions and available collage area.
-- `CompositionPageRenderer` renders a complete page from a list of `Photo` objects, a date and a description.
-- `CollageRenderer` performs the collage layout and image placement.
-- `CompositionDesignerFactory` wires the rendering dependencies.
-- `ImageDistributor` contains equal, random and date-aware distribution algorithms.
+### 3.1 Already implemented and verified
 
-The main architectural coupling is above the renderer:
+| Area | Current implementation | Status |
+|---|---|---|
+| Package layout | `src/photo_composition_designer/{cli,core,db,gui,io,layouts,project,render}` | Done |
+| Workspace database | `db/schema.py` schema version 1, WAL, foreign keys, triggers, forward migrations | Done |
+| Domain/persistence | `project/models.py`, `project/repositories.py`, `project/services.py` | Done |
+| Web foundation | `gui/app.py`, `gui/templating.py`, `gui/settings.py`, Jinja base, static mount, `/health` | Done |
+| CLI entry point | Typer app with `gui`, `render` and `export` | Partial |
+| Source inventory | `io/scan.py`, `project/inventory.py`, EXIF/GPS, rescan, source-root remap service | Done |
+| Media safety | `io/media.py` containment checks, `gui/routes/media.py` thumbnails/originals | Done |
+| Layout catalogue | `layouts/loader.py` plus five curated YAML layouts | Done |
+| Slot rendering | `render/slot_renderer.py` composites assigned photos into slot rectangles | Partial |
+| Distribution | `project/distribution.py` equal/random/date-aware proposals and atomic apply | Done |
+| Editing service | `project/editing.py` assign/remove/replace/swap and derived unused pool | Partial |
+| Web editor | Three-panel shell, drag-and-drop, keyboard alternatives, HTMX fragments | Done |
+| Guided creation | New-project form, layout assignment on create, distribution preview/apply | Done |
+| Export | `io/export.py` ordered page rendering and PDF from reference-only photos | Partial |
+| Tests | 160 tests pass; `make lint` clean | Done |
 
-- `CompositionIO.get_photo_folders()` discovers subdirectories.
-- `CompositionDesigner.generate_compositions_from_folders()` treats those folders as calendar pages.
-- `CompositionDesigner._generate_composition_from_folder()` derives the page index, date and description from folder order.
-- `PhotoDistributionWorkflow.distribute()` physically copies photos into generated folders.
-- The current Tkinter `MainGui` coordinates configuration, folder distribution, preview and generation.
+### 3.2 Verified baseline commands
 
-The refactoring should replace folder-driven page discovery and physical distribution with explicit project/page/photo-assignment data. Do not rewrite the renderer merely to achieve this.
+```bash
+make lint
+# All checks passed!
 
-Image Triage provides a proven local GUI pattern: FastAPI application factory, Jinja templates, HTMX partial updates, static CSS/JavaScript, local media endpoints and SQLite repository/migrations. Reuse the pattern, not its photo-library domain model.
+uv run pytest -q
+# 160 passed, 1 warning in 8.90s
+```
+
+### 3.3 Gaps that this plan must close
+
+1. **Full-page rendering is incomplete.** `render/slot_renderer.py` only pastes
+   cropped photos onto a background. It does not render the calendar strip, map,
+   description, anniversaries or title. `io/export.py` therefore produces
+   photo-only pages and loses established calendar features.
+2. **Output profiles are not wired.** `Project.settings` and
+   `Project.output_profile` exist as JSON fields, but project creation stores empty
+   dictionaries and `ProjectExporter` falls back to global `core.settings.Settings`.
+   Existing projects have no typed profile snapshot.
+3. **Layout changes are missing from the service and UI.** `PageRepository.set_layout`
+   exists, but there is no deterministic mapping service, displaced-photo preview or
+   browser workflow.
+4. **Crop/focal-point controls are not exposed.** `PhotoAssignment` stores
+   `crop_zoom`, `crop_focus_x` and `crop_focus_y`, and the slot renderer accepts
+   them, but no route or UI lets the user edit them.
+5. **Page descriptions are not editable.** `PageRepository.update_description`
+   exists, but there is no route or form.
+6. **Page previews and sidebar thumbnails are missing.** The sidebar shows dates
+   only; there is no cached page-preview endpoint.
+7. **Source-root remapping has no UI.** `InventoryService.preview_remap` and
+   `apply_remap` are implemented and tested, but the browser only offers add/scan.
+8. **Distribution preview is minimal.** It shows counts but no per-page thumbnails,
+   capacity details or explicit overflow/empty-slot presentation.
+9. **Project duplication is missing.** Renaming is the only project-level lifecycle
+   action; there is no Save As or Duplicate Project.
+10. **The CLI is incomplete.** `scan`, `distribute`, `duplicate` and `doctor` are
+    not implemented.
+11. **No real browser test suite.** Current UI tests use FastAPI TestClient only.
+12. **Documentation and packaging need a final pass** for the web UI, output
+    profiles and the revised CLI.
 
 ## 4. Architecture and decisions
 
-### 4.1 Application layers
+### 4.1 Layering
 
-Use a small layered architecture:
+Keep the established layers and add the missing composition seams:
 
-- **Domain:** project, source root, image asset, calendar page, page layout, slot and assignment models; validation and distribution contracts.
-- **Application services:** project creation/opening, source scanning/remapping, distribution preview/apply, page editing, rendering and export.
-- **Persistence:** SQLite schema, migrations and repositories. Keep SQL out of route handlers and rendering code.
-- **Infrastructure:** filesystem image access, thumbnail/preview cache, Pillow adapters and output files.
-- **Web UI:** FastAPI routes, Jinja templates, HTMX fragments and focused JavaScript for drag-and-drop and editor interactions.
+- **Domain:** project, source root, photo asset, page, layout, slot, assignment and
+  distribution proposal models.
+- **Application services:** project lifecycle, scanning/relinking, distribution,
+  page editing, full-page rendering, preview generation and export.
+- **Persistence:** SQLite schema, migrations and repositories. No SQL in routes or
+  renderers.
+- **Infrastructure:** filesystem access, EXIF/Pillow adapters, local map shapefiles,
+  thumbnail/preview caches and PDF writer.
+- **Web UI:** FastAPI routes, Jinja templates, HTMX fragments and focused JavaScript.
 
-Route handlers should validate requests and call application services. They must not contain distribution algorithms or direct multi-table SQL.
+Route handlers validate input and call services. They must not contain distribution
+algorithms, GPS calculations, multi-table SQL or renderer geometry.
 
-### 4.2 Workspace database and portable project packages
+### 4.2 Full-page composition
 
-Use one central SQLite database for the local workspace. It contains multiple independent projects and is the normal working store.
-
-The workspace owns:
-
-```text
-~/.local/share/photo-composition-designer/
-  workspace.sqlite3
-  thumbnails/
-  previews/
-  cache/
-  exports/
-```
-
-Use an XDG-aware/platformdirs data location. Cache and preview files are disposable and rebuildable, not authoritative project data.
-
-A project is a logical aggregate in the workspace database, not a separate database file. It must nevertheless be independently portable through a versioned `.pcd` archive (ZIP container). The archive contains a manifest, a project-only SQLite snapshot or equivalent project-scoped data export, immutable layout snapshots and optional embedded assets. Never include unrelated workspace projects or caches.
-
-Suggested archive structure:
+Introduce a composition service that is independent of folders, HTTP and SQLite:
 
 ```text
-family-calendar-2027.pcd
-  manifest.json
-  project.sqlite3
-  layouts/                 # if layout snapshots are not embedded in DB
-  assets/                  # only for self-contained export
-  preview/                 # optional cover/overview previews
+PageRenderInput(
+    page_date,
+    description,
+    layout_snapshot,
+    assigned_photos,
+    output_profile,
+)
 ```
 
-Export from a consistent database snapshot, not by copying the live workspace database. Import validates the manifest/schema version, stages and verifies assets, handles duplicate project IDs explicitly and inserts the project in a controlled transaction.
+The service should:
 
-Provide New Project, Open Project (open an existing workspace project or import a `.pcd` archive), automatic Save, Duplicate Project and Save As/Export. Save As creates an independent project snapshot/archive. Export modes are Reference-only (default) and Self-contained.
+1. Create the page background at the configured page size and DPI.
+2. Render assigned photos into slot rectangles with per-assignment crop settings.
+3. Render the calendar strip from the page date and profile calendar settings.
+4. Render the local map from assigned photo coordinates when enabled.
+5. Render the description text when enabled.
+6. Preserve anniversaries, holidays, moon phase and title behavior from the existing
+   renderers.
 
-Reference-only packages preserve source-root metadata and relative paths; another machine may require source-root relinking. Self-contained packages copy all required originals into `assets/`, rewrite package references and verify integrity. Originals are never moved or modified.
+`SlotAwareRenderer` remains the slot compositing component. A new
+`render/page.py` (or equivalent) owns the page-level composition order and geometry.
+The existing `CalendarRenderer`, `MapRenderer`, `DescriptionRenderer`,
+`GeoPlotter`, `ObjectDetector` and `SmartCrop` stay in use.
 
-Use SQLite from the Python standard library with explicit repositories and migrations.
+The renderer must not query SQLite or know about FastAPI. The application service
+resolves photo references and metadata, constructs the render input and invokes the
+renderer.
 
-### 4.3 Proposed relational model
+### 4.3 Output profiles
 
-Use stable integer or UUID primary keys consistently. Suggested logical tables:
+Define a typed output profile that can be serialized to the existing
+`projects.output_profile_json` column. It must cover:
 
-- `projects`: project ID, name, calendar year/range, page count, timestamps, settings snapshot, output profile and import metadata.
-- `source_roots`: project ID, configured root path, active state, last scan timestamp and source identity.
-- `photos`: project ID, stable photo ID, relative path or embedded asset key, filename, file size, mtime, optional digest, dimensions, capture date, GPS metadata and availability.
-- `pages`: project ID, page index, date/range, editable description, selected layout snapshot/version, overrides and render revision.
-- `layouts` / `layout_slots`: built-in catalogue plus project-owned immutable snapshots with normalized geometry, slot IDs/order and crop defaults.
-- `assignments`: project/page/slot/photo IDs, ordering and per-assignment crop/focal-point overrides.
-- Optional `project_assets` metadata for embedded photos and integrity hashes.
+- Calendar: language, holiday countries, start date behavior, orientation,
+  short day/month names.
+- Style: background color, fonts and colors.
+- Geo: map usage, minimal extension, map dimensions.
+- Size: page width/height, DPI, JPEG quality, calendar/map heights.
+- Layout: margins, spacing, rounded corners, description toggle, PDF toggle,
+  object recognition.
 
-All project-owned rows are scoped by `project_id`; repositories prevent cross-project assignments. Output-affecting settings and layout snapshots travel with the project package.
+Rules:
 
-Use foreign keys and unique constraints to enforce that a photo is assigned at most once in a project and that a slot has at most one assigned photo. If product requirements later permit reuse, make that a deliberate schema/domain change rather than silently allowing duplicates.
+- New projects snapshot the current defaults into their own profile.
+- Existing projects receive a default profile when read, without rewriting their
+  rows merely because the application version changed.
+- Editing project settings updates the profile and increments the render revision
+  of affected pages.
+- Workspace defaults may change, but existing project profiles must not change
+  silently.
+- Export and preview must use the project profile, not the process-global
+  `Settings` object.
 
-A photo is not owned by a layout. It is an asset assigned to a page slot. Layouts define slots; assignments connect photos to slots.
+### 4.4 Page editing and layout changes
 
-Avoid persisting redundant `used` flags. The unassigned pool is derived from the photo inventory with a query that excludes all current assignments. This prevents stale pool state after drag-and-drop, removal or undo.
+- Dragging an unused photo onto an empty slot assigns it.
+- Dragging onto an occupied slot requires explicit replace semantics; the replaced
+  photo returns to the unused pool.
+- Dragging one assigned photo onto another assigned slot swaps assignments.
+- Removing a photo clears the slot and returns it to the unused pool.
+- Adding or removing a photo never changes the layout.
+- Changing a layout uses deterministic slot mapping. Assignments that fit are
+  preserved; displaced photos return to the unused pool. The UI previews displaced
+  photos before applying the change.
+- Crop zoom and focal point are assignment properties, never source mutations.
+- Every mutation commits transactionally and increments the page render revision.
 
-Persist a layout definition/version with the project or retain an immutable layout snapshot per page. A later application update must not silently change the appearance of an existing project.
+### 4.5 Source management
 
-### 4.4 Image references and portability
+- Store source-root path and POSIX-relative photo paths.
+- Resolve photos only as `root / relative_path` with containment validation.
+- Preserve relative-path identity when files move via explicit relinking.
+- GPS precedence remains EXIF first, `locations.ini` filename fallback second,
+  deterministic default map when no coordinates exist.
+- Missing coordinates are allowed.
+- Never silently bind an ambiguous basename to a different file during relinking.
+- Mark missing/unreadable files unavailable without deleting assignments.
+- Surface per-photo availability and source-root state in the UI.
 
-Default reference mode (workspace and `.pcd` export):
+### 4.6 Distribution and project creation
 
-- Store a canonical source-root path in `source_roots`.
-- Store each image path relative to that root, using normalized POSIX-style separators in the database.
-- Never rely only on an absolute per-photo path.
-- Store file size and modification time; optionally calculate a content digest when scanning or when a robust identity check is needed.
-- Resolve a photo as `root / relative_path` and validate that it remains inside the configured root.
-- Mark missing/unreadable files unavailable without deleting their project records or assignments.
+`DistributionProposal(pages, unassigned, warnings, strategy, seed)` remains a pure
+in-memory proposal.
 
-If files are moved, show a clear source status and offer **Relink source folder**. The user selects a new root; the application validates a sample or all stored relative paths, reports matched/missing/ambiguous files, and only then commits the root change. Never silently bind a project photo to a different file with the same basename. Use relative path plus size/date and, where needed, digest to establish a match.
+- The proposal must not mutate project state or the filesystem.
+- The UI previews per-page samples, counts, empty slots and overflow.
+- Applying a proposal replaces initial assignments in one transaction.
+- Random distribution persists its seed and strategy.
+- Overflow stays unassigned; empty slots are reported.
+- Cancelling or regenerating a proposal leaves no partial assignments.
 
-Optional self-contained mode copies original photos into package `assets/` on explicit export. It must never move originals. Copying is staged/resumable, with integrity checks and clear disk-space reporting. Reference-only export remains the default. Importing a self-contained `.pcd` works without the original source directory.
+### 4.7 Portability decision
 
-### 4.5 Image inventory and previews
+Reference-only export is the supported portability mode:
 
-Scan the chosen source directory recursively, with supported extensions and symlink policy documented. Preserve relative paths and avoid modifying the source.
+- Source-root metadata and relative paths travel with the project.
+- Another machine may require source-root relinking.
+- Originals are never copied, moved or modified.
+- `.pcd` archives and self-contained asset embedding are deferred and must not be
+  partially implemented in this plan.
 
-Create small cached thumbnails for the unassigned pool and page sidebar. Serve source images/previews through controlled media endpoints; do not expose arbitrary filesystem paths through URL parameters. Validate that resolved files are within the selected source root or project asset directory.
+### 4.8 Configuration compatibility
 
-The initial demo/test image source is `pamagister/image-triage/images/pixabay` (100 existing photos). Use this collection to exercise mixed subjects, aspect ratios and filenames. Do not fetch images at runtime. Add a small representative, license-compatible fixture subset to this repository only if required for automated tests; document the full Pixabay folder as an optional local demo source.
-
-### 4.6 Distribution workflow
-
-Refactor the existing strategies into a pure distribution service that accepts a photo collection and N pages and returns an in-memory proposal:
-
-`DistributionProposal(pages=[...], unassigned=[...], warnings=[...], strategy=...)`
-
-Initially support the existing strategies:
-
-- Equal distribution.
-- Deterministic random distribution.
-- Date-aware grouping.
-
-The proposal must not mutate the project or filesystem. The UI displays page counts and representative thumbnails before the user confirms. Applying a proposal replaces the initial assignments in one database transaction.
-
-Handle fewer photos than pages, more photos than page capacity, invalid/missing capture dates and empty pages explicitly. Preserve stable input ordering and make random distribution deterministic through a stored seed.
-
-Do not force the algorithm to fill every page if the layout capacity or input count makes this impossible. Report unassigned images and empty slots.
-
-### 4.7 Layout and page editing
-
-Define layout templates independently of photos. A layout consists of named slots with normalized coordinates (0..1), dimensions, z-order and optional crop mode. Convert normalized geometry to render pixels using the current page dimensions/DPI.
-
-Initial layouts should cover common one-to-four-photo and mixed-size collages. Reuse the existing collage renderer for compatible automatic layouts; introduce a slot-aware renderer adapter rather than duplicating rendering logic.
-
-Page editing rules:
-
-- Dragging an unassigned photo onto an empty slot assigns it.
-- Dragging an unassigned photo onto an occupied slot requires an explicit replace action or a clear drop target. The replaced photo returns to the unassigned pool.
-- Dragging one assigned photo onto another assigned slot swaps assignments, unless the UI explicitly offers replace semantics.
-- Removing an assigned photo clears the slot and returns the photo to the unassigned pool.
-- Adding a photo never changes the current layout.
-- If there is no free slot, explain that the user must replace an image or choose a layout with more slots.
-- Changing a layout preserves assignments where possible, in a deterministic slot-mapping operation. Assignments that do not fit are returned to the unassigned pool. The operation is previewed/confirmed when it would displace photos.
-- Per-photo crop/focal point is an assignment property, not a source-photo mutation.
-
-Every edit is committed transactionally and increments the page render revision.
-
-### 4.8 Rendering and export
-
-Introduce a renderer input model that is independent of folder names:
-
-`PageRenderInput(page_date, description, layout_snapshot, assigned_photos, project_settings)`
-
-Adapt `CompositionPageRenderer` and its collaborators to accept this model. Keep compatibility adapters for existing folder-based CLI paths until the new workflow has parity.
-
-The renderer should not query SQLite or know about FastAPI. The application service resolves photo references and metadata, constructs render input and invokes the renderer.
-
-Render previews at reduced resolution and cache them by page revision plus relevant render settings. Final exports use configured DPI/JPEG quality and preserve calendar, anniversary, map, description and smart-crop behavior where applicable.
-
-PDF export must use the explicit page order from the project database, not alphabetical filesystem ordering.
+The old `config.yaml`/`config-cli-gui` runtime dependency is gone. The typed
+`core.settings.Settings` defaults remain as the source of new-project defaults.
+Project output profiles replace runtime coupling. Existing provider dimensions,
+DPI/scaling, margins, typography and print settings must be catalogued in the
+profile and covered by tests.
 
 ### 4.9 Web UI interaction model
 
-Use FastAPI + Jinja2 + HTMX for page navigation, forms, partial refreshes and status messages. Use vanilla JavaScript for HTML5 drag-and-drop, keyboard-accessible alternative actions, and any client interaction that is awkward in HTMX.
+Keep the three-area editor:
 
-Suggested editor structure:
+- Left sidebar: page thumbnails, dates, assigned counts and active-page state.
+- Main canvas: rendered page preview with slot/drop affordances and page actions.
+- Bottom panel: unused photos with search, sort and counts.
 
-- **Left sidebar:** all calendar pages with rendered thumbnails, date, assigned-photo count and active-page state.
-- **Main canvas:** selected page preview with visible slot/drop targets and page actions.
-- **Unassigned-photo strip/panel:** all photos not currently assigned, with thumbnails, search/sort and count.
-- **Toolbar:** layout selection, distribution, undo/redo if implemented, save status and export.
-
-The layout should adapt to normal desktop/laptop sizes. On narrow screens, side panels may become collapsible drawers; the desktop editor remains the primary target.
-
-Use optimistic interaction only when rollback is reliable. Prefer server-confirmed updates for assignment/layout changes. Provide visible save/error feedback and prevent duplicate submissions.
+Desktop/laptop is the primary target. Narrow screens may collapse panels into
+drawers. Prefer server-confirmed updates; use optimistic UI only when rollback is
+reliable. Provide keyboard-accessible alternatives for every drag-and-drop action.
 
 ### 4.10 Undo, autosave and concurrency
 
-At minimum, persist every user action immediately in a transaction and provide a clear saved/unsaved state. Do not rely on browser-local state as the authoritative project.
-
-Implement a bounded project edit history or command-based undo/redo if the architecture supports it without excessive complexity. At minimum, make replacement, removal and layout change atomic and recoverable.
-
-Use one application process as the initial deployment assumption. Configure SQLite foreign keys, WAL where appropriate, busy timeout and transaction boundaries. Do not add distributed locking or multi-user concurrency machinery.
-
-### 4.11 Configuration compatibility
-
-Keep workspace defaults and project settings distinct. Inspect existing `config.yaml` values and migrate them into workspace defaults/project creation defaults; do not retain runtime coupling to config-cli-gui. Existing photo-provider page dimensions, DPI/scaling, margins, bleed/safe areas, typography and print settings are critical compatibility requirements and must be catalogued and preserved as named output profiles.
-
-Every project snapshots all values affecting final output, including exact provider dimensions/scaling, DPI, margins/bleed, typography, image quality, calendar/anniversary/map settings and rendering options. Later workspace-default changes must not silently mutate existing projects.
-
-Page descriptions are editable in the web editor and persisted as page data. Legacy descriptions-file migration is not required. Anniversary/location inputs belong in project settings; self-contained export must embed required data or clearly report external dependencies.
+- Persist every user action immediately in a transaction and show saved/unsaved
+  state.
+- Add a bounded project edit history or command-based undo/redo only if it can be
+  implemented without excessive complexity.
+- At minimum, replacement, removal, layout change and crop changes must be atomic
+  and recoverable.
+- Keep the single-process local deployment assumption. Configure SQLite foreign
+  keys, WAL, busy timeout and transaction boundaries. Do not add distributed
+  locking or multi-user concurrency machinery.
 
 ## 5. Implementation phases and work packages
 
-Work packages are ordered by dependency. Each package should be independently reviewable and committed. Update this plan's Progress / Handoff block at every phase boundary. Do not combine unrelated phases into one large implementation change.
+Work packages are dependency ordered. Each package should be independently
+reviewable, testable and committable. Update this plan's Progress / Handoff block at
+every phase boundary. Do not combine unrelated phases into one implementation
+change.
 
-## Phase 0: Repository baseline and design lock
+## Phase 0: Baseline reconciliation and gap lock
 
-**Objective:** Establish a tested baseline and resolve decisions that would otherwise force schema or UI rework.
+**Objective:** Record the actual state of the code and lock the remaining scope.
 
-- [x] **P0-W01:** Inspect all current rendering, layout, configuration, folder distribution, GUI, CLI and PDF export paths. Map existing tests to those responsibilities.
-- [x] **P0-W02:** Inspect Image Triage GUI startup, routing, template structure, media serving, CSS conventions, SQLite migrations and test fixtures. Record which patterns can be reused without copying domain-specific code.
-- [x] **P0-W03:** Write concise architecture decision records or an architecture section in project docs for project storage, image identity, layout schema, page capacity, project settings and compatibility.
-- [x] **P0-W04:** Establish baseline verification using repository-supported commands; record existing failures separately from regressions.
-
-**Acceptance criteria**
-
-- Existing behavior and important extension points are documented.
-- No implementation has begun before schema-affecting decisions are identified.
-- A clear list of confirmed decisions and unresolved user decisions exists.
-
-**Phase gate:** Do not start the database implementation until project storage location, page model and legacy compatibility have been decided.
-
-## Phase 1: Domain model and project database
-
-**Objective:** Create the persistent project model without introducing the web UI yet.
-
-- [x] **P1-W01:** Define typed domain models for Project, SourceRoot, PhotoAsset, CalendarPage, LayoutDefinition, LayoutSlot, PhotoAssignment and DistributionProposal.
-- [x] **P1-W02:** Implement SQLite connection management, schema creation, schema versioning and forward migrations.
-- [x] **P1-W03:** Implement repositories for projects, source roots, photos, pages, layouts and assignments. Keep SQL isolated from domain and web code.
-- [x] **P1-W04:** Add foreign keys, unique constraints and transaction-level invariants for unique photo assignment and unique slot occupancy.
-- [x] **P1-W05:** Add project create/open/close/save services and project settings snapshots.
-- [x] **P1-W06:** Add tests for database initialization, migration, constraints, rollback, reopen and persistence.
+- [x] **P0-W01:** Reconcile the predecessor plan's completed phases with `main`.
+- [x] **P0-W02:** Run `make lint` and `uv run pytest -q`; record the baseline.
+- [x] **P0-W03:** Inspect rendering, export, settings, editing, inventory, routes,
+  templates, CLI and tests; write the gap list in Section 3.3.
+- [x] **P0-W04:** Confirm scope decisions with the user: full feature parity,
+  reference-only export, and TestClient plus Playwright coverage.
 
 **Acceptance criteria**
 
-- A project can be created, closed and reopened with identical settings and page state.
-- Database constraints prevent duplicate assignments and duplicate slot occupancy.
-- A project can contain empty pages and unassigned photos.
-- The schema is versioned and migration tests are repeatable.
+- The plan reflects the current implementation rather than the pre-web baseline.
+- Completed work is not re-planned.
+- Remaining work has explicit acceptance criteria and dependencies.
 
-**Phase gate:** Domain and persistence APIs are stable before filesystem scanning or GUI work.
+**Phase gate:** Do not start Phase 1 until the full-page rendering approach and
+output-profile ownership are clear.
 
-## Phase 2: Source scanning, references and portability
+## Phase 1: Full-page rendering and output profiles
 
-**Objective:** Make a directory of original photos a first-class project source without copying or restructuring it.
+**Objective:** Make project pages render the complete calendar, not only photos.
 
-- [ ] **P2-W01:** Implement recursive image discovery with an explicit extension list, deterministic ordering and symlink policy.
-- [ ] **P2-W02:** Implement metadata extraction using the existing Photo/EXIF behavior where possible; avoid reopening each image repeatedly.
-- [ ] **P2-W03:** Persist source-relative paths, metadata, file size, mtime and availability. Add optional content digest support.
-- [ ] **P2-W04:** Implement safe source resolution and media access boundaries; prevent path traversal and access outside configured roots.
-- [ ] **P2-W05:** Implement rescan/reconcile behavior: add new files, detect changed files and mark missing files without deleting project history.
-- [ ] **P2-W06:** Implement source-root remapping with preview, match counts, ambiguity handling and atomic confirmation.
-- [ ] **P2-W07:** Add thumbnail cache generation and tests for unreadable files, missing roots, moved roots, duplicate basenames and traversal attempts.
-
-**Acceptance criteria**
-
-- Scanning a source directory creates inventory records without copying, renaming or moving source images.
-- A project stores paths relative to its source root.
-- Missing references remain visible and can be relinked safely.
-- A source-root change cannot silently map a record to an ambiguous file.
-
-**Phase gate:** Source inventory and path resolution are stable before distribution and media UI work.
-
-## Phase 3: Distribution proposals without intermediate folders
-
-**Objective:** Reuse the existing distribution algorithms as pure project services.
-
-- [ ] **P3-W01:** Extract equal, deterministic-random and date-aware distribution into a service that returns a proposal rather than writing folders.
-- [ ] **P3-W02:** Define explicit behavior for N pages, empty pages, insufficient images, overflow, unknown dates and capacity limits.
-- [ ] **P3-W03:** Persist random seed and strategy metadata so proposals can be reproduced.
-- [ ] **P3-W04:** Implement proposal summaries and preview data, including per-page image samples and unassigned counts.
-- [ ] **P3-W05:** Implement atomic apply/replace of the initial proposal in the project database.
-- [ ] **P3-W06:** Add deterministic unit and integration tests against the existing algorithms and representative Pixabay samples.
+- [ ] **P1-W01:** Define a typed `OutputProfile` with calendar, style, geo, size and
+  layout sections plus JSON serialization/validation. Provide a factory that
+  snapshots `core.settings.Settings` defaults.
+- [ ] **P1-W02:** Add a page composition service (`render/page.py` or equivalent)
+  that composes background, slot photos, calendar strip, map, description,
+  anniversaries and title from a `PageRenderInput`.
+- [ ] **P1-W03:** Add `project/rendering.py` to resolve assignments, photos,
+  source paths and the project profile, then invoke the composer. The renderer must
+  not query SQLite.
+- [ ] **P1-W04:** Add reduced-resolution page preview rendering and a cache key that
+  includes page render revision, layout version, output-profile hash and render mode.
+- [ ] **P1-W05:** Snapshot the output profile on project creation and expose a
+  read-time default for existing projects without mutating their rows.
+- [ ] **P1-W06:** Add tests for calendar rendering, map rendering, description,
+  anniversaries, no-GPS default behavior, profile isolation and preview
+  invalidation.
 
 **Acceptance criteria**
 
-- Distribution never creates intermediate folders and never copies source images.
-- Previewing a proposal does not modify project state.
-- Applying a proposal updates all page assignments atomically.
-- The same input, strategy and seed produce the same proposal.
-- Overflow and underfilled pages are reported, not silently discarded.
+- A page rendered from project data contains the calendar strip, map, description
+  and photo slots as configured.
+- Existing calendar, anniversary, map, description, object-detection and smart-crop
+  behavior remains functional or has documented accepted differences.
+- Export and preview use the project output profile, not global mutable settings.
+- Changing a project profile does not alter another project's output.
 
-**Phase gate:** Distribution output is a stable list of page-to-photo assignments, independent of rendering and UI.
+**Phase gate:** Full-page output is visually and functionally acceptable before
+editing and export work depends on it.
 
-## Phase 4: Layout catalogue and slot-based rendering
+## Phase 2: Page editing completion and previews
 
-**Objective:** Decouple layout definitions and photo assignments while preserving the existing visual rendering quality.
+**Objective:** Expose every page-level editing action in the browser.
 
-- [ ] **P4-W01:** Define a versioned layout definition format with normalized slot geometry, order, z-index and crop defaults.
-- [ ] **P4-W02:** Create initial layouts covering one to four photos and mixed large/small compositions.
-- [ ] **P4-W03:** Implement layout validation: bounds, overlap policy, minimum dimensions and unique slot IDs.
-- [ ] **P4-W04:** Introduce a renderer adapter that maps slot-based page data to existing collage/page rendering components.
-- [ ] **P4-W05:** Adapt the page renderer to accept explicit page date, description, layout snapshot and photo assignments instead of deriving these from folder names.
-- [ ] **P4-W06:** Preserve calendar, anniversary, map, description, object detection and smart-crop behavior through regression tests.
-- [ ] **P4-W07:** Add visual regression fixtures or deterministic render assertions for representative page layouts.
-
-**Acceptance criteria**
-
-- A page can be rendered from explicit page data without creating or reading a page folder.
-- Layout definitions contain no photo identities.
-- Photo assignments contain no geometry duplicated from the layout.
-- Existing rendering features remain functional unless a documented incompatibility is accepted.
-- Layout version changes do not silently alter saved project pages.
-
-**Phase gate:** Rendering from project data is visually and functionally equivalent for supported existing features.
-
-## Phase 5: Page editing services and assignment invariants
-
-**Objective:** Implement the complete editing behavior independently of HTTP and browser code.
-
-- [ ] **P5-W01:** Implement add-to-empty-slot, remove, replace and swap assignment operations.
-- [ ] **P5-W02:** Derive the unassigned pool from inventory and current assignments; expose efficient repository queries.
-- [ ] **P5-W03:** Implement layout change with deterministic slot mapping and displaced-photo handling.
-- [ ] **P5-W04:** Add preview/confirmation for layout changes that displace assigned photos.
-- [ ] **P5-W05:** Implement per-assignment crop/focal-point overrides without modifying original files.
-- [ ] **P5-W06:** Increment page render revisions and invalidate only affected previews after edits.
-- [ ] **P5-W07:** Add transactional tests for swaps, replacements, removals, duplicate assignment rejection, layout changes and rollback.
+- [ ] **P2-W01:** Implement `PageEditingService.change_layout` with deterministic
+  slot mapping, preserved assignments, displaced-photo handling and a preview
+  payload.
+- [ ] **P2-W02:** Add a layout-change route and UI with displaced-photo confirmation.
+- [ ] **P2-W03:** Implement `PageEditingService.set_crop` for zoom and focal point;
+  add a route and compact per-slot crop controls.
+- [ ] **P2-W04:** Add page-description editing with a route and form; use
+  `PageRepository.update_description` and increment the render revision.
+- [ ] **P2-W05:** Add a cached page-preview endpoint and render page thumbnails in
+  the sidebar.
+- [ ] **P2-W06:** Refresh previews and the unused pool after each committed edit;
+  show the current render revision and save state.
+- [ ] **P2-W07:** Add tests for layout change, crop updates, description editing,
+  preview invalidation and rollback on invalid operations.
+- [ ] **P2-W08:** Audit the curated YAML layout catalogue against the established
+  collage patterns and add missing common arrangements; validate every snapshot.
 
 **Acceptance criteria**
 
-- Every photo is either assigned once or appears in the unassigned pool.
-- Adding a photo never changes a page layout.
-- Full pages reject additions unless the user replaces a photo or changes layout.
-- Replaced/removed/displaced photos return to the unassigned pool.
-- Failed operations leave both page and pool state unchanged.
+- A user can change a page layout, adjust crops, edit a description and see the
+  result without reloading the application.
+- Adding or removing a photo never changes the layout.
+- Displaced photos are visible before a layout change is confirmed.
+- Failed operations leave page and unused-pool state unchanged.
 
-**Phase gate:** All editing rules are enforceable by application services, not merely by UI conventions.
+**Phase gate:** All page editing rules are enforceable by services and usable from
+the browser.
 
-## Phase 6: Web application foundation and project lifecycle
+## Phase 3: Source management UX and reliability
 
-**Objective:** Replace the Tkinter interaction surface with a local web application using Image Triage conventions.
+**Objective:** Make source changes safe and understandable in the browser.
 
-- [ ] **P6-W01:** Add FastAPI application factory, startup/shutdown lifecycle, static files, Jinja templates and health endpoint.
-- [ ] **P6-W02:** Add project selection/open/create workflow and project status display.
-- [ ] **P6-W03:** Add source directory selection through a safe local-only directory chooser or a clearly constrained path-entry workflow appropriate to the supported platforms.
-- [ ] **P6-W04:** Add scan progress, scan result summary, missing-source state and error reporting.
-- [ ] **P6-W05:** Add server-side page routes and HTMX partials for project, inventory and page navigation.
-- [ ] **P6-W06:** Add controlled thumbnail/media endpoints with cache headers and correct content types.
-- [ ] **P6-W07:** Add API/UI integration tests using FastAPI TestClient and temporary project/source directories.
-- [ ] **P6-W08:** Add the local web-app entry point and packaging dependencies; remove the Tkinter GUI and its GUI-specific dependencies.
-
-**Acceptance criteria**
-
-- The application starts locally and opens a project in a browser.
-- A user can create/open a project and scan a source directory.
-- The server never serves arbitrary filesystem paths.
-- UI operations use application services and do not embed business logic in route handlers.
-
-**Phase gate:** Project creation and source inventory are usable through the browser before building the full editor.
-
-## Phase 7: Calendar editor UI and drag-and-drop
-
-**Objective:** Deliver the central editing experience.
-
-- [ ] **P7-W01:** Build the three-area editor shell: page thumbnails, current-page canvas and unassigned-photo panel.
-- [ ] **P7-W02:** Render the current page with visible slot boundaries and assignment affordances.
-- [ ] **P7-W03:** Implement accessible drag-and-drop from unassigned photos to empty/occupied slots.
-- [ ] **P7-W04:** Implement drag-and-drop swap/replace behavior for photos already assigned to the current page.
-- [ ] **P7-W05:** Add explicit remove actions and ensure removed photos immediately reappear in the unassigned pool.
-- [ ] **P7-W06:** Add layout selection and confirmation UI; show displaced photos before applying a layout change.
-- [ ] **P7-W07:** Add search, sort and pagination/virtualization for the unassigned photo inventory.
-- [ ] **P7-W08:** Add page selection, previous/next navigation, status indicators and responsive side-panel behavior.
-- [ ] **P7-W09:** Add keyboard-accessible alternatives for all drag-and-drop actions.
-- [ ] **P7-W10:** Add browser-level tests for add, replace, swap, remove, layout change and page navigation.
+- [ ] **P3-W01:** Add a source-root remapping UI that previews matched, ambiguous
+  and missing basenames before confirmation.
+- [ ] **P3-W02:** Show per-photo availability and missing-source state; allow rescan
+  without deleting assignments.
+- [ ] **P3-W03:** Improve scan progress/summary reporting for large directories and
+  surface the symlink policy.
+- [ ] **P3-W04:** Support adding, changing, activating and removing source roots with
+  validation and duplicate-basename handling.
+- [ ] **P3-W05:** Add tests for remap preview/apply through the UI, missing files,
+  source switching and rescan reconciliation.
 
 **Acceptance criteria**
 
-- All requested editing actions work without reloading the whole application.
-- The unassigned pool always reflects persisted assignments.
-- The current layout remains unchanged when adding or removing a photo.
-- Page thumbnails and current-page preview reflect committed changes.
-- Core editing remains possible without a mouse.
+- A moved source root can be relinked through the browser.
+- Ambiguous basenames are never silently mapped.
+- Missing or unreadable files remain visible and assigned photos are not deleted.
+- Source changes are transactional and reported clearly.
 
-**Phase gate:** The user can complete a full calendar's image curation from the browser.
+**Phase gate:** Source inventory and path resolution are trustworthy before final
+export and release work.
 
-## Phase 8: Distribution wizard, preview and project setup
+## Phase 4: Distribution and project creation UX
 
-**Objective:** Make new-project creation a guided, safe workflow.
+**Objective:** Make new-project setup and distribution review complete.
 
-- [ ] **P8-W01:** Build the new-project wizard for project location/name, calendar settings, page count and source directory.
-- [ ] **P8-W02:** Add distribution strategy selection and preview before committing assignments.
-- [ ] **P8-W03:** Show per-page thumbnail samples, photo counts, empty slots and unassigned overflow.
-- [ ] **P8-W04:** Allow the user to change strategy/seed and regenerate a proposal without changing the saved project until confirmation.
-- [ ] **P8-W05:** Add a post-creation review screen that opens the editor on the first page.
-- [ ] **P8-W06:** Add tests for cancelling/revising proposals and confirming a proposal exactly once.
+- [ ] **P4-W01:** Extend the distribution preview with per-page thumbnail samples,
+  photo counts, empty slots and overflow.
+- [ ] **P4-W02:** Allow strategy and seed regeneration without saving until
+  confirmation; make confirm idempotent.
+- [ ] **P4-W03:** Add a post-creation review screen that opens the editor on the
+  first page.
+- [ ] **P4-W04:** Add tests for preview, regenerate, cancel and confirm-once
+  behavior.
 
 **Acceptance criteria**
 
-- New projects can be created end-to-end without an intermediate folder step.
+- New projects can be created end-to-end without intermediate folders.
 - The user sees the distribution before it is applied.
-- Cancelling the wizard or proposal does not leave partial assignments or copied files.
-- The initial page count and dates are explicit and persisted.
+- Cancelling leaves no partial assignments or copied files.
+- Initial page count and dates are explicit and persisted.
 
-**Phase gate:** New-project workflow is end-to-end and repeatable.
+**Phase gate:** New-project setup is repeatable and understandable.
 
-## Phase 9: Export, legacy compatibility and project portability
+## Phase 5: Project settings, lifecycle and duplication
 
-**Objective:** Deliver reliable calendar output and avoid breaking established workflows.
+**Objective:** Make output settings and project lifecycle first-class.
 
-- [ ] **P9-W01:** Implement ordered full-resolution page rendering from the project database.
-- [ ] **P9-W02:** Implement PDF export using explicit project page order and project settings.
-- [ ] **P9-W03:** Add export progress, completion state and actionable error messages.
-- [ ] **P9-W04:** Implement optional self-contained mode by copying originals into project assets with integrity checks and resumable behavior.
-- [ ] **P9-W05:** Add project backup/restore guidance and validate project portability between machines.
-- [ ] **P9-W06:** Implement `.pcd` package export/import, manifest validation, project identity handling, schema compatibility and transactional staging.
-- [ ] **P9-W07:** Implement Save As / Duplicate Project and Reference-only / Self-contained export modes.
-- [ ] **P9-W08:** Replace the legacy CLI with focused workspace/project commands for source scan, distribution, render, export and local web-server startup. Remove config-cli-gui and obsolete Tkinter dependencies.
-- [ ] **P9-W09:** Add end-to-end tests for source relinking, embedded assets, package round-trip, rendering and PDF order.
+- [ ] **P5-W01:** Add a project settings UI for calendar language/country, page
+  size/DPI, margins, fonts/colors, map options, layout defaults and description/PDF
+  toggles.
+- [ ] **P5-W02:** Persist settings changes to the project output profile and
+  increment affected page render revisions.
+- [ ] **P5-W03:** Implement `ProjectService.duplicate_project` as a transactional
+  deep copy of pages, layout snapshots, assignments, source roots and profile.
+- [ ] **P5-W04:** Add Save As / Duplicate Project UI. Do not implement `.pcd`
+  packaging in this plan.
+- [ ] **P5-W05:** Add tests for settings persistence, duplicate independence,
+  revision invalidation and invalid settings rejection.
 
 **Acceptance criteria**
 
+- Output settings are per-project and survive restart.
+- A duplicated project is independent of its source project.
+- Reference-only source roots remain relative and relinkable.
+- No global settings change can silently mutate an existing project.
+
+**Phase gate:** Project settings and duplication are stable before final export and
+release work.
+
+## Phase 6: Web export and preview jobs
+
+**Objective:** Make preview and export usable from the browser.
+
+- [ ] **P6-W01:** Add a web export route with output directory, DPI/quality,
+  progress, completion state and actionable warnings.
+- [ ] **P6-W02:** Add a full-project preview route that renders pages in explicit
+  project order and opens the first page.
+- [ ] **P6-W03:** Ensure export uses the project output profile and explicit page
+  order for both PNG pages and the combined PDF.
+- [ ] **P6-W04:** Add tests for web export, PDF order, profile isolation and missing
+  or unreadable assets.
+
+**Acceptance criteria**
+
+- A user can preview and export a project from the browser.
 - Exported pages and PDF follow the exact project page order.
 - Reference mode never copies originals.
-- Embedded mode is explicit, verified and never destructive to source files.
-- The new CLI operates on workspace projects and offers documented project, scan, distribution, render and export commands. Tkinter and config-cli-gui are no longer runtime dependencies.
-- A project can be reopened after its source folder is moved and successfully relinked.
+- Export failures produce actionable messages rather than partial silent output.
 
-**Phase gate:** Export, persistence and portability are ready for normal use.
+**Phase gate:** Preview and export are ready for normal use.
 
-## Phase 10: Hardening, documentation and release
+## Phase 7: CLI completion and cleanup
 
-**Objective:** Stabilize the new workflow and make it maintainable.
+**Objective:** Provide a coherent project-oriented CLI.
 
-- [ ] **P10-W01:** Run the complete test suite, lint, formatting, type checks and relevant packaging checks. Fix regressions introduced by the refactoring.
-- [ ] **P10-W02:** Perform a manual browser workflow test using the 100-photo Pixabay collection from Image Triage.
-- [ ] **P10-W03:** Test large source folders, missing files, unreadable images, duplicate basenames, unusual aspect ratios and interrupted operations.
-- [ ] **P10-W04:** Review UI usability, keyboard accessibility, responsive layout and error states.
-- [ ] **P10-W05:** Update README, installation, usage, configuration and architecture documentation; remove obsolete Tkinter/folder workflow instructions where appropriate.
-- [ ] **P10-W06:** Update packaging and executable workflows for the web UI; verify local browser startup on supported platforms.
-- [ ] **P10-W07:** Summarize remaining limitations and prepare a release/merge recommendation.
+- [ ] **P7-W01:** Add `scan`, `distribute`, `duplicate` and `doctor` commands;
+  keep `gui`, `render` and `export`.
+- [ ] **P7-W02:** Implement `doctor` checks for schema version, workspace paths,
+  source roots, missing photos, cache directories and output-profile validity.
+- [ ] **P7-W03:** Remove dead code and stale documentation references from the old
+  folder workflow and `config-cli-gui`.
+- [ ] **P7-W04:** Add CLI tests for the new commands and their exit codes.
+
+**Acceptance criteria**
+
+- The CLI covers project scanning, distribution, rendering, export, duplication and
+  diagnostics.
+- `doctor` reports actionable problems without modifying project data.
+- No runtime dependency on Tkinter or `config-cli-gui` remains.
+
+**Phase gate:** The CLI is coherent and documented before release hardening.
+
+## Phase 8: Hardening, accessibility, browser tests and documentation
+
+**Objective:** Stabilize and document the finished workflow.
+
+- [ ] **P8-W01:** Add bounded undo/redo or command history if it can be implemented
+  without excessive complexity; otherwise document the limitation.
+- [ ] **P8-W02:** Audit keyboard accessibility, focus order, ARIA labels and
+  narrow-screen drawer behavior.
+- [ ] **P8-W03:** Add a small Playwright CLI suite for add, replace, swap, remove,
+  layout change, page navigation and export in Chromium and Firefox; perform a
+  manual browser workflow with the copied Pixabay collection.
+- [ ] **P8-W04:** Audit thumbnail and preview caching; avoid decoding all originals
+  per request.
+- [ ] **P8-W05:** Run `make lint`, `make test`, type checking where configured,
+  packaging checks and executable workflow verification; fix regressions.
+- [ ] **P8-W06:** Update README, usage, configuration and architecture docs for the
+  project workflow, output profiles and revised CLI.
+- [ ] **P8-W07:** Summarize remaining limitations and prepare a release/merge
+  recommendation.
 
 **Acceptance criteria**
 
 - All automated checks pass, or pre-existing failures are explicitly identified.
-- A complete calendar can be created, curated, saved, reopened, relinked and exported.
-- The demo collection exercises the major editor paths.
-- Documentation describes the new project-based workflow and its storage behavior.
+- Critical browser flows work in Chromium and Firefox.
+- Documentation describes the actual workflow and storage behavior.
+- Remaining limitations are explicit and acceptable.
 
 **Phase gate:** Ready for user acceptance and merge review.
 
-## 6. Acceptance criteria across the complete mission
+## 6. Cross-phase acceptance criteria
 
-The refactoring is complete when all of the following hold:
+The continuation is complete when all of the following hold:
 
-1. A user can create a project, choose a photo source directory and specify N calendar pages.
-2. The application scans the source and previews a distribution using existing strategies.
-3. The user confirms the distribution and receives editable calendar pages without intermediate image folders.
-4. Each page has an independent, persisted layout and a set of slot assignments.
-5. The user can add, remove, replace and swap photos using drag-and-drop or accessible alternatives.
-6. The unassigned-photo pool is always correct and is derived from persisted assignments.
-7. Adding a photo never changes the current layout.
-8. All pages appear in a thumbnail navigation sidebar.
-9. A page can be rendered independently from its explicit project data.
-10. The project survives application restart and is stored in SQLite.
-11. Reference mode leaves source files untouched and supports source-root relinking.
-12. Optional embedded mode makes a project self-contained by copying, never moving, originals.
-13. PDF export follows the project page order and uses project-specific settings.
-14. Existing rendering features and CLI behavior are preserved or migrated with explicit documentation.
+1. A page renders the full calendar from explicit project data, including calendar,
+   map, description, anniversaries and photo slots.
+2. Each project has an independent output profile that controls preview and export.
+3. A user can add, remove, replace, swap, change layout, crop and describe pages
+   from the browser.
+4. The unused pool is always derived from persisted assignments.
+5. Adding a photo never changes the current layout.
+6. A moved source root can be safely relinked through the browser.
+7. Distribution can be previewed with per-page samples, regenerated and confirmed
+   exactly once.
+8. Projects can be duplicated within the workspace and remain independent.
+9. A user can preview and export from the browser, and the PDF follows project page
+   order.
+10. The CLI provides `gui`, `scan`, `distribute`, `render`, `export`, `duplicate`
+    and `doctor`.
+11. Reference-only export leaves source files untouched.
+12. FastAPI TestClient and Playwright tests cover the critical flows.
+13. Documentation matches the implemented workflow.
 
 ## 7. Dependencies, risks and unresolved questions
 
 ### Main risks
 
-- **Rendering/layout coupling:** Current collage rendering calculates geometry dynamically from page settings and image count. Slot-based layouts may require an adapter and incremental renderer refactoring. Avoid replacing the renderer wholesale.
-- **Legacy folder assumptions:** Several existing paths derive page order, date and descriptions from folder order. Compatibility must be explicit and tested.
-- **Photo identity:** Relative paths alone cannot detect replacement files. Use metadata and optional digest checks; never silently relink ambiguous matches.
-- **Layout migration/versioning:** Existing saved pages must remain visually stable when default layouts evolve.
-- **Browser drag-and-drop:** Must support explicit server confirmation, rollback on failure and keyboard alternatives.
-- **Project/source location:** A project may live outside the source tree. Do not assume a fixed relationship between the two.
-- **Performance:** Generate thumbnails once and cache page previews by revision; avoid repeatedly decoding all original images on every UI request.
+- **Rendering composition order:** Adding calendar, map and description around
+  slots may change page geometry. Use the existing renderer geometry and cover it
+  with deterministic image assertions.
+- **Output-profile migration:** Existing projects have empty profile JSON. Read-time
+  defaults must be stable and must not rewrite rows unexpectedly.
+- **Map caching:** The local shapefile map is expensive. The cache key must include
+  coordinates, geometry, colors, DPI, profile settings and shapefile version.
+- **Browser drag-and-drop:** Needs server confirmation, rollback and keyboard
+  alternatives.
+- **Source/project location:** A project may live outside the source tree. Do not
+  assume a fixed relationship between the two.
+- **Performance:** Do not decode all originals per request. Thumbnails and page
+  previews must be cached and invalidated by revision and profile.
+- **Configuration migration:** Removing `config-cli-gui` is a hard cut. Existing
+  values must be catalogued and migrated into typed defaults and project profiles.
 
-### Decisions to confirm before implementation
+### Decisions confirmed for this continuation
 
-1. **Workspace database:** Confirmed: one central SQLite workspace database containing multiple projects.
-2. **Portable project format:** Confirmed direction: `.pcd` ZIP archive with manifest, project-only data snapshot, layout snapshots and optional embedded assets. Provide Open/Import, Save As/Export and Duplicate Project.
-3. **Legacy calendars:** No import of existing folder-based calendars is required. Preserve existing provider dimensions, scaling, print settings and established layout catalogue/style.
-4. **Page capacity:** Confirmed: fixed slot count per layout; empty slots are valid and overflow remains unassigned.
-5. **Photo reuse:** Confirmed: one use per project. To repeat a title photo, the user can place a separate copy in the watched source directory; these are distinct assets.
-6. **Self-contained mode:** Reference-only is the default; self-contained `.pcd` export embeds copies of all required images.
-7. **Descriptions:** Confirmed: page descriptions are editable and persisted directly in the editor. No legacy descriptions-file migration is required.
-8. **Layout freedom:** Confirmed: fixed templates initially, with a broad catalogue at least as extensive as the existing layouts. Manual layout authoring is deferred.
-9. **Crop editing:** Confirmed: per-assignment crop controls (zoom and focal-point/pan adjustment), without modifying source photos.
-10. **Runtime/deployment:** Confirmed: local-only web application. Remove Tkinter; replace the CLI with a cleaner project-oriented CLI. Remove config-cli-gui.
-11. **Directory selection:** Deferred to Phase 6. Phase 0-2 introduce no web UI and accept a validated absolute source path in the service layer.
+1. The predecessor web-UI plan is complete; this plan continues from `main`.
+2. Full rendering, editing and export parity is in scope, including calendar, map,
+   description and anniversaries in rendered output. `.pcd`/self-contained packaging
+   is the explicit exception in decision 3.
+3. Reference-only export is the supported mode. `.pcd` archives and self-contained
+   asset embedding are deferred.
+4. Duplicate Project / Save As is implemented as a workspace-level deep copy, not as
+   a `.pcd` package.
+5. Per-assignment crop/focal-point editing is in scope.
+6. Page descriptions are editable and persisted in the project database.
+7. Layout changes preserve assignments where possible and preview displaced photos.
+8. Output settings are per-project snapshots and are editable through the UI.
+9. Testing uses FastAPI TestClient plus a small Playwright suite.
+10. Layouts remain versioned YAML templates; manual layout authoring is deferred.
+11. No legacy folder-calendar import is required.
+12. Tkinter and `config-cli-gui` remain removed from the runtime path.
 
 ### Recommended defaults if no contrary decision
 
 - One photo can be assigned to at most one page in a project.
 - Each layout has a fixed set of slots; empty slots are valid.
 - No automatic reflow when adding/removing photos.
-- Layout changes preserve as many assignments as possible and preview any displaced photos.
+- Layout changes preserve as many assignments as possible and preview displaced
+  photos.
 - One central workspace SQLite database stores all projects.
-- `.pcd` is the portable project package; Save As/Export and Open/Import provide portability.
-- Source references are relative to a remappable source root; self-contained export embeds required assets.
-- Output settings and immutable layout snapshots travel with `.pcd` packages.
+- Source references are relative to a remappable source root.
 - FastAPI + Jinja2 + HTMX + vanilla JS; no SPA framework.
-- One workspace SQLite database using the standard library with explicit migrations and repositories.
 - Fixed layout templates first; custom layout editor deferred.
-- No legacy calendar import; preserve provider sizing/scaling and existing layout catalogue.
-- Remove Tkinter and config-cli-gui; replace CLI with project-oriented commands.
+- Reference-only export; no `.pcd` packaging in this plan.
 
 ## 8. Handoff protocol
 
 - Execute one phase at a time in dependency order.
-- At the end of each phase, run the relevant tests and checks, commit the completed work packages, and update this plan's Progress / Handoff block.
-- Do not silently make a decision listed under "Decisions to confirm" if it materially changes the data model or user workflow. Ask the user at the phase gate.
-- If a phase exposes a necessary architectural change, update this plan before implementing the affected later phases.
-- Keep implementation commits focused; do not commit automatically unless the user explicitly requests it.
+- At the end of each phase, run the relevant tests and checks, commit the completed
+  work packages, and update this plan's Progress / Handoff block.
+- Do not silently make a decision listed under "Decisions confirmed" if it
+  materially changes the data model or user workflow. Ask the user at the phase gate.
+- If a phase exposes a necessary architectural change, update this plan before
+  implementing the affected later phases.
+- Keep implementation commits focused and stage only work-package files and plan
+  updates. Do not commit unrelated or pre-existing user changes.
 - Do not claim verification unless commands were actually run.
 
 ## Progress / Handoff
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-project-workflow.md`
-- **Completed:** Phase 0 and Phase 1 complete. Phase 0 architecture baseline in `docs/architecture/web-ui-project-workflow.md` (`0c1408d`). Phase 1 project package with domain models, SQLite schema/migrations, repositories, constraints and lifecycle services; 23 new tests; full suite 129 passed.
-- **Active:** None. Phase 1 is complete and committed.
-- **Next:** Phase 2 (issue #14): recursive image discovery, metadata extraction, source-relative persistence, safe path resolution, rescan/reconcile, source-root remapping and thumbnail cache. Directory-picker work stays deferred to Phase 6.
+- **Completed:** Predecessor plan
+  `docs/plans/2026-11-18-web-ui-first-project-workflow.md` Phases 0-9 are complete
+  and merged to `main`. This continuation Phase 0 is complete: baseline reconciled,
+  gap list recorded, scope confirmed and baseline verified.
+- **Active:** None. This revision changes only the plan; implementation has not
+  started.
+- **Next:** Phase 1 (full-page rendering and output profiles). Create one GitHub
+  issue for Phase 1 before implementation, then start with P1-W01.
 - **Relevant files:**
-  - `docs/architecture/web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
-  - `.github/workflows/main.yml`
-  - `src/Photo_Composition_Designer/project/models.py`
-  - `src/Photo_Composition_Designer/project/db.py`
-  - `src/Photo_Composition_Designer/project/repositories.py`
-  - `src/Photo_Composition_Designer/project/services.py`
-  - `tests/test_project_db.py`
-  - `tests/test_project_repositories.py`
-  - `tests/test_project_services.py`
-  - `src/Photo_Composition_Designer/common/Photo.py`
-  - `src/Photo_Composition_Designer/core/base.py`
-  - `src/Photo_Composition_Designer/core/composition_io.py`
-  - `src/Photo_Composition_Designer/tools/ImageDistributor.py`
-- **Decisions:** One workspace SQLite database; portable `.pcd` archives; reference-only default and self-contained export; no legacy calendar import; preserve provider sizing/scaling and existing layout catalogue; fixed slots; one photo use per project; editable page descriptions; per-assignment crop controls; local FastAPI/Jinja/HTMX UI; remove Tkinter/config-cli-gui; project-oriented CLI; source-directory picker deferred to Phase 6.
+  - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
+  - `docs/architecture/web-ui-project-workflow.md`
+  - `src/photo_composition_designer/render/slot_renderer.py:37-89`
+  - `src/photo_composition_designer/render/calendar.py`
+  - `src/photo_composition_designer/render/map.py`
+  - `src/photo_composition_designer/render/description.py`
+  - `src/photo_composition_designer/render/geoplot.py`
+  - `src/photo_composition_designer/io/export.py:40-219`
+  - `src/photo_composition_designer/io/previews.py`
+  - `src/photo_composition_designer/core/settings.py:42-169`
+  - `src/photo_composition_designer/project/models.py:13-25,112-123`
+  - `src/photo_composition_designer/project/services.py:34-121`
+  - `src/photo_composition_designer/project/editing.py:43-174`
+  - `src/photo_composition_designer/project/inventory.py:196-278`
+  - `src/photo_composition_designer/gui/routes/projects.py:188-280,402-480`
+  - `src/photo_composition_designer/gui/routes/editor.py:59-140`
+  - `src/photo_composition_designer/gui/templates/partials/editor_canvas.html`
+  - `src/photo_composition_designer/cli/app.py:26-56`
+  - `tests/test_gui.py`, `tests/test_editor.py`, `tests/test_guided_creation.py`,
+    `tests/test_export.py`, `tests/test_inventory.py`
+- **Decisions:** Full feature parity; reference-only export only; `.pcd` and
+  self-contained assets deferred; workspace-level Duplicate Project; editable output
+  profiles; per-assignment crop controls; editable page descriptions; deterministic
+  layout changes with displaced-photo preview; TestClient plus Playwright; keep
+  workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
+  import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make test` green (129 passed) after Phase 1 implementation.
-- **Context status:** clean; continue with Phase 2 in this session.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 160 passed.
+- **Context status:** Plan revised only. No implementation files changed. Start a
+  fresh session for Phase 1 and use this handoff block as the contract.
