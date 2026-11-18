@@ -163,6 +163,35 @@ def test_preview_is_cached_and_invalidated_by_revision(tmp_path):
         database.close()
 
 
+class _CountingComposer:
+    """Stand-in composer that records how often a page is rendered."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def render(self, render_input) -> Image.Image:
+        self.calls += 1
+        return Image.new("RGB", (120, 90), "white")
+
+
+def test_cached_preview_does_not_render_again(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    try:
+        composer = _CountingComposer()
+        rendering = ProjectRenderingService(
+            database,
+            composer=composer,
+            preview_dir=tmp_path / "previews",
+        )
+        first = rendering.render_preview(project_id, page_id)
+        second = rendering.render_preview(project_id, page_id)
+
+        assert first == second
+        assert composer.calls == 1, "a cached preview must not decode or render again"
+    finally:
+        database.close()
+
+
 def test_preview_invalidated_by_profile_change(tmp_path):
     database, project_id, page_id = _setup(tmp_path)
     try:

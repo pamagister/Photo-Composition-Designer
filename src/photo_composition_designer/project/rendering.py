@@ -243,17 +243,19 @@ class ProjectRenderingService:
         if page is None or page.project_id != project_id:
             raise ProjectNotFoundError(f"page {page_id} does not exist")
         profile = self.profile_for(connection, project_id)
-        image = self.render_page_image(connection, page)
 
         key = self.preview_cache_key(page, profile, max_width=max_width, mode=mode)
         target = self._preview_dir / "pages" / f"{key}.jpg"
-        if not target.is_file():
-            write_preview(
-                image,
-                target,
-                max_width=max_width,
-                quality=profile.size.jpeg_quality,
-            )
+        if target.is_file():
+            return target
+
+        image = self.render_page_image(connection, page)
+        write_preview(
+            image,
+            target,
+            max_width=max_width,
+            quality=profile.size.jpeg_quality,
+        )
         return target
 
 
