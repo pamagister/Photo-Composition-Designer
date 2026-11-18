@@ -90,6 +90,9 @@ committed at `.agents/skills/playwright-cli`; install the CLI and Chromium with
 `npm install -g --prefix ~/.local @playwright/cli@latest` and `playwright-cli install-browser chromium`.
 See `docs/develop/tools.md` for the full setup.
 
+Start the GUI with `uv run photo-composition-designer gui` (default `http://127.0.0.1:8767/`). Validate changes from
+cheapest to most realistic:
+
 - **HTTP with curl:** `curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' <url>` for status and
   redirects; use `-d`/`-X POST` when reproducing form submissions.
 - **FastAPI TestClient:** `uv run pytest tests/test_gui.py -k <pattern> -x` for in-process endpoint and
