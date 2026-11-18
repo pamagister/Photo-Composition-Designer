@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel layout-editor-page">
+  <h1>Global Layout Editor</h1>
+  <p>Layouts are shared by all projects. Saving creates a new version; pages already using a layout keep their snapshots.</p>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
+  <div class="layout-catalogue">
+    <h2>Available layouts</h2>
+    <ul>
+      {% for layout in catalogue.values() | sort(attribute="key") %}
+      <li><a href="/layouts?key={{ layout.key }}">{{ layout.name }} <span class="muted">{{ layout.key }} v{{ layout.version }}</span></a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  <form method="post" action="/layouts" class="settings-form">
+    <label for="layout-key">Layout key</label>
+    <input id="layout-key" name="key" value="{{ selected_key }}" required pattern="[a-z0-9][a-z0-9_-]{0,63}">
+    <label for="layout-name">Layout name</label>
+    <input id="layout-name" name="name" value="{{ layout_name }}" required>
+    <label for="layout-slots">Slots (JSON, normalized coordinates from 0 to 1)</label>
+    <textarea id="layout-slots" name="slots_json" rows="16" spellcheck="false" required>{{ slots_json }}</textarea>
+    <p class="muted">Each slot needs a unique key, x, y, width and height; crop_mode may be cover, contain or stretch.</p>
+    <button class="primary" type="submit">Save new layout version</button>
+  </form>
+</section>
+{% endblock %}
