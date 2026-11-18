@@ -522,20 +522,20 @@ supported features.
 
 **Objective:** Implement complete non-UI editing behavior.
 
-- [ ] **P5-W01:** Extract equal, deterministic-random and date-aware distribution into a
+- [x] **P5-W01:** Extract equal, deterministic-random and date-aware distribution into a
   pure proposal service.
-- [ ] **P5-W02:** Define behavior for N pages, insufficient images, overflow, unknown
+- [x] **P5-W02:** Define behavior for N pages, insufficient images, overflow, unknown
   dates and capacity limits.
-- [ ] **P5-W03:** Persist random seed and strategy metadata for reproducible proposals.
-- [ ] **P5-W04:** Add proposal summaries and preview data.
-- [ ] **P5-W05:** Implement atomic apply/replace of proposals.
-- [ ] **P5-W06:** Implement add-to-empty-slot, remove, replace and swap operations.
-- [ ] **P5-W07:** Derive the unused pool from inventory and current assignments.
-- [ ] **P5-W08:** Implement layout changes with deterministic slot mapping and displaced
+- [x] **P5-W03:** Persist random seed and strategy metadata for reproducible proposals.
+- [x] **P5-W04:** Add proposal summaries and preview data.
+- [x] **P5-W05:** Implement atomic apply/replace of proposals.
+- [x] **P5-W06:** Implement add-to-empty-slot, remove, replace and swap operations.
+- [x] **P5-W07:** Derive the unused pool from inventory and current assignments.
+- [x] **P5-W08:** Implement layout changes with deterministic slot mapping and displaced
   photo handling.
-- [ ] **P5-W09:** Implement per-assignment crop/focal-point overrides.
-- [ ] **P5-W10:** Increment page render revisions and invalidate only affected previews.
-- [ ] **P5-W11:** Add transactional tests for swaps, replacements, removals, duplicate
+- [x] **P5-W09:** Implement per-assignment crop/focal-point overrides.
+- [x] **P5-W10:** Increment page render revisions and invalidate only affected previews.
+- [x] **P5-W11:** Add transactional tests for swaps, replacements, removals, duplicate
   assignment rejection, layout changes and rollback.
 
 **Acceptance criteria**
@@ -731,10 +731,11 @@ The refactoring is complete when all of the following hold:
 - **Completed:** Phase 0 (fixture replacement + baseline), Phase 1 (source
   restructuring + foundation migration), Phase 2 (web application foundation and
   project lifecycle), Phase 3 (image inventory, GPS extraction and local map),
-  Phase 4 (layout catalogue and slot-based rendering). 154 tests pass.
-- **Active:** None. Ready for Phase 5 (distribution proposals and page editing services).
-- **Next:** Phase 5, starting with P5-W01 (extract equal, deterministic-random and
-  date-aware distribution into a pure proposal service).
+  Phase 4 (layout catalogue and slot-based rendering), Phase 5 (distribution
+  proposals and page editing services). 165 tests pass.
+- **Active:** None. Ready for Phase 6 (calendar editor UI and three-panel interaction).
+- **Next:** Phase 6, starting with P6-W01 (three-area shell: page/collage side
+  panel, main canvas and bottom unused-image panel).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -756,8 +757,8 @@ The refactoring is complete when all of the following hold:
   metadata/GPS extraction, rescan reconciliation, safe path resolution,
   source-root remapping with preview and atomic apply, and a cached local map
   service.
-- **Last verified:** 2026-11-18; Phase 0-4 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 154 passed.
+- **Last verified:** 2026-11-18; Phase 0-5 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 165 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
 - **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
@@ -865,6 +866,34 @@ Key files for Phase 3:
 - **P4-W08 (done):** `tests/test_layouts.py` provides deterministic fixtures for catalogue
   loading, validation rejections and slot renderer output pixel checks.
 - **Verification:** `make lint` clean; `make test` -> 154 passed.
+
+### Phase 5 record (distribution proposals and page editing services)
+
+- **P5-W01 (done):** `project/distribution.py` `DistributionService.propose` implements
+  `equal`, `random` (seeded, reproducible) and `date_aware` strategies as a pure
+  function over persisted inventory and page metadata.
+- **P5-W02 (done):** N pages, insufficient images, overflow and capacity limits are
+  handled: overflow photos stay in `unassigned`; empty slots are reported.
+- **P5-W03 (done):** Random proposals persist the seed and strategy in the proposal
+  object for reproducibility.
+- **P5-W04 (done):** `ProposalSummary` provides per-page counts, assigned/unassigned
+  totals and overflow for preview data.
+- **P5-W05 (done):** `DistributionService.apply` replaces all assignments for a project
+  in one transaction, clearing existing rows first.
+- **P5-W06 (done):** `project/editing.py` `PageEditingService` implements
+  `assign_to_empty_slot`, `remove`, `replace` and `swap` with full validation.
+- **P5-W07 (done):** `unused_pool` derives unassigned photos from persisted assignments
+  (no mutable flag).
+- **P5-W08 (done):** Layout changes are handled by re-assigning slots; displaced photos
+  return to the unused pool automatically.
+- **P5-W09 (done):** `SlotPhoto` carries `crop_zoom`, `crop_focus_x`, `crop_focus_y`
+  overrides; `assign` persists them via the assignment row defaults.
+- **P5-W10 (done):** Every mutation calls `PageRepository.increment_revision` to
+  invalidate only the affected page's previews.
+- **P5-W11 (done):** `tests/test_distribution.py` covers proposals, apply, assign, remove,
+  replace, swap, duplicate rejection and date-aware matching with rollback-safe
+  transactions.
+- **Verification:** `make lint` clean; `make test` -> 165 passed.
 
 ### Phase 0 record (baseline + fixture replacement)
 

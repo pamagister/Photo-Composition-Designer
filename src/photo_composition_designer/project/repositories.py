@@ -685,3 +685,11 @@ class AssignmentRepository:
             "SELECT * FROM assignments WHERE project_id = ? ORDER BY id", (project_id,)
         ).fetchall()
         return [self._row_to_assignment(row) for row in rows]
+
+    def list(self, project_id: int) -> list[PhotoAssignment]:
+        """Return all assignments for a project (alias for ``list_by_project``)."""
+        return self.list_by_project(project_id)
+
+    def clear_for_project(self, project_id: int) -> None:
+        """Remove every assignment for a project in one statement."""
+        self._connection.execute("DELETE FROM assignments WHERE project_id = ?", (project_id,))
