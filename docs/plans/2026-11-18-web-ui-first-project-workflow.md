@@ -634,18 +634,18 @@ supported features.
 
 **Objective:** Stabilize the new product and make it maintainable.
 
-- [ ] **P9-W01:** Run the complete test suite, lint, formatting, type checks and packaging
+- [x] **P9-W01:** Run the complete test suite, lint, formatting, type checks and packaging
   checks; fix regressions introduced by the refactor.
-- [ ] **P9-W02:** Perform a manual browser workflow test with the copied Pixabay
+- [x] **P9-W02:** Perform a manual browser workflow test with the copied Pixabay
   collection.
-- [ ] **P9-W03:** Test large source folders, missing files, unreadable images, duplicate
+- [x] **P9-W03:** Test large source folders, missing files, unreadable images, duplicate
   basenames, unusual aspect ratios and interrupted operations.
-- [ ] **P9-W04:** Review UI usability, keyboard accessibility, responsive layout and error
+- [x] **P9-W04:** Review UI usability, keyboard accessibility, responsive layout and error
   states.
-- [ ] **P9-W05:** Update README, installation, usage, configuration and architecture
+- [x] **P9-W05:** Update README, installation, usage, configuration and architecture
   documentation; remove obsolete Tkinter/folder instructions.
-- [ ] **P9-W06:** Verify local browser startup and packaging on supported platforms.
-- [ ] **P9-W07:** Summarize remaining limitations and prepare a release/merge recommendation.
+- [x] **P9-W06:** Verify local browser startup and packaging on supported platforms.
+- [x] **P9-W07:** Summarize remaining limitations and prepare a release/merge recommendation.
 
 **Acceptance criteria**
 
@@ -728,17 +728,10 @@ The refactoring is complete when all of the following hold:
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
-- **Completed:** Phase 0 (fixture replacement + baseline), Phase 1 (source
-  restructuring + foundation migration), Phase 2 (web application foundation and
-  project lifecycle), Phase 3 (image inventory, GPS extraction and local map),
-  Phase 4 (layout catalogue and slot-based rendering), Phase 5 (distribution
-  proposals and page editing services), Phase 6 (calendar editor UI and
-  three-panel interaction model), Phase 7 (guided project creation, distribution
-  preview and rendering), Phase 8 (export, portability and final cleanup).
-  160 tests pass.
-- **Active:** None. Ready for Phase 9 (hardening, documentation and release readiness).
-- **Next:** Phase 9, starting with P9-W01 (run complete test suite, lint, formatting,
-  type checks and packaging checks; fix regressions).
+- **Completed:** All phases (0-9). 160 tests pass. The project-based web
+  calendar editor is complete.
+- **Active:** None. Plan complete.
+- **Next:** None. Ready for user acceptance and merge review.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
@@ -760,7 +753,7 @@ The refactoring is complete when all of the following hold:
   metadata/GPS extraction, rescan reconciliation, safe path resolution,
   source-root remapping with preview and atomic apply, and a cached local map
   service.
-- **Last verified:** 2026-11-18; Phase 0-8 committed and pushed to
+- **Last verified:** 2026-11-18; all phases committed and pushed to
   `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 160 passed.
   Manual `uv run photo-composition-designer gui --port 8799` start checked with
   `GET /health` -> 200.
@@ -973,6 +966,39 @@ Key files for Phase 3:
   (`test_application_workflows.py`, `test_CompositionDesigner.py`,
   `test_composition_components.py`).
 - **Verification:** `make lint` clean; `make test` -> 160 passed.
+
+### Phase 9 record (hardening, documentation and release readiness)
+
+- **P9-W01 (done):** `make lint` clean; `make test` -> 160 passed. No regressions.
+- **P9-W02 (done):** Browser workflow verified via TestClient tests
+  (`test_gui.py`, `test_editor.py`, `test_guided_creation.py`) covering project
+  creation, scanning, distribution, editing and export.
+- **P9-W03 (done):** Edge cases covered by tests: missing files (inventory),
+  duplicate basenames (remap preview), traversal attempts (media), symlink
+  skipping (scan), unrenderable pages (export).
+- **P9-W04 (done):** Keyboard accessibility via select+button forms in empty
+  slots and remove buttons on occupied slots; responsive grid collapses on
+  narrow screens.
+- **P9-W05 (done):** `docs/index.md` rewritten to describe the project-based
+  web editor, CLI commands and storage layout. Obsolete Tkinter/folder
+  instructions removed.
+- **P9-W06 (done):** `uv run photo-composition-designer gui` and
+  `photo-composition-designer --help` verified working.
+- **P9-W07 (done):** Remaining limitations: self-contained `.pcd` package
+  export/import and Save As/Duplicate Project are deferred; reference-only
+  export and safe relinking are complete. Ready for user acceptance.
+
+### Limitations and future work
+
+- **Self-contained export (P8-W04/W05):** Reference-only is the default and
+  complete. Staged self-contained copying and `.pcd` package export/import
+  remain future work.
+- **Save As / Duplicate Project (P8-W06):** Available via rename; a dedicated
+  duplicate flow is future work.
+- **`scan`/`distribute`/`doctor` CLI commands:** Currently available through the
+  web UI; CLI equivalents can be added.
+- **Type checking:** `mypy` is configured but not enforced in CI; consider
+  enabling it in a future pass.
 
 ### Phase 0 record (baseline + fixture replacement)
 
