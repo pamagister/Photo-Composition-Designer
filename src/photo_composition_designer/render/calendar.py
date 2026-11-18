@@ -245,7 +245,7 @@ class CalendarRenderer:
 
         draw.text(
             (
-                0,
+                self.marginSides,
                 height - self.font_holiday.size * self.dpi / 25.4,
             ),
             header_text,
@@ -255,7 +255,7 @@ class CalendarRenderer:
         )
 
         draw.text(
-            (0, height),
+            (self.marginSides, height),
             f"{week_string} {sun_string}",
             font=self.font_holiday.get_image_font(self.dpi),
             fill=self.font_small.color.to_pil(),
@@ -372,7 +372,7 @@ class CalendarRenderer:
 
     def get_cols_property(self, width: int) -> tuple[float, float]:
         month_cols = 1.4 if self.useShortMonthNames else 4.0
-        col_width = (width - 1.0 * self.marginSides) / (7.0 + month_cols)
+        col_width = (width - 2.0 * self.marginSides) / (7.0 + month_cols)
         return month_cols, col_width
 
     @staticmethod

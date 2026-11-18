@@ -90,10 +90,15 @@ class PageComposer:
         content_left = margin_sides
         content_width = max(1, page_width - 2 * margin_sides)
         content_bottom = page_height - margin_bottom
-        if description_image is not None:
-            content_bottom -= description_image.height
         calendar_top = content_bottom - calendar_height if show_calendar else content_bottom
-        photo_bottom = calendar_top - spacing if show_calendar else calendar_top
+
+        if description_image is not None:
+            description_bottom = calendar_top - spacing if show_calendar else content_bottom
+            description_top = description_bottom - description_image.height
+            photo_bottom = description_top
+        else:
+            description_top = None
+            photo_bottom = calendar_top - spacing if show_calendar else content_bottom
         content_height = max(1, photo_bottom - content_top)
 
         map_image = self._render_map(page, profile, content_width, content_height, spacing)
@@ -119,10 +124,10 @@ class PageComposer:
             strip = self._render_calendar_strip(page, profile, settings, page_width)
             canvas.paste(strip, (0, calendar_top))
 
-        if description_image is not None:
+        if description_image is not None and description_top is not None:
             canvas.paste(
                 description_image,
-                (0, page_height - margin_bottom - description_image.height),
+                (0, description_top),
                 description_image,
             )
 

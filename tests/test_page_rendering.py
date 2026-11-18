@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from dataclasses import replace
+from datetime import date, datetime
 from pathlib import Path
 
 from PIL import Image
@@ -21,7 +22,7 @@ from photo_composition_designer.project.repositories import (
     PageRepository,
 )
 from photo_composition_designer.project.services import ProjectService
-from photo_composition_designer.render.page import PageComposer
+from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
 
 
@@ -121,6 +122,80 @@ def test_render_page_contains_photo_and_calendar(tmp_path):
         assert (255, 0, 0) not in strip.getdata()
         red_pixel = image.getpixel((image.width // 2, mm_to_px(20, 300)))
         assert red_pixel[0] > 200 and red_pixel[1:] == (0, 0)
+    finally:
+        database.close()
+
+
+def test_calendar_strip_stays_within_side_margins():
+    profile = OutputProfile.default()
+    image = PageComposer().render(
+        PageRenderInput(
+            page_date=date(2027, 1, 4),
+            description="",
+            layout=None,
+            output_profile=profile,
+            title_page=False,
+        )
+    )
+
+    dpi = profile.size.dpi
+    margin_sides = mm_to_px(profile.layout.margin_sides, dpi)
+    margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
+    calendar_height = mm_to_px(profile.size.calendar_height, dpi)
+    calendar_top = image.height - margin_bottom - calendar_height
+    background = (20, 20, 20)
+
+    content_x = [
+        x
+        for y in range(calendar_top, image.height - margin_bottom)
+        for x in range(image.width)
+        if image.getpixel((x, y)) != background
+    ]
+
+    assert content_x
+    assert min(content_x) >= margin_sides - 8
+    assert max(content_x) <= image.width - margin_sides + 2
+
+
+def _is_red(pixel: tuple[int, int, int]) -> bool:
+    """Return whether a pixel belongs to the red test photo."""
+    return pixel[0] > 200 and pixel[1] < 60 and pixel[2] < 60
+
+
+def test_description_renders_between_photo_and_calendar(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    try:
+        rendering = ProjectRenderingService(database)
+        with database.transaction() as connection:
+            PageRepository(connection).update_description(page_id, "Between collage and calendar")
+
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+            image = PageComposer().render(render_input)
+
+        profile = OutputProfile.default()
+        dpi = profile.size.dpi
+        margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
+        calendar_height = mm_to_px(profile.size.calendar_height, dpi)
+        calendar_top = image.height - margin_bottom - calendar_height
+
+        photo_bottom = max(
+            y
+            for y in range(calendar_top)
+            for x in range(image.width)
+            if _is_red(image.getpixel((x, y)))
+        )
+        description_y = [
+            y
+            for y in range(image.height)
+            for x in range(image.width)
+            if image.getpixel((x, y)) == (150, 150, 150)
+        ]
+
+        assert photo_bottom < calendar_top
+        assert any(photo_bottom < y < calendar_top for y in description_y)
     finally:
         database.close()
 
