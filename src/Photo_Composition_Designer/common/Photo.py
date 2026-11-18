@@ -50,6 +50,9 @@ class Photo:
         Extracts location from the filename based on predefined locations.
         """
         location = self._locations
+        if not location:
+            return None
+
         file_name = self.file_path.name.lower()
 
         for place in location:

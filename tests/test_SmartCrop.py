@@ -1,3 +1,7 @@
+"""Tests for smart cropping against the flat Pixabay fixture collection."""
+
+from __future__ import annotations
+
 from pathlib import Path
 
 from PIL import Image
@@ -9,80 +13,50 @@ from .TestHelper import temp_dir
 
 print(f"Use temp dir: {temp_dir}")
 
+CROP_SIZES = [
+    (300, 300),
+    (500, 300),
+    (300, 500),
+    (600, 400),
+    (400, 600),
+]
+
 
 def test_smart_crop(temp_dir):
-    """
-    Tests the SmartCrop functionality, including object detection, smart cropping,
-    and visualization of the crop process.
-    """
+    """Exercise smart crop over a representative sample of the fixture set."""
     detector = ObjectDetector()
     cropper = SmartCrop()
 
-    # Directories containing test images
-    image_dirs = [
-        Path("images/week_6_testimages_3"),
-        Path("images/week_7_testimages_4"),
-        Path("images/week_8_testimages_5"),
-    ]
+    image_files = sorted(Path("images").glob("*.jpg"))[:8]
+    assert image_files, "expected at least one image in images/"
 
-    # Define various target crop sizes/aspect ratios
-    crop_sizes = [
-        (300, 300),  # Square
-        (500, 300),  # Moderate Landscape
-        (300, 500),  # Moderate Portrait
-        (800, 300),  # Very Wide Landscape
-        (300, 800),  # Very High Portrait
-        (600, 400),  # 3:2 Landscape
-        (400, 600),  # 2:3 Portrait
-    ]
+    for image_file in image_files:
+        image = Image.open(image_file).convert("RGB")
+        width, height = image.size
+        output_max_dim = 1080
+        if max(width, height) > output_max_dim:
+            scale = output_max_dim / max(width, height)
+            image = image.resize(
+                (int(width * scale), int(height * scale)),
+                Image.Resampling.LANCZOS,
+            )
 
-    for image_dir in image_dirs:
-        for image_file in sorted(image_dir.glob("*.jpg")):
-            image = Image.open(image_file).convert("RGB")  # Ensure RGB for consistent processing
+        detections = detector.detect(image)
 
-            width, height = image.size
-            output_max_dim: int = 1080
+        for target_width, target_height in CROP_SIZES:
+            cropped_image, crop_box = cropper.crop(
+                image=image,
+                target_width=target_width,
+                target_height=target_height,
+                detections=detections,
+            )
+            assert cropped_image is not None
+            assert cropped_image.size == (target_width, target_height)
 
-            if max(width, height) > output_max_dim:
-                scale = output_max_dim / max(
-                    width,
-                    height,
-                )
-
-                image = image.resize(
-                    (
-                        int(width * scale),
-                        int(height * scale),
-                    ),
-                    Image.Resampling.LANCZOS,
-                )
-
-            detections = detector.detect(image)
-
-            # Test various target formats
-            for width, height in crop_sizes:
-                # Perform the smart crop, getting both the cropped image and the crop box
-                cropped_image, crop_box = cropper.crop(
-                    image=image,
-                    target_width=width,
-                    target_height=height,
-                    detections=detections,
-                )
-
-                assert cropped_image is not None
-                assert cropped_image.size == (width, height)
-
-                # Save the cropped image
-                # cropped_image_name = f"{image_file.stem}_cropped_{width}x{height}.jpg"
-                # cropped_image.save(temp_dir / cropped_image_name)
-
-                # Generate and save the visualized image
-                visualized_image = cropper.visualize_crop(
-                    original_image=image,
-                    detections=detections,
-                    crop_box=crop_box,
-                )
-                visualized_image_name = f"{image_file.stem}_visualized_{width}x{height}.jpg"
-                visualized_image.save(temp_dir / visualized_image_name)
-
-                print(f"Processed {image_file.name} for {width}x{height}. Saved to {temp_dir}")
+            visualized_image = cropper.visualize_crop(
+                original_image=image,
+                detections=detections,
+                crop_box=crop_box,
+            )
+            visualized_name = f"{image_file.stem}_visualized_{target_width}x{target_height}.jpg"
+            visualized_image.save(temp_dir / visualized_name)

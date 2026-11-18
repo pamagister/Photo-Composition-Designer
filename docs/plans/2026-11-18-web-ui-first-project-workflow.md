@@ -385,17 +385,17 @@ Do not implement multiple phases in one change.
 
 **Objective:** Establish the new baseline before moving code.
 
-- [ ] **P0-W01:** Replace the old image fixture set: remove `images/title`,
+- [x] **P0-W01:** Replace the old image fixture set: remove `images/title`,
   `images/week_1` through `images/week_8_testimages_5` and `images/descriptions.txt`;
   copy all images from `/home/paul/PycharmProjects/image-triage/images/pixabay/` flat
   into `images/`.
-- [ ] **P0-W02:** Update `.gitignore`, test fixtures and documentation references so the
+- [x] **P0-W02:** Update `.gitignore`, test fixtures and documentation references so the
   old folder structure is no longer part of the repository contract.
-- [ ] **P0-W03:** Inventory existing tests and map them to renderer, project, map,
+- [x] **P0-W03:** Inventory existing tests and map them to renderer, project, map,
   distribution, CLI and GUI responsibilities.
-- [ ] **P0-W04:** Record baseline verification commands and current test status before
+- [x] **P0-W04:** Record baseline verification commands and current test status before
   restructuring.
-- [ ] **P0-W05:** Confirm the target package layout, runtime settings and removal list for
+- [x] **P0-W05:** Confirm the target package layout, runtime settings and removal list for
   Tkinter, `config-cli-gui`, `ttkbootstrap`, `src/main.py` and the old run configurations.
 
 **Acceptance criteria**
@@ -750,3 +750,35 @@ The refactoring is complete when all of the following hold:
 - **Last verified:** 2026-11-18; repository, existing plan, Phase 0/1 code and
   image-triage reference were inspected. No tests were changed or run.
 - **Context status:** clean; ready for user approval and Phase 0 execution.
+
+### Phase 0 record (baseline + fixture replacement)
+
+- **Baseline test run (before changes):** `uv run pytest -q` -> `129 passed in 8.82s`.
+- **P0-W01 (done):** Removed `images/title`, `images/week_1..week_8_testimages_5`
+  and `images/descriptions.txt`. Copied all 110 Pixabay JPEGs plus `credits.md`
+  flat into `images/`. Rewrote `tests/test_ObjectDetector.py` and
+  `tests/test_SmartCrop.py` to use the flat Pixabay collection (no hand-curated
+  object-count assertions).
+- **P0-W02 (done):** Pruned obsolete `images/week_*`/`images/title` ignore
+  entries from `.gitignore`.
+- **P0-W03 (test inventory):**
+  - Renderer: `test_CalendarRenderer`, `test_CollageRenderer`,
+    `test_CompositionDesigner`, `test_DescriptionRenderer`, `test_MoonPhase`,
+    `test_composition_components`, `test_anniversaries`.
+  - Image: `test_Photo`, `test_ObjectDetector`, `test_SmartCrop`.
+  - Map/Geo: `test_GeoPlotter`, `test_MapRenderer`, `test_Locations`.
+  - Distribution: `test_ImageDistributor`.
+  - Application/CLI/GUI: `test_application_workflows`, `test_cli`.
+  - Project domain/persistence: `test_project_db`, `test_project_repositories`,
+    `test_project_services`.
+  - Descriptions: `test_DescriptionsFileGenerator`.
+- **P0-W04 (baseline commands):** `make fmt`, `make lint`, `make test`,
+  `make syncdocs`. `make test` runs `ruff` + `pytest` with coverage.
+- **P0-W05 (removal list confirmed):** Remove from runtime path in Phase 1:
+  `Photo_Composition_Designer` old package, `src/main.py`,
+  `src/firewall_handler.py`, `src/path_handler.py`, `config_cli_gui`,
+  `ttkbootstrap`, Tkinter GUI (`gui/gui.py`, `gui/GuiLogWriter.py`), old
+  `config/` and `tools/` folder-driven helpers. Target package:
+  `src/photo_composition_designer/` with `cli`, `core`, `db`, `io`, `layouts`,
+  `render`, `project`, `gui` subpackages. Entry point:
+  `photo-composition-designer = "photo_composition_designer.cli.app:main"`.

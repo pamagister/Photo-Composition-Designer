@@ -7,9 +7,21 @@ from PIL import Image
 
 from Photo_Composition_Designer.common.Photo import Photo
 
-EXAMPLE_IMAGE_1 = Path(__file__).parent.parent / "images" / "week_4" / "image_08.jpg"
-EXAMPLE_IMAGE_2 = Path(__file__).parent.parent / "images" / "week_4" / "image_09.jpg"
-EXAMPLE_IMAGE_5 = Path(__file__).parent.parent / "images" / "week_4" / "image_10.jpg"
+EXAMPLE_IMAGE_1 = (
+    Path(__file__).parent.parent
+    / "images"
+    / "pixabay_animals_10380612_duckling-lawn-spring-nature-animal-photo.jpg"
+)
+EXAMPLE_IMAGE_2 = (
+    Path(__file__).parent.parent
+    / "images"
+    / "pixabay_animals_10407613_cat-animal-nature-mammal-cute-fur-adorab.jpg"
+)
+EXAMPLE_IMAGE_5 = (
+    Path(__file__).parent.parent
+    / "images"
+    / "pixabay_animals_1883658_fox-animal-wildlife-red-fox-furry-omnivo.jpg"
+)
 TEST_DATE = datetime(2023, 5, 17, 14, 30, 25)
 TEST_DATE_NO_TIME = datetime(2023, 5, 17, 12, 0, 0)
 
@@ -74,7 +86,7 @@ def test_get_location():
 
 
 def test_get_date_exif():
-    """Testet, ob das Datum korrekt aus den EXIF-Daten ausgelesen wird."""
+    """Pixabay fixtures carry no EXIF date, so the fallback sentinel is returned."""
     photo = Photo(EXAMPLE_IMAGE_2)
     date = photo.get_date()
-    assert date == datetime(2023, 7, 31, 18, 54, 56)
+    assert date == datetime.max
