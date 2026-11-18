@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="/static/source-picker.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="project-header">
+  <div>
+    <h1>{{ project.name }}</h1>
+    <p class="muted">{{ pages | length }} pages &middot; updated {{ project.updated_at[:19] }}</p>
+  </div>
+  <form method="post" action="/projects/{{ project.id }}/rename" class="form-row">
+    <div class="field">
+      <label class="sr-only" for="rename">Project name</label>
+      <input id="rename" name="name" value="{{ project.name }}" required>
+    </div>
+    <button>Save name</button>
+  </form>
+</div>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+{% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
+
+<div class="project-layout">
+  <aside class="panel page-list" aria-label="Pages">
+    <h2>Pages</h2>
+    {% for page in pages %}
+    <a href="/projects/{{ project.id }}?page={{ page.id }}"
+       hx-get="/projects/{{ project.id }}/pages/{{ page.id }}"
+       hx-target="#page-detail"
+       hx-push-url="false"
+       {% if selected_page and page.id == selected_page.id %}aria-current="page"{% endif %}>
+      {{ page.start_date }} &ndash; {{ page.end_date }}
+    </a>
+    {% endfor %}
+  </aside>
+
+  <section class="project-main">
+    <div class="panel">
+      <h2>Source directory</h2>
+      {% for state in source_states %}
+      <p>
+        <span>{{ state.root.path }}</span>
+        <span class="{{ 'success' if state.exists else 'error' }}">
+          {{ 'available' if state.exists else 'missing' }}
+        </span>
+      </p>
+      {% else %}
+      <p class="muted">No source directory configured.</p>
+      {% endfor %}
+      <form method="post" action="/projects/{{ project.id }}/source" class="form-row">
+        <div class="field">
+          <label for="source-path">Add a local directory</label>
+          <input id="source-path" name="path" list="source-directories"
+                 placeholder="/home/paul/Pictures" required>
+        </div>
+        <button>Add source</button>
+      </form>
+      <datalist id="source-directories"></datalist>
+      <p class="muted">Type a path or choose a directory from the local suggestions.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Scan</h2>
+      <form hx-post="/projects/{{ project.id }}/scan"
+            hx-target="#scan-area"
+            hx-swap="innerHTML">
+        <button class="primary" type="submit">Scan source directory</button>
+      </form>
+      <div id="scan-area">
+        {% include "partials/scan_result.html" %}
+      </div>
+    </div>
+
+    <div id="page-detail" class="panel">
+      {% include "partials/page_detail.html" %}
+    </div>
+  </section>
+
+  <aside class="panel inventory-panel" aria-label="Photo inventory">
+    <h2>Photos</h2>
+    <div id="inventory">
+      {% include "partials/inventory.html" %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

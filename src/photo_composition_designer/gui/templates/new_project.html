@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>New project</h1>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/projects">
+  <div class="field">
+    <label for="name">Project name</label>
+    <input id="name" name="name" value="{{ form.name | default('') }}" required autofocus>
+  </div>
+  <div class="form-row">
+    <div class="field">
+      <label for="page_count">Number of pages</label>
+      <input id="page_count" name="page_count" type="number" min="1" value="{{ form.page_count | default(53) }}" required>
+    </div>
+    <div class="field">
+      <label for="start_date">First page start date</label>
+      <input id="start_date" name="start_date" type="date" value="{{ form.start_date | default('2027-01-04') }}" required>
+    </div>
+    <button class="primary" type="submit">Create project</button>
+  </div>
+</form>
+<p class="muted">Each page covers seven days starting on the chosen date.</p>
+{% endblock %}

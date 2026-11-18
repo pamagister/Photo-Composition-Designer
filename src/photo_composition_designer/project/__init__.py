@@ -14,6 +14,7 @@ from photo_composition_designer.db.schema import (
     WorkspaceDatabase,
     ensure_schema,
 )
+from photo_composition_designer.project.inventory import InventoryService, ScanSummary
 from photo_composition_designer.project.models import (
     CalendarPage,
     DistributionProposal,
@@ -57,6 +58,8 @@ __all__ = [
     "ProjectRepository",
     "ProjectService",
     "SCHEMA_VERSION",
+    "ScanSummary",
+    "InventoryService",
     "SlotLayoutMismatchError",
     "SourceRoot",
     "SourceRootRepository",

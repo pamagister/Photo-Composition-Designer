@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Projects</h1>
+  <a class="button primary" href="/projects/new">New project</a>
+</div>
+{% if projects %}
+<div class="project-grid">
+  {% for project in projects %}
+  <article class="project-card">
+    <h2><a href="/projects/{{ project.id }}">{{ project.name }}</a></h2>
+    <p class="muted">{{ project.page_count }} pages &middot; updated {{ project.updated_at[:10] }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">No projects yet. Create one to get started.</p>
+{% endif %}
+{% endblock %}

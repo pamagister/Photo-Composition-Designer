@@ -1,0 +1,16 @@
+{% if photos %}
+<div class="inventory">
+  {% for photo in photos %}
+  <figure class="inventory-item">
+    <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" loading="lazy">
+    <figcaption class="meta">
+      <span title="{{ photo.relative_path }}">{{ photo.filename }}</span>
+      {% if photo.id in assigned_ids %}<span class="muted">assigned</span>{% endif %}
+      {% if not photo.available %}<span class="error">missing</span>{% endif %}
+    </figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">No photos scanned yet.</p>
+{% endif %}

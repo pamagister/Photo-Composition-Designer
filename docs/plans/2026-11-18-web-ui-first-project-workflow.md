@@ -436,19 +436,19 @@ changing its public behavior.
 
 **Objective:** Deliver the first usable browser application.
 
-- [ ] **P2-W01:** Add FastAPI application factory, static files, Jinja base template,
+- [x] **P2-W01:** Add FastAPI application factory, static files, Jinja base template,
   health endpoint and appdata/settings lifecycle.
-- [ ] **P2-W02:** Implement the single Typer CLI and `gui` command with default
+- [x] **P2-W02:** Implement the single Typer CLI and `gui` command with default
   `http://127.0.0.1:8767/`.
-- [ ] **P2-W03:** Add project selection/open/create workflow and visible save state.
-- [ ] **P2-W04:** Add a safe local-only source-directory chooser or validated path entry.
-- [ ] **P2-W05:** Add source scanning, scan progress/summary, missing-source state and
+- [x] **P2-W03:** Add project selection/open/create workflow and visible save state.
+- [x] **P2-W04:** Add a safe local-only source-directory chooser or validated path entry.
+- [x] **P2-W05:** Add source scanning, scan progress/summary, missing-source state and
   actionable errors.
-- [ ] **P2-W06:** Add server-side routes and HTMX partials for project, inventory and page
+- [x] **P2-W06:** Add server-side routes and HTMX partials for project, inventory and page
   navigation.
-- [ ] **P2-W07:** Add controlled thumbnail/media endpoints with content types and cache
+- [x] **P2-W07:** Add controlled thumbnail/media endpoints with content types and cache
   headers.
-- [ ] **P2-W08:** Add FastAPI TestClient tests with isolated appdata and temporary source
+- [x] **P2-W08:** Add FastAPI TestClient tests with isolated appdata and temporary source
   directories.
 
 **Acceptance criteria**
@@ -729,59 +729,93 @@ The refactoring is complete when all of the following hold:
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
 - **Completed:** Phase 0 (fixture replacement + baseline), Phase 1 (source
-  restructuring + foundation migration). 127 tests pass.
-- **Active:** None. Ready for Phase 2 (web application foundation).
-- **Next:** Phase 2, starting with P2-W01 (FastAPI app factory, Jinja base
-  template, health endpoint, appdata/settings lifecycle).
+  restructuring + foundation migration), Phase 2 (web application foundation and
+  project lifecycle). 136 tests pass.
+- **Active:** None. Ready for Phase 3 (image inventory, GPS extraction and local map).
+- **Next:** Phase 3, starting with P3-W01 (recursive image discovery with explicit
+  extensions, deterministic ordering and symlink policy).
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md` (previous plan and Phase 0/1 record)
   - `docs/architecture/web-ui-project-workflow.md`
-  - `src/Photo_Composition_Designer/project/`
-  - `src/Photo_Composition_Designer/core/`
-  - `src/Photo_Composition_Designer/image/`
-  - `src/Photo_Composition_Designer/gui/gui.py`
-  - `src/Photo_Composition_Designer/cli/cli.py`
+  - `src/photo_composition_designer/project/`
+  - `src/photo_composition_designer/core/`
+  - `src/photo_composition_designer/gui/`
+  - `src/photo_composition_designer/io/`
+  - `src/photo_composition_designer/cli/app.py`
+  - `src/photo_composition_designer/render/`
   - `tests/test_project_*.py`
+  - `tests/test_gui.py`
   - `tests/test_GeoPlotter.py`, `tests/test_MapRenderer.py`, `tests/test_Photo.py`
   - `/home/paul/PycharmProjects/image-triage/src/image_triage/gui/`
 - **Decisions:** Web UI first; full `image-triage`-style source layout; keep Phase 0/1
   domain/persistence; `photo-composition-designer gui` at `127.0.0.1:8767`; replace old
   images with flat Pixabay; three-panel editor; local cached GPS map with existing
   fallback; YAML layouts with user-added files; central workspace and `.pcd` portability.
-- **Blockers:** None. No implementation has started.
-- **Last verified:** 2026-11-18; Phase 0 and Phase 1 committed and pushed to
-  `plan/web-ui-calendar-project-workflow`. CI green on both (runs 44278785400,
-  44280507206). `make lint` clean; `uv run pytest -q` -> 127 passed.
-- **Context status:** Phase 0+1 complete. Starting fresh session for Phase 2
-  (web application foundation). Handoff block is the contract.
+- **Blockers:** None. Phase 2 delivered the local web foundation, project lifecycle,
+  source validation, basic scanning, HTMX inventory/page fragments and controlled media.
+- **Last verified:** 2026-11-18; Phase 0, Phase 1 and Phase 2 committed and pushed to
+  `plan/web-ui-calendar-project-workflow`. `make lint` clean; `make test` -> 136 passed.
+  Manual `uv run photo-composition-designer gui --port 8799` start checked with
+  `GET /health` -> 200.
+- **Context status:** Phase 0+1+2 complete. Starting fresh session for Phase 3
+  (image inventory, GPS and local map). Handoff block is the contract.
 
-### Phase 2 next steps (web application foundation)
+### Phase 3 next steps (image inventory, GPS and local map)
 
-1. **P2-W01:** Add FastAPI app factory (`gui/app.py`), static mount, Jinja base
-   template (`gui/templates/base.html`), health endpoint (`GET /health`), and
-   appdata/settings lifecycle.
-2. **P2-W02:** Replace the argparse stub in `cli/app.py` and `cli/commands/gui.py`
-   with a Typer app (or keep argparse) that launches uvicorn pointing at the
-   FastAPI factory. Default `http://127.0.0.1:8767/`.
-3. **P2-W03..W08:** Project create/open workflow, source dir chooser, scanning,
-   HTMX partials, media endpoints, TestClient tests.
+1. **P3-W01:** Harden `io/scan.py` recursive discovery: explicit extensions,
+   deterministic ordering, symlink policy and configurable follow behavior.
+2. **P3-W02:** Extend `project/inventory.py` metadata extraction: dimensions,
+   capture date, GPS, size, mtime and availability using `core/photo.py`.
+3. **P3-W03:** Add rescan/reconcile behavior: add new files, refresh changed files,
+   mark missing files unavailable and retain project history.
+4. **P3-W04:** Add and test source resolution/path traversal protection in
+   `io/media.py`.
+5. **P3-W05:** Implement source-root remapping with preview, match counts, ambiguity
+   handling and atomic confirmation.
+6. **P3-W06:** Preserve GPS precedence: EXIF first, `locations.ini` fallback second,
+   deterministic default map when no coordinates are available.
+7. **P3-W07:** Extract the local map service and cache generated map PNGs by
+   coordinate set, geometry, colors, DPI and shapefile version.
+8. **P3-W08:** Add tests for EXIF/no-EXIF, filename location fallback, no GPS,
+   duplicate basenames, unreadable files, traversal attempts and map cache keys.
 
-Key files for Phase 2:
-- `src/photo_composition_designer/gui/app.py` (to create)
-- `src/photo_composition_designer/gui/templates/base.html` (to create)
-- `src/photo_composition_designer/gui/routes/` (to create)
-- `src/photo_composition_designer/gui/static/` (to create)
-- `src/photo_composition_designer/cli/app.py` (update to launch uvicorn)
-- `src/photo_composition_designer/cli/commands/gui.py` (update to run uvicorn)
-- `src/photo_composition_designer/core/appdata.py` (workspace path helper exists)
-- `src/photo_composition_designer/core/settings.py` (typed settings exist)
-- `src/photo_composition_designer/project/services.py` (ProjectService exists)
-- `src/photo_composition_designer/db/schema.py` (WorkspaceDatabase exists)
+Key files for Phase 3:
+- `src/photo_composition_designer/io/scan.py`
+- `src/photo_composition_designer/io/media.py`
+- `src/photo_composition_designer/project/inventory.py`
+- `src/photo_composition_designer/render/map.py`
+- `src/photo_composition_designer/render/geoplot.py`
+- `src/photo_composition_designer/core/photo.py`
+- `src/photo_composition_designer/core/locations.py`
+- `tests/test_Photo.py`, `tests/test_Locations.py`
+- `tests/test_GeoPlotter.py`, `tests/test_MapRenderer.py`
 
-Dependencies already in pyproject.toml: `fastapi`, `uvicorn`, `jinja2`,
-`python-multipart`. Use `uvicorn.run(app, host, port)` or `uvicorn
-Config` programmatically. For tests, use `fastapi.testclient.TestClient` with
-`PCD_DATA_DIR` env override to isolate appdata.
+### Phase 2 record (web application foundation and project lifecycle)
+
+- **P2-W01 (done):** Added `gui/settings.py` (`GuiSettings` with host/port/log level,
+  XDG-aware data/cache paths), `gui/app.py` FastAPI factory, static mount, Jinja base
+  template, `GET /health`, app lifespan database close and root redirect to `/projects`.
+  Added `gui/templating.py` to avoid a route/app circular import.
+- **P2-W02 (done):** Replaced the argparse stub with a Typer app in `cli/app.py`; `gui`
+  command launches uvicorn at `127.0.0.1:8767` by default and supports `--host`,
+  `--port` and `--log-level`.
+- **P2-W03 (done):** Added project list, create form, create/open/rename routes and a
+  visible save state in the project header.
+- **P2-W04 (done):** Added validated local source-directory entry plus
+  `GET /api/browse` directory suggestions and `static/source-picker.js`.
+- **P2-W05 (done):** Added `io/scan.py`, `project/inventory.py` `InventoryService`,
+  source-root management, scan summary/reconciliation and actionable errors. Missing
+  files are marked unavailable without deleting assignments.
+- **P2-W06 (done):** Added server-rendered project workspace, HTMX page navigation,
+  inventory fragments and scan-result fragments.
+- **P2-W07 (done):** Added `io/media.py` containment checks, `io/previews.py` thumbnail
+  cache and `/media/photos/{id}` plus `/media/photos/{id}/original` endpoints with
+  content types and cache headers.
+- **P2-W08 (done):** Added `tests/test_gui.py` with isolated `PCD_DATA_DIR`/
+  `PCD_CACHE_DIR`, temporary source directories, TestClient coverage for health,
+  project lifecycle, scanning, media, browse validation and CLI help.
+- **Verification:** `make lint` clean; `make test` -> 136 passed; manual local server
+  startup checked.
 
 ### Phase 0 record (baseline + fixture replacement)
 
