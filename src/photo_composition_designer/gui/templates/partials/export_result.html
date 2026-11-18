@@ -1,0 +1,33 @@
+{% if error %}
+<p class="error" role="alert">{{ error }}</p>
+<p class="muted">No pages were exported. Adjust the folder or project settings and try again.</p>
+{% elif result %}
+<p class="success" role="status">
+  Exported {{ result.rendered | length }} of {{ result.pages }} page(s) to
+  <code>{{ export_root }}/{{ folder }}</code>.
+</p>
+{% if result.warnings %}
+<div class="export-warnings">
+  <h3>Warnings</h3>
+  <ul>
+    {% for warning in result.warnings %}
+    <li>{{ warning }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% if file_rows %}
+<h3>Rendered pages</h3>
+<ul class="export-files">
+  {% for row in file_rows %}
+  <li>
+    <a href="{{ row.url }}" download>{{ row.name }}</a>
+    <span class="muted">{{ row.size }} bytes</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% if pdf_url %}
+<p><a class="button primary" href="{{ pdf_url }}" download>Download PDF</a></p>
+{% endif %}
+{% endif %}

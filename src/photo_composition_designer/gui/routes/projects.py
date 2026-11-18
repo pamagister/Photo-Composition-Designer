@@ -410,6 +410,8 @@ def project_detail(
         notice = "Project settings saved."
     elif request.query_params.get("duplicated") == "1":
         notice = "Project duplicated. Review the copy before editing."
+    elif request.query_params.get("previewed") == "1":
+        notice = "Page previews refreshed."
     elif request.query_params.get("scanned") == "1":
         notice = "Source directory scanned."
     elif request.query_params.get("remapped") == "1":
@@ -466,6 +468,27 @@ def page_preview(
         path,
         media_type="image/jpeg",
         headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@router.get("/projects/{project_id}/preview", response_model=None)
+def preview_project(
+    project_id: int,
+    service: ProjectServiceDependency,
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> RedirectResponse:
+    """Render previews for all pages in project order and open the first page."""
+    aggregate = _load_project(service, project_id)
+    if not aggregate.pages:
+        return _error_redirect(project_id, "this project has no pages to preview")
+    rendering = ProjectRenderingService(database, preview_dir=settings.preview_dir())
+    for page in aggregate.pages:
+        rendering.render_preview(project_id, page.id, max_width=320)
+    first_page = aggregate.pages[0]
+    return RedirectResponse(
+        f"/projects/{project_id}?page={first_page.id}&previewed=1",
+        status_code=303,
     )
 
 

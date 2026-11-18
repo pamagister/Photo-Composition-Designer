@@ -85,6 +85,7 @@ class ProjectExporter:
         profile = service.profile_for(connection, project_id)
         pages = PageRepository(connection).list(project_id)
         for page in pages:
+            warnings.extend(service.assignment_warnings(connection, page))
             try:
                 path = self.render_page(connection, project_id, page, output_dir)
             except (OSError, ValueError) as error:

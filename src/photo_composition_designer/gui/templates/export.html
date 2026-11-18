@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="project-header">
+  <div>
+    <h1>Export project</h1>
+    <p class="muted">{{ project.name }} &middot; {{ project.page_count }} pages</p>
+  </div>
+  <a class="button" href="/projects/{{ project.id }}">Back to project</a>
+</div>
+
+<div class="panel export-panel">
+  <h2>Effective output settings</h2>
+  <dl class="export-settings">
+    <div><dt>Page size</dt><dd>{{ profile.size.width }} x {{ profile.size.height }} mm</dd></div>
+    <div><dt>DPI</dt><dd>{{ profile.size.dpi }}</dd></div>
+    <div><dt>JPEG quality</dt><dd>{{ profile.size.jpeg_quality }}</dd></div>
+    <div><dt>PDF</dt><dd>{{ "enabled" if profile.layout.generate_pdf else "disabled" }}</dd></div>
+  </dl>
+  <p class="muted">
+    Settings come from this project's output profile. Change them in
+    <a href="/projects/{{ project.id }}/settings">project settings</a>.
+  </p>
+</div>
+
+<div class="panel">
+  <h2>Render pages</h2>
+  <form hx-post="/projects/{{ project.id }}/export"
+        hx-target="#export-result"
+        hx-swap="innerHTML"
+        hx-indicator="#export-progress"
+        method="post"
+        action="/projects/{{ project.id }}/export">
+    <div class="form-row">
+      <div class="field">
+        <label for="export-folder">Export folder</label>
+        <input id="export-folder" name="folder" value="{{ folder }}"
+               placeholder="project_{{ project.id }}">
+      </div>
+      <div class="field checkbox-field">
+        <label for="export-pdf">
+          <input type="checkbox" id="export-pdf" name="pdf" value="1"
+                 {% if profile.layout.generate_pdf %}checked{% endif %}
+                 {% if not profile.layout.generate_pdf %}disabled{% endif %}>
+          Write combined PDF
+        </label>
+      </div>
+      <button class="primary" type="submit">Export pages</button>
+    </div>
+    <p class="muted">
+      Output is written below <code>{{ export_root }}</code>. Source originals are
+      read only and are never copied or modified.
+    </p>
+    <span id="export-progress" class="htmx-indicator muted">
+      Rendering pages... this can take a moment.
+    </span>
+  </form>
+</div>
+
+<div id="export-result" class="panel export-result">
+  {% if result or error %}
+  {% include "partials/export_result.html" %}
+  {% else %}
+  <p class="muted">No export has run in this session.</p>
+  {% endif %}
+</div>
+{% endblock %}

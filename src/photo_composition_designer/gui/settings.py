@@ -45,12 +45,17 @@ class GuiSettings:
         """Return the page preview cache directory."""
         return self.cache_dir / "previews"
 
+    def export_dir(self) -> Path:
+        """Return the web export output directory."""
+        return self.cache_dir / "exports"
+
     def ensure_directories(self) -> None:
         """Create all writable application directories."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.thumbnail_dir().mkdir(parents=True, exist_ok=True)
         self.preview_dir().mkdir(parents=True, exist_ok=True)
+        self.export_dir().mkdir(parents=True, exist_ok=True)
         self.workspace_path().parent.mkdir(parents=True, exist_ok=True)
 
 

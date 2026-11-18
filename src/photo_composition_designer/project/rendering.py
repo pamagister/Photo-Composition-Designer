@@ -174,6 +174,37 @@ class ProjectRenderingService:
         """Render one page as a full-resolution image."""
         return self._composer.render(self.build_input(connection, page))
 
+    def assignment_warnings(self, connection, page: CalendarPage) -> tuple[str, ...]:
+        """Return actionable warnings for assigned photos that cannot render."""
+        photo_repository = PhotoRepository(connection)
+        root_repository = SourceRootRepository(connection)
+        warnings: list[str] = []
+        for assignment in AssignmentRepository(connection).list_by_page(page.id):
+            photo = photo_repository.get(assignment.photo_id)
+            if photo is None:
+                warnings.append(
+                    f"page {page.page_index + 1}: photo {assignment.photo_id} "
+                    "is missing from the inventory"
+                )
+                continue
+            if not photo.available:
+                warnings.append(f"page {page.page_index + 1}: {photo.filename} is unavailable")
+                continue
+            root = root_repository.get(photo.source_root_id)
+            if root is None:
+                warnings.append(f"page {page.page_index + 1}: {photo.filename} has no source root")
+                continue
+            try:
+                path = resolve_source_path(root.path, photo.relative_path)
+            except ValueError:
+                warnings.append(f"page {page.page_index + 1}: {photo.filename} cannot be resolved")
+                continue
+            if not path.is_file():
+                warnings.append(
+                    f"page {page.page_index + 1}: {photo.filename} is missing at {path}"
+                )
+        return tuple(warnings)
+
     def preview_cache_key(
         self,
         page: CalendarPage,

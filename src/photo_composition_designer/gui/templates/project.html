@@ -18,6 +18,8 @@
     </div>
     <button>Save name</button>
   </form>
+  <a class="button" href="/projects/{{ project.id }}/preview">Preview all pages</a>
+  <a class="button" href="/projects/{{ project.id }}/export">Export</a>
   <a class="button" href="/projects/{{ project.id }}/settings">Project settings</a>
 </div>
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}

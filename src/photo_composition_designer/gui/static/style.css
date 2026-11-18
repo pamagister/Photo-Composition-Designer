@@ -605,3 +605,46 @@ summary {
 .settings-duplicate {
   max-width: 44rem;
 }
+
+.export-panel {
+  max-width: 60rem;
+}
+
+.export-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.export-settings dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.export-settings dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+
+.export-result {
+  max-width: 60rem;
+}
+
+.export-files {
+  padding-left: 1.2rem;
+}
+
+.export-files li {
+  margin-bottom: 0.25rem;
+}
+
+.export-warnings {
+  border-left: 3px solid var(--danger);
+  padding-left: 0.75rem;
+}
+
+.export-warnings h3 {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}

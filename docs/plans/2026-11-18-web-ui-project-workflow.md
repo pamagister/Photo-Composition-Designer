@@ -478,13 +478,13 @@ release work.
 
 **Objective:** Make preview and export usable from the browser.
 
-- [ ] **P6-W01:** Add a web export route with output directory, DPI/quality,
+- [x] **P6-W01:** Add a web export route with output directory, DPI/quality,
   progress, completion state and actionable warnings.
-- [ ] **P6-W02:** Add a full-project preview route that renders pages in explicit
+- [x] **P6-W02:** Add a full-project preview route that renders pages in explicit
   project order and opens the first page.
-- [ ] **P6-W03:** Ensure export uses the project output profile and explicit page
+- [x] **P6-W03:** Ensure export uses the project output profile and explicit page
   order for both PNG pages and the combined PDF.
-- [ ] **P6-W04:** Add tests for web export, PDF order, profile isolation and missing
+- [x] **P6-W04:** Add tests for web export, PDF order, profile isolation and missing
   or unreadable assets.
 
 **Acceptance criteria**
@@ -663,9 +663,14 @@ The continuation is complete when all of the following hold:
   transactional project duplication covering pages, layout snapshots,
   assignments, source roots, inventory and profile; settings and duplicate UI
   with discovery links and notices. `make lint` clean; 209 tests pass.
-- **Active:** None. Phase 5 committed and pushed.
-- **Next:** Phase 6 (web export and preview jobs), starting with P6-W01. Phase
-  issue #33.
+  Continuation Phase 6 complete: browser export page with effective profile
+  summary, relative export folder and PDF toggle, HTMX progress and result
+  fragments, safe file downloads, ordered page/PDF output, actionable
+  missing-asset warnings, and a full-project preview route that opens the first
+  page. `make lint` clean; 215 tests pass.
+- **Active:** None. Phase 6 committed and pushed.
+- **Next:** Phase 7 (CLI completion and cleanup), starting with P7-W01. Phase
+  issue #34.
 - **Relevant files:**
   - `docs/plans/2026-11-18-web-ui-project-workflow.md`
   - `docs/plans/2026-11-18-web-ui-first-project-workflow.md`
@@ -699,6 +704,6 @@ The continuation is complete when all of the following hold:
   workspace SQLite, YAML layouts, one-photo-use and fixed slots; no legacy folder
   import; Tkinter and `config-cli-gui` stay removed.
 - **Blockers:** None. No blocking product decisions.
-- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 209 passed.
-- **Context status:** Phase 5 complete. Phase 6 covers web export and preview
-  jobs; a phase-boundary handoff is appropriate.
+- **Last verified:** 2026-11-18; `make lint` clean; `uv run pytest -q` -> 215 passed.
+- **Context status:** Phase 6 complete. Phase 7 covers CLI completion and
+  cleanup; a phase-boundary handoff is appropriate.
