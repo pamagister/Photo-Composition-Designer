@@ -34,6 +34,30 @@ a:focus {
   text-decoration: underline;
 }
 
+/* A single visible focus indicator for every interactive element. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+  padding: 0.45rem 0.8rem;
+  border-radius: 6px;
+  background: var(--accent-strong);
+  color: #08111f;
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  text-decoration: none;
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -99,7 +123,6 @@ button:hover,
 .button:focus,
 button:focus {
   border-color: var(--accent);
-  outline: none;
 }
 
 .button.primary,
@@ -368,21 +391,6 @@ summary {
   color: var(--muted);
 }
 
-@media (max-width: 1000px) {
-  .project-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .inventory-panel {
-    position: static;
-    max-height: none;
-  }
-
-  .editor-shell {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Three-panel editor shell */
 .editor-shell {
   display: grid;
@@ -450,6 +458,7 @@ summary {
 
 .slot-grid {
   display: grid;
+  grid-template-columns: repeat(var(--slot-columns, 2), minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -478,7 +487,8 @@ summary {
 
 .slot img {
   width: 100%;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   object-fit: cover;
   cursor: grab;
 }
@@ -486,6 +496,12 @@ summary {
 .slot .slot-placeholder {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.slot .slot-hint {
+  margin: 0.25rem 0.5rem 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
 }
 
 .slot .slot-assign-form {
@@ -500,10 +516,56 @@ summary {
   max-width: 12rem;
 }
 
-.slot .remove-btn {
+.slot-actions {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem 0.4rem;
+  background: rgba(0, 0, 0, 0.68);
+  font-size: 0.8rem;
+}
+
+.slot-actions details {
+  margin: 0;
+}
+
+.slot-actions summary {
+  padding: 0.1rem 0.3rem;
+}
+
+.slot-actions form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.slot-actions select {
+  width: auto;
+  max-width: 9rem;
+}
+
+.slot-actions button {
+  padding: 0.15rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+.slot-actions label {
+  color: var(--text);
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.slot-remove {
   position: absolute;
   top: 0.3rem;
   right: 0.3rem;
+  z-index: 1;
+}
+
+.slot .remove-btn {
   padding: 0.1rem 0.4rem;
   font-size: 0.75rem;
   background: var(--surface-raised);
@@ -648,3 +710,65 @@ summary {
   margin: 0.5rem 0;
   font-size: 0.95rem;
 }
+
+/* Responsive layout comes last so it overrides the base grid rules. */
+@media (max-width: 1000px) {
+  .project-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .editor-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-sidebar {
+    max-height: none;
+  }
+}
+
+/* Narrow screens stack panels instead of using drawers: every control stays
+ * reachable and the slot grid collapses to one column. */
+@media (max-width: 700px) {
+  #main {
+    padding: 0.75rem;
+  }
+
+  .project-header,
+  .editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .slot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .page-thumb {
+    flex: 0 0 7rem;
+    min-width: 7rem;
+  }
+
+  .page-thumb-preview {
+    aspect-ratio: 4 / 3;
+  }
+
+  .editor-bottom {
+    padding: 0.5rem;
+  }
+
+  .unused-pool {
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  }
+}
+

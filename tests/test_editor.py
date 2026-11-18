@@ -191,3 +191,53 @@ def test_replace_photo_via_route(editor_client, tmp_path):
     )
     assert response.status_code == 200
     assert "Photo replaced" in response.text
+
+
+def test_occupied_slot_exposes_keyboard_replace_and_move(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
+    editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/assign",
+        data={"slot_id": slot_ids[0], "photo_id": photo_ids[0]},
+    )
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+
+    markup = page.text
+    assert f'hx-post="/projects/{project_id}/pages/{page_id}/replace"' in markup
+    assert f'hx-post="/projects/{project_id}/pages/{page_id}/swap"' in markup
+    assert f'name="slot_a" value="{slot_ids[0]}"' in markup
+    assert 'name="slot_b"' in markup
+    assert f'<option value="{slot_ids[1]}">slot_1</option>' in markup
+
+
+def test_slots_use_group_semantics_instead_of_button_role(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+
+    markup = page.text
+    assert 'role="button"' not in markup
+    assert 'class="slot empty"' in markup
+    assert 'aria-label="Slot slot_0: empty"' in markup
+    assert f'id="assign-photo-{slot_ids[0]}"' in markup
+
+
+def test_project_page_has_skip_link_and_live_notice(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_project(tmp_path)
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+    assert 'class="skip-link" href="#main"' in page.text
+    assert '<main id="main">' in page.text
+    assert 'aria-live="polite"' in page.text
+
+
+def test_empty_slot_without_unused_photos_has_no_assign_form(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path, photo_count=1)
+    editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/assign",
+        data={"slot_id": slot_ids[0], "photo_id": photo_ids[0]},
+    )
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+    assert "All photos are assigned." in page.text
+    assert f'id="assign-photo-{slot_ids[1]}"' not in page.text

@@ -4,11 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ page_title | default("Photo Composition Designer") }}{% endblock %}</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/htmx.min.js" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to main content</a>
   <header class="app-header">
     <nav aria-label="Main navigation">
       <a class="brand" href="/">PCD</a>

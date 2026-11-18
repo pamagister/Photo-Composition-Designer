@@ -30,9 +30,6 @@
     <h2>Pages</h2>
     {% for pg in pages %}
     <a href="/projects/{{ project.id }}?page={{ pg.id }}"
-       hx-get="/projects/{{ project.id }}/pages/{{ pg.id }}"
-       hx-target="#page-detail"
-       hx-push-url="false"
        class="page-thumb {% if selected_page and pg.id == selected_page.id %}active{% endif %}"
        {% if selected_page and pg.id == selected_page.id %}aria-current="page"{% endif %}>
       <img id="page-thumb-preview-{{ pg.id }}"
@@ -46,6 +43,10 @@
   </aside>
 
   <section class="editor-main">
+    <div id="page-detail" class="panel editor-canvas-panel">
+      {% include "partials/editor_canvas.html" %}
+    </div>
+
     <div class="panel">
       <h2>Source directories</h2>
       {% for state in source_states %}
@@ -127,10 +128,6 @@
       <div id="inventory">
         {% include "partials/inventory.html" %}
       </div>
-    </div>
-
-    <div id="page-detail" class="panel editor-canvas-panel">
-      {% include "partials/editor_canvas.html" %}
     </div>
   </section>
 </div>

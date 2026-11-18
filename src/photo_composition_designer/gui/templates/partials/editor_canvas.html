@@ -13,7 +13,7 @@
     <h2>{{ page.start_date }} &ndash; {{ page.end_date }}</h2>
     <span class="muted">revision {{ page.render_revision }}</span>
     <span class="save-state" data-save-state>{{ "Saved" if notice else "Up to date" }}</span>
-    {% if notice %}<span class="success" role="status">{{ notice }}</span>{% endif %}
+    {% if notice %}<span class="success" role="status" aria-live="polite">{{ notice }}</span>{% endif %}
   </div>
 
   <div class="page-preview">
@@ -38,64 +38,110 @@
               hx-target="closest .editor-canvas"
               hx-swap="outerHTML">Apply layout</button>
     </form>
-    <div id="layout-change-preview"></div>
+    <div id="layout-change-preview" aria-live="polite"></div>
   </details>
 
   {% if page.layout_id %}
-  <div class="slot-grid" style="grid-template-columns: repeat({{ slot_count | default(2) }}, 1fr);">
+  <div class="slot-grid" style="--slot-columns: {{ slot_count | default(2) }};">
     {% for slot in slots %}
     {% set assignment = slot_assignment_map.get(slot.id) %}
     {% set photo = photos_by_id.get(assignment.photo_id) if assignment else None %}
     <div class="slot {% if photo %}occupied{% else %}empty{% endif %}"
          data-slot-id="{{ slot.id }}"
          data-slot-key="{{ slot.slot_key }}"
-         tabindex="0"
-         role="button"
+         role="group"
          aria-label="Slot {{ slot.slot_key }}{% if photo %}: {{ photo.filename }}{% else %}: empty{% endif %}">
       {% if photo %}
       <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" draggable="true"
            data-photo-id="{{ photo.id }}">
       <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/remove"
             hx-target="closest .editor-canvas"
-            hx-swap="outerHTML">
+            hx-swap="outerHTML"
+            class="slot-remove">
         <input type="hidden" name="slot_id" value="{{ slot.id }}">
-        <button type="submit" class="remove-btn" aria-label="Remove photo">x</button>
+        <button type="submit" class="remove-btn"
+                aria-label="Remove {{ photo.filename }} from slot {{ slot.slot_key }}">x</button>
       </form>
-      <details class="crop-controls">
-        <summary>Crop</summary>
-        <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/crop"
-              hx-target="closest .editor-canvas"
-              hx-swap="outerHTML">
-          <input type="hidden" name="slot_id" value="{{ slot.id }}">
-          <label>Zoom
-            <input type="range" name="crop_zoom" min="1" max="3" step="0.1"
-                   value="{{ assignment.crop_zoom }}">
-          </label>
-          <label>Focus X
-            <input type="range" name="crop_focus_x" min="0" max="1" step="0.05"
-                   value="{{ assignment.crop_focus_x }}">
-          </label>
-          <label>Focus Y
-            <input type="range" name="crop_focus_y" min="0" max="1" step="0.05"
-                   value="{{ assignment.crop_focus_y }}">
-          </label>
-          <button type="submit">Save crop</button>
-        </form>
-      </details>
+      <div class="slot-actions">
+        <details class="crop-controls">
+          <summary>Crop</summary>
+          <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/crop"
+                hx-target="closest .editor-canvas"
+                hx-swap="outerHTML"
+                aria-label="Crop settings for slot {{ slot.slot_key }}">
+            <input type="hidden" name="slot_id" value="{{ slot.id }}">
+            <label>Zoom
+              <input type="range" name="crop_zoom" min="1" max="3" step="0.1"
+                     value="{{ assignment.crop_zoom }}">
+            </label>
+            <label>Focus X
+              <input type="range" name="crop_focus_x" min="0" max="1" step="0.05"
+                     value="{{ assignment.crop_focus_x }}">
+            </label>
+            <label>Focus Y
+              <input type="range" name="crop_focus_y" min="0" max="1" step="0.05"
+                     value="{{ assignment.crop_focus_y }}">
+            </label>
+            <button type="submit">Save crop</button>
+          </form>
+        </details>
+        {% if unused_photos %}
+        <details class="replace-controls">
+          <summary>Replace</summary>
+          <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/replace"
+                hx-target="closest .editor-canvas"
+                hx-swap="outerHTML"
+                aria-label="Replace photo in slot {{ slot.slot_key }}">
+            <input type="hidden" name="slot_id" value="{{ slot.id }}">
+            <label class="sr-only" for="replace-photo-{{ slot.id }}">Replacement photo</label>
+            <select id="replace-photo-{{ slot.id }}" name="photo_id">
+              {% for candidate in unused_photos %}
+              <option value="{{ candidate.id }}">{{ candidate.filename }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit">Replace</button>
+          </form>
+        </details>
+        {% endif %}
+        {% if slots | length > 1 %}
+        <details class="move-controls">
+          <summary>Move</summary>
+          <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/swap"
+                hx-target="closest .editor-canvas"
+                hx-swap="outerHTML"
+                aria-label="Move photo from slot {{ slot.slot_key }} to another slot">
+            <input type="hidden" name="slot_a" value="{{ slot.id }}">
+            <label class="sr-only" for="move-slot-{{ slot.id }}">Target slot</label>
+            <select id="move-slot-{{ slot.id }}" name="slot_b">
+              {% for other in slots if other.id != slot.id %}
+              <option value="{{ other.id }}">{{ other.slot_key }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit">Move</button>
+          </form>
+        </details>
+        {% endif %}
+      </div>
       {% else %}
       <span class="slot-placeholder">Empty slot</span>
+      {% if unused_photos %}
       <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/assign"
             hx-target="closest .editor-canvas"
             hx-swap="outerHTML"
-            class="slot-assign-form">
+            class="slot-assign-form"
+            aria-label="Assign a photo to slot {{ slot.slot_key }}">
         <input type="hidden" name="slot_id" value="{{ slot.id }}">
-        <select name="photo_id" aria-label="Choose photo for slot {{ slot.slot_key }}">
+        <label class="sr-only" for="assign-photo-{{ slot.id }}">Photo for slot {{ slot.slot_key }}</label>
+        <select id="assign-photo-{{ slot.id }}" name="photo_id">
           {% for candidate in unused_photos %}
           <option value="{{ candidate.id }}">{{ candidate.filename }}</option>
           {% endfor %}
         </select>
         <button type="submit">Assign</button>
       </form>
+      {% else %}
+      <p class="muted slot-hint">All photos are assigned.</p>
+      {% endif %}
       {% endif %}
     </div>
     {% endfor %}
