@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from typing import TYPE_CHECKING
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 from photo_composition_designer.core.anniversaries import Anniversaries
 from photo_composition_designer.core.color import Color
@@ -77,7 +77,7 @@ class PageComposer:
         content_top = margin_top
 
         description_image: Image.Image | None = None
-        if profile.layout.use_photo_description and page.description:
+        if profile.layout.use_photo_description:
             description_image = DescriptionRenderer(
                 width_px=page_width,
                 font=profile.style.font_description.to_font(),
@@ -87,14 +87,34 @@ class PageComposer:
                 dpi=dpi,
             ).generate(page.description)
 
+        calendar_strip = (
+            self._render_calendar_strip(page, profile, settings, page_width)
+            if show_calendar
+            else None
+        )
+        calendar_ink_top = 0
+        if calendar_strip is not None and description_image is not None:
+            difference = ImageChops.difference(
+                calendar_strip, Image.new("RGB", calendar_strip.size, background)
+            )
+            bounds = difference.getbbox()
+            calendar_ink_top = bounds[1] if bounds is not None else 0
+
+        description_ink_bottom = 0
+        if description_image is not None:
+            bounds = description_image.getbbox()
+            description_ink_bottom = bounds[3] if bounds is not None else description_image.height
+
         content_left = margin_sides
         content_width = max(1, page_width - 2 * margin_sides)
         content_bottom = page_height - margin_bottom
         calendar_top = content_bottom - calendar_height if show_calendar else content_bottom
 
         if description_image is not None:
-            description_bottom = calendar_top - spacing if show_calendar else content_bottom
-            description_top = description_bottom - description_image.height
+            description_bottom = (
+                calendar_top + calendar_ink_top if show_calendar else content_bottom
+            )
+            description_top = description_bottom - description_ink_bottom
             photo_bottom = description_top
         else:
             description_top = None
@@ -120,9 +140,8 @@ class PageComposer:
             map_x = content_left + slots_width + spacing
             canvas.paste(map_image, (map_x, content_top))
 
-        if show_calendar:
-            strip = self._render_calendar_strip(page, profile, settings, page_width)
-            canvas.paste(strip, (0, calendar_top))
+        if calendar_strip is not None:
+            canvas.paste(calendar_strip, (0, calendar_top))
 
         if description_image is not None and description_top is not None:
             canvas.paste(

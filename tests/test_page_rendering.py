@@ -180,6 +180,24 @@ def test_description_renders_between_photo_and_calendar(tmp_path):
         margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
         calendar_height = mm_to_px(profile.size.calendar_height, dpi)
         calendar_top = image.height - margin_bottom - calendar_height
+        background = (20, 20, 20)
+
+        calendar_only = PageComposer().render(
+            replace(
+                render_input,
+                description="",
+                output_profile=replace(
+                    profile,
+                    layout=replace(profile.layout, use_photo_description=False),
+                ),
+            )
+        )
+        calendar_ink_top = min(
+            y
+            for y in range(calendar_top, image.height - margin_bottom)
+            for x in range(image.width)
+            if calendar_only.getpixel((x, y)) != background
+        )
 
         photo_bottom = max(
             y
@@ -189,13 +207,44 @@ def test_description_renders_between_photo_and_calendar(tmp_path):
         )
         description_y = [
             y
-            for y in range(image.height)
+            for y in range(calendar_ink_top + 2)
             for x in range(image.width)
             if image.getpixel((x, y)) == (150, 150, 150)
         ]
 
-        assert photo_bottom < calendar_top
-        assert any(photo_bottom < y < calendar_top for y in description_y)
+        assert description_y
+        assert min(description_y) > photo_bottom
+        assert max(description_y) <= calendar_ink_top + 1
+    finally:
+        database.close()
+
+
+def test_description_space_is_reserved_when_text_is_empty(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    try:
+        rendering = ProjectRenderingService(database)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+
+        empty = PageComposer().render(render_input)
+        filled = PageComposer().render(replace(render_input, description="Filled description"))
+
+        empty_photo_bottom = max(
+            y
+            for y in range(empty.height)
+            for x in range(empty.width)
+            if _is_red(empty.getpixel((x, y)))
+        )
+        filled_photo_bottom = max(
+            y
+            for y in range(filled.height)
+            for x in range(filled.width)
+            if _is_red(filled.getpixel((x, y)))
+        )
+
+        assert empty_photo_bottom == filled_photo_bottom
     finally:
         database.close()
 
