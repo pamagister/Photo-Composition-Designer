@@ -548,17 +548,33 @@ def test_preview_invalidated_by_profile_change(tmp_path):
         first = rendering.render_preview(project_id, page_id)
 
         service = ProjectService(database)
+        default_profile = OutputProfile.default()
         changed = OutputProfile(
-            size=SizeProfile(dpi=150),
-            calendar=OutputProfile.default().calendar,
-            style=OutputProfile.default().style,
-            geo=OutputProfile.default().geo,
-            layout=OutputProfile.default().layout,
+            size=default_profile.size,
+            calendar=default_profile.calendar,
+            style=replace(default_profile.style, background_color="#000000"),
+            geo=default_profile.geo,
+            layout=default_profile.layout,
         )
         service.save_project(project_id, output_profile=changed.to_dict())
 
         second = rendering.render_preview(project_id, page_id)
         assert second != first
+
+        # A DPI change above the draft DPI does not change the rendered preview,
+        # so the draft cache key stays the same. This documents the intended
+        # draft-profile behaviour: the key is derived from the profile the
+        # preview actually renders with, not the full-resolution profile.
+        lower_dpi = OutputProfile(
+            size=SizeProfile(dpi=150),
+            calendar=default_profile.calendar,
+            style=default_profile.style,
+            geo=default_profile.geo,
+            layout=default_profile.layout,
+        )
+        service.save_project(project_id, output_profile=lower_dpi.to_dict())
+        third = rendering.render_preview(project_id, page_id)
+        assert third == first
     finally:
         database.close()
 
