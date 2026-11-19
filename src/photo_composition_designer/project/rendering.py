@@ -143,16 +143,26 @@ class ProjectRenderingService:
         root_repository = SourceRootRepository(connection)
         assignment_repository = AssignmentRepository(connection)
 
+        # Batch the photo and source-root lookups so build_input issues a
+        # constant number of queries regardless of slot count (D7). Resolving
+        # source paths is CPU-only and stays in the loop.
+        assignments = assignment_repository.list_by_page(page.id)
+        photos_by_id = photo_repository.get_many(
+            [assignment.photo_id for assignment in assignments]
+        )
+        root_ids = [photo.source_root_id for photo in photos_by_id.values()]
+        roots_by_id = root_repository.get_many(root_ids)
+
         slot_photos: dict[str, SlotPhoto] = {}
         coordinates: list[tuple[float, float]] = []
-        for assignment in assignment_repository.list_by_page(page.id):
+        for assignment in assignments:
             slot_key = slot_keys.get(assignment.slot_id)
             if slot_key is None:
                 continue
-            photo = photo_repository.get(assignment.photo_id)
+            photo = photos_by_id.get(assignment.photo_id)
             if photo is None or not photo.available:
                 continue
-            root = root_repository.get(photo.source_root_id)
+            root = roots_by_id.get(photo.source_root_id)
             if root is None:
                 continue
             try:

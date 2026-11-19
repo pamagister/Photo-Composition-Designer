@@ -207,6 +207,22 @@ class SourceRootRepository:
         ).fetchone()
         return self._row_to_source_root(row) if row is not None else None
 
+    def get_many(self, source_root_ids: list[int]) -> dict[int, SourceRoot]:
+        """Return source roots by id in a single query.
+
+        Duplicate ids are de-duplicated by the ``IN`` clause. Missing ids are
+        simply absent from the result.
+        """
+        unique_ids = list(dict.fromkeys(source_root_ids))
+        if not unique_ids:
+            return {}
+        placeholders = ",".join("?" for _ in unique_ids)
+        rows = self._connection.execute(
+            f"SELECT * FROM source_roots WHERE id IN ({placeholders})",  # noqa: S608
+            tuple(unique_ids),
+        ).fetchall()
+        return {int(row["id"]): self._row_to_source_root(row) for row in rows}
+
     def list(self, project_id: int) -> list[SourceRoot]:
         """Return all source roots for a project ordered by ID."""
         rows = self._connection.execute(
@@ -332,6 +348,22 @@ class PhotoRepository:
         """Return one photo asset or ``None``."""
         row = self._connection.execute("SELECT * FROM photos WHERE id = ?", (photo_id,)).fetchone()
         return self._row_to_photo(row) if row is not None else None
+
+    def get_many(self, photo_ids: list[int]) -> dict[int, PhotoAsset]:
+        """Return photo assets by id in a single query.
+
+        Duplicate ids are de-duplicated by the ``IN`` clause. Missing ids are
+        simply absent from the result.
+        """
+        unique_ids = list(dict.fromkeys(photo_ids))
+        if not unique_ids:
+            return {}
+        placeholders = ",".join("?" for _ in unique_ids)
+        rows = self._connection.execute(
+            f"SELECT * FROM photos WHERE id IN ({placeholders})",  # noqa: S608
+            tuple(unique_ids),
+        ).fetchall()
+        return {int(row["id"]): self._row_to_photo(row) for row in rows}
 
     def list(self, project_id: int, *, available_only: bool = False) -> list[PhotoAsset]:
         """Return project photos ordered by relative path."""

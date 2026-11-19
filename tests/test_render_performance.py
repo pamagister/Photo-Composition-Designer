@@ -281,3 +281,46 @@ def test_draft_profile_only_scales_dpi(tmp_path):
     assert draft.geo == profile.geo
     assert draft.layout == profile.layout
     assert draft.profile_hash() != profile.profile_hash()
+
+
+# ---------------------------------------------------------------------------
+# build_input batches its lookups (D7)
+# ---------------------------------------------------------------------------
+
+
+def _count_queries(database, project_id: int, page_id: int) -> int:
+    """Return how many SQL statements ``build_input`` issues for one page."""
+    rendering = ProjectRenderingService(database)
+    connection = database.connect()
+    page = PageRepository(connection).get(page_id)
+    assert page is not None
+
+    statements: list[str] = []
+    connection.set_trace_callback(statements.append)
+    try:
+        rendering.build_input(connection, page)
+    finally:
+        connection.set_trace_callback(None)
+    # The trace callback also fires for the trailing COMMIT issued by sqlite3;
+    # count only SELECT statements issued by build_input.
+    return sum(1 for statement in statements if statement.lstrip().upper().startswith("SELECT"))
+
+
+def test_build_input_query_count_is_constant(tmp_path):
+    """build_input must not issue per-assignment queries (D7)."""
+    database, project_id, page_id = _setup(tmp_path / "few", slots=8, columns=4)
+    try:
+        few = _count_queries(database, project_id, page_id)
+    finally:
+        database.close()
+
+    database2, project_id2, page_id2 = _setup(tmp_path / "many", slots=40, columns=8)
+    try:
+        many = _count_queries(database2, project_id2, page_id2)
+    finally:
+        database2.close()
+
+    # The query count must not grow with the number of slots.
+    assert many == few
+    # Sanity: it is a small constant, not a per-slot N+1 (45 slots would be ~90).
+    assert many <= 6

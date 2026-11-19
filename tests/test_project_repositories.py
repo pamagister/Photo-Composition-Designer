@@ -201,3 +201,36 @@ def test_assignment_transaction_rolls_back(database, connection, project, page, 
             raise RuntimeError("rollback")
 
     assert AssignmentRepository(connection).list_by_project(project.id) == []
+
+
+def test_photo_repository_get_many(connection, project, source_root, photo):
+    repository = PhotoRepository(connection)
+    second = make_photo(repository, project.id, source_root.id, relative_path="photo2.jpg")
+
+    result = repository.get_many([photo.id, second.id, photo.id, 9999])
+
+    assert set(result) == {photo.id, second.id}
+    assert result[photo.id].relative_path == "photo.jpg"
+    assert result[second.id].relative_path == "photo2.jpg"
+
+
+def test_photo_repository_get_many_empty_is_no_query(connection):
+    repository = PhotoRepository(connection)
+
+    assert repository.get_many([]) == {}
+
+
+def test_source_root_repository_get_many(connection, project, source_root):
+    repository = SourceRootRepository(connection)
+    other = repository.add(project.id, "/other", active=False)
+
+    result = repository.get_many([source_root.id, other.id, 9999])
+
+    assert set(result) == {source_root.id, other.id}
+    assert result[other.id].path == "/other"
+
+
+def test_source_root_repository_get_many_empty_is_no_query(connection):
+    repository = SourceRootRepository(connection)
+
+    assert repository.get_many([]) == {}

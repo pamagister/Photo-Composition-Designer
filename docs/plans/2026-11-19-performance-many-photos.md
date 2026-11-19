@@ -413,7 +413,7 @@ Phases are ordered by dependency and by value-per-risk.
   default because that also changes export pixels. Keep only a strategy that
   shows a meaningful end-to-end win and passes visual comparisons across
   representative photos, crop modes, and 320/640 widths.
-- [ ] P1-W02: Add `PhotoRepository.get_many` / `SourceRootRepository.get_many`
+- [x] P1-W02: Add `PhotoRepository.get_many` / `SourceRootRepository.get_many`
   and rewrite `build_input` to batch lookups. Add a repository test asserting
   one query per entity type via a trace callback.
 - [ ] P1-W03: Only replace the `ObjectDetector` fingerprint if a faster
