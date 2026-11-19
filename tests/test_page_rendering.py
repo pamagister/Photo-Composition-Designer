@@ -687,6 +687,32 @@ def test_compute_collage_box_leaves_room_for_description():
     assert prepared.description_top < calendar_top
 
 
+def test_title_page_description_matches_calendar_spacing():
+    # The title strip has no day names, so its first ink sits lower than a
+    # calendar's. The description must keep the same distance from the page
+    # bottom as on a page with a calendar instead of sinking towards the title.
+    profile = OutputProfile.default()
+    shared = {
+        "output_profile": profile,
+        "hide_local_map": True,
+        "hide_description": False,
+        "description": "A caption under the photos",
+    }
+    calendar_prepared = prepare_collage(_blank_page(**shared), profile)
+    title_prepared = prepare_collage(
+        _blank_page(
+            **shared,
+            title_page=True,
+            title="This is the title of the composition",
+        ),
+        profile,
+    )
+
+    assert calendar_prepared.description_top is not None
+    assert title_prepared.description_top is not None
+    assert title_prepared.description_top == calendar_prepared.description_top
+
+
 def test_compute_collage_box_matches_composer_paste_position():
     # The collage the composer renders must land exactly at the computed box.
     profile = OutputProfile.default()

@@ -96,11 +96,20 @@ def _default_map_renderer(
     return renderer.generate
 
 
+def _strip_ink_top(strip: Image.Image, background: tuple[int, ...]) -> int:
+    """Return the y coordinate of the first non-background row in a strip."""
+    difference = ImageChops.difference(strip, Image.new("RGB", strip.size, background))
+    bounds = difference.getbbox()
+    return bounds[1] if bounds is not None else 0
+
+
 def _render_calendar_strip(
     page: PageRenderInput,
     profile: OutputProfile,
     settings,
     width: int,
+    *,
+    force_calendar: bool = False,
 ) -> Image.Image:
     calendar_height = mm_to_px(profile.size.calendar_height, profile.size.dpi)
     margin_sides = mm_to_px(profile.layout.margin_sides, profile.size.dpi)
@@ -119,7 +128,7 @@ def _render_calendar_strip(
         dpi=profile.size.dpi,
         horizontal=profile.calendar.horizontal_orientation,
     )
-    if page.title_page and page.title:
+    if page.title_page and page.title and not force_calendar:
         return renderer.generateTitle(page.title, width, calendar_height)
     return renderer.generate(datetime.combine(page.page_date, time.min), width, calendar_height)
 
@@ -194,11 +203,16 @@ def prepare_collage(
     )
     calendar_ink_top = 0
     if calendar_strip is not None and description_image is not None:
-        difference = ImageChops.difference(
-            calendar_strip, Image.new("RGB", calendar_strip.size, background)
-        )
-        bounds = difference.getbbox()
-        calendar_ink_top = bounds[1] if bounds is not None else 0
+        # A title page replaces the calendar with the composition title, whose
+        # first ink sits lower than a calendar's day names. Measure a real
+        # calendar strip instead so the description keeps the same distance from
+        # the page bottom as on pages with a calendar.
+        ink_strip = calendar_strip
+        if title_page and map_image is None:
+            ink_strip = _render_calendar_strip(
+                page, profile, settings, calendar_width, force_calendar=True
+            )
+        calendar_ink_top = _strip_ink_top(ink_strip, background)
 
     description_ink_bottom = 0
     if description_image is not None:
