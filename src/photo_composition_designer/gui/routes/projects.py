@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -21,12 +22,14 @@ from photo_composition_designer.gui.dependencies import (
     ProjectServiceDependency,
     SettingsDependency,
 )
+from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.layouts.loader import load_catalogue
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
 from photo_composition_designer.project.rendering import (
     ProjectRenderingService,
+    preview_cache_key_for,
     profile_from_project,
 )
 from photo_composition_designer.project.repositories import (
@@ -109,6 +112,7 @@ def _project_context(
     photo_filter: str = "unused",
     error: str = "",
     notice: str = "",
+    settings: GuiSettings | None = None,
 ) -> dict[str, object]:
     """Build the template context for a project workspace page."""
     connection = database.connect()
@@ -172,6 +176,23 @@ def _project_context(
             ),
             "incomplete": total_slots > 0 and filled_slots < total_slots,
         }
+
+    # Immutable preview asset URLs for the sidebar thumbnails. The key is
+    # derived from the same render inputs the preview renderer uses, so a
+    # new revision produces a new URL and the browser can cache forever.
+    thumb_cache_keys: dict[int, str] = {}
+    if settings is not None and pages:
+        rendering = ProjectRenderingService(
+            database,
+            anniversaries_path=settings.anniversaries_path,
+        )
+        thumb_cache_keys = {
+            pg.id: preview_cache_key_for(
+                rendering, connection, pg, max_width=320, mode="preview"
+            )
+            for pg in pages
+        }
+
     return {
         "project": aggregate.project,
         "project_id": aggregate.project.id,
@@ -179,6 +200,7 @@ def _project_context(
         "title_page": title_page,
         "pages": pages,
         "page_status": page_status,
+        "thumb_cache_keys": thumb_cache_keys,
         "selected_page": selected,
         "page": selected,
         "page_assignments": selected_assignments,
@@ -269,6 +291,8 @@ def _page_context(
     database: WorkspaceDatabase,
     project_id: int,
     page_id: int,
+    *,
+    settings: GuiSettings | None = None,
 ) -> dict[str, object] | None:
     """Build the template context for one page fragment."""
     connection = database.connect()
@@ -298,6 +322,19 @@ def _page_context(
     pages = PageRepository(connection).list(project_id)
     profile = profile_from_project(project) if project is not None else OutputProfile.default()
     title_page = profile.calendar.use_title_page and page.page_index == 0
+
+    # Immutable preview asset URL for the sidebar thumbnail. The key is
+    # derived from the same render inputs the preview renderer uses.
+    thumb_cache_key = ""
+    if settings is not None:
+        rendering = ProjectRenderingService(
+            database,
+            anniversaries_path=settings.anniversaries_path,
+        )
+        thumb_cache_key = preview_cache_key_for(
+            rendering, connection, page, max_width=320, mode="preview"
+        )
+
     context = {
         "page": page,
         "project": project,
@@ -318,6 +355,7 @@ def _page_context(
         "slot_assignment_map": slot_assignment_map,
         "slot_overlays": _slot_overlay_data(page, profile, slots, slot_assignment_map),
         "catalogue": load_catalogue(),
+        "thumb_cache_key": thumb_cache_key,
     }
     return context
 
@@ -341,7 +379,12 @@ def _canvas_response(
     message: str,
 ) -> HTMLResponse:
     """Render the editor canvas fragment for one page."""
-    context = _page_context(database, project_id, page_id)
+    context = _page_context(
+        database,
+        project_id,
+        page_id,
+        settings=request.app.state.settings,
+    )
     if context is None:
         raise HTTPException(404, "page not found")
     context = {**context, "notice": message, "oob_page_thumb": True}
@@ -546,6 +589,7 @@ def project_detail(
         photo_filter=photos,
         error=error,
         notice=notice,
+        settings=request.app.state.settings,
     )
     return TEMPLATES.TemplateResponse(
         request,
@@ -601,9 +645,10 @@ def project_page_fragment(
     project_id: int,
     page_id: int,
     database: DatabaseDependency,
+    settings: SettingsDependency,
 ) -> HTMLResponse:
     """Return one page fragment for HTMX page navigation."""
-    context = _page_context(database, project_id, page_id)
+    context = _page_context(database, project_id, page_id, settings=settings)
     if context is None:
         raise HTTPException(404, "page not found")
     return TEMPLATES.TemplateResponse(request, "partials/editor_canvas.html", context)
@@ -618,7 +663,14 @@ def page_preview(
     detector: ObjectDetectorDependency,
     max_width: Annotated[int, Query(ge=120, le=1600)] = 640,
 ) -> FileResponse:
-    """Return a cached reduced-resolution render of one page."""
+    """Return a cached reduced-resolution render of one page.
+
+    This route renders on a cache miss and serves with ``Cache-Control:
+    no-cache`` so the browser always revalidates. It remains the source of
+    truth for the current page revision; the immutable asset route below
+    (``/preview-assets/{key}.jpg``) is an additive optimisation for clients
+    that can address the preview by its content-derived cache key.
+    """
     rendering = ProjectRenderingService(
         database,
         preview_dir=settings.preview_dir(),
@@ -633,6 +685,42 @@ def page_preview(
         path,
         media_type="image/jpeg",
         headers={"Cache-Control": "no-cache"},
+    )
+
+
+#: A preview cache key is a 24-character lowercase hex digest (SHA-256
+#: truncated). Validating the format prevents path traversal through the
+#: asset route's path parameter.
+_PREVIEW_KEY_RE = re.compile(r"^[0-9a-f]{24}$")
+
+
+@router.get("/projects/{project_id}/preview-assets/{cache_key}.jpg")
+def preview_asset(
+    project_id: int,
+    cache_key: str,
+    settings: SettingsDependency,
+) -> FileResponse:
+    """Serve a cached preview by its immutable content-derived cache key.
+
+    The cache key uniquely identifies one rendered preview (revision, layout,
+    profile, anniversaries, mode, width). The route never consults mutable
+    page state and never renders on a miss; it only serves a file that
+    already exists on disk. Because the URL identifies the exact cached
+    bytes, the response can be cached forever: a new revision produces a new
+    key and therefore a new URL.
+
+    Old revisions' files are retained on disk so an in-flight request for an
+    old URL still serves the original complete bytes.
+    """
+    if not _PREVIEW_KEY_RE.match(cache_key):
+        raise HTTPException(400, "invalid preview cache key")
+    path = settings.preview_dir() / "pages" / f"{cache_key}.jpg"
+    if not path.is_file():
+        raise HTTPException(404, "preview not found")
+    return FileResponse(
+        path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
     )
 
 

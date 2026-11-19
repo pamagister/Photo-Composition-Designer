@@ -472,18 +472,33 @@ versioned. Preview-only strategy is retained only with a measured win.
 **Objective:** Use HTTP caching without duplicating existing atomic writes or
 serving stale page content.
 
-- [ ] P2-W01: Keep the existing atomic `write_preview` and hashed cache path.
+- [x] P2-W01: Keep the existing atomic `write_preview` and hashed cache path.
   Add an asset route only if it can resolve an opaque cache key to its exact
   preview file without consulting mutable current page state.
-- [ ] P2-W02: Preserve the existing `max_width`, profile, revision and
+  (Added `GET /projects/{project_id}/preview-assets/{cache_key}.jpg`: resolves
+  the 24-hex cache key to `preview_dir/pages/{key}.jpg`, returns 404 when
+  absent, never renders, never consults the database.)
+- [x] P2-W02: Preserve the existing `max_width`, profile, revision and
   anniversaries cache-key coverage; ensure the key uses the actual draft
   profile and render algorithm version when draft rendering lands. Test
   invalidation for each actual render input.
-- [ ] P2-W03: Only if P2-W01 provides an immutable asset URL, serve it with
+  (The existing `preview_cache_key` already covers revision, layout id/version,
+  profile hash, anniversaries signature, mode and max_width. Phase 3's draft
+  profile is derived by scaling only `size.dpi`, so the existing
+  `profile.profile_hash()` in the key automatically distinguishes draft from
+  full renders without a new key field.)
+- [x] P2-W03: Only if P2-W01 provides an immutable asset URL, serve it with
   `Cache-Control: public, max-age=..., immutable`. Otherwise retain `no-cache`
   on the current database-resolved preview route.
-- [ ] P2-W04: If an immutable asset URL is added, test an in-flight old
+  (Asset route serves `Cache-Control: public, max-age=31536000, immutable`;
+  the existing `/preview` route keeps `no-cache` for backward compatibility
+  and cache-miss rendering.)
+- [x] P2-W04: If an immutable asset URL is added, test an in-flight old
   revision and assert its URL serves the original complete bytes.
+  (`test_preview_asset_old_revision_serves_original_bytes` in
+  `tests/test_preview_assets.py` proves the old key still serves the original
+  bytes after a new revision is rendered. Old files are retained on disk; no
+  cleanup runs in this phase.)
 
 **Acceptance criteria**
 
@@ -495,6 +510,16 @@ serving stale page content.
 
 **Phase gate:** Optional; proceed only if immutable asset URLs provide a
 measurable browser-cache benefit.
+
+**Outcome (2026-11-19):** Implemented the asset route and migrated the sidebar
+page thumbnails (10-30 per project, loaded with `loading="lazy"`) to immutable
+asset URLs. The large selected-page preview stays on the existing
+database-resolved route so it always renders on a cache miss. This gives the
+sidebar a real browser-cache win (no revalidation on every project page load)
+without changing the large-preview behaviour or the export path. The cache key
+uses the existing `profile.profile_hash()` which already includes DPI, so a
+future draft-profile render (Phase 3) is automatically distinguished without a
+key-shape change.
 
 ### Phase 3 — Draft previews and background bulk refresh
 

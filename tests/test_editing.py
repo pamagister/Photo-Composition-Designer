@@ -382,7 +382,10 @@ def test_project_page_renders_sidebar_preview_thumbnails(editor_client, tmp_path
     response = editor_client.get(f"/projects/{project_id}?page={page_id}")
 
     assert response.status_code == 200
-    assert f"/projects/{project_id}/pages/{page_id}/preview?max_width=320" in response.text
+    # Sidebar thumbnails use the immutable asset URL (computed from the cache
+    # key) when the preview file exists, or fall back to the database-resolved
+    # preview route otherwise.
+    assert f"/projects/{project_id}/preview-assets/" in response.text
     assert "page-thumb-preview" in response.text
     assert 'hx-swap-oob="outerHTML"' not in response.text
 

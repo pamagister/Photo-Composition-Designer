@@ -295,10 +295,29 @@ class ProjectRenderingService:
         return target
 
 
+def preview_cache_key_for(
+    rendering: ProjectRenderingService,
+    connection,
+    page: CalendarPage,
+    *,
+    max_width: int,
+    mode: str = "preview",
+) -> str:
+    """Compute a preview cache key for a page using an existing service and connection.
+
+    This is a convenience helper for call sites that already have a
+    :class:`ProjectRenderingService` and an open database connection but only
+    need the cache key (e.g. to build an immutable asset URL).
+    """
+    profile = rendering.profile_for(connection, page.project_id)
+    return rendering.preview_cache_key(page, profile, max_width=max_width, mode=mode)
+
+
 __all__ = [
     "DEFAULT_PREVIEW_WIDTH",
     "ProjectRenderingService",
     "layout_template",
+    "preview_cache_key_for",
     "profile_from_project",
     "write_preview",
 ]
