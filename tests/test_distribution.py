@@ -15,10 +15,11 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.project.distribution import DistributionService
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.inventory import InventoryService
-from photo_composition_designer.project.models import LayoutSlot
+from photo_composition_designer.project.models import DistributionProposal, LayoutSlot
 from photo_composition_designer.project.repositories import (
     LayoutRepository,
     PageRepository,
+    PhotoRepository,
 )
 from photo_composition_designer.project.services import ProjectService
 
@@ -135,6 +136,51 @@ def test_apply_proposal_persists_assignments(tmp_path: Path) -> None:
         revisions = [page.render_revision for page in PageRepository(connection).list(project.id)]
     assert count == 4
     assert revisions == [2, 2]
+
+
+def test_apply_matches_photo_orientation_to_slot_orientation(tmp_path: Path) -> None:
+    database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
+    project = ProjectService(database).create_project(
+        name="Orient", page_count=1, start_date=datetime(2027, 1, 4)
+    )
+    source = tmp_path / "source"
+    source.mkdir()
+    Image.new("RGB", (20, 40), (255, 0, 0)).save(source / "portrait.jpg")
+    Image.new("RGB", (40, 20), (0, 255, 0)).save(source / "landscape.jpg")
+    inventory = InventoryService(database)
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    with database.transaction() as connection:
+        page = PageRepository(connection).list(project.id)[0]
+        layout = LayoutRepository(connection).add(
+            "orient",
+            1,
+            "Orient",
+            [
+                LayoutSlot(0, 0, "portrait", 0, 0.0, 0.0, 0.15, 1.0, 0, "cover"),
+                LayoutSlot(0, 0, "landscape", 1, 0.85, 0.0, 0.15, 1.0, 0, "cover"),
+            ],
+        )
+        PageRepository(connection).set_layout(page.id, layout.id, 1)
+        photos = {
+            photo.filename: photo.id for photo in PhotoRepository(connection).list(project.id)
+        }
+
+    # Propose landscape first to prove the order is corrected on apply.
+    proposal = DistributionProposal(
+        strategy="equal",
+        pages=[[photos["landscape.jpg"], photos["portrait.jpg"]]],
+    )
+    DistributionService(database).apply(project.id, proposal)
+
+    with database.connect() as connection:
+        assignments = {
+            row["slot_id"]: row["photo_id"]
+            for row in connection.execute("SELECT slot_id, photo_id FROM assignments").fetchall()
+        }
+    assert assignments[layout.slots[0].id] == photos["portrait.jpg"]
+    assert assignments[layout.slots[1].id] == photos["landscape.jpg"]
 
 
 def test_assign_to_empty_slot_and_unused_pool(tmp_path: Path) -> None:

@@ -19,13 +19,52 @@ import random
 from dataclasses import dataclass
 from datetime import datetime
 
+from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
-from photo_composition_designer.project.models import CalendarPage, DistributionProposal
+from photo_composition_designer.project.models import (
+    CalendarPage,
+    DistributionProposal,
+    LayoutSlot,
+    PhotoAsset,
+)
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
+    LayoutRepository,
     PageRepository,
     PhotoRepository,
+    ProjectRepository,
 )
+
+#: Aspect-ratio band treated as square for orientation matching.
+_ORIENTATION_SQUARE_MIN = 0.9
+_ORIENTATION_SQUARE_MAX = 1.1
+
+
+def _classify_aspect_ratio(ratio: float) -> str:
+    """Classify an aspect ratio (width / height) as portrait, landscape or square."""
+    if ratio < _ORIENTATION_SQUARE_MIN:
+        return "portrait"
+    if ratio > _ORIENTATION_SQUARE_MAX:
+        return "landscape"
+    return "square"
+
+
+def _slot_orientation(slot: LayoutSlot, page_aspect: float) -> str:
+    """Return a slot's rendered orientation given the page aspect ratio.
+
+    Slot coordinates are normalized, so the page aspect ratio is applied to
+    recover the real on-page width/height ratio before classifying.
+    """
+    if slot.height <= 0:
+        return "square"
+    return _classify_aspect_ratio((slot.width / slot.height) * page_aspect)
+
+
+def _photo_orientation(photo: PhotoAsset) -> str:
+    """Return a photo's orientation from its pixel dimensions."""
+    if photo.height <= 0:
+        return "square"
+    return _classify_aspect_ratio(photo.width / photo.height)
 
 
 @dataclass(frozen=True)
@@ -64,8 +103,6 @@ class DistributionService:
         """Return the number of slots available on a page's layout."""
         if page.layout_id is None:
             return 0
-        from photo_composition_designer.project.repositories import LayoutRepository
-
         layout = LayoutRepository(connection).get_by_id(page.layout_id)
         return len(layout.slots) if layout else 0
 
@@ -231,17 +268,74 @@ class DistributionService:
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(encoded).hexdigest()[:16]
 
+    def _page_aspect(self, project) -> float:
+        """Return the page width/height ratio used to classify slot orientation."""
+        profile = (
+            OutputProfile.from_dict(project.output_profile)
+            if project is not None and project.output_profile
+            else OutputProfile.default()
+        )
+        if profile.size.height <= 0:
+            return 1.0
+        return profile.size.width / profile.size.height
+
+    def _match_photos_to_slots(
+        self,
+        slots: list[LayoutSlot],
+        photo_ids: list[int],
+        photos_by_id: dict[int, PhotoAsset],
+        page_aspect: float,
+    ) -> list[int]:
+        """Reorder photo ids so portrait/landscape photos prefer matching slots.
+
+        The proposal order is preserved as far as possible: for each slot in
+        order, the first remaining photo with a matching orientation is used.
+        When no orientation match remains, the next photo in proposal order is
+        used so no photo is ever dropped.
+        """
+        remaining: list[tuple[int, str]] = []
+        for photo_id in photo_ids:
+            photo = photos_by_id.get(photo_id)
+            orientation = _photo_orientation(photo) if photo is not None else "unknown"
+            remaining.append((photo_id, orientation))
+
+        ordered: list[int] = []
+        for slot in slots:
+            if not remaining:
+                break
+            slot_orientation = _slot_orientation(slot, page_aspect)
+            match_index = next(
+                (
+                    index
+                    for index, (_photo_id, orientation) in enumerate(remaining)
+                    if orientation == slot_orientation
+                ),
+                None,
+            )
+            if match_index is None:
+                match_index = 0
+            photo_id, _orientation = remaining.pop(match_index)
+            ordered.append(photo_id)
+        return ordered
+
     def apply(self, project_id: int, proposal: DistributionProposal) -> None:
-        """Atomically replace assignments for a project with this proposal."""
+        """Atomically replace assignments for a project with this proposal.
+
+        Photos are matched to slots by orientation (portrait to portrait, etc.)
+        where possible before the assignments are persisted.
+        """
         with self._database.transaction() as connection:
             pages = {page.id: page for page in self._load_pages(connection, project_id)}
             if len(pages) != len(proposal.pages):
                 raise ValueError("proposal page count does not match project pages")
 
             assignment_repo = AssignmentRepository(connection)
-            from photo_composition_designer.project.repositories import LayoutRepository
-
             layout_repo = LayoutRepository(connection)
+            project = ProjectRepository(connection).get(project_id)
+            page_aspect = self._page_aspect(project)
+            photos_by_id = {
+                photo.id: photo for photo in PhotoRepository(connection).list(project_id)
+            }
             assignment_repo.clear_for_project(project_id)
 
             ordered_pages = sorted(pages.values(), key=lambda page: page.page_index)
@@ -251,7 +345,10 @@ class DistributionService:
                 layout = layout_repo.get_by_id(page.layout_id)
                 if layout is None:
                     continue
-                for slot, photo_id in zip(layout.slots, photo_ids, strict=False):
+                ordered_ids = self._match_photos_to_slots(
+                    layout.slots, photo_ids, photos_by_id, page_aspect
+                )
+                for slot, photo_id in zip(layout.slots, ordered_ids, strict=False):
                     assignment_repo.assign(
                         project_id=project_id,
                         page_id=page.id,
