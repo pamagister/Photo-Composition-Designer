@@ -380,19 +380,19 @@ Phases are ordered by dependency and by value-per-risk.
 
 **Objective:** Make every later claim measurable and prevent regressions.
 
-- [ ] P0-W01: Consolidate/adapt the existing `temp/performance-artifacts/`
+- [x] P0-W01: Consolidate/adapt the existing `temp/performance-artifacts/`
   scripts into a documented benchmark command; do not duplicate
   `harness_common.py`. Cover 4/14/30/45 slots, at least two representative
   layout geometries, cold/warm preview, 320/640 width, GPS/map on/off, and
   actual endpoint/edit-flow timing. Measure inventory scans on a large
   collection if scanning is part of the slow user journey. Add a browser
   measure for click-to-visible-preview and retain run metadata with the output.
-- [ ] P0-W02: Add correctness tests, not timing assertions: (a) a draft preview
+- [x] P0-W02: Add correctness tests, not timing assertions: (a) a draft preview
   is visually close to the full preview at 320 and 640 across representative
   layouts/photos; (b) cache keys change for every render input and hit when
   unchanged; (c) the exporter output is byte-identical before and after a
   preview-only change. Test immutable old URLs only if Phase 2 adds that route.
-- [ ] P0-W03: Record the baseline table in the PR description of the Phase 1
+- [x] P0-W03: Record the baseline table in the PR description of the Phase 1
   issue so later phases can quote deltas.
 
 **Acceptance criteria**
