@@ -32,7 +32,6 @@ lock:           ## builds the uv.make lock file and syncs the packages
 precommit: ## Format, test and check dependencies.
 	$(MAKE) fmt
 	$(MAKE) test
-	$(MAKE) deptry
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
@@ -53,7 +52,7 @@ lint:             ## Run pep8, black, mypy linters.
 #	uv run mypy --ignore-missing-imports src/
 
 .PHONY: test
-test: lint        ## Run tests and generate coverage report.
+test: lint deptry ## Run dependency check, tests and generate coverage report.
 	uv run pytest -v --cov-config .coveragerc --cov=src -l --tb=short --maxfail=1 tests/
 	uv run coverage xml
 	uv run coverage html

@@ -17,6 +17,7 @@ dependencies = [
     "matplotlib>=3.10.7",
     "pillow>=12.0.0",
     "pytz>=2025.2",
+    "pyyaml>=6.0",
     "python-multipart>=0.0.9",
     "shapely>=2.1.1",
     "onnxruntime>=1.26.0",
@@ -69,7 +70,12 @@ photo_composition_designer = [
 write_to = "src/photo_composition_designer/_version.py"
 
 [tool.deptry]
-pep621_dev_dependency_groups = ["dev", "docs"]
+optional_dependencies_dev_groups = ["dev", "docs"]
+
+# jinja2 powers FastAPI's Jinja2Templates and python-multipart is required by
+# FastAPI/Starlette to parse the Form() and File() payloads used throughout the
+# GUI routes. Both are used only indirectly, so deptry cannot see the imports.
+per_rule_ignores = { DEP002 = ["jinja2", "python-multipart"] }
 
 [tool.ruff]
 line-length = 100
