@@ -69,6 +69,12 @@ photo_composition_designer = [
 [tool.setuptools_scm]
 write_to = "src/photo_composition_designer/_version.py"
 
+[tool.pytest.ini_options]
+markers = [
+    "fast: quick baseline subset run by the default `make test` (via `-m fast`).",
+    "slow: expensive tests (browser, rendering, export) excluded from `make test`; run with `make testall`.",
+]
+
 [tool.deptry]
 optional_dependencies_dev_groups = ["dev", "docs"]
 

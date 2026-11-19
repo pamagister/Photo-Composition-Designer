@@ -52,10 +52,17 @@ lint:             ## Run pep8, black, mypy linters.
 #	uv run mypy --ignore-missing-imports src/
 
 .PHONY: test
-test: lint deptry ## Run dependency check, tests and generate coverage report.
+test: lint deptry ## Run dependency check and the fast baseline tests.
+	uv run pytest -v -m fast -l --tb=short --maxfail=1 tests/
+
+.PHONY: testall
+testall: lint deptry ## Run dependency check and the full test suite (fast + slow), with coverage.
 	uv run pytest -v --cov-config .coveragerc --cov=src -l --tb=short --maxfail=1 tests/
 	uv run coverage xml
 	uv run coverage html
+
+.PHONY: test-all
+test-all: testall ## Alias for testall (run the full test suite).
 
 # ==========================
 #   PROJECT SETTINGS
