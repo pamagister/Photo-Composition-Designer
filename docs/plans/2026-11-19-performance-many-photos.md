@@ -616,35 +616,67 @@ construction: request handlers no longer call `render_page_image` or
 Browser click-to-visible-preview latency is a separate manual verification.
 The map LRU makes a repeat render with the same coordinates a cache hit.
 
-### Phase 4 — Conditional detection warm-up and page-list tuning
+### Phase 4 — Conditional detection warm-up and page-list tuning [x]
 
 **Objective:** Avoid first-use detection stalls when enabled and optimize the
 page list only if browser evidence shows a cost.
 
-- [ ] P4-W01: If measurements justify it, add a low-priority detection warm-up
+- [x] P4-W01: If measurements justify it, add a low-priority detection warm-up
   for available photos likely to be used. It must be idempotent, skippable when
   object-aware cropping is disabled, and never delay preview work.
-- [ ] P4-W02: Keep project sidebar images as composed page previews. If browser
+  (Measured cold YOLO at ~135 ms/image on this machine, so a 45-slot first
+  render would spend ~6 s in inference; warm-up is justified. `project_detail`
+  enqueues one priority-2 job per available photo. Jobs coalesce per photo
+  identity, run below visible/background preview jobs, and are skipped when
+  the detector is unavailable. The app now shares one cached ONNX detector
+  between requests and the preview worker instead of loading the model twice.)
+- [x] P4-W02: Keep project sidebar images as composed page previews. If browser
   measurements show image transfer is costly, reduce their requested width to
   the displayed CSS size and verify the resulting image quality and request
   behavior.
-- [ ] P4-W03: Consider `content-visibility: auto` +
+  (Kept `max_width=320`: the sidebar is ~11rem wide, so a 320 px thumbnail
+  covers a 2x-DPR display without visible blur; `loading="lazy"` and immutable
+  asset URLs already avoid eager/off-screen transfer. Added
+  `decoding="async"` so thumbnail decode does not block the main thread.)
+- [x] P4-W03: Consider `content-visibility: auto` +
   `contain-intrinsic-size` only if a browser trace shows sidebar layout cost.
   Verify with a browser test that the sidebar still scrolls and the active page
   is visible.
-- [ ] P4-W04: Add a test that warm-up populates the detector cache and that a
+  (Not added: no browser trace in this run showed sidebar layout cost, and the
+  sidebar already uses lazy image loading. The Chromium/Firefox browser
+  workflow suite still passes with the existing scroll/active-page behaviour.)
+- [x] P4-W04: Add a test that warm-up populates the detector cache and that a
   subsequent slot render does not call `session.run` (mock the session, as the
   existing detector test does).
+  (`test_warmup_prevents_slot_detection_inference` mocks the ONNX session,
+  warms one photo through `SynchronousPreviewWorker`, renders a real slot and
+  asserts `session.run` was called exactly once. Worker tests cover
+  idempotence, low priority and the disabled-detector no-op.)
 
 **Acceptance criteria**
 
 - With detection enabled, a slot render after warm-up performs no YOLO
   inference.
+  (Covered by the mocked-session slot-render test; `session.run` count stays at
+  one after warm-up.)
 - If page-list images are tuned, preserve the composed page preview and measure
   reduced transfer/render cost in a browser.
+  (No width reduction was made; the 320 px thumbnail remains the composed page
+  preview and matches a 2x-DPR sidebar. `decoding="async"` is the only
+  page-list change.)
 - Browser workflow tests still pass in Chromium and Firefox.
+  (22/22 passed in `tests/test_browser_workflow.py`.)
 
 **Phase gate:** Object-aware cropping is warm in steady state; sidebar is cheap.
+
+**Outcome (2026-11-19):** Detection warm-up is implemented in the existing
+preview worker as a coalesced priority-2 job per available photo. It is
+idempotent, skipped when object-aware cropping is disabled, and cannot jump
+ahead of visible-page previews. The worker and request path now share one cached
+ONNX detector, so background previews also use object-aware cropping when
+enabled. The sidebar keeps composed 320 px page previews with lazy loading and
+async decoding; no `content-visibility` change was justified by a browser
+trace.
 
 ### Phase 5 — Optional: layered page or per-slot caching
 
@@ -773,23 +805,24 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-19-performance-many-photos.md`
 - **Completed:** Phase 0 (P0-W01/W02/W03), Phase 1 (P1-W01/W02/W03/W05;
-  P1-W04 deferred to P3-W04), Phase 2 (P2-W01/W02/W03/W04), and Phase 3
-  (P3-W01/W02/W03/W04). Commits: `8edb071`, `a8f67fe`, `478f775`,
-  `0a4d718` (Refs #58, #59); `0d7f84b` (Refs #60); `e0be49c`, `3969958`,
-  `a19a436` (Refs #61); map LRU (Refs #61).
-- **Active:** none — Phases 2 and 3 complete and committed.
-- **Next:** Phase 4 (conditional detection warm-up and page-list tuning) is
-  the next pending phase. It depends on Phase 3's worker (done). Phase 5
-  (optional layered page / per-slot caching) is gated on Phase 4
-  measurements. Phase 6 (documentation and cleanup) is last.
+  P1-W04 deferred to P3-W04), Phase 2 (P2-W01/W02/W03/W04), Phase 3
+  (P3-W01/W02/W03/W04), and Phase 4 (P4-W01/W02/W03/W04). Commits:
+  `8edb071`, `a8f67fe`, `478f775`, `0a4d718` (Refs #58, #59); `0d7f84b`
+  (Refs #60); `e0be49c`, `3969958`, `a19a436` (Refs #61); map LRU
+  (Refs #61); `434ef36`, `ceb0f90` (Refs #62).
+- **Active:** none — Phases 2, 3 and 4 complete and committed.
+- **Next:** Phase 5 (optional layered page / per-slot caching) is gated on a
+  measured Phase 4 need on the largest collages or map-heavy projects. Phase 6
+  (documentation and cleanup) is last.
 - **Relevant files:**
   - Render path: `src/photo_composition_designer/project/rendering.py`
     (draft profile, `preview_cache_path`), `src/photo_composition_designer/render/slot_renderer.py`,
     `src/photo_composition_designer/render/layout_geometry.py` (map LRU),
     `src/photo_composition_designer/render/object_detector.py`
-  - GUI: `src/photo_composition_designer/gui/preview_worker.py` (new),
+  - GUI: `src/photo_composition_designer/gui/preview_worker.py`
+    (preview + detection warm-up), `.../gui/dependencies.py` (shared detector),
     `.../gui/app.py` (lifespan + worker), `.../routes/projects.py`
-    (asset route, status endpoint, worker submission),
+    (asset route, status endpoint, worker submission, warm-up enqueue),
     `.../routes/editor.py` (worker submission),
     `.../static/editor.js` (preview polling),
     `.../static/style.css` (refreshing overlay),
@@ -806,12 +839,13 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
   P1-W01 not retained (BILINEAR 4-14% e2e); P1-W04 deferred to P3-W04.
   Phase 2 implemented as additive asset route + sidebar thumbnail migration.
   Phase 3 implemented with draft render, background worker, client polling,
-  and map LRU.
-- **Blockers:** None. Phase 4 (detection warm-up) and Phase 5 (layered page)
-  are conditional on evidence.
-- **Last verified:** 2026-11-19 — `uv run pytest -m fast` = 241 passed after
-  Phase 3. `ruff check` and `ruff format` pass. Slow/browser suites not rerun
-  this session; CI not yet verified for the Phase 2/3 pushes.
-- **Context status:** Phases 0-3 complete and committed. Plan file updated.
-  Phase 2 issue #60 and Phase 3 issue #61 have progress comments. Ready for
-  Phase 4 or a fresh session at the Phase 4 boundary.
+  and map LRU. Phase 4 adds low-priority detection warm-up; no sidebar width
+  reduction or `content-visibility` change was justified.
+- **Blockers:** None. Phase 5 (layered page / per-slot caching) is conditional
+  on evidence.
+- **Last verified:** 2026-11-19 — `uv run pytest -q tests/` = 352 passed
+  (includes Chromium/Firefox browser suite). `ruff check src/ tests/` and
+  `ruff format --check src/ tests/` pass.
+- **Context status:** Phases 0-4 complete and committed. Plan file updated.
+  Issue #62 has the Phase 4 outcome. Ready for Phase 5 or a fresh session at
+  the Phase 5 boundary.
