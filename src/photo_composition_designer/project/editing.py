@@ -186,8 +186,8 @@ class PageEditingService:
     ) -> int:
         """Assign the given photos to the page's empty slots in the given order.
 
-        Photos are placed in slot order, skipping unavailable photos and photos
-        already assigned anywhere in the project. Occupied slots are left
+        Photos are placed in slot order, skipping unavailable photos. A photo
+        already used elsewhere may be assigned again. Occupied slots are left
         untouched unless ``slot_id`` is supplied, in which case the first
         eligible photo is assigned there, replacing its current photo. Remaining
         photos fill empty slots in order. The revision increments only when at
@@ -213,14 +213,11 @@ class PageEditingService:
             if not photo_ids:
                 return 0
 
-            used_photo_ids = {
-                assignment.photo_id for assignment in assignments.list_by_project(project_id)
-            }
             photos = PhotoRepository(connection)
             candidates: list[int] = []
             seen: set[int] = set()
             for photo_id in photo_ids:
-                if photo_id in seen or photo_id in used_photo_ids:
+                if photo_id in seen:
                     continue
                 photo = photos.get(photo_id)
                 if photo is None or not photo.available:

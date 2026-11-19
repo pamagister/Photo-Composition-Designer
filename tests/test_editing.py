@@ -663,7 +663,7 @@ def test_assign_selected_leaves_occupied_slots_untouched(tmp_path):
         database.close()
 
 
-def test_assign_selected_skips_unavailable_and_used_photos(tmp_path):
+def test_assign_selected_skips_unavailable_photos(tmp_path):
     database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
     try:
         with database.connect() as connection:
@@ -686,7 +686,7 @@ def test_assign_selected_skips_unavailable_and_used_photos(tmp_path):
         database.close()
 
 
-def test_assign_selected_skips_photos_used_on_other_pages(tmp_path):
+def test_assign_selected_allows_photos_used_on_other_pages(tmp_path):
     database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
     try:
         project = ProjectService(database).create_project(
@@ -721,12 +721,11 @@ def test_assign_selected_skips_photos_used_on_other_pages(tmp_path):
 
         assigned = editing.assign_selected(project.id, page_one.id, [photo_ids[0], photo_ids[1]])
 
-        assert assigned == 1
+        assert assigned == 2
         with database.connect() as connection:
             page_one_assignments = AssignmentRepository(connection).list_by_page(page_one.id)
         assigned_ids = {assignment.photo_id for assignment in page_one_assignments}
-        assert photo_ids[0] not in assigned_ids
-        assert assigned_ids == {photo_ids[1]}
+        assert assigned_ids == {photo_ids[0], photo_ids[1]}
     finally:
         database.close()
 

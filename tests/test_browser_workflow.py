@@ -273,6 +273,32 @@ def test_multi_select_assigns_two_photos(live_server, browser_page):
     expect(page.locator(".unused-pool").get_by_text("photo_00.jpg")).to_have_count(0)
 
 
+def test_assign_selected_can_reuse_a_photo(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(
+        page.locator('.slot-dropzone[data-slot-key="slot_0"]')
+    )
+    page.wait_for_load_state("networkidle")
+    page.locator("#photo-filter").select_option("all")
+    page.wait_for_load_state("networkidle")
+    used_photo = page.locator(f'.unused-item-checkbox[value="{photo_ids[0]}"]')
+    expect(used_photo).to_be_visible()
+    used_photo.check()
+    expect(page.get_by_role("button", name="Assign selected")).to_be_enabled()
+    page.get_by_role("button", name="Assign selected").click()
+
+    expect(page.locator("#workspace-status")).to_contain_text("Assigned 1 photo(s).")
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+    expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+
+
 def test_dropzone_drag_assigns_replaces_and_swaps(live_server, browser_page):
     page = browser_page
     photo_ids = live_server["photo_ids"]
@@ -324,6 +350,38 @@ def test_dragging_selected_photos_assigns_target_then_next_empty_slot(live_serve
     checkboxes = page.locator(".unused-item-checkbox")
     checkboxes.nth(0).check()
     checkboxes.nth(1).check()
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(
+        page.locator('.slot-dropzone[data-slot-key="slot_1"]')
+    )
+
+    expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[1])
+    )
+    expect(page.locator("#workspace-status")).to_contain_text("Assigned 2 photo(s).")
+
+
+def test_dragging_selected_photos_can_reuse_a_photo(live_server, browser_page):
+    page = browser_page
+    page_ids = live_server["page_ids"]
+    photo_ids = live_server["photo_ids"]
+
+    _open_editor(page, live_server, page_ids[1])
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(
+        page.locator('.slot-dropzone[data-slot-key="slot_0"]')
+    )
+    page.wait_for_load_state("networkidle")
+
+    _open_editor(page, live_server, page_ids[0])
+    page.locator("#photo-filter").select_option("all")
+    page.wait_for_load_state("networkidle")
+    used_photo = page.locator(f'.unused-item-checkbox[value="{photo_ids[0]}"]')
+    unused_photo = page.locator(f'.unused-item-checkbox[value="{photo_ids[1]}"]')
+    used_photo.check()
+    unused_photo.check()
+
     page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(
         page.locator('.slot-dropzone[data-slot-key="slot_1"]')
     )
