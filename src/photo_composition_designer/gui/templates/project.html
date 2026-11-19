@@ -37,7 +37,7 @@
       <img id="page-thumb-preview-{{ pg.id }}"
            class="page-thumb-preview"
            src="{% if thumb_cache_keys and thumb_cache_keys.get(pg.id) %}/projects/{{ project.id }}/preview-assets/{{ thumb_cache_keys[pg.id] }}.jpg{% else %}/projects/{{ project.id }}/pages/{{ pg.id }}/preview?max_width=320&v={{ pg.render_revision }}{% endif %}"
-           alt="" loading="lazy">
+           alt="" loading="lazy" decoding="async">
       {% set status = page_status.get(pg.id, {}) %}
       {% set thumb_page = pg %}
       {% set description_hint = status.get('description_missing', False) %}

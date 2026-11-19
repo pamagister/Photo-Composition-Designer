@@ -17,10 +17,22 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.preview_worker import (
     PreviewWorker,
     SynchronousPreviewWorker,
+    WarmupJob,
 )
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.repositories import PageRepository
 from photo_composition_designer.project.services import ProjectService
+
+
+class _RecordingDetector:
+    """Detector double that records how often detection runs."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[int, int]] = []
+
+    def detect(self, image: Image.Image) -> list:
+        self.calls.append(image.size)
+        return []
 
 
 def _write_photo(path: Path, color: tuple[int, int, int]) -> None:
@@ -155,5 +167,68 @@ def test_async_worker_records_error(tmp_path):
         worker._queue.join()
         assert worker.last_error is not None
         worker.stop()
+    finally:
+        database.close()
+
+
+def test_sync_worker_warmup_is_idempotent(tmp_path):
+    """Warm-up calls the detector once per photo identity (P4-W01)."""
+    database, project_id, _ = _seed(tmp_path)
+    photo = tmp_path / "source" / "p0.jpg"
+    try:
+        detector = _RecordingDetector()
+        worker = SynchronousPreviewWorker(
+            database,
+            preview_dir=tmp_path / "previews",
+            object_detector=detector,
+        )
+        identity = (photo.stat().st_mtime_ns, photo.stat().st_size)
+        worker.submit_warmup(project_id, photo, identity=identity)
+        worker.submit_warmup(project_id, photo, identity=identity)
+        with Image.open(photo) as image:
+            expected_size = image.size
+        assert detector.calls == [expected_size]
+    finally:
+        database.close()
+
+
+def test_sync_worker_warmup_skipped_without_detector(tmp_path):
+    """Warm-up is a no-op when object-aware cropping is disabled."""
+    database, project_id, _ = _seed(tmp_path)
+    photo = tmp_path / "source" / "p0.jpg"
+    try:
+        worker = SynchronousPreviewWorker(
+            database,
+            preview_dir=tmp_path / "previews",
+            object_detector=None,
+        )
+        worker.submit_warmup(project_id, photo, identity=(1, 1))
+        assert worker.last_error is None
+    finally:
+        database.close()
+
+
+def test_async_worker_warmup_is_lowest_priority_and_coalesces(tmp_path):
+    """Warm-up jobs coalesce and run after preview jobs (P4-W01)."""
+    database, project_id, page_id = _seed(tmp_path)
+    photo = tmp_path / "source" / "p0.jpg"
+    try:
+        worker = PreviewWorker(
+            database,
+            preview_dir=tmp_path / "previews",
+            object_detector=_RecordingDetector(),
+        )
+        identity = (1, 1)
+        worker.submit_warmup(project_id, photo, identity=identity)
+        worker.submit_warmup(project_id, photo, identity=identity)
+        assert worker.pending_count() == 1
+
+        worker.submit(project_id, page_id, max_width=320, priority=0)
+        priority, _, job = worker._queue.get_nowait()
+        assert priority == 0
+        assert not isinstance(job, WarmupJob)
+        priority, _, job = worker._queue.get_nowait()
+        assert priority == 2
+        assert isinstance(job, WarmupJob)
     finally:
         database.close()

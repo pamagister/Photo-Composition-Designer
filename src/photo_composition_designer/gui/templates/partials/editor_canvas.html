@@ -11,7 +11,7 @@
   <img id="page-thumb-preview-{{ page.id }}"
        class="page-thumb-preview"
        src="{% if thumb_cache_key %}/projects/{{ project_id }}/preview-assets/{{ thumb_cache_key }}.jpg{% else %}/projects/{{ project_id }}/pages/{{ page.id }}/preview?max_width=320&v={{ page.render_revision }}{% endif %}"
-       alt="" loading="lazy" hx-swap-oob="outerHTML">
+       alt="" loading="lazy" decoding="async" hx-swap-oob="outerHTML">
   {% set thumb_page = page %}
   {% set description_hint = show_description_override and not page.hide_description and not page.description %}
   {% set incomplete_hint = (slots | length) > 0 and (assignments | length) < (slots | length) %}

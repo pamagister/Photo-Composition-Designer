@@ -449,3 +449,63 @@ def test_map_cache_bounded(tmp_path):
 
     # The cache must not exceed its cap.
     assert len(_map_cache) <= _MAP_CACHE_SIZE
+
+
+def test_warmup_prevents_slot_detection_inference(tmp_path, monkeypatch):
+    """A warmed photo renders without another YOLO inference (P4-W04)."""
+    from unittest.mock import MagicMock
+
+    import onnxruntime as ort
+
+    from photo_composition_designer.core.settings import Settings
+    from photo_composition_designer.gui.preview_worker import SynchronousPreviewWorker
+    from photo_composition_designer.layouts.loader import LayoutTemplate, SlotTemplate
+    from photo_composition_designer.render.object_detector import ObjectDetector
+    from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
+
+    database, project_id, _ = _setup(tmp_path, slots=1)
+    photo = tmp_path / "source" / "p0.jpg"
+    try:
+        mock_session = MagicMock()
+        mock_input = MagicMock()
+        mock_input.name = "input"
+        mock_session.get_inputs.return_value = [mock_input]
+        mock_session.run = MagicMock(return_value=[np.zeros((1, 0, 6), dtype=np.float32)])
+        monkeypatch.setattr(ort, "InferenceSession", lambda *args, **kwargs: mock_session)
+
+        detector = ObjectDetector(cache_dir=tmp_path / "detector-cache")
+        worker = SynchronousPreviewWorker(
+            database,
+            preview_dir=tmp_path / "previews",
+            object_detector=detector,
+        )
+        identity = (int(photo.stat().st_mtime or 0), int(photo.stat().st_size))
+        worker.submit_warmup(project_id, photo, identity=identity)
+        assert mock_session.run.call_count == 1
+
+        layout = LayoutTemplate(
+            key="perf",
+            version=1,
+            name="Perf",
+            slots=(
+                SlotTemplate(
+                    key="slot_0",
+                    x=0.0,
+                    y=0.0,
+                    width=1.0,
+                    height=1.0,
+                    crop_mode="cover",
+                ),
+            ),
+        )
+        renderer = SlotAwareRenderer(Settings(), object_detector=detector)
+        renderer.render(
+            layout,
+            {"slot_0": SlotPhoto(photo_path=photo)},
+            page_width=100,
+            page_height=100,
+            background_color=(255, 255, 255),
+        )
+        assert mock_session.run.call_count == 1
+    finally:
+        database.close()

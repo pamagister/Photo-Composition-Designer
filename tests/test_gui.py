@@ -420,6 +420,52 @@ def test_object_detection_defaults_to_disabled(client):
     assert load_gui_settings().object_detection_enabled is False
 
 
+class _RecordingDetector:
+    """Detector double that records warm-up calls."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[int, int]] = []
+
+    def detect(self, image: Image.Image) -> list:
+        self.calls.append(image.size)
+        return []
+
+
+def test_project_page_warms_detections_when_enabled(tmp_path, monkeypatch, source_dir):
+    """Opening a project warms available photos when detection is enabled."""
+    data_dir = tmp_path / "data"
+    cache_dir = tmp_path / "cache"
+    monkeypatch.setenv("PCD_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(cache_dir))
+    monkeypatch.setenv("PCD_CONFIG_DIR", str(tmp_path / "config"))
+    model = tmp_path / "model.onnx"
+    model.write_bytes(b"fake-model")
+    settings = GuiSettings(
+        data_dir=data_dir,
+        cache_dir=cache_dir,
+        object_detection_enabled=True,
+        yolo_model_path=model,
+    )
+
+    import photo_composition_designer.gui.app as app_module
+    import photo_composition_designer.gui.dependencies as dependencies
+
+    detector = _RecordingDetector()
+    monkeypatch.setattr(app_module, "resolve_object_detector", lambda app: detector)
+    monkeypatch.setattr(dependencies, "resolve_object_detector", lambda app: detector)
+
+    with TestClient(create_app(settings, sync_preview_worker=True)) as client:
+        project_url = _create_project(client)
+        client.post(f"{project_url}/source", data={"path": str(source_dir)})
+        client.post(f"{project_url}/scan", headers={"HX-Request": "true"})
+        detector.calls.clear()
+
+        response = client.get(project_url)
+
+        assert response.status_code == 200
+        assert detector.calls == [(40, 30)]
+
+
 def test_yolo_download_writes_default_model(client, monkeypatch):
     from photo_composition_designer.gui.routes import app_settings as route
 

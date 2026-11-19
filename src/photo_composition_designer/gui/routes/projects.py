@@ -30,9 +30,15 @@ from photo_composition_designer.gui.dependencies import (
 )
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.gui.templating import TEMPLATES
+from photo_composition_designer.io.media import resolve_source_path
 from photo_composition_designer.layouts.loader import load_catalogue
 from photo_composition_designer.project.editing import PageEditingService
-from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
+from photo_composition_designer.project.models import (
+    LayoutSlot,
+    PhotoAsset,
+    ProjectAggregate,
+    SourceRoot,
+)
 from photo_composition_designer.project.rendering import (
     ProjectRenderingService,
     preview_cache_key_for,
@@ -49,6 +55,7 @@ from photo_composition_designer.render.layout_geometry import (
     compute_collage_box,
     slot_overlay_rectangles,
 )
+from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.page import PageRenderInput
 
 router = APIRouter()
@@ -108,6 +115,42 @@ def _slot_overlay_data(page, profile, slots, slot_assignment_map):
 def _error_redirect(project_id: int, message: str) -> RedirectResponse:
     """Return to the project page with a visible error message."""
     return RedirectResponse(f"/projects/{project_id}?error={quote(message)}", status_code=303)
+
+
+def _submit_detection_warmups(
+    request: Request,
+    project_id: int,
+    available_photos: list[PhotoAsset],
+    source_roots: list[SourceRoot],
+    detector: ObjectDetector | None,
+) -> None:
+    """Enqueue low-priority detection warm-ups for available project photos.
+
+    Warm-up is skipped when object-aware cropping is disabled or the model is
+    unavailable. Jobs run at the lowest worker priority, so they never delay
+    the visible-page preview. The worker coalesces repeated identities, which
+    makes repeated project page loads idempotent.
+    """
+    if detector is None:
+        return
+    worker = getattr(request.app.state, "preview_worker", None)
+    submit_warmup = getattr(worker, "submit_warmup", None)
+    if submit_warmup is None:
+        return
+
+    roots = {root.id: root for root in source_roots}
+    for photo in available_photos:
+        root = roots.get(photo.source_root_id)
+        if root is None:
+            continue
+        try:
+            path = resolve_source_path(root.path, photo.relative_path)
+        except ValueError:
+            continue
+        if not path.is_file():
+            continue
+        identity = (int(photo.mtime or 0), int(photo.file_size or 0))
+        submit_warmup(project_id, path, identity=identity)
 
 
 def _project_context(
@@ -557,6 +600,7 @@ def project_detail(
     project_id: int,
     service: ProjectServiceDependency,
     database: DatabaseDependency,
+    detector: ObjectDetectorDependency,
     page: Annotated[int | None, Query(description="Selected page id.")] = None,
     photos: Annotated[str, Query(description="Photo inventory filter.")] = "unused",
     error: str = "",
@@ -594,6 +638,13 @@ def project_detail(
         error=error,
         notice=notice,
         settings=request.app.state.settings,
+    )
+    _submit_detection_warmups(
+        request,
+        aggregate.project.id,
+        context.get("available_photos", []),
+        aggregate.source_roots,
+        detector,
     )
     return TEMPLATES.TemplateResponse(
         request,

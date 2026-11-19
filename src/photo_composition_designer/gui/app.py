@@ -7,6 +7,7 @@ workspace and application services.
 
 from __future__ import annotations
 
+import threading
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -15,7 +16,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from photo_composition_designer.db.schema import WorkspaceDatabase, read_version
-from photo_composition_designer.gui.dependencies import DatabaseDependency
+from photo_composition_designer.gui.dependencies import DatabaseDependency, resolve_object_detector
 from photo_composition_designer.gui.preview_worker import (
     PreviewWorker,
     SynchronousPreviewWorker,
@@ -32,6 +33,7 @@ from photo_composition_designer.gui.routes import (
 from photo_composition_designer.gui.routes import export as export_routes
 from photo_composition_designer.gui.settings import GuiSettings, load_gui_settings
 from photo_composition_designer.gui.templating import BASE_DIR
+from photo_composition_designer.render.object_detector import ObjectDetector
 
 
 @asynccontextmanager
@@ -72,17 +74,26 @@ def create_app(
     app.state.settings = settings
     app.state.database = WorkspaceDatabase(settings.workspace_path())
     app.state.export_paths = set()
+    app.state.object_detector_cache = {}
+    app.state.object_detector_lock = threading.Lock()
+
+    def detector_provider() -> ObjectDetector | None:
+        """Resolve the detector from the live app settings."""
+        return resolve_object_detector(app)
+
     if sync_preview_worker:
         app.state.preview_worker = SynchronousPreviewWorker(
             app.state.database,
             preview_dir=settings.preview_dir(),
             anniversaries_path=settings.anniversaries_path,
+            detector_provider=detector_provider,
         )
     else:
         app.state.preview_worker = PreviewWorker(
             app.state.database,
             preview_dir=settings.preview_dir(),
             anniversaries_path=settings.anniversaries_path,
+            detector_provider=detector_provider,
         )
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
     app.include_router(project_archive.router)
