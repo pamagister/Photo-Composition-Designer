@@ -160,4 +160,154 @@
   }
 
   syncSelection();
+
+  /* Slot selection is shared between a preview dropzone and its matching
+   * right-hand slot, keyed by data-slot-id. Selecting is presentation only and
+   * never triggers a server request. The crop keyboard handler (below) reads
+   * the current selection. */
+  let selectedSlotId = null;
+
+  function slotNodes(slotId) {
+    return document.querySelectorAll(
+      `.slot[data-slot-id="${slotId}"], .slot-dropzone[data-slot-id="${slotId}"]`
+    );
+  }
+
+  function clearSlotSelection() {
+    document
+      .querySelectorAll(".slot.selected, .slot-dropzone.selected")
+      .forEach((node) => node.classList.remove("selected"));
+  }
+
+  function selectSlot(slotId, source) {
+    const id = String(slotId);
+    if (selectedSlotId === id) {
+      clearSlotSelection();
+      selectedSlotId = null;
+      return;
+    }
+    clearSlotSelection();
+    selectedSlotId = id;
+    slotNodes(id).forEach((node) => node.classList.add("selected"));
+    /* Scroll the right-hand slot into view without scrolling dropzones. */
+    const panelSlot = document.querySelector(`.slot[data-slot-id="${id}"]`);
+    if (panelSlot && source !== panelSlot) {
+      panelSlot.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+
+  document.addEventListener("click", function (event) {
+    const dropzone = event.target.closest(".slot-dropzone");
+    if (dropzone) {
+      selectSlot(dropzone.dataset.slotId, dropzone);
+      return;
+    }
+    /* Clicking a right-hand slot mirrors the highlight onto its dropzone. Guard
+     * against clicks on interactive controls inside the slot card. */
+    if (event.target.closest("button, select, input, textarea, summary, a")) return;
+    const slot = event.target.closest(".slot");
+    if (slot) selectSlot(slot.dataset.slotId, slot);
+  });
+
+  /* Keep the shared selection consistent after a canvas swap replaces nodes. */
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (!(event.target instanceof Element)) return;
+    if (!event.target.closest(".editor-canvas")) return;
+    if (selectedSlotId && document.querySelectorAll(`.slot-dropzone[data-slot-id="${selectedSlotId}"]`).length === 0) {
+      selectedSlotId = null;
+    }
+  });
+
+  /* Keyboard crop: with an occupied slot selected, arrow keys nudge the focal
+   * point and +/- nudge the zoom. Changes are debounced and sent to the live
+   * crop endpoint; the preview image and sliders update in place so selection,
+   * scroll and focus survive. Arrow keys inside form fields are ignored. */
+  const CROP_STEP = 0.02;
+  const ZOOM_MIN = 1.0;
+  const ZOOM_MAX = 3.0;
+  let cropTimer = null;
+  let pendingCrop = null;
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function selectedCropInputs() {
+    if (!selectedSlotId) return null;
+    const slot = document.querySelector(`.slot[data-slot-id="${selectedSlotId}"]`);
+    if (!slot) return null;
+    const zoom = slot.querySelector('input[name="crop_zoom"]');
+    const focusX = slot.querySelector('input[name="crop_focus_x"]');
+    const focusY = slot.querySelector('input[name="crop_focus_y"]');
+    if (!zoom || !focusX || !focusY) return null;
+    return { slot, zoom, focusX, focusY };
+  }
+
+  function nudgeCrop(event) {
+    const inputs = selectedCropInputs();
+    if (!inputs) return;
+    const key = event.key;
+    let handled = true;
+    let zoom = parseFloat(inputs.zoom.value);
+    let focusX = parseFloat(inputs.focusX.value);
+    let focusY = parseFloat(inputs.focusY.value);
+
+    if (key === "ArrowLeft") focusX = clamp(focusX - CROP_STEP, 0, 1);
+    else if (key === "ArrowRight") focusX = clamp(focusX + CROP_STEP, 0, 1);
+    else if (key === "ArrowUp") focusY = clamp(focusY - CROP_STEP, 0, 1);
+    else if (key === "ArrowDown") focusY = clamp(focusY + CROP_STEP, 0, 1);
+    else if (key === "+" || key === "=") zoom = clamp(zoom + CROP_STEP, ZOOM_MIN, ZOOM_MAX);
+    else if (key === "-" || key === "_") zoom = clamp(zoom - CROP_STEP, ZOOM_MIN, ZOOM_MAX);
+    else handled = false;
+
+    if (!handled) return;
+    event.preventDefault();
+
+    inputs.zoom.value = zoom.toFixed(2);
+    inputs.focusX.value = focusX.toFixed(2);
+    inputs.focusY.value = focusY.toFixed(2);
+
+    pendingCrop = {
+      slot_id: selectedSlotId,
+      crop_zoom: zoom,
+      crop_focus_x: focusX,
+      crop_focus_y: focusY,
+    };
+    if (cropTimer) window.clearTimeout(cropTimer);
+    cropTimer = window.setTimeout(flushCrop, 120);
+  }
+
+  function flushCrop() {
+    if (!pendingCrop) return;
+    const canvas = document.querySelector(".editor-canvas");
+    if (!canvas) return;
+    const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
+    window.htmx.ajax("POST", `${base}/crop/live`, {
+      values: pendingCrop,
+    });
+    pendingCrop = null;
+  }
+
+  document.addEventListener("keydown", function (event) {
+    const field = event.target.closest("input, textarea, select, [contenteditable]");
+    if (field) return;
+    if (!selectedSlotId) return;
+    nudgeCrop(event);
+  });
+
+  /* Refresh the preview image when a live crop is persisted. The crop/live
+   * endpoint returns the new revision in X-Page-Revision; read it from the
+   * htmx response rather than a full canvas swap so focus and scroll survive. */
+  document.addEventListener("htmx:afterRequest", function (event) {
+    const xhr = event.detail ? event.detail.xhr : null;
+    if (!xhr || xhr.status !== 204) return;
+    const revision = xhr.getResponseHeader("X-Page-Revision");
+    if (!revision) return;
+    const canvas = document.querySelector(".editor-canvas");
+    if (!canvas) return;
+    const image = canvas.querySelector(".page-preview-image");
+    if (!image) return;
+    const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
+    image.src = `${base}/preview?v=${revision}`;
+  });
 })();

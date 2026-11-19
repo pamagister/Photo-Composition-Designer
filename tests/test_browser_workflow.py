@@ -14,6 +14,7 @@ server-confirmed flows in Chromium and Firefox.
 
 from __future__ import annotations
 
+import re
 import socket
 import threading
 import time
@@ -314,6 +315,61 @@ def test_dropzone_drag_assigns_replaces_and_swaps(live_server, browser_page):
     expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
         "data-photo-id", str(photo_ids[1])
     )
+
+
+def test_dropzone_selects_matching_slot(live_server, browser_page):
+    page = browser_page
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    # Clicking an empty dropzone highlights its matching right-hand slot.
+    zone = page.locator('.slot-dropzone[data-slot-key="slot_1"]')
+    zone.click()
+    expect(_slot(page, "slot_1")).to_have_class("slot empty selected")
+    expect(page.locator('.slot-dropzone[data-slot-key="slot_1"]')).to_have_class(
+        "slot-dropzone empty selected"
+    )
+
+    # Clicking a right-hand slot highlights its dropzone instead. Click the
+    # non-interactive placeholder so the slot card (not a form control) handles
+    # the click.
+    _slot(page, "slot_0").locator(".slot-placeholder").click()
+    expect(page.locator('.slot-dropzone[data-slot-key="slot_0"]')).to_have_class(
+        "slot-dropzone empty selected"
+    )
+    expect(_slot(page, "slot_1")).not_to_have_class(re.compile("selected"))
+
+
+def test_keyboard_crop_adjusts_focus_and_refreshes_preview(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    # Assign a photo, then select its dropzone so the crop keyboard path is live.
+    zone = page.locator('.slot-dropzone[data-slot-key="slot_0"]')
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(zone)
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+    page.locator('.slot-dropzone[data-slot-key="slot_0"]').click()
+
+    slot = _slot(page, "slot_0")
+    focus_x = slot.locator('input[name="crop_focus_x"]')
+    initial_focus = float(focus_x.input_value())
+    preview = page.locator(".page-preview-image")
+    initial_src = preview.get_attribute("src")
+
+    # Arrow keys nudge the focal point; the preview revision must change.
+    page.keyboard.press("ArrowRight")
+    page.keyboard.press("ArrowRight")
+    expect(preview).not_to_have_attribute("src", initial_src)
+    assert float(focus_x.input_value()) > initial_focus
+
+    # Arrow keys inside a form field must not change the crop.
+    description = page.locator("textarea[name=description]")
+    description.click()
+    before_field = focus_x.input_value()
+    page.keyboard.press("ArrowRight")
+    assert focus_x.input_value() == before_field
 
 
 def test_layout_change_and_page_navigation(live_server, browser_page):

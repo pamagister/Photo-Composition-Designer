@@ -76,15 +76,27 @@ valid and are reported explicitly.
 The editor shows page thumbnails in the sidebar, the rendered page preview and
 slot grid on the canvas, and the unused photos below it.
 
-* **Assign** – drag an unused photo onto an empty slot, or choose it in the slot's
-  select and press **Assign**.
-* **Replace** – drag an unused photo onto an occupied slot, or open **Replace** in
-  the slot. The previous photo returns to the unused pool.
-* **Swap or move** – drag one assigned photo onto another slot, or use the slot's
-  **Move** select. Dropping a photo onto its own slot does nothing.
+The large page preview is also a drop target. Slot-shaped dropzones are overlaid
+on the rendered page, so you can drag a photo straight onto the page. Empty
+slots show a dashed "Drop photo" zone; occupied slots accept a drop to replace
+their photo. Dragging one dropzone onto another swaps the two photos. The
+dropzones mirror the right-hand slot grid and stay aligned with the rendered
+collage; the right-hand panel remains the primary, fully keyboard-accessible
+control surface.
+
+* **Assign** – drag an unused photo onto an empty slot or dropzone, choose it in
+  the slot's select and press **Assign**, or check several unused photos and use
+  **Assign selected** to fill the empty slots in one action.
+* **Replace** – drag an unused photo onto an occupied slot or dropzone, or open
+  **Replace** in the slot. The previous photo returns to the unused pool.
+* **Swap or move** – drag one assigned photo onto another slot or dropzone, or use
+  the slot's **Move** select. Dropping a photo onto its own slot does nothing.
 * **Remove** – press the slot's remove button.
-* **Crop** – open **Crop** in an occupied slot to adjust zoom and focal point.
-  Crop settings are assignment properties; the source file is untouched.
+* **Crop** – open **Crop** in an occupied slot to adjust zoom and focal point. You
+  can also click a dropzone (or its slot) to select it and use the arrow keys to
+  nudge the focal point and `+`/`-` to zoom; the preview refreshes live. Arrow
+  keys inside text fields do not change the crop. Crop settings are assignment
+  properties; the source file is untouched.
 * **Description** – edit the page description at the bottom of the canvas.
 * **Page overrides** – the collapsible **Page overrides** area in the toolbar
   can hide the local map, calendar strip and description for one page. The

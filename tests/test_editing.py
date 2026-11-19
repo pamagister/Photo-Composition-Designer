@@ -769,6 +769,9 @@ def test_editor_canvas_renders_slot_dropzones_with_geometry(editor_client, tmp_p
     assert "slot-dropzone empty" in text
     # Inline percentage geometry is present.
     assert "left:" in text and "top:" in text and "width:" in text and "height:" in text
+    # The keyboard-crop hint is shown next to the preview.
+    assert "preview-hint" in text
+    assert "arrow keys" in text
 
 
 def test_editor_canvas_dropzones_mark_occupied_slots(editor_client, tmp_path):
@@ -780,3 +783,49 @@ def test_editor_canvas_dropzones_mark_occupied_slots(editor_client, tmp_path):
     # One occupied dropzone carries the assigned photo id.
     assert "slot-dropzone occupied" in response.text
     assert f'data-photo-id="{photo_ids[0]}"' in response.text
+
+
+def test_crop_live_persists_clamps_and_returns_revision(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_via_client(tmp_path, photo_count=1, slots=1)
+    before = _stored_revision(page_id)
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/crop/live",
+        data={
+            "slot_id": slot_ids[0],
+            "crop_zoom": "1.5",
+            "crop_focus_x": "1.7",
+            "crop_focus_y": "-0.3",
+        },
+    )
+
+    assert response.status_code == 204
+    assert response.headers["HX-Trigger"] == "pcd:crop-updated"
+    assert response.headers["X-Page-Revision"] == str(before + 1)
+    assert _stored_revision(page_id) == before + 1
+
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            assignment = AssignmentRepository(connection).list_by_page(page_id)[0]
+    finally:
+        database.close()
+    assert assignment.crop_zoom == pytest.approx(1.5)
+    # Focus values are clamped into [0, 1].
+    assert assignment.crop_focus_x == pytest.approx(1.0)
+    assert assignment.crop_focus_y == pytest.approx(0.0)
+
+
+def test_crop_live_rejects_missing_assignment(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_via_client(tmp_path, photo_count=2, slots=1)
+    before = _stored_revision(page_id)
+    empty_slot = next(slot for slot in slot_ids if slot != slot_ids[0])
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/crop/live",
+        data={"slot_id": empty_slot, "crop_focus_x": "0.5"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert _stored_revision(page_id) == before

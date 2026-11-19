@@ -46,6 +46,12 @@
         <span>Page description is empty</span>
       </div>
       {% endif %}
+      {% if slot_overlays %}
+      <p class="preview-hint" role="note">
+        Drag photos onto the preview, or select a slot and use the arrow keys to
+        adjust the crop and <kbd>+</kbd>/<kbd>-</kbd> to zoom.
+      </p>
+      {% endif %}
     </div>
 
     <aside class="editor-layout-panel" aria-label="Layout and page content">
@@ -141,15 +147,15 @@
                     aria-label="Crop settings for slot {{ slot.slot_key }}">
                 <input type="hidden" name="slot_id" value="{{ slot.id }}">
                 <label>Zoom
-                  <input type="range" name="crop_zoom" min="1" max="3" step="0.1"
+                  <input type="range" name="crop_zoom" min="1" max="3" step="0.01"
                          value="{{ assignment.crop_zoom }}">
                 </label>
                 <label>Focus X
-                  <input type="range" name="crop_focus_x" min="0" max="1" step="0.05"
+                  <input type="range" name="crop_focus_x" min="0" max="1" step="0.02"
                          value="{{ assignment.crop_focus_x }}">
                 </label>
                 <label>Focus Y
-                  <input type="range" name="crop_focus_y" min="0" max="1" step="0.05"
+                  <input type="range" name="crop_focus_y" min="0" max="1" step="0.02"
                          value="{{ assignment.crop_focus_y }}">
                 </label>
                 <button type="submit">Save crop</button>

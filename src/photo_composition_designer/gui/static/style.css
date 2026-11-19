@@ -733,6 +733,21 @@ summary {
   outline-offset: 2px;
 }
 
+.preview-hint {
+  margin: 0.4rem 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.preview-hint kbd {
+  padding: 0 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface-raised);
+  font-family: inherit;
+  font-size: 0.7rem;
+}
+
 .preview-notice {
   position: absolute;
   top: 0.5rem;

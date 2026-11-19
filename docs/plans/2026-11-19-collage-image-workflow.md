@@ -188,6 +188,8 @@ cost and keeps the accessible right-hand panel as the source of truth.
 
 ### Phase 2: Multi-select in the photo strip
 
+**Status:** Complete (issue #52)
+
 **Objective:** Assign several unused photos to the empty slots of the current page in
 one action.
 
@@ -215,6 +217,8 @@ one action.
 tests before the overlay work begins.
 
 ### Phase 3: Dropzone preview (drag to assign, replace and swap)
+
+**Status:** Complete (issue #53)
 
 **Objective:** Make the large page preview a drop target aligned with the collage.
 
@@ -251,19 +255,21 @@ keyboard-crop work starts, because keyboard crop depends on the same geometry.
 
 ### Phase 4 (reduced): Selection sync and keyboard crop
 
+**Status:** Complete (issue #54)
+
 **Objective:** Connect the dropzone to the right-hand panel and allow arrow-key focal
 point adjustment with a live preview refresh.
 
-- [ ] P4-W01: Implement selection synchronisation between dropzones and right-hand
+- [x] P4-W01: Implement selection synchronisation between dropzones and right-hand
   slots (highlight and scroll into view), with a Playwright test in Chromium and
   Firefox.
-- [ ] P4-W02: Add `POST .../crop/live` returning `204` with the new revision header
+- [x] P4-W02: Add `POST .../crop/live` returning `204` with the new revision header
   and `HX-Trigger`, plus a `TestClient` test for persistence, clamping and the
   revision header.
-- [ ] P4-W03: Implement the arrow-key handler (excluding form fields), debounced
+- [x] P4-W03: Implement the arrow-key handler (excluding form fields), debounced
   live-crop submission, preview `src` update and slider sync; add a Playwright test
   that arrow keys change the stored focal point and the preview revision.
-- [ ] P4-W04: Add the short usage hint near the preview and update the relevant
+- [x] P4-W04: Add the short usage hint near the preview and update the relevant
   documentation.
 
 **Acceptance criteria**
@@ -336,9 +342,9 @@ Use the repository commands (see `Makefile`):
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-19-collage-image-workflow.md`
-- **Completed:** Phase 0 (issue #49); Phase 1 (issue #50); Phase 2 (commit `b3c334a`, issue #52); Phase 3 (issue #53, pending commit)
-- **Active:** Phase 4 (selection sync and keyboard crop)
-- **Next:** P4-W01: selection sync between dropzones and right-hand slots
+- **Completed:** Phase 0 (issue #49); Phase 1 (issue #50); Phase 2 (commit `b3c334a`, issue #52, CI green); Phase 3 (commit `599cd1b`, issue #53, CI green); Phase 4 (issue #54, pending commit/CI)
+- **Active:** none (all phases complete, Phase 4 commit pending)
+- **Next:** commit Phase 4, push, monitor CI, then close issues #52-#54
 - **Relevant files:**
   - `src/photo_composition_designer/project/editing.py` (populate precedent, `PageEditingService`)
   - `src/photo_composition_designer/gui/routes/editor.py` (assign/replace/swap/crop routes)

@@ -6,7 +6,7 @@ from collections import Counter
 from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from photo_composition_designer.core.errors import ProjectError
 from photo_composition_designer.db.schema import WorkspaceDatabase
@@ -218,6 +218,52 @@ def set_crop(
     except ProjectError as error:
         return _error(project_id, str(error))
     return _page_fragment(request, project_id, page_id, "Crop updated.")
+
+
+@router.post("/projects/{project_id}/pages/{page_id}/crop/live")
+def set_crop_live(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    slot_id: int = Form(...),
+    crop_zoom: float = Form(1.0),
+    crop_focus_x: float = Form(0.5),
+    crop_focus_y: float = Form(0.5),
+) -> Response:
+    """Persist a keyboard crop adjustment and return the new page revision.
+
+    This lightweight endpoint backs the arrow-key crop path. It clamps the
+    incoming values into range, persists them and returns ``204`` with the new
+    revision in ``X-Page-Revision`` plus an ``HX-Trigger: pcd:crop-updated``
+    header so the client can refresh the preview image without a full canvas
+    re-render.
+    """
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    clamped_zoom = max(1.0, crop_zoom)
+    clamped_x = min(1.0, max(0.0, crop_focus_x))
+    clamped_y = min(1.0, max(0.0, crop_focus_y))
+    try:
+        editing.set_crop(
+            project_id,
+            page_id,
+            slot_id,
+            crop_zoom=clamped_zoom,
+            crop_focus_x=clamped_x,
+            crop_focus_y=clamped_y,
+        )
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    with database.connect() as connection:
+        page = PageRepository(connection).get(page_id)
+        revision = page.render_revision if page is not None else 0
+    return Response(
+        status_code=204,
+        headers={
+            "X-Page-Revision": str(revision),
+            "HX-Trigger": "pcd:crop-updated",
+        },
+    )
 
 
 @router.post("/projects/{project_id}/pages/{page_id}/description")
