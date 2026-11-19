@@ -104,6 +104,22 @@
       return;
     }
 
+    const selectedPhotos = Array.from(
+      document.querySelectorAll(".unused-item-checkbox:checked")
+    ).map((checkbox) => checkbox.value);
+    if (selectedPhotos.includes(photoId) && selectedPhotos.length > 1) {
+      const orderedPhotos = [
+        photoId,
+        ...selectedPhotos.filter((selectedId) => selectedId !== photoId),
+      ];
+      window.htmx.ajax("POST", `${base}/assign-selected`, {
+        values: { slot_id: target.dataset.slotId, photo_id: orderedPhotos },
+        target: canvas,
+        swap: "outerHTML",
+      });
+      return;
+    }
+
     const action = isOccupied(target) ? "replace" : "assign";
     window.htmx.ajax("POST", `${base}/${action}`, {
       values: { slot_id: target.dataset.slotId, photo_id: photoId },
@@ -209,12 +225,31 @@
     if (slot) selectSlot(slot.dataset.slotId, slot);
   });
 
+  document.addEventListener("keydown", function (event) {
+    const slot = event.target.closest(".slot, .slot-dropzone");
+    if (
+      slot &&
+      (event.key === "Enter" || event.key === " ") &&
+      !event.target.closest("button, select, input, textarea, summary, a")
+    ) {
+      event.preventDefault();
+      selectSlot(slot.dataset.slotId, slot);
+    }
+  });
+
   /* Keep the shared selection consistent after a canvas swap replaces nodes. */
   document.addEventListener("htmx:afterSwap", function (event) {
     if (!(event.target instanceof Element)) return;
     if (!event.target.closest(".editor-canvas")) return;
-    if (selectedSlotId && document.querySelectorAll(`.slot-dropzone[data-slot-id="${selectedSlotId}"]`).length === 0) {
+    if (
+      selectedSlotId &&
+      document.querySelectorAll(`.slot-dropzone[data-slot-id="${selectedSlotId}"]`).length === 0
+    ) {
       selectedSlotId = null;
+      return;
+    }
+    if (selectedSlotId) {
+      slotNodes(selectedSlotId).forEach((node) => node.classList.add("selected"));
     }
   });
 
@@ -256,9 +291,11 @@
     else if (key === "ArrowRight") focusX = clamp(focusX + CROP_STEP, 0, 1);
     else if (key === "ArrowUp") focusY = clamp(focusY - CROP_STEP, 0, 1);
     else if (key === "ArrowDown") focusY = clamp(focusY + CROP_STEP, 0, 1);
-    else if (key === "+" || key === "=") zoom = clamp(zoom + CROP_STEP, ZOOM_MIN, ZOOM_MAX);
-    else if (key === "-" || key === "_") zoom = clamp(zoom - CROP_STEP, ZOOM_MIN, ZOOM_MAX);
-    else handled = false;
+    else if (key === "+" || key === "=" || event.code === "NumpadAdd") {
+      zoom = clamp(zoom + CROP_STEP, ZOOM_MIN, ZOOM_MAX);
+    } else if (key === "-" || key === "_" || event.code === "NumpadSubtract") {
+      zoom = clamp(zoom - CROP_STEP, ZOOM_MIN, ZOOM_MAX);
+    } else handled = false;
 
     if (!handled) return;
     event.preventDefault();

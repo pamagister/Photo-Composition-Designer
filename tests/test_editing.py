@@ -595,6 +595,54 @@ def test_assign_selected_fills_empty_slots_in_order(tmp_path):
         database.close()
 
 
+def test_assign_selected_starts_at_drop_target_then_fills_other_empty_slots(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        assigned = editing.assign_selected(
+            project_id,
+            page_id,
+            [photo_ids[2], photo_ids[0]],
+            slot_id=slot_ids[2],
+        )
+
+        assert assigned == 2
+        with database.connect() as connection:
+            by_slot = {
+                assignment.slot_id: assignment.photo_id
+                for assignment in AssignmentRepository(connection).list_by_page(page_id)
+            }
+        assert by_slot[slot_ids[2]] == photo_ids[2]
+        assert by_slot[slot_ids[0]] == photo_ids[0]
+        assert slot_ids[1] not in by_slot
+    finally:
+        database.close()
+
+
+def test_assign_selected_replaces_drop_target_and_fills_empty_slots(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[1], photo_ids[0])
+
+        assigned = editing.assign_selected(
+            project_id,
+            page_id,
+            [photo_ids[2], photo_ids[3]],
+            slot_id=slot_ids[1],
+        )
+
+        assert assigned == 2
+        with database.connect() as connection:
+            by_slot = {
+                assignment.slot_id: assignment.photo_id
+                for assignment in AssignmentRepository(connection).list_by_page(page_id)
+            }
+        assert by_slot[slot_ids[1]] == photo_ids[2]
+        assert by_slot[slot_ids[0]] == photo_ids[3]
+        assert slot_ids[2] not in by_slot
+    finally:
+        database.close()
+
+
 def test_assign_selected_leaves_occupied_slots_untouched(tmp_path):
     database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
     try:

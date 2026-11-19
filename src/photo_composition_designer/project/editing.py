@@ -181,25 +181,36 @@ class PageEditingService:
         project_id: int,
         page_id: int,
         photo_ids: list[int] | tuple[int, ...],
+        *,
+        slot_id: int | None = None,
     ) -> int:
         """Assign the given photos to the page's empty slots in the given order.
 
         Photos are placed in slot order, skipping unavailable photos and photos
         already assigned anywhere in the project. Occupied slots are left
-        untouched. The revision increments only when at least one assignment was
-        made. Returns the number of photos assigned.
+        untouched unless ``slot_id`` is supplied, in which case the first
+        eligible photo is assigned there, replacing its current photo. Remaining
+        photos fill empty slots in order. The revision increments only when at
+        least one assignment was made. Returns the number assigned.
         """
         with self._database.transaction() as connection:
             page, layout = self._page_and_layout(connection, page_id)
+            layout_slot_ids = {slot.id for slot in layout.slots}
+            if slot_id is not None and slot_id not in layout_slot_ids:
+                raise ProjectError(f"slot {slot_id} does not belong to page {page_id} layout")
+
             assignments = AssignmentRepository(connection)
-            occupied_slots = {
-                assignment.slot_id for assignment in assignments.list_by_page(page_id)
-            }
+            page_assignments = assignments.list_by_page(page_id)
+            occupied_slots = {assignment.slot_id for assignment in page_assignments}
             empty_slots = sorted(
-                (slot for slot in layout.slots if slot.id not in occupied_slots),
+                (
+                    slot
+                    for slot in layout.slots
+                    if slot.id not in occupied_slots and slot.id != slot_id
+                ),
                 key=lambda slot: slot.position,
             )
-            if not empty_slots or not photo_ids:
+            if not photo_ids:
                 return 0
 
             used_photo_ids = {
@@ -217,12 +228,19 @@ class PageEditingService:
                 seen.add(photo_id)
                 candidates.append(photo_id)
 
-            pairs = list(zip(empty_slots, candidates, strict=False))
-            for slot, photo_id in pairs:
+            pairs: list[tuple[int, int]] = []
+            if slot_id is not None and candidates:
+                if slot_id in occupied_slots:
+                    assignments.remove_by_page_slot(page_id, slot_id)
+                pairs.append((slot_id, candidates.pop(0)))
+            pairs.extend(
+                (slot.id, photo_id) for slot, photo_id in zip(empty_slots, candidates, strict=False)
+            )
+            for target_slot_id, photo_id in pairs:
                 assignments.assign(
                     project_id=project_id,
                     page_id=page_id,
-                    slot_id=slot.id,
+                    slot_id=target_slot_id,
                     photo_id=photo_id,
                 )
             if pairs:

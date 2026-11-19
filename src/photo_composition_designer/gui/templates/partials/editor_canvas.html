@@ -126,6 +126,7 @@
              data-slot-id="{{ slot.id }}"
              data-slot-key="{{ slot.slot_key }}"
              role="group"
+             tabindex="0"
              aria-label="Slot {{ slot.slot_key }}{% if photo %}: {{ photo.filename }}{% else %}: empty{% endif %}">
           {% if photo %}
           <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" draggable="true"

@@ -123,16 +123,18 @@ def assign_selected_photos(
     project_id: int,
     page_id: int,
     photo_id: Annotated[list[int], Form()],
+    slot_id: int | None = Form(None),
 ) -> HTMLResponse:
     """Assign the selected unused photos to the page's empty slots in order.
 
     ``photo_id`` is a repeated form field carrying the selected photo ids in the
-    order the user checked them.
+    order the user checked them. When ``slot_id`` is provided, the first
+    eligible photo is assigned there before filling remaining empty slots.
     """
     database = _open_database(request)
     editing = PageEditingService(database)
     try:
-        assigned = editing.assign_selected(project_id, page_id, photo_id)
+        assigned = editing.assign_selected(project_id, page_id, photo_id, slot_id=slot_id)
     except ProjectError as error:
         return _error(project_id, str(error))
     if assigned:
@@ -240,7 +242,7 @@ def set_crop_live(
     """
     database = _open_database(request)
     editing = PageEditingService(database)
-    clamped_zoom = max(1.0, crop_zoom)
+    clamped_zoom = min(3.0, max(1.0, crop_zoom))
     clamped_x = min(1.0, max(0.0, crop_focus_x))
     clamped_y = min(1.0, max(0.0, crop_focus_y))
     try:

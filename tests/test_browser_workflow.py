@@ -7,9 +7,8 @@ once with:
     uv run playwright install chromium firefox
     uv run pytest tests/test_browser_workflow.py -m browser
 
-The tests use the keyboard-accessible controls (assign, replace, move, remove,
-layout change) rather than HTML5 drag-and-drop, so they exercise the same
-server-confirmed flows in Chromium and Firefox.
+The tests cover both keyboard-accessible controls and HTML5 drag-and-drop in
+Chromium and Firefox.
 """
 
 from __future__ import annotations
@@ -317,13 +316,34 @@ def test_dropzone_drag_assigns_replaces_and_swaps(live_server, browser_page):
     )
 
 
+def test_dragging_selected_photos_assigns_target_then_next_empty_slot(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    checkboxes = page.locator(".unused-item-checkbox")
+    checkboxes.nth(0).check()
+    checkboxes.nth(1).check()
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(
+        page.locator('.slot-dropzone[data-slot-key="slot_1"]')
+    )
+
+    expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[1])
+    )
+    expect(page.locator("#workspace-status")).to_contain_text("Assigned 2 photo(s).")
+
+
 def test_dropzone_selects_matching_slot(live_server, browser_page):
     page = browser_page
     _open_editor(page, live_server, live_server["page_ids"][0])
 
     # Clicking an empty dropzone highlights its matching right-hand slot.
     zone = page.locator('.slot-dropzone[data-slot-key="slot_1"]')
-    zone.click()
+    zone.press("Enter")
     expect(_slot(page, "slot_1")).to_have_class("slot empty selected")
     expect(page.locator('.slot-dropzone[data-slot-key="slot_1"]')).to_have_class(
         "slot-dropzone empty selected"
@@ -354,7 +374,9 @@ def test_keyboard_crop_adjusts_focus_and_refreshes_preview(live_server, browser_
 
     slot = _slot(page, "slot_0")
     focus_x = slot.locator('input[name="crop_focus_x"]')
+    zoom = slot.locator('input[name="crop_zoom"]')
     initial_focus = float(focus_x.input_value())
+    initial_zoom = float(zoom.input_value())
     preview = page.locator(".page-preview-image")
     initial_src = preview.get_attribute("src")
 
@@ -363,6 +385,16 @@ def test_keyboard_crop_adjusts_focus_and_refreshes_preview(live_server, browser_
     page.keyboard.press("ArrowRight")
     expect(preview).not_to_have_attribute("src", initial_src)
     assert float(focus_x.input_value()) > initial_focus
+
+    zoom_src = preview.get_attribute("src")
+    page.keyboard.press("+")
+    expect(preview).not_to_have_attribute("src", zoom_src)
+    assert float(zoom.input_value()) == pytest.approx(initial_zoom + 0.02)
+
+    zoom_src = preview.get_attribute("src")
+    page.keyboard.press("-")
+    expect(preview).not_to_have_attribute("src", zoom_src)
+    assert float(zoom.input_value()) == pytest.approx(initial_zoom)
 
     # Arrow keys inside a form field must not change the crop.
     description = page.locator("textarea[name=description]")
