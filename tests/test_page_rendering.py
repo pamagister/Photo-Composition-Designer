@@ -591,6 +591,39 @@ def test_preview_invalidated_by_global_anniversaries_change(tmp_path):
         database.close()
 
 
+def test_preview_invalidated_by_changed_source_photo_bytes(tmp_path):
+    """A changed source photo must invalidate the page preview (P1-W05).
+
+    The photo bytes change but its path and GPS do not, so the only detectable
+    signal is the new mtime/size recorded by the scanner. The preview key is
+    revision-based, so the scan must bump the page revision.
+    """
+    database, project_id, page_id = _setup(tmp_path)
+    try:
+        rendering = ProjectRenderingService(database, preview_dir=tmp_path / "previews")
+        first = rendering.render_preview(project_id, page_id)
+
+        # Rewrite the assigned photo with different bytes at the same path.
+        source_photo = tmp_path / "source" / "p0.jpg"
+        _write_photo(source_photo, (0, 255, 0))
+        stat = source_photo.stat()
+        os.utime(source_photo, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+
+        from photo_composition_designer.project.repositories import SourceRootRepository
+
+        connection = database.connect()
+        root = SourceRootRepository(connection).get_active(project_id)
+        assert root is not None
+        InventoryService(database).scan(project_id, source_root_id=root.id)
+
+        second = rendering.render_preview(project_id, page_id)
+
+        assert second != first
+        assert second.is_file()
+    finally:
+        database.close()
+
+
 def _blank_page(**overrides) -> PageRenderInput:
     """Return a minimal page render input for geometry assertions."""
     defaults = {

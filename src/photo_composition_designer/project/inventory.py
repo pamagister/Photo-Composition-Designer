@@ -243,20 +243,31 @@ class InventoryService:
         discovered = {asset.relative_path for asset in assets}
         added = sum(1 for asset in assets if asset.relative_path not in existing)
         photo_repository.upsert_many(assets)
-        # A scan can add or change GPS coordinates, which changes the local map.
-        # Invalidate page previews only when stored photo data changed.
+        # A scan can change the photo bytes (mtime/size), the GPS coordinates or
+        # availability. Any of these can change a page's rendered output, so the
+        # cached previews keyed on the page revision must be invalidated. Digest
+        # is not populated by the scanner, so mtime and file size are the
+        # available content-change signals.
         new_assets = {asset.relative_path: asset for asset in assets}
-        map_or_availability_changed = False
+        output_changed = False
         for relative_path, photo in existing.items():
             asset = new_assets.get(relative_path)
             if asset is None or (
                 photo.gps_lat,
                 photo.gps_lon,
                 photo.available,
-            ) != (asset.gps_lat, asset.gps_lon, asset.available):
-                map_or_availability_changed = True
+                photo.mtime,
+                photo.file_size,
+            ) != (
+                asset.gps_lat,
+                asset.gps_lon,
+                asset.available,
+                asset.mtime,
+                asset.file_size,
+            ):
+                output_changed = True
                 break
-        if map_or_availability_changed:
+        if output_changed:
             PageRepository(connection).increment_revisions(project_id)
 
         unavailable = 0

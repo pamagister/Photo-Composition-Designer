@@ -424,7 +424,7 @@ Phases are ordered by dependency and by value-per-risk.
   per-composer memo keyed by their inputs (in-memory, last-N), only if repeat
   measurements show a worthwhile win. The map cache is separately gated in
   P3-W04.
-- [ ] P1-W05: Close preview invalidation for changed source photos. When a
+- [x] P1-W05: Close preview invalidation for changed source photos. When a
   scan changes the digest/mtime of an assigned photo, invalidate the affected
   page revisions (or include the photo identity in the preview key). Add a
   regression test where the photo bytes change but GPS and path do not.
