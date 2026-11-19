@@ -176,6 +176,59 @@ class PageEditingService:
                 PageRepository(connection).increment_revision(page_id)
             return len(pairs)
 
+    def assign_selected(
+        self,
+        project_id: int,
+        page_id: int,
+        photo_ids: list[int] | tuple[int, ...],
+    ) -> int:
+        """Assign the given photos to the page's empty slots in the given order.
+
+        Photos are placed in slot order, skipping unavailable photos and photos
+        already assigned anywhere in the project. Occupied slots are left
+        untouched. The revision increments only when at least one assignment was
+        made. Returns the number of photos assigned.
+        """
+        with self._database.transaction() as connection:
+            page, layout = self._page_and_layout(connection, page_id)
+            assignments = AssignmentRepository(connection)
+            occupied_slots = {
+                assignment.slot_id for assignment in assignments.list_by_page(page_id)
+            }
+            empty_slots = sorted(
+                (slot for slot in layout.slots if slot.id not in occupied_slots),
+                key=lambda slot: slot.position,
+            )
+            if not empty_slots or not photo_ids:
+                return 0
+
+            used_photo_ids = {
+                assignment.photo_id for assignment in assignments.list_by_project(project_id)
+            }
+            photos = PhotoRepository(connection)
+            candidates: list[int] = []
+            seen: set[int] = set()
+            for photo_id in photo_ids:
+                if photo_id in seen or photo_id in used_photo_ids:
+                    continue
+                photo = photos.get(photo_id)
+                if photo is None or not photo.available:
+                    continue
+                seen.add(photo_id)
+                candidates.append(photo_id)
+
+            pairs = list(zip(empty_slots, candidates, strict=False))
+            for slot, photo_id in pairs:
+                assignments.assign(
+                    project_id=project_id,
+                    page_id=page_id,
+                    slot_id=slot.id,
+                    photo_id=photo_id,
+                )
+            if pairs:
+                PageRepository(connection).increment_revision(page_id)
+            return len(pairs)
+
     def remove(self, project_id: int, page_id: int, slot_id: int) -> bool:
         """Clear a slot and return the photo to the unused pool."""
         with self._database.transaction() as connection:

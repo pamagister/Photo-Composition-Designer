@@ -20,6 +20,19 @@
     <span class="muted">{{ photos | length }} in inventory</span>
   </div>
   {% set counts = usage_counts if usage_counts is defined else {} %}
+  {% set pool_project_id = project.id if project else project_id %}
+  {% set pool_page_id = selected_page.id if selected_page else page_id %}
+  <div class="photo-select-toolbar" aria-live="polite">
+    <span class="selection-count" data-selection-count>0 selected</span>
+    <button type="button"
+            class="assign-selected-btn"
+            disabled
+            hx-post="/projects/{{ pool_project_id }}/pages/{{ pool_page_id }}/assign-selected"
+            hx-include=".unused-item-checkbox:checked"
+            hx-target=".editor-canvas"
+            hx-swap="outerHTML">Assign selected</button>
+    <button type="button" class="clear-selection-btn" disabled>Clear</button>
+  </div>
   <div class="unused-pool">
     {% for photo in photos
         if photo_filter == 'all' or (photo.available and counts.get(photo.id, 0) == 0) %}
@@ -29,6 +42,13 @@
             data-photo-id="{{ photo.id }}"
             data-use-count="{{ uses }}">
       {% if photo.available %}
+      <label class="unused-select">
+        <input type="checkbox"
+               class="unused-item-checkbox"
+               name="photo_id"
+               value="{{ photo.id }}"
+               aria-label="Select {{ photo.filename }} for bulk assignment">
+      </label>
       <img src="/media/photos/{{ photo.id }}" alt="{{ photo.filename }}" loading="lazy">
       {% else %}
       <div class="missing-thumb" role="img" aria-label="{{ photo.filename }} is missing">?</div>

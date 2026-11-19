@@ -117,6 +117,31 @@ def populate_page(
     return _page_fragment(request, project_id, page_id, message)
 
 
+@router.post("/projects/{project_id}/pages/{page_id}/assign-selected")
+def assign_selected_photos(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    photo_id: Annotated[list[int], Form()],
+) -> HTMLResponse:
+    """Assign the selected unused photos to the page's empty slots in order.
+
+    ``photo_id`` is a repeated form field carrying the selected photo ids in the
+    order the user checked them.
+    """
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        assigned = editing.assign_selected(project_id, page_id, photo_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    if assigned:
+        message = f"Assigned {assigned} photo(s)."
+    else:
+        message = "No empty slots or no selected photos to assign."
+    return _page_fragment(request, project_id, page_id, message)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/remove")
 def remove_photo(
     request: Request,

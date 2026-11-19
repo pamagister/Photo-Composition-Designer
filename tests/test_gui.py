@@ -306,6 +306,34 @@ def test_populate_button_shows_when_slots_are_empty(client):
     assert "Fill empty slots with unused photos" in project_page.text
 
 
+def test_unused_pool_renders_selection_checkbox_and_toolbar(client, source_dir):
+    response = client.post(
+        "/projects",
+        data={
+            "name": "Multi Select",
+            "page_count": "1",
+            "start_date": "2027-01-04",
+            "layout_key": "five_two_three",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    project_path = urlsplit(response.headers["location"]).path
+    client.post(
+        f"{project_path}/source",
+        data={"path": str(source_dir)},
+        follow_redirects=False,
+    )
+    client.post(f"{project_path}/scan", headers={"HX-Request": "true"})
+
+    page = client.get(project_path)
+    assert page.status_code == 200
+    assert "photo-select-toolbar" in page.text
+    assert "Assign selected" in page.text
+    assert "unused-item-checkbox" in page.text
+    assert 'value="unused"' in page.text or "selected" in page.text
+
+
 def test_global_layout_editor_saves_new_versions(client):
     layout_data = """[
       {"key":"left","x":0,"y":0,"width":0.5,"height":1},

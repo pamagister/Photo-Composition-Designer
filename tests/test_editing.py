@@ -574,6 +574,140 @@ def test_populate_skips_photos_used_on_other_pages(tmp_path):
         database.close()
 
 
+def test_assign_selected_fills_empty_slots_in_order(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        before = _page_revision(database, page_id)
+
+        assigned = editing.assign_selected(project_id, page_id, [photo_ids[2], photo_ids[0]])
+
+        assert assigned == 2
+        assert _page_revision(database, page_id) == before + 1
+        with database.connect() as connection:
+            by_slot = {
+                assignment.slot_id: assignment.photo_id
+                for assignment in AssignmentRepository(connection).list_by_page(page_id)
+            }
+        # First requested photo takes the first slot, second takes the next.
+        assert by_slot[slot_ids[0]] == photo_ids[2]
+        assert by_slot[slot_ids[1]] == photo_ids[0]
+    finally:
+        database.close()
+
+
+def test_assign_selected_leaves_occupied_slots_untouched(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[0], photo_ids[0])
+
+        assigned = editing.assign_selected(project_id, page_id, [photo_ids[2], photo_ids[3]])
+
+        assert assigned == 2
+        with database.connect() as connection:
+            by_slot = {
+                assignment.slot_id: assignment.photo_id
+                for assignment in AssignmentRepository(connection).list_by_page(page_id)
+            }
+        assert by_slot[slot_ids[0]] == photo_ids[0]
+        assert by_slot[slot_ids[1]] == photo_ids[2]
+        assert by_slot[slot_ids[2]] == photo_ids[3]
+    finally:
+        database.close()
+
+
+def test_assign_selected_skips_unavailable_and_used_photos(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        with database.connect() as connection:
+            PhotoRepository(connection).set_availability(photo_ids[0], False)
+
+        assigned = editing.assign_selected(
+            project_id, page_id, [photo_ids[0], photo_ids[1], photo_ids[2]]
+        )
+
+        # photo_ids[0] is unavailable and skipped; the remaining two fill slots.
+        assert assigned == 2
+        with database.connect() as connection:
+            assigned_ids = {
+                assignment.photo_id
+                for assignment in AssignmentRepository(connection).list_by_page(page_id)
+            }
+        assert photo_ids[0] not in assigned_ids
+        assert assigned_ids == {photo_ids[1], photo_ids[2]}
+    finally:
+        database.close()
+
+
+def test_assign_selected_skips_photos_used_on_other_pages(tmp_path):
+    database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
+    try:
+        project = ProjectService(database).create_project(
+            name="Multi", page_count=2, start_date=datetime(2027, 1, 4)
+        )
+        source = tmp_path / "source"
+        for index in range(4):
+            _write_photo(source / f"photo_{index:02d}.jpg", (index * 50, 0, 0))
+        inventory = InventoryService(database)
+        root = inventory.add_source_root(project.id, source)
+        inventory.scan(project.id, source_root_id=root.id)
+
+        editing = PageEditingService(database)
+        with database.connect() as connection:
+            page_one, page_two = PageRepository(connection).list(project.id)[:2]
+            photo_ids = [
+                row["id"]
+                for row in connection.execute(
+                    "SELECT id FROM photos ORDER BY relative_path"
+                ).fetchall()
+            ]
+        editing.change_layout(project.id, page_one.id, "four_quadrants")
+        editing.change_layout(project.id, page_two.id, "four_quadrants")
+
+        with database.connect() as connection:
+            page_two = PageRepository(connection).get(page_two.id)
+            assert page_two is not None and page_two.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page_two.layout_id)
+            assert layout is not None
+            other_slot = layout.slots[0]
+        editing.assign_to_empty_slot(project.id, page_two.id, other_slot.id, photo_ids[0])
+
+        assigned = editing.assign_selected(project.id, page_one.id, [photo_ids[0], photo_ids[1]])
+
+        assert assigned == 1
+        with database.connect() as connection:
+            page_one_assignments = AssignmentRepository(connection).list_by_page(page_one.id)
+        assigned_ids = {assignment.photo_id for assignment in page_one_assignments}
+        assert photo_ids[0] not in assigned_ids
+        assert assigned_ids == {photo_ids[1]}
+    finally:
+        database.close()
+
+
+def test_assign_selected_noop_without_empty_slots(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        _assign_all(editing, project_id, page_id, photo_ids, slot_ids)
+        before = _page_revision(database, page_id)
+
+        assigned = editing.assign_selected(project_id, page_id, [photo_ids[0]])
+
+        assert assigned == 0
+        assert _page_revision(database, page_id) == before
+    finally:
+        database.close()
+
+
+def test_assign_selected_empty_input_is_noop(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        before = _page_revision(database, page_id)
+
+        assert editing.assign_selected(project_id, page_id, []) == 0
+        assert _page_revision(database, page_id) == before
+    finally:
+        database.close()
+
+
 def test_populate_route_reports_assigned_and_refreshes_strip(editor_client, tmp_path):
     project_id, page_id, _, _ = _seed_via_client(tmp_path, photo_count=4, slots=3)
     before = _stored_revision(page_id)
@@ -589,3 +723,33 @@ def test_populate_route_reports_assigned_and_refreshes_strip(editor_client, tmp_
     second = editor_client.post(f"/projects/{project_id}/pages/{page_id}/populate")
     assert second.status_code == 200
     assert "No empty slots or no unused photos to fill." in second.text
+
+
+def test_assign_selected_route_assigns_and_refreshes_strip(editor_client, tmp_path):
+    project_id, page_id, photo_ids, _ = _seed_via_client(tmp_path, photo_count=4, slots=0)
+    before = _stored_revision(page_id)
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/assign-selected",
+        data={"photo_id": [str(photo_ids[2]), str(photo_ids[0])]},
+    )
+
+    assert response.status_code == 200
+    assert "Assigned 2 photo(s)." in response.text
+    assert response.headers["HX-Trigger"] == "pcd:refresh-unused"
+    assert _stored_revision(page_id) == before + 1
+
+
+def test_assign_selected_route_reports_noop(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_via_client(tmp_path, photo_count=4, slots=4)
+    before = _stored_revision(page_id)
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/assign-selected",
+        data={"photo_id": [str(photo_ids[0])]},
+    )
+
+    assert response.status_code == 200
+    assert "No empty slots or no selected photos to assign." in response.text
+    assert response.headers["HX-Trigger"] == "pcd:refresh-unused"
+    assert _stored_revision(page_id) == before

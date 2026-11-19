@@ -93,4 +93,45 @@
       swap: "outerHTML",
     });
   });
+
+  /* Multi-select in the photo strip: track checked photos, keep the toolbar
+   * count and button states in sync, and clear the selection after a bulk
+   * assign. Every checkbox is keyboard accessible.
+   *
+   * The strip is replaced wholesale when it refreshes (pcd:refresh-unused), so
+   * all wiring uses document-level event delegation and re-queries the toolbar
+   * each time instead of capturing nodes at load time. */
+  document.addEventListener("change", function (event) {
+    if (!event.target.classList.contains("unused-item-checkbox")) return;
+    syncSelection();
+  });
+
+  document.addEventListener("click", function (event) {
+    if (event.target.closest(".clear-selection-btn")) {
+      document
+        .querySelectorAll(".unused-item-checkbox:checked")
+        .forEach((box) => (box.checked = false));
+      syncSelection();
+    }
+  });
+
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (event.target instanceof Element && event.target.closest(".photo-strip")) {
+      syncSelection();
+    }
+  });
+
+  function syncSelection() {
+    const toolbar = document.querySelector(".photo-select-toolbar");
+    if (!toolbar) return;
+    const selected = document.querySelectorAll(".unused-item-checkbox:checked");
+    const countLabel = toolbar.querySelector("[data-selection-count]");
+    const assignBtn = toolbar.querySelector(".assign-selected-btn");
+    const clearBtn = toolbar.querySelector(".clear-selection-btn");
+    if (countLabel) countLabel.textContent = `${selected.length} selected`;
+    if (assignBtn) assignBtn.disabled = selected.length === 0;
+    if (clearBtn) clearBtn.disabled = selected.length === 0;
+  }
+
+  syncSelection();
 })();

@@ -247,6 +247,32 @@ def test_assign_replace_move_and_remove(live_server, browser_page):
     expect(page.locator(".editor-canvas")).to_be_visible()
 
 
+def test_multi_select_assigns_two_photos(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    # Check two unused photos and use the bulk assign action.
+    checkboxes = page.locator(".unused-item-checkbox")
+    checkboxes.nth(0).check()
+    checkboxes.nth(1).check()
+    expect(page.locator(".selection-count")).to_have_text("2 selected")
+
+    page.get_by_role("button", name="Assign selected").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Assigned 2 photo(s).")
+
+    # Both slots on the page are now occupied by the selected photos.
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+    expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[1])
+    )
+
+    # The strip refreshes and the assigned photos leave the unused pool.
+    expect(page.locator(".unused-pool").get_by_text("photo_00.jpg")).to_have_count(0)
+
+
 def test_layout_change_and_page_navigation(live_server, browser_page):
     page = browser_page
     photo_ids = live_server["photo_ids"]
