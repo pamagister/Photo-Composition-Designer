@@ -12,6 +12,7 @@ the two can never drift apart.
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, time
@@ -29,6 +30,39 @@ if TYPE_CHECKING:
     from photo_composition_designer.render.page import PageRenderInput
 
 MapRendererFactory = Callable[[list[tuple[float, float]]], Image.Image]
+
+#: Maximum number of cached map renders. Each entry is a PIL Image that
+#: can be large (e.g., 236x213 at 300 dpi), so the cap is conservative.
+_MAP_CACHE_SIZE = 16
+
+#: Bounded LRU cache for map renders. Key: (profile_hash, map_width,
+#: map_height, sorted(gps_coordinates)). Value: PIL Image.
+_map_cache: OrderedDict[tuple, Image.Image] = OrderedDict()
+
+
+def clear_map_cache() -> None:
+    """Clear the map render cache. Intended for tests and benchmarks."""
+    _map_cache.clear()
+
+
+def _map_cache_key(
+    profile: OutputProfile,
+    map_width: int,
+    map_height: int,
+    gps_coordinates: list[tuple[float, float]],
+) -> tuple:
+    """Return a cache key for a map render.
+
+    The key includes the profile hash (so a style or DPI change invalidates
+    the cache), the map dimensions, and the sorted coordinates (so a
+    coordinate change produces a new key and order does not matter).
+    """
+    return (
+        profile.profile_hash(),
+        map_width,
+        map_height,
+        tuple(sorted(gps_coordinates)),
+    )
 
 
 @dataclass(frozen=True)
@@ -75,8 +109,25 @@ def _render_map(
     map_height: int,
     map_renderer: MapRendererFactory | None,
 ) -> Image.Image | None:
-    renderer = map_renderer or _default_map_renderer(profile, map_width, map_height)
-    return renderer(list(page.gps_coordinates))
+    # Custom renderers (e.g., test doubles) bypass the cache so tests
+    # that inject a fake renderer see exactly the expected output.
+    if map_renderer is not None:
+        return map_renderer(list(page.gps_coordinates))
+    if not page.gps_coordinates:
+        return None
+    key = _map_cache_key(profile, map_width, map_height, list(page.gps_coordinates))
+    cached = _map_cache.get(key)
+    if cached is not None:
+        _map_cache.move_to_end(key)
+        return cached
+    renderer = _default_map_renderer(profile, map_width, map_height)
+    image = renderer(list(page.gps_coordinates))
+    if image is not None:
+        _map_cache[key] = image
+        _map_cache.move_to_end(key)
+        if len(_map_cache) > _MAP_CACHE_SIZE:
+            _map_cache.popitem(last=False)
+    return image
 
 
 def _default_map_renderer(
@@ -321,6 +372,7 @@ __all__ = [
     "MapRendererFactory",
     "PreparedCollage",
     "SlotOverlayRect",
+    "clear_map_cache",
     "compute_collage_box",
     "prepare_collage",
     "slot_overlay_rectangles",

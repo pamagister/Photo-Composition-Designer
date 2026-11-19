@@ -13,7 +13,7 @@ They are intentionally free of wall-clock assertions so they stay deterministic.
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import numpy as np
@@ -352,3 +352,100 @@ def test_build_input_query_count_is_constant(tmp_path):
     assert many == few
     # Sanity: it is a small constant, not a per-slot N+1 (45 slots would be ~90).
     assert many <= 6
+
+
+# ---------------------------------------------------------------------------
+# Map render cache (P3-W04)
+# ---------------------------------------------------------------------------
+
+
+def test_map_cache_key_changes_with_coordinates():
+    """A coordinate change produces a new map cache key."""
+    from photo_composition_designer.render.layout_geometry import _map_cache_key
+
+    profile = OutputProfile.default()
+    key1 = _map_cache_key(profile, 200, 150, [(48.1, 11.5), (48.2, 11.6)])
+    key2 = _map_cache_key(profile, 200, 150, [(48.1, 11.5), (48.3, 11.7)])
+    assert key1 != key2
+
+    # Same coordinates in a different order produce the same key.
+    key3 = _map_cache_key(profile, 200, 150, [(48.2, 11.6), (48.1, 11.5)])
+    assert key1 == key3
+
+    # A profile change produces a new key.
+    changed = replace(profile, style=replace(profile.style, background_color="#000000"))
+    key4 = _map_cache_key(changed, 200, 150, [(48.1, 11.5), (48.2, 11.6)])
+    assert key1 != key4
+
+    # A dimension change produces a new key.
+    key5 = _map_cache_key(profile, 300, 150, [(48.1, 11.5), (48.2, 11.6)])
+    assert key1 != key5
+
+
+def test_map_cache_hit_on_repeat(tmp_path):
+    """A repeat render with the same coordinates is a cache hit."""
+    from photo_composition_designer.render.layout_geometry import (
+        _map_cache,
+        clear_map_cache,
+    )
+
+    clear_map_cache()
+    profile = OutputProfile.default()
+    coords = [(48.1, 11.5), (48.2, 11.6)]
+
+    from photo_composition_designer.core.anniversaries import Anniversaries
+    from photo_composition_designer.render.layout_geometry import _render_map
+    from photo_composition_designer.render.page import PageRenderInput
+
+    page = PageRenderInput(
+        page_date=date(2027, 1, 4),
+        description="",
+        layout=None,
+        output_profile=profile,
+        gps_coordinates=tuple(coords),
+        anniversaries=Anniversaries(None),
+    )
+
+    # First render populates the cache.
+    _render_map(page, profile, 200, 150, None)
+    assert len(_map_cache) == 1
+
+    # Second render is a cache hit (cache size unchanged, no new entry).
+    _render_map(page, profile, 200, 150, None)
+    assert len(_map_cache) == 1
+
+    # A different coordinate set produces a new entry.
+    page2 = replace(page, gps_coordinates=((48.3, 11.7),))
+    _render_map(page2, profile, 200, 150, None)
+    assert len(_map_cache) == 2
+
+
+def test_map_cache_bounded(tmp_path):
+    """The map cache evicts the least-recently-used entry when full."""
+    from photo_composition_designer.core.anniversaries import Anniversaries
+    from photo_composition_designer.render.layout_geometry import (
+        _MAP_CACHE_SIZE,
+        _map_cache,
+        _render_map,
+        clear_map_cache,
+    )
+    from photo_composition_designer.render.page import PageRenderInput
+
+    clear_map_cache()
+    profile = OutputProfile.default()
+    anniversaries = Anniversaries(None)
+
+    # Fill the cache beyond its capacity with distinct coordinate sets.
+    for index in range(_MAP_CACHE_SIZE + 5):
+        page = PageRenderInput(
+            page_date=date(2027, 1, 4),
+            description="",
+            layout=None,
+            output_profile=profile,
+            gps_coordinates=((48.0 + index * 0.1, 11.0),),
+            anniversaries=anniversaries,
+        )
+        _render_map(page, profile, 200, 150, None)
+
+    # The cache must not exceed its cap.
+    assert len(_map_cache) <= _MAP_CACHE_SIZE

@@ -521,7 +521,7 @@ uses the existing `profile.profile_hash()` which already includes DPI, so a
 future draft-profile render (Phase 3) is automatically distinguished without a
 key-shape change.
 
-### Phase 3 — Draft previews and background bulk refresh
+### Phase 3 — Draft previews and background bulk refresh [x]
 
 **Objective:** Make editing and bulk actions feel immediate.
 
@@ -563,11 +563,20 @@ key-shape change.
   endpoint every 500 ms (30 s timeout), reloads the image with a
   cache-busting timestamp when ready, and logs errors to the console.
   Sidebar thumbnails keep their `loading="lazy"` behaviour.)
-- [ ] P3-W04: Add a bounded in-process LRU for the map, keyed as in D4.
+- [x] P3-W04: Add a bounded in-process LRU for the map, keyed as in D4.
   Include calendar/description only if repeat timing demonstrates worthwhile
   savings.
   The map key includes the sorted coordinates; a test proves a coordinate change
   produces a new key and a repeat is a hit.
+  (Added a module-level `OrderedDict` LRU in `render/layout_geometry.py` with
+  a cap of 16 entries. Key: `(profile_hash, map_width, map_height,
+  sorted(gps_coordinates))`. `_render_map` checks the cache before rendering
+  and stores the result after. Custom renderers (test doubles) bypass the
+  cache. `clear_map_cache()` is exported for tests. Calendar and description
+  are not cached: the calendar strip is ~38 ms with a per-date key (few
+  hits), and the description is small. Tests in
+  `test_render_performance.py` prove the key changes on coordinate/profile/
+  dimension changes, a repeat is a hit, and the cache stays bounded.)
 
 **Acceptance criteria**
 
@@ -580,6 +589,32 @@ key-shape change.
 - Exports are unchanged (byte-identical) before/after this phase.
 
 **Phase gate:** Interactive latency target met; bulk actions no longer block.
+
+**Outcome (2026-11-19):** All four work packages are complete and committed.
+
+- P3-W01 (draft render): `render_preview` renders at a draft profile (DPI
+  scaled to cover the preview width at 1.5x, capped at full DPI). Export path
+  untouched. Regression tests prove the draft covers 320/640 and never exceeds
+  full DPI.
+- P3-W02 (background worker): `gui/preview_worker.py` provides a single-thread
+  priority queue with coalescing. `_render_project_previews`,
+  `preview_project`, `apply_distribution`, and the assign/replace/swap/crop/live
+  routes submit jobs instead of rendering inline. Tests use
+  `sync_preview_worker=True`.
+- P3-W03 (client state): `page_preview` returns `202 Accepted` with a 1x1
+  placeholder on a cache miss (never renders inline). A new
+  `preview-status` endpoint returns `{status, revision}`. The editor template
+  shows a refreshing overlay and `editor.js` polls until ready, then reloads
+  the image with a cache-busting timestamp.
+- P3-W04 (map LRU): bounded 16-entry LRU keyed by
+  `(profile_hash, map_width, map_height, sorted(gps_coordinates))`. Calendar
+  and description are not cached (low repeat-hit rate).
+
+The fragment-return latency target (< ~150 ms for 45 slots) is met by
+construction: request handlers no longer call `render_page_image` or
+`render_preview`; they submit jobs to the worker and return the fragment.
+Browser click-to-visible-preview latency is a separate manual verification.
+The map LRU makes a repeat render with the same coordinates a cache hit.
 
 ### Phase 4 — Conditional detection warm-up and page-list tuning
 
@@ -737,37 +772,46 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-19-performance-many-photos.md`
-- **Completed:** Phase 0 (P0-W01/W02/W03) and Phase 1 (P1-W01/W02/W03/W05;
-  P1-W04 deferred to P3-W04). Commits: `8edb071`, `a8f67fe`, `478f775`,
-  `0a4d718` (Refs #58, #59).
-- **Active:** none — paused after Phase 1 per user request.
-- **Next:** Phase 2 is optional/conditional (immutable asset URLs). Recommended
-  next is Phase 3 (P3-W01 draft render + P3-W02 background worker). Before
-  starting Phase 3, re-measure with `scripts/benchmark_render.py` to confirm the
-  baseline is unchanged.
+- **Completed:** Phase 0 (P0-W01/W02/W03), Phase 1 (P1-W01/W02/W03/W05;
+  P1-W04 deferred to P3-W04), Phase 2 (P2-W01/W02/W03/W04), and Phase 3
+  (P3-W01/W02/W03/W04). Commits: `8edb071`, `a8f67fe`, `478f775`,
+  `0a4d718` (Refs #58, #59); `0d7f84b` (Refs #60); `e0be49c`, `3969958`,
+  `a19a436` (Refs #61); map LRU (Refs #61).
+- **Active:** none — Phases 2 and 3 complete and committed.
+- **Next:** Phase 4 (conditional detection warm-up and page-list tuning) is
+  the next pending phase. It depends on Phase 3's worker (done). Phase 5
+  (optional layered page / per-slot caching) is gated on Phase 4
+  measurements. Phase 6 (documentation and cleanup) is last.
 - **Relevant files:**
-  - Render path: `src/photo_composition_designer/project/rendering.py`,
-    `src/photo_composition_designer/render/slot_renderer.py`,
-    `src/photo_composition_designer/render/layout_geometry.py`,
+  - Render path: `src/photo_composition_designer/project/rendering.py`
+    (draft profile, `preview_cache_path`), `src/photo_composition_designer/render/slot_renderer.py`,
+    `src/photo_composition_designer/render/layout_geometry.py` (map LRU),
     `src/photo_composition_designer/render/object_detector.py`
-  - GUI: `src/photo_composition_designer/gui/routes/projects.py`,
-    `.../routes/editor.py`, `.../routes/media.py`,
-    `.../static/editor.js`, `.../static/style.css`,
-    `.../templates/partials/editor_canvas.html`,
-    `.../templates/project.html`
+  - GUI: `src/photo_composition_designer/gui/preview_worker.py` (new),
+    `.../gui/app.py` (lifespan + worker), `.../routes/projects.py`
+    (asset route, status endpoint, worker submission),
+    `.../routes/editor.py` (worker submission),
+    `.../static/editor.js` (preview polling),
+    `.../static/style.css` (refreshing overlay),
+    `.../templates/partials/editor_canvas.html` (refreshing overlay)
   - Data: `src/photo_composition_designer/project/repositories.py`,
     `.../db/schema.py`, `.../project/inventory.py`
   - Benchmark: `scripts/benchmark_render.py`,
-    `tests/test_render_performance.py`
+    `tests/test_render_performance.py`,
+    `tests/test_preview_assets.py`,
+    `tests/test_preview_worker.py`
 - **Decisions:** D1-D8 above; no schema change; preview-only draft;
-  existing atomic publication; optional immutable asset URLs; prioritized
-  in-process worker; full-image/validated detection identity only. P1-W01 not
-  retained (BILINEAR 4-14% e2e); P1-W04 deferred to P3-W04.
-- **Blockers:** None. Immutable URLs (Phase 2) and gallery warm-up (Phase 4)
-  are conditional on evidence and correct cache identity.
-- **Last verified:** 2026-11-19 — `uv run pytest -m fast` = 224 passed after
-  Phase 1; `scripts/benchmark_render.py` runs and records the Phase 0 baseline
-  in issue #58. Slow/browser suites not rerun this session.
-- **Context status:** Phase 0 and Phase 1 complete and committed. Plan file
-  updated. Phase 1 issue #59 has a progress comment. Ready for a fresh session
-  at the Phase 3 boundary.
+  existing atomic publication; immutable asset URLs for sidebar thumbnails;
+  prioritized in-process worker; full-image/validated detection identity only.
+  P1-W01 not retained (BILINEAR 4-14% e2e); P1-W04 deferred to P3-W04.
+  Phase 2 implemented as additive asset route + sidebar thumbnail migration.
+  Phase 3 implemented with draft render, background worker, client polling,
+  and map LRU.
+- **Blockers:** None. Phase 4 (detection warm-up) and Phase 5 (layered page)
+  are conditional on evidence.
+- **Last verified:** 2026-11-19 — `uv run pytest -m fast` = 241 passed after
+  Phase 3. `ruff check` and `ruff format` pass. Slow/browser suites not rerun
+  this session; CI not yet verified for the Phase 2/3 pushes.
+- **Context status:** Phases 0-3 complete and committed. Plan file updated.
+  Phase 2 issue #60 and Phase 3 issue #61 have progress comments. Ready for
+  Phase 4 or a fresh session at the Phase 4 boundary.
