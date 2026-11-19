@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="/static/export.js" defer></script>
+{% endblock %}
+
 {% block content %}
 <div class="project-header">
   <div>
@@ -15,10 +19,10 @@
     <div><dt>Page size</dt><dd>{{ profile.size.width }} x {{ profile.size.height }} mm</dd></div>
     <div><dt>DPI</dt><dd>{{ profile.size.dpi }}</dd></div>
     <div><dt>JPEG quality</dt><dd>{{ profile.size.jpeg_quality }}</dd></div>
-    <div><dt>PDF</dt><dd>{{ "enabled" if profile.layout.generate_pdf else "disabled" }}</dd></div>
   </dl>
   <p class="muted">
-    Settings come from this project's output profile. Change them in
+    DPI and JPEG quality below are prefilled from this project's output profile and
+    can be overridden for this export. Change the defaults in
     <a href="/projects/{{ project.id }}/settings">project settings</a>.
   </p>
 </div>
@@ -37,16 +41,33 @@
         <input id="export-folder" name="folder" value="{{ folder }}"
                placeholder="{{ export_root }}/project_{{ project.id }}">
       </div>
+    </div>
+    <div class="form-row">
+      <div class="field checkbox-field">
+        <label for="export-jpg">
+          <input type="checkbox" id="export-jpg" name="jpg" value="1" checked>
+          Export JPG pages
+        </label>
+      </div>
       <div class="field checkbox-field">
         <label for="export-pdf">
-          <input type="checkbox" id="export-pdf" name="pdf" value="1"
-                 {% if profile.layout.generate_pdf %}checked{% endif %}
-                 {% if not profile.layout.generate_pdf %}disabled{% endif %}>
+          <input type="checkbox" id="export-pdf" name="pdf" value="1" checked>
           Write combined PDF
         </label>
       </div>
-      <button class="primary" type="submit">Export pages</button>
     </div>
+    <div class="form-row">
+      <div class="field export-quality-field">
+        <label for="export-dpi">DPI</label>
+        <input id="export-dpi" type="number" min="1" name="dpi" value="{{ dpi }}" required>
+      </div>
+      <div class="field export-quality-field">
+        <label for="export-quality">JPEG quality</label>
+        <input id="export-quality" type="number" min="1" max="100"
+               name="jpeg_quality" value="{{ jpeg_quality }}" required>
+      </div>
+    </div>
+    <button class="primary" id="export-submit" type="submit">Export pages</button>
     <p class="muted">Source originals are read only and are never copied or modified.</p>
     <span id="export-progress" class="htmx-indicator muted">
       Rendering pages... this can take a moment.

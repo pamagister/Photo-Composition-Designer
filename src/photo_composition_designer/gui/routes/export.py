@@ -93,8 +93,12 @@ def _export_context(
     folder: str = "",
     result: ExportResult | None = None,
     error: str = "",
+    profile: OutputProfile | None = None,
+    dpi: str = "",
+    jpeg_quality: str = "",
 ) -> dict[str, object]:
     """Build the template context for export pages and fragments."""
+    effective_profile = profile or OutputProfile.default()
     default_folder = folder.strip() or str(_default_export_folder(settings, project_id))
     file_rows: list[dict[str, object]] = []
     pdf_url = ""
@@ -113,6 +117,8 @@ def _export_context(
         "project_id": project_id,
         "folder": default_folder,
         "export_root": settings.export_dir(),
+        "dpi": dpi.strip() or str(effective_profile.size.dpi),
+        "jpeg_quality": jpeg_quality.strip() or str(effective_profile.size.jpeg_quality),
         "result": result,
         "file_rows": file_rows,
         "pdf_url": pdf_url,
@@ -148,7 +154,11 @@ def _export_page(
             "project": project,
             "profile": profile,
             "save_state": "Saved",
-            **(_export_context(settings, project_id) if context is None else context),
+            **(
+                _export_context(settings, project_id, profile=profile)
+                if context is None
+                else context
+            ),
         },
         status_code=status_code,
     )
@@ -173,12 +183,32 @@ def run_export(
     database: DatabaseDependency,
     settings: SettingsDependency,
     folder: Annotated[str, Form()] = "",
+    jpg: Annotated[str, Form()] = "",
     pdf: Annotated[str, Form()] = "",
+    dpi: Annotated[str, Form()] = "",
+    jpeg_quality: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
-    """Export project pages and a PDF into the workspace export directory."""
+    """Export project pages as JPG files and/or a PDF into the chosen folder."""
     project = _get_project(service, project_id)
     profile = profile_from_project(project)
+    requested_dpi = dpi.strip()
+    requested_quality = jpeg_quality.strip()
     try:
+        write_jpg = bool(jpg)
+        write_pdf = bool(pdf)
+        if not write_jpg and not write_pdf:
+            raise ValueError("Select at least one export format: JPG or PDF.")
+        effective_dpi = int(requested_dpi) if requested_dpi else profile.size.dpi
+        if effective_dpi < 1:
+            raise ValueError("DPI must be at least 1")
+        if write_jpg:
+            effective_quality = (
+                int(requested_quality) if requested_quality else profile.size.jpeg_quality
+            )
+            if not 1 <= effective_quality <= 100:
+                raise ValueError("JPEG quality must be between 1 and 100")
+        else:
+            effective_quality = profile.size.jpeg_quality
         requested_folder = folder.strip() or str(_default_export_folder(settings, project_id))
         target, relative_folder = _export_folder(settings, project_id, requested_folder)
         result = ProjectExporter(
@@ -187,7 +217,11 @@ def run_export(
         ).render_project(
             project_id,
             target,
-            write_pdf=bool(pdf),
+            write_pdf=write_pdf,
+            write_pages=write_jpg,
+            image_format="JPEG",
+            jpeg_quality=effective_quality,
+            dpi=effective_dpi,
         )
         request.app.state.export_paths.add(target.resolve())
     except (OSError, ValueError, ProjectError) as exc:
@@ -196,6 +230,9 @@ def run_export(
             project_id,
             folder=folder,
             error=str(exc),
+            profile=profile,
+            dpi=requested_dpi,
+            jpeg_quality=requested_quality,
         )
         return _export_response(
             request,
@@ -212,7 +249,9 @@ def run_export(
         project_id,
         folder=relative_folder,
         result=result,
-        error="",
+        profile=profile,
+        dpi=str(effective_dpi),
+        jpeg_quality=str(effective_quality),
     )
     return _export_response(
         request,
@@ -279,7 +318,13 @@ def export_file(
     candidate = (target / filename).resolve()
     if not candidate.is_relative_to(target) or not candidate.is_file():
         raise HTTPException(404, "export file not found")
-    media_type = "application/pdf" if candidate.suffix.lower() == ".pdf" else "image/png"
+    suffix = candidate.suffix.lower()
+    if suffix == ".pdf":
+        media_type = "application/pdf"
+    elif suffix in {".jpg", ".jpeg"}:
+        media_type = "image/jpeg"
+    else:
+        media_type = "image/png"
     return FileResponse(
         candidate,
         media_type=media_type,

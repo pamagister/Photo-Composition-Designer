@@ -85,7 +85,6 @@ def _settings_form(**overrides: str) -> dict[str, str]:
         "layout.use_rounded_corners": ("1" if profile.layout.use_rounded_corners else ""),
         "layout.image_score_factor": str(profile.layout.image_score_factor),
         "layout.use_photo_description": ("1" if profile.layout.use_photo_description else ""),
-        "layout.generate_pdf": "1" if profile.layout.generate_pdf else "",
         "layout.object_recognition": ("1" if profile.layout.object_recognition else ""),
     }
     form.update(overrides)
@@ -113,7 +112,48 @@ def test_settings_page_shows_current_profile(client: TestClient):
     assert "Project settings" in response.text
     assert 'name="size.dpi"' in response.text
     assert 'value="300"' in response.text
-    assert "Duplicate project" in response.text
+    assert 'name="layout.generate_pdf"' not in response.text
+    assert "Duplicate project" not in response.text
+
+
+def test_project_detail_shows_extras_and_check_sections(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    response = client.get(f"/projects/{project_id}")
+
+    assert response.status_code == 200
+    assert "Extras" in response.text
+    assert "Under construction." in response.text
+
+
+def test_projects_page_exposes_archive_import_and_duplicate_controls(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    projects = client.get("/projects")
+
+    assert projects.status_code == 200
+    assert f'href="/projects/{project_id}/archive"' in projects.text
+    assert "Export project (.pcd)" in projects.text
+    assert "Duplicate project" in projects.text
+    assert 'action="/projects/import-pcd"' in projects.text
+    assert "Import project (.pcd)" in projects.text
+
+
+def test_project_detail_no_longer_duplicates_archive_or_imports(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    detail = client.get(f"/projects/{project_id}")
+
+    assert detail.status_code == 200
+    assert "Export project (.pcd)" not in detail.text
+    assert "Import project (.pcd)" not in detail.text
+    assert "Duplicate project" not in detail.text
 
 
 def test_settings_save_persists_profile_and_invalidates_pages(
@@ -129,7 +169,6 @@ def test_settings_save_persists_profile_and_invalidates_pages(
                 "calendar.holiday_countries": "SN, DE",
                 "size.dpi": "150",
                 "style.background_color": "#000000",
-                "layout.generate_pdf": "",
             }
         ),
         follow_redirects=False,
@@ -142,7 +181,6 @@ def test_settings_save_persists_profile_and_invalidates_pages(
     assert project.output_profile["calendar"]["holiday_countries"] == ["SN", "DE"]
     assert project.output_profile["size"]["dpi"] == 150
     assert project.output_profile["style"]["background_color"] == "#000000"
-    assert project.output_profile["layout"]["generate_pdf"] is False
     assert all(page.render_revision == 1 for page in pages)
 
     response = client.get(f"/projects/{project_id}?settings=1")
@@ -161,7 +199,6 @@ def test_settings_save_persists_profile_and_invalidates_pages(
                 "calendar.holiday_countries": "SN, DE",
                 "size.dpi": "150",
                 "style.background_color": "#000000",
-                "layout.generate_pdf": "",
             }
         ),
     )
@@ -391,5 +428,5 @@ def test_duplicate_project_route_rejects_blank_name(client: TestClient):
     )
 
     assert response.status_code == 303
-    assert "/settings" in response.headers["location"]
+    assert "/projects" in response.headers["location"]
     assert "name" in response.headers["location"]

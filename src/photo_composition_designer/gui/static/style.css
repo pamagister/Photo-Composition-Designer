@@ -232,8 +232,8 @@ label {
 }
 
 .project-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: var(--gap);
 }
 
@@ -247,6 +247,48 @@ label {
 .project-card h2 {
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
+}
+
+.project-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.project-row-main {
+  min-width: 12rem;
+}
+
+.project-row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.project-duplicate {
+  margin: 0;
+}
+
+.project-duplicate .field {
+  flex: 0 1 14rem;
+}
+
+.import-project form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 16rem;
+  margin-top: 0.5rem;
 }
 
 .page-list {
@@ -423,8 +465,7 @@ label {
   color: var(--text);
 }
 
-.project-extras[open] > .distribution-area,
-.project-extras[open] > .distribution-panel {
+.project-extras[open] > .extras-panel {
   position: absolute;
   z-index: 4;
   top: calc(100% + 0.4rem);
@@ -437,6 +478,16 @@ label {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 0.75rem 2rem #0008;
+}
+
+.extras-panel h3 {
+  margin: 0 0 0.5rem;
+}
+
+.extras-section + .extras-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
 .project-layout {
@@ -954,10 +1005,6 @@ summary {
   white-space: pre;
 }
 
-.settings-duplicate {
-  max-width: 44rem;
-}
-
 .export-panel {
   max-width: 60rem;
 }
@@ -977,6 +1024,10 @@ summary {
 .export-settings dd {
   margin: 0.15rem 0 0;
   font-weight: 600;
+}
+
+.export-quality-field {
+  max-width: 10rem;
 }
 
 .export-result {

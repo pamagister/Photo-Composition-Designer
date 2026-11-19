@@ -29,7 +29,6 @@ _BOOL_FIELDS = (
     "geo.use_photo_location_maps",
     "layout.use_rounded_corners",
     "layout.use_photo_description",
-    "layout.generate_pdf",
     "layout.object_recognition",
 )
 
@@ -159,7 +158,6 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
         "layout.use_rounded_corners": profile.layout.use_rounded_corners,
         "layout.image_score_factor": profile.layout.image_score_factor,
         "layout.use_photo_description": profile.layout.use_photo_description,
-        "layout.generate_pdf": profile.layout.generate_pdf,
         "layout.object_recognition": profile.layout.object_recognition,
     }
 
@@ -296,7 +294,7 @@ def duplicate_project(
         duplicate = service.duplicate_project(project_id, name=name or None)
     except (ValueError, ProjectError) as exc:
         return RedirectResponse(
-            f"/projects/{project_id}/settings?error={quote(str(exc))}",
+            f"/projects?error={quote(str(exc))}",
             status_code=303,
         )
     return RedirectResponse(f"/projects/{duplicate.id}?duplicated=1", status_code=303)

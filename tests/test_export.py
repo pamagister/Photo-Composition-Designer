@@ -113,3 +113,43 @@ def test_render_page_without_assignments_still_renders_calendar(tmp_path, monkey
     result = exporter.render_project(project_id, tmp_path / "out", write_pdf=False)
     assert len(result.rendered) == 2
     assert len(result.warnings) == 0
+
+
+def test_render_project_writes_jpg_pages(tmp_path, monkeypatch):
+    database, project_id = _setup_project(tmp_path, monkeypatch)
+    exporter = ProjectExporter(database)
+
+    result = exporter.render_project(
+        project_id,
+        tmp_path / "out",
+        write_pdf=False,
+        write_pages=True,
+        image_format="JPEG",
+        jpeg_quality=80,
+        dpi=150,
+    )
+
+    assert [path.name for path in result.rendered] == ["page_000.jpg", "page_001.jpg"]
+    assert result.rendered_pages == 2
+    with Image.open(result.rendered[0]) as page:
+        assert page.format == "JPEG"
+        assert tuple(round(value) for value in page.info.get("dpi", (0, 0))) == (150, 150)
+
+
+def test_render_project_pdf_only_writes_no_page_files(tmp_path, monkeypatch):
+    database, project_id = _setup_project(tmp_path, monkeypatch)
+    exporter = ProjectExporter(database)
+
+    result = exporter.render_project(
+        project_id,
+        tmp_path / "out",
+        write_pdf=True,
+        write_pages=False,
+        image_format="JPEG",
+        dpi=100,
+    )
+
+    assert result.rendered == []
+    assert result.rendered_pages == 2
+    assert result.pdf_path is not None
+    assert list((tmp_path / "out").glob("page_*")) == []

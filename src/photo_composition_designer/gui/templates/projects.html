@@ -3,14 +3,38 @@
 {% block content %}
 <div class="page-header">
   <h1>Projects</h1>
-  <a class="button primary" href="/projects/new">New project</a>
+  <div class="project-header-actions">
+    <a class="button primary" href="/projects/new">New project</a>
+    <details class="project-extras import-project">
+      <summary>Import project (.pcd)</summary>
+      <form method="post" action="/projects/import-pcd" enctype="multipart/form-data">
+        <label for="project-archive">Project archive</label>
+        <input id="project-archive" name="archive" type="file" accept=".pcd" required>
+        <button type="submit">Import project</button>
+      </form>
+    </details>
+  </div>
 </div>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 {% if projects %}
 <div class="project-grid">
   {% for project in projects %}
-  <article class="project-card">
-    <h2><a href="/projects/{{ project.id }}">{{ project.name }}</a></h2>
-    <p class="muted">{{ project.page_count }} pages &middot; updated {{ project.updated_at[:10] }}</p>
+  <article class="project-card project-row">
+    <div class="project-row-main">
+      <h2><a href="/projects/{{ project.id }}">{{ project.name }}</a></h2>
+      <p class="muted">{{ project.page_count }} pages &middot; updated {{ project.updated_at[:10] }}</p>
+    </div>
+    <div class="project-row-actions">
+      <a class="button" href="/projects/{{ project.id }}/archive">Export project (.pcd)</a>
+      <form method="post" action="/projects/{{ project.id }}/duplicate" class="form-row project-duplicate">
+        <div class="field">
+          <label class="sr-only" for="duplicate-name-{{ project.id }}">New project name</label>
+          <input id="duplicate-name-{{ project.id }}" name="name"
+                 placeholder="{{ project.name }} (copy)">
+        </div>
+        <button type="submit">Duplicate project</button>
+      </form>
+    </div>
   </article>
   {% endfor %}
 </div>

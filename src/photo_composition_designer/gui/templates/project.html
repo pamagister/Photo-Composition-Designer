@@ -17,19 +17,19 @@
 <nav class="project-actions" aria-label="Project actions">
   <a class="button" href="/projects/{{ project.id }}/preview{% if selected_page %}?page={{ selected_page.id }}{% endif %}">Preview</a>
   <a class="button primary" href="/projects/{{ project.id }}/export">Export photos</a>
-  <a class="button" href="/projects/{{ project.id }}/archive">Export project (.pcd)</a>
-  <details class="project-extras">
-    <summary>Import project (.pcd)</summary>
-    <form method="post" action="/projects/import-pcd" enctype="multipart/form-data">
-      <label for="project-archive">Project archive</label>
-      <input id="project-archive" name="archive" type="file" accept=".pcd" required>
-      <button type="submit">Import project</button>
-    </form>
-  </details>
   <a class="button" href="/projects/{{ project.id }}/settings">Settings</a>
   <details class="project-extras">
-    <summary>Extras / Distribution</summary>
-    {% include "partials/distribution_area.html" %}
+    <summary>Extras</summary>
+    <div class="extras-panel">
+      <section class="extras-section">
+        <h3>Distribution</h3>
+        {% include "partials/distribution_area.html" %}
+      </section>
+      <section class="extras-section">
+        <h3>Check</h3>
+        <p class="muted">Under construction.</p>
+      </section>
+    </div>
   </details>
 </nav>
 

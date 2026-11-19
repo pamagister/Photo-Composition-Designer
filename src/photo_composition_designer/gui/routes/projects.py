@@ -301,13 +301,19 @@ def _canvas_response(
 def list_projects(
     request: Request,
     service: ProjectServiceDependency,
+    error: str = "",
 ) -> HTMLResponse:
     """List all projects in the central workspace."""
     projects = service.list_projects()
     return TEMPLATES.TemplateResponse(
         request,
         "projects.html",
-        {"projects": projects, "page_title": "Projects", "save_state": "Saved"},
+        {
+            "projects": projects,
+            "page_title": "Projects",
+            "save_state": "Saved",
+            "error": error,
+        },
     )
 
 

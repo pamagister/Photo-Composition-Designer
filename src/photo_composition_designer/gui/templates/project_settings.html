@@ -183,13 +183,6 @@
         </label>
       </div>
       <div class="field checkbox-field">
-        <label for="layout-pdf">
-          <input type="checkbox" id="layout-pdf" name="layout.generate_pdf"
-                 value="1" {% if values['layout.generate_pdf'] %}checked{% endif %}>
-          Generate PDF on export
-        </label>
-      </div>
-      <div class="field checkbox-field">
         <label for="layout-object">
           <input type="checkbox" id="layout-object"
                  name="layout.object_recognition" value="1"
@@ -335,21 +328,5 @@
     </span>
   </form>
   <div id="scan-area"></div>
-</section>
-
-<section class="panel settings-duplicate">
-  <h2>Duplicate project</h2>
-  <p class="muted">
-    Creates an independent copy of pages, assignments, source roots and output
-    settings. Source originals stay untouched.
-  </p>
-  <form method="post" action="/projects/{{ project.id }}/duplicate" class="form-row">
-    <div class="field">
-      <label for="duplicate-name">New project name</label>
-      <input id="duplicate-name" name="name"
-             placeholder="{{ project.name }} (copy)">
-    </div>
-    <button>Duplicate project</button>
-  </form>
 </section>
 {% endblock %}

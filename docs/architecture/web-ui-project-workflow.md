@@ -75,8 +75,8 @@ Key invariants:
 * **Style:** background colour and the four fonts with colour and size.
 * **Geo:** map toggle, minimal extension and map dimensions.
 * **Size:** page width/height, DPI, JPEG quality, calendar height and map size.
-* **Layout:** margins, spacing, rounded corners, description and PDF toggles,
-  image score factor and object recognition.
+* **Layout:** margins, spacing, rounded corners, description toggle, image score
+  factor and object recognition. Whether a PDF is written is chosen per export.
 
 New projects snapshot the current `core/settings.py` defaults into
 `projects.output_profile_json`. Existing projects with an empty snapshot receive a
@@ -101,8 +101,8 @@ settings increments render revisions only when values actually change.
 4. `ProjectRenderingService.render_preview` renders a reduced-resolution JPEG and
    caches it under a key covering page revision, layout ID/version, profile hash,
    shared anniversary-file path/version, render mode and requested width.
-5. `io/export.py` renders pages in explicit project order and writes PNG pages
-   plus a combined PDF.
+5. `io/export.py` renders pages in explicit project order and writes JPG pages
+   and/or a combined PDF, with export-time DPI and JPEG quality overrides.
 
 The composer never queries SQLite or knows about FastAPI. The rendering service
 is the only seam between persistence and rendering.
@@ -167,6 +167,10 @@ The editor keeps three main areas:
 * **Bottom panel:** horizontally scrolling photos, filtered to all or unused;
   repeated use is marked with a yellow warning indicator.
 
+The Projects overview lists every project as a row with its own archive export,
+duplication form and link into the editor. Project-level `.pcd` import/export and
+duplication live there rather than inside a single project.
+
 HTMX performs server-confirmed fragment swaps; focused JavaScript adds
 drag-and-drop. Every drag action has a keyboard-visible equivalent. Layout change
 previews displaced photos before confirmation. When a layout change would
@@ -188,7 +192,9 @@ files:
 * The importer accepts a versioned archive manifest and does not extract paths
   from the archive.
 * Browser image/PDF exports accept absolute local destinations and default to a
-  project-specific folder under Pictures/Bilder when available.
+  project-specific folder under Pictures/Bilder when available. The export
+  dialog selects JPG pages, a combined PDF or both, and may override the
+  project's DPI and JPEG quality.
 
 The browser export page and the CLI share `io/export.py`; both use the project
 profile and explicit page order, and both report missing assets as actionable

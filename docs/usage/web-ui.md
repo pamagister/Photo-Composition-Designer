@@ -21,6 +21,11 @@ originals are only read, never moved, renamed or modified.
 The project snapshots the current output-profile defaults at creation time. Later
 changes to workspace defaults therefore cannot alter an existing project.
 
+The **Projects** overview lists every project as a row. Each row links to the
+editor and offers **Export project (.pcd)** and **Duplicate project**. Use
+**Import project (.pcd)** next to **New project** to create a project from a
+portable archive.
+
 ## Global settings and layouts
 
 **App settings** configures the shared `anniversaries.ini` and `locations.ini`
@@ -54,11 +59,14 @@ pages already using an older version keep their existing layout snapshots.
 ## Preview and apply a distribution
 
 Choose a strategy (`Equal`, `Random` with an optional seed, or `Date aware`) in
-**Extras / Distribution**, then select **Preview distribution**. The preview
-shows per-page samples, filled and empty slots, overflow and the total
+the **Distribution** section of **Extras**, then select **Preview distribution**.
+The preview shows per-page samples, filled and empty slots, overflow and the total
 unassigned count without changing the project. **Apply distribution** persists
 the reviewed proposal in one transaction; repeating the same confirmation is a
 no-op and a stale preview is rejected.
+
+**Extras** also contains a **Check** section, which is currently under
+construction.
 
 Photos that exceed the available slots stay in the unused pool. Empty slots are
 valid and are reported explicitly.
@@ -117,29 +125,32 @@ originals again. Editing a page invalidates its cached preview.
 **Project settings** edits the name, start date, page count, title page usage and
 composition title, and the output profile: calendar language and holiday
 countries, page size and DPI, margins and spacing, fonts and colors, map options,
-and description/PDF toggles. Removing pages with saved content requires
+and the description toggle. Removing pages with saved content requires
 confirmation. Settings are validated before saving, and actual
 render-affecting changes increment page revisions.
 
 ## Duplicate a project
 
-**Duplicate project** in the settings page copies pages, layout snapshots,
-assignments, source roots, inventory and the output profile inside the workspace.
-The copy is fully independent of the original. It is not a portable archive:
-source references remain relative and relinkable.
+The **Projects** overview offers **Duplicate project** on every project row. Enter
+a new project name in the row and confirm. The duplicate copies pages, layout
+snapshots, assignments, source roots, inventory and the output profile inside the
+workspace. The copy is fully independent of the original. It is not a portable
+archive: source references remain relative and relinkable.
 
 ## Preview and export
 
 * **Preview all pages** renders every page in project order and opens the first
   page.
-* **Export photos** renders PNG pages and, when enabled, a combined PDF. The
-  default is a project-specific folder under the OS Pictures/Bilder directory
-  when it exists; an absolute local path or workspace-relative folder can be
-  entered instead.
-* **Export project (.pcd)** downloads a reference-only project archive.
-  **Import project (.pcd)** creates a new project from such an archive. Archives
-  include layout snapshots, assignments and source references, not photo files;
-  source directories may need relinking on another computer.
+* **Export photos** opens the export dialog. Select **JPG**, **PDF** or both.
+  JPG pages use the project's DPI and JPEG quality defaults, which can be
+  overridden for this export. The default destination is a project-specific
+  folder under the OS Pictures/Bilder directory when it exists; an absolute local
+  path or workspace-relative folder can be entered instead. At least one format
+  must be selected.
+* **Export project (.pcd)** on the Projects overview downloads a reference-only
+  project archive. **Import project (.pcd)** creates a new project from such an
+  archive. Archives include layout snapshots, assignments and source references,
+  not photo files; source directories may need relinking on another computer.
 * Exported pages and the PDF follow the exact project page order and use the
   project's stored output profile.
 * Missing or unavailable assets produce actionable warnings instead of silent

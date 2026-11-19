@@ -3,7 +3,7 @@
 <p class="muted">No pages were exported. Adjust the folder or project settings and try again.</p>
 {% elif result %}
 <p class="success" role="status">
-  Exported {{ result.rendered | length }} of {{ result.pages }} page(s) to
+  Exported {{ result.rendered_pages }} of {{ result.pages }} page(s) to
   <code>{{ folder }}</code>.
 </p>
 {% if result.warnings %}

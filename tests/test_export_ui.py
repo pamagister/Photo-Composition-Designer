@@ -125,6 +125,10 @@ def test_export_page_shows_effective_profile_and_actions(
     assert "Effective output settings" in response.text
     assert "100 x 80 mm" in response.text
     assert 'name="folder"' in response.text
+    assert 'name="jpg"' in response.text
+    assert 'name="pdf"' in response.text
+    assert 'name="dpi"' in response.text
+    assert 'name="jpeg_quality"' in response.text
     assert f"project_{project_id}" in response.text
     assert "Source originals are" in response.text
 
@@ -136,33 +140,83 @@ def test_web_export_writes_ordered_pages_and_pdf(
 
     response = client.post(
         f"/projects/{project_id}/export",
-        data={"folder": "run-one", "pdf": "1"},
+        data={"folder": "run-one", "jpg": "1", "pdf": "1", "dpi": "100", "jpeg_quality": "90"},
     )
 
     assert response.status_code == 200
     assert "Exported 2 of 2 page(s)" in response.text
-    assert "page_000.png" in response.text
-    assert "page_001.png" in response.text
+    assert "page_000.jpg" in response.text
+    assert "page_001.jpg" in response.text
     assert "Download PDF" in response.text
 
     output_dir = gui_settings.export_dir() / "run-one"
-    assert (output_dir / "page_000.png").is_file()
-    assert (output_dir / "page_001.png").is_file()
+    assert (output_dir / "page_000.jpg").is_file()
+    assert (output_dir / "page_001.jpg").is_file()
     assert (output_dir / "output.pdf").read_bytes().startswith(b"%PDF-")
     expected_size = (mm_to_px(100, 100), mm_to_px(80, 100))
-    with Image.open(output_dir / "page_000.png") as page:
+    with Image.open(output_dir / "page_000.jpg") as page:
+        assert page.format == "JPEG"
         assert page.size == expected_size
-    with Image.open(output_dir / "page_001.png") as page:
+        assert tuple(round(value) for value in page.info.get("dpi", (0, 0))) == (100, 100)
+    with Image.open(output_dir / "page_001.jpg") as page:
         assert page.size == expected_size
 
     page_response = client.get(
-        f"/projects/{project_id}/export/files?folder=run-one&name=page_000.png"
+        f"/projects/{project_id}/export/files?folder=run-one&name=page_000.jpg"
     )
     assert page_response.status_code == 200
-    assert page_response.headers["content-type"] == "image/png"
+    assert page_response.headers["content-type"] == "image/jpeg"
     pdf_response = client.get(f"/projects/{project_id}/export/files?folder=run-one&name=output.pdf")
     assert pdf_response.status_code == 200
     assert pdf_response.headers["content-type"] == "application/pdf"
+
+
+def test_web_export_pdf_only_writes_no_page_images(
+    client: TestClient, gui_settings: GuiSettings, tmp_path: Path
+):
+    project_id, _ = _seed_project(gui_settings, tmp_path)
+
+    response = client.post(
+        f"/projects/{project_id}/export",
+        data={"folder": "pdf-only", "jpg": "", "pdf": "1", "jpeg_quality": "0"},
+    )
+
+    assert response.status_code == 200
+    assert "Exported 2 of 2 page(s)" in response.text
+    assert "Download PDF" in response.text
+    output_dir = gui_settings.export_dir() / "pdf-only"
+    assert list(output_dir.glob("page_*")) == []
+    assert (output_dir / "output.pdf").read_bytes().startswith(b"%PDF-")
+
+
+def test_web_export_requires_one_format(
+    client: TestClient, gui_settings: GuiSettings, tmp_path: Path
+):
+    project_id, _ = _seed_project(gui_settings, tmp_path)
+
+    response = client.post(
+        f"/projects/{project_id}/export",
+        data={"folder": "none", "jpg": "", "pdf": ""},
+    )
+
+    assert response.status_code == 400
+    assert "Select at least one export format" in response.text
+    assert not (gui_settings.export_dir() / "none").exists()
+
+
+def test_web_export_rejects_invalid_jpeg_quality(
+    client: TestClient, gui_settings: GuiSettings, tmp_path: Path
+):
+    project_id, _ = _seed_project(gui_settings, tmp_path)
+
+    response = client.post(
+        f"/projects/{project_id}/export",
+        data={"folder": "bad", "jpg": "1", "pdf": "", "jpeg_quality": "0"},
+    )
+
+    assert response.status_code == 400
+    assert "JPEG quality must be between 1 and 100" in response.text
+    assert 'value="0"' in response.text
 
 
 def test_web_export_reports_missing_assets(
@@ -173,7 +227,7 @@ def test_web_export_reports_missing_assets(
 
     response = client.post(
         f"/projects/{project_id}/export",
-        data={"folder": "missing", "pdf": ""},
+        data={"folder": "missing", "jpg": "1", "pdf": ""},
     )
 
     assert response.status_code == 200
@@ -189,7 +243,7 @@ def test_web_export_rejects_traversal_and_accepts_absolute_destination(
 
     response = client.post(
         f"/projects/{project_id}/export",
-        data={"folder": "../escape", "pdf": ""},
+        data={"folder": "../escape", "jpg": "1", "pdf": ""},
     )
 
     assert response.status_code == 400
@@ -198,14 +252,14 @@ def test_web_export_rejects_traversal_and_accepts_absolute_destination(
 
     response = client.post(
         f"/projects/{project_id}/export",
-        data={"folder": str(tmp_path / "absolute"), "pdf": ""},
+        data={"folder": str(tmp_path / "absolute"), "jpg": "1", "pdf": ""},
     )
     assert response.status_code == 200
     assert "Exported 2 of 2 page(s)" in response.text
-    assert (tmp_path / "absolute" / "page_000.png").is_file()
+    assert (tmp_path / "absolute" / "page_000.jpg").is_file()
     download = client.get(
         f"/projects/{project_id}/export/files",
-        params={"folder": str(tmp_path / "absolute"), "name": "page_000.png"},
+        params={"folder": str(tmp_path / "absolute"), "name": "page_000.jpg"},
     )
     assert download.status_code == 200
 
@@ -219,14 +273,14 @@ def test_export_uses_each_project_profile(
     for project_id, folder in ((first_id, "first"), (second_id, "second")):
         response = client.post(
             f"/projects/{project_id}/export",
-            data={"folder": folder, "pdf": ""},
+            data={"folder": folder, "jpg": "1", "pdf": ""},
         )
         assert response.status_code == 200
         assert "Exported 2 of 2 page(s)" in response.text
 
-    with Image.open(gui_settings.export_dir() / "first" / "page_000.png") as first_page:
+    with Image.open(gui_settings.export_dir() / "first" / "page_000.jpg") as first_page:
         assert first_page.width == mm_to_px(100, 100)
-    with Image.open(gui_settings.export_dir() / "second" / "page_000.png") as second_page:
+    with Image.open(gui_settings.export_dir() / "second" / "page_000.jpg") as second_page:
         assert second_page.width == mm_to_px(120, 100)
 
 
