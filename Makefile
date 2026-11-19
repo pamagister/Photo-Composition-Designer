@@ -77,7 +77,6 @@ DIST_DIR := dist
 
 # Gemeinsame PyInstaller-Optionen
 COMMON_PYI_OPTS = \
-	--add-data "config.yaml:." \
 	--add-data "anniversaries.ini:." \
 	--add-data "locations_en.ini:." \
 	--add-data "locations_de.ini:." \
@@ -107,7 +106,6 @@ COMMON_PYI_OPTS = \
 prepare-release:
 	rm -rf $(RELEASE_DIR)
 	mkdir -p $(RELEASE_DIR)
-	cp config.yaml $(RELEASE_DIR)/
 	cp anniversaries.ini $(RELEASE_DIR)/
 	cp locations_en.ini $(RELEASE_DIR)/
 	cp locations_de.ini $(RELEASE_DIR)/

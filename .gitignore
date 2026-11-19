@@ -200,7 +200,6 @@ cython_debug/
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/inspectionProfiles/Project_Default.xml
 /src/photo_composition_designer/_version.py
-/release/config.yaml
 /release/Photo-Composition-Designer.exe
 /release/README.md
 /temp/*
