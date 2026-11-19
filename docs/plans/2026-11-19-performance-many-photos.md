@@ -376,7 +376,7 @@ its target metric did not improve or a correctness test regressed.
 Each work package is independently implementable, testable and committable.
 Phases are ordered by dependency and by value-per-risk.
 
-### Phase 0 — Measurement harness and guardrails
+### Phase 0 — Measurement harness and guardrails [x]
 
 **Objective:** Make every later claim measurable and prevent regressions.
 
@@ -404,7 +404,7 @@ Phases are ordered by dependency and by value-per-risk.
 
 **Phase gate:** Baseline is recorded and the harness is reproducible.
 
-### Phase 1 — Low-hanging fruit in the render path
+### Phase 1 — Low-hanging fruit in the render path [x]
 
 **Objective:** Cut per-render cost without changing any cache contract.
 
@@ -686,9 +686,14 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-19-performance-many-photos.md`
-- **Completed:** none
-- **Active:** Phase 0 (measurement harness) — not started
-- **Next:** P0-W01
+- **Completed:** Phase 0 (P0-W01/W02/W03) and Phase 1 (P1-W01/W02/W03/W05;
+  P1-W04 deferred to P3-W04). Commits: `8edb071`, `a8f67fe`, `478f775`,
+  `0a4d718` (Refs #58, #59).
+- **Active:** none — paused after Phase 1 per user request.
+- **Next:** Phase 2 is optional/conditional (immutable asset URLs). Recommended
+  next is Phase 3 (P3-W01 draft render + P3-W02 background worker). Before
+  starting Phase 3, re-measure with `scripts/benchmark_render.py` to confirm the
+  baseline is unchanged.
 - **Relevant files:**
   - Render path: `src/photo_composition_designer/project/rendering.py`,
     `src/photo_composition_designer/render/slot_renderer.py`,
@@ -700,13 +705,18 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
     `.../templates/partials/editor_canvas.html`,
     `.../templates/project.html`
   - Data: `src/photo_composition_designer/project/repositories.py`,
-    `.../db/schema.py`
+    `.../db/schema.py`, `.../project/inventory.py`
+  - Benchmark: `scripts/benchmark_render.py`,
+    `tests/test_render_performance.py`
 - **Decisions:** D1-D8 above; no schema change; preview-only draft;
   existing atomic publication; optional immutable asset URLs; prioritized
-  in-process worker; full-image/validated detection identity only.
-- **Blockers:** None for Phase 0/1. Immutable URLs and gallery warm-up are
-  conditional on evidence and correct cache identity.
-- **Last verified:** 2026-11-19T17:44Z — review reran scripts 01, 05, 07, 08,
-  and 09; repeat results are recorded in Section 1. The detector benchmark
-  (06), bulk endpoint timing, and real-browser latency were not rerun.
-- **Context status:** Plan updated; no application code changed.
+  in-process worker; full-image/validated detection identity only. P1-W01 not
+  retained (BILINEAR 4-14% e2e); P1-W04 deferred to P3-W04.
+- **Blockers:** None. Immutable URLs (Phase 2) and gallery warm-up (Phase 4)
+  are conditional on evidence and correct cache identity.
+- **Last verified:** 2026-11-19 — `uv run pytest -m fast` = 224 passed after
+  Phase 1; `scripts/benchmark_render.py` runs and records the Phase 0 baseline
+  in issue #58. Slow/browser suites not rerun this session.
+- **Context status:** Phase 0 and Phase 1 complete and committed. Plan file
+  updated. Phase 1 issue #59 has a progress comment. Ready for a fresh session
+  at the Phase 3 boundary.
