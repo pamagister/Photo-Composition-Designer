@@ -7,10 +7,32 @@ Changelog
 
 Fix
 ~~~
+- Add favicon.svg. [Paul Magister]
+
+Other
+~~~~~
+- Fix(build): add PyInstaller entry point for restructured package Refs
+  #56. [Paul Magister]
+- Test: add fast baseline subset and testall target. [Paul Magister]
+
+  Add fast/slow pytest markers applied via tests/conftest.py so new tests
+  default to the fast baseline. Default 'make test' runs only the fast subset
+  (~205 tests, ~21s); 'make testall' (alias 'test-all') runs the full suite
+  with coverage. 'precommit' uses the fast target.
+- Build(deps): resolve deptry warnings and run deptry in test gate Refs
+  #55. [Paul Magister]
+
+
+2.0.0 (2026-11-19)
+------------------
+
+Fix
+~~~
 - Favicon in browser and description of title. [Paul Magister]
 
 Other
 ~~~~~
+- Docs: Update HISTORY.md for release 2.0.0. [Paul Magister]
 - Bugfixes #54: dnd functionality: - fix zoom. [Paul Magister]
 - Bugfixes #54: dnd functionality: - bei Photos: Assign selected für
   bereits verwendete photos --> geht - - multi-select und dnd für unused
