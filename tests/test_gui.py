@@ -57,7 +57,7 @@ def test_health_and_index(client):
     assert response.json() == {
         "ok": True,
         "service": "photo-composition-designer",
-        "schema_version": 3,
+        "schema_version": 4,
     }
 
     response = client.get("/", follow_redirects=False)
@@ -241,7 +241,7 @@ def test_built_in_settings_show_the_bundled_format(client):
     assert client.get("/settings/built-in/unknown.ini").status_code == 404
 
 
-def test_page_map_toggle_overrides_global_setting(client):
+def test_page_overrides_persist(client):
     project_url = _create_project(client)
     project_page = client.get(project_url)
     page_ids = re.findall(r"[?&]page=(\d+)", project_page.text)
@@ -249,14 +249,18 @@ def test_page_map_toggle_overrides_global_setting(client):
     page_id = page_ids[-1]
 
     response = client.post(
-        f"{project_url}/pages/{page_id}/map",
-        data={"hide_local_map": "1"},
+        f"{project_url}/pages/{page_id}/overrides",
+        data={
+            "hide_local_map": "1",
+            "hide_calendar_strip": "1",
+            "hide_description": "1",
+        },
         headers={"HX-Request": "true"},
     )
 
     assert response.status_code == 200
-    assert "Local map hidden." in response.text
-    assert "checked" in response.text
+    assert "Page overrides saved." in response.text
+    assert response.text.count("checked") >= 3
 
 
 def test_global_layout_editor_saves_new_versions(client):

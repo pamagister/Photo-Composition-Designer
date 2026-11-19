@@ -12,6 +12,7 @@ from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
+from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.dependencies import (
     DatabaseDependency,
@@ -23,11 +24,15 @@ from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.layouts.loader import load_catalogue
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.models import LayoutSlot, ProjectAggregate
-from photo_composition_designer.project.rendering import ProjectRenderingService
+from photo_composition_designer.project.rendering import (
+    ProjectRenderingService,
+    profile_from_project,
+)
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     PageRepository,
     PhotoRepository,
+    ProjectRepository,
 )
 from photo_composition_designer.project.services import ProjectService
 
@@ -72,6 +77,10 @@ def _project_context(
         if selected
         else []
     )
+    profile = profile_from_project(aggregate.project)
+    title_page = (
+        profile.calendar.use_title_page and selected is not None and selected.page_index == 0
+    )
     usage_counts = Counter(assignment.photo_id for assignment in assignments)
     assigned_ids = set(usage_counts)
     unused_photos = [photo for photo in photos if photo.id not in assigned_ids]
@@ -95,6 +104,8 @@ def _project_context(
     return {
         "project": aggregate.project,
         "project_id": aggregate.project.id,
+        "profile": profile,
+        "title_page": title_page,
         "pages": pages,
         "selected_page": selected,
         "page": selected,
@@ -205,9 +216,14 @@ def _page_context(
             slots = list(layout.slots)
             slot_count = len(slots)
             slot_assignment_map = {assignment.slot_id: assignment for assignment in assignments}
+    project = ProjectRepository(connection).get(project_id)
+    profile = profile_from_project(project) if project is not None else OutputProfile.default()
+    title_page = profile.calendar.use_title_page and page.page_index == 0
     context = {
         "page": page,
         "project_id": project_id,
+        "profile": profile,
+        "title_page": title_page,
         "assignments": assignments,
         "photos": photos,
         "photos_by_id": {photo.id: photo for photo in photos},

@@ -67,7 +67,12 @@ def _setup(tmp_path: Path) -> tuple[WorkspaceDatabase, int, int]:
         layout = layout_repo.add("single_full", 1, "Single", slots)
         page_repo.set_layout(page.id, layout.id, layout.version)
         # Tests that are not about maps keep the page free of the default map.
-        updated = page_repo.set_hide_local_map(page.id, True)
+        updated = page_repo.set_local_overrides(
+            page.id,
+            hide_local_map=True,
+            hide_calendar_strip=False,
+            hide_description=False,
+        )
         assert updated is not None
         page_id = updated.id
 
@@ -340,16 +345,55 @@ def test_render_page_uses_empty_map_without_coordinates(tmp_path):
         database.close()
 
 
-def test_title_page_never_renders_map(tmp_path):
+def test_page_local_overrides_are_passed_to_render_input(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+
+    with database.transaction() as connection:
+        PageRepository(connection).set_local_overrides(
+            page_id,
+            hide_local_map=True,
+            hide_calendar_strip=True,
+            hide_description=True,
+        )
+
+    rendering = ProjectRenderingService(database)
+    with database.connect() as connection:
+        page = PageRepository(connection).get(page_id)
+        assert page is not None
+        render_input = rendering.build_input(connection, page)
+
+    assert render_input.hide_local_map is True
+    assert render_input.hide_calendar_strip is True
+    assert render_input.hide_description is True
+    database.close()
+
+
+def test_use_title_page_setting_controls_title_page(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    profile = OutputProfile.default()
+    changed = replace(
+        profile,
+        calendar=replace(profile.calendar, use_title_page=False),
+    )
+    ProjectService(database).save_project(project_id, output_profile=changed.to_dict())
+
+    rendering = ProjectRenderingService(database)
+    with database.connect() as connection:
+        page = PageRepository(connection).get(page_id)
+        assert page is not None
+        render_input = rendering.build_input(connection, page)
+
+    assert render_input.title_page is False
+    database.close()
+
+
+def test_title_page_hides_map_by_default(tmp_path):
     database, project_id, page_id = _setup(tmp_path)
     calls: list[list[tuple[float, float]]] = []
 
     def renderer(coordinates: list[tuple[float, float]]):
         calls.append(coordinates)
         return Image.new("RGB", (10, 10), (0, 0, 255))
-
-    with database.transaction() as connection:
-        connection.execute("UPDATE pages SET hide_local_map = 0 WHERE id = ?", (page_id,))
 
     composer = PageComposer(map_renderer=renderer)
     try:

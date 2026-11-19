@@ -79,6 +79,8 @@ class CalendarPage:
     created_at: str
     updated_at: str
     hide_local_map: bool = False
+    hide_calendar_strip: bool = False
+    hide_description: bool = False
 
 
 @dataclass(slots=True)

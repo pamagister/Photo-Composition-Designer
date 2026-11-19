@@ -33,6 +33,8 @@ calendar:
   collagesToGenerate: 53
   # Align the calendar horizontally (False means vertical) | type=bool | [CLI] | choices=[True, False]
   horizontalOrientation: true
+  # Use a title page as the first page | type=bool | choices=[True, False]
+  useTitlePage: true
 style:
   # Background color (RGB) | type=Color
   backgroundColor: '#141414'

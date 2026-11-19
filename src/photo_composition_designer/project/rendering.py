@@ -176,8 +176,10 @@ class ProjectRenderingService:
             output_profile=profile,
             gps_coordinates=tuple(coordinates),
             title=profile.calendar.title,
-            title_page=page.page_index == 0,
+            title_page=profile.calendar.use_title_page and page.page_index == 0,
             hide_local_map=page.hide_local_map,
+            hide_calendar_strip=page.hide_calendar_strip,
+            hide_description=page.hide_description,
             anniversaries=Anniversaries(self._anniversaries_path),
         )
 

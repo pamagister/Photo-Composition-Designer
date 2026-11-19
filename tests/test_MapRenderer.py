@@ -1,4 +1,6 @@
-from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
+
+from PIL import Image, ImageChops
 
 from photo_composition_designer.render.map import MapRenderer
 
@@ -59,3 +61,22 @@ def test_empty_map_has_no_marker():
         pixel for pixel in image.getdata() if pixel[0] > 200 and pixel[1] < 60 and pixel[2] < 60
     ]
     assert red_marker_pixels == []
+
+
+def test_concurrent_map_renders_are_stable():
+    def render():
+        generator = MapRenderer(
+            mapHeight=80,
+            mapWidth=100,
+            minimalExtension=7,
+            backgroundColor=(30, 30, 30),
+            textColor1=(150, 250, 150),
+        )
+        return generator.generate([(51.0504, 13.7373)])
+
+    baseline = render()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        images = list(pool.map(lambda _: render(), range(2)))
+
+    for image in images:
+        assert ImageChops.difference(baseline, image).getbbox() is None

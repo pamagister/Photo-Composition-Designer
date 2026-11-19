@@ -392,6 +392,8 @@ class PageRepository:
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
             hide_local_map=bool(row["hide_local_map"]),
+            hide_calendar_strip=bool(row["hide_calendar_strip"]),
+            hide_description=bool(row["hide_description"]),
         )
 
     def create(
@@ -405,6 +407,8 @@ class PageRepository:
         layout_id: int | None = None,
         layout_version: int | None = None,
         hide_local_map: bool = False,
+        hide_calendar_strip: bool = False,
+        hide_description: bool = False,
         created_at: str | None = None,
     ) -> CalendarPage:
         """Insert one page."""
@@ -412,8 +416,9 @@ class PageRepository:
         cursor = self._connection.execute(
             "INSERT INTO pages("
             "project_id, page_index, start_date, end_date, description, layout_id, "
-            "layout_version, render_revision, hide_local_map, created_at, updated_at"
-            ") VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
+            "layout_version, render_revision, hide_local_map, hide_calendar_strip, "
+            "hide_description, created_at, updated_at"
+            ") VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)",
             (
                 project_id,
                 page_index,
@@ -423,6 +428,8 @@ class PageRepository:
                 layout_id,
                 layout_version,
                 int(hide_local_map),
+                int(hide_calendar_strip),
+                int(hide_description),
                 timestamp,
                 timestamp,
             ),
@@ -508,12 +515,26 @@ class PageRepository:
             (_now(), page_id),
         )
 
-    def set_hide_local_map(self, page_id: int, hide_local_map: bool) -> CalendarPage:
-        """Override the global local-map setting for one page."""
+    def set_local_overrides(
+        self,
+        page_id: int,
+        *,
+        hide_local_map: bool,
+        hide_calendar_strip: bool,
+        hide_description: bool,
+    ) -> CalendarPage:
+        """Set the per-page overrides for the global map, calendar and description."""
         self._connection.execute(
-            "UPDATE pages SET hide_local_map = ?, render_revision = render_revision + 1, "
-            "updated_at = ? WHERE id = ?",
-            (int(hide_local_map), _now(), page_id),
+            "UPDATE pages SET hide_local_map = ?, hide_calendar_strip = ?, "
+            "hide_description = ?, render_revision = render_revision + 1, updated_at = ? "
+            "WHERE id = ?",
+            (
+                int(hide_local_map),
+                int(hide_calendar_strip),
+                int(hide_description),
+                _now(),
+                page_id,
+            ),
         )
         page = self.get(page_id)
         if page is None:

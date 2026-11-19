@@ -31,6 +31,19 @@
                value="{{ values['project.page_count'] }}" required>
       </div>
       <div class="field checkbox-field settings-wide">
+        <label for="calendar-use-title-page">
+          <input type="checkbox" id="calendar-use-title-page"
+                 name="calendar.use_title_page" value="1"
+                 {% if values['calendar.use_title_page'] %}checked{% endif %}>
+          Use title page
+        </label>
+      </div>
+      <div class="field settings-wide">
+        <label for="calendar-title">Composition title</label>
+        <input id="calendar-title" name="calendar.title"
+               value="{{ values['calendar.title'] }}">
+      </div>
+      <div class="field checkbox-field settings-wide">
         <label for="project-confirm-remove">
           <input id="project-confirm-remove" type="checkbox"
                  name="project.confirm_remove" value="1"
@@ -85,11 +98,6 @@
         <input id="calendar-countries" name="calendar.holiday_countries"
                value="{{ values['calendar.holiday_countries'] }}"
                placeholder="SN, DE">
-      </div>
-      <div class="field settings-wide">
-        <label for="calendar-title">Composition title</label>
-        <input id="calendar-title" name="calendar.title"
-               value="{{ values['calendar.title'] }}">
       </div>
     </div>
   </fieldset>

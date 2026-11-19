@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from io import BytesIO
 from pathlib import Path
 
@@ -8,6 +9,10 @@ from PIL import Image
 from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.settings import Settings as ConfigParameterManager
 from photo_composition_designer.render.geoplot import GeoPlotter
+
+#: GeoPlotter uses matplotlib's global pyplot state. Serialize map rendering so
+#: concurrent preview requests cannot save or close each other's figures.
+_MAP_RENDER_LOCK = threading.Lock()
 
 
 class MapRenderer:
@@ -52,25 +57,26 @@ class MapRenderer:
         """
         # Plotter initialisieren
         border = 15  # unwanted border to be eliminated
-        plotter = GeoPlotter(
-            minimalExtension=self.minimalExtension,
-            size=(self.width + 2 * border, self.height + 2 * border),
-            background_color=self.backgroundColor,
-            border_color=self.textColor1,
-        )
+        with _MAP_RENDER_LOCK:
+            plotter = GeoPlotter(
+                minimalExtension=self.minimalExtension,
+                size=(self.width + 2 * border, self.height + 2 * border),
+                background_color=self.backgroundColor,
+                border_color=self.textColor1,
+            )
 
-        # GeoDataFrame aus Koordinaten erstellen
-        plt = plotter.renderMap(coordinates)
+            # GeoDataFrame aus Koordinaten erstellen
+            plt = plotter.renderMap(coordinates)
 
-        # In einen BytesIO-Puffer speichern
-        buf = BytesIO()
-        plt.savefig(buf, format="PNG", bbox_inches="tight")  # Optional: Anpassung des DPI-Werts
-        plt.close()  # Speicher freigeben
-        buf.seek(0)
+            # In einen BytesIO-Puffer speichern
+            buf = BytesIO()
+            plt.savefig(buf, format="PNG", bbox_inches="tight")
+            plt.close()  # Speicher freigeben
+            buf.seek(0)
 
-        map_image: Image.Image = Image.open(buf)
-        map_image = map_image.resize((self.width + 2 * border, self.height + 2 * border))
-        map_image = map_image.crop((border, border, self.width + border, self.height + border))
+            map_image: Image.Image = Image.open(buf)
+            map_image = map_image.resize((self.width + 2 * border, self.height + 2 * border))
+            map_image = map_image.crop((border, border, self.width + border, self.height + border))
 
         # Puffer als PIL.Image öffnen und zurückgeben
         return map_image

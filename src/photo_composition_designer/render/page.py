@@ -43,6 +43,8 @@ class PageRenderInput:
     title: str = ""
     title_page: bool = False
     hide_local_map: bool = False
+    hide_calendar_strip: bool = False
+    hide_description: bool = False
     anniversaries: Anniversaries | None = None
 
 
@@ -74,11 +76,19 @@ class PageComposer:
         spacing = mm_to_px(profile.layout.spacing, dpi)
 
         calendar_height = mm_to_px(profile.size.calendar_height, dpi)
-        show_calendar = calendar_height > 0 and profile.calendar.use_calendar
+        title_page = page.title_page and bool(page.title)
+        show_calendar = (
+            calendar_height > 0
+            and profile.calendar.use_calendar
+            and not page.hide_calendar_strip
+            and not title_page
+        )
+        has_bottom_strip = title_page or show_calendar
+        show_description = profile.layout.use_photo_description and not page.hide_description
         content_top = margin_top
 
         description_image: Image.Image | None = None
-        if profile.layout.use_photo_description:
+        if show_description:
             description_image = DescriptionRenderer(
                 width_px=page_width,
                 font=profile.style.font_description.to_font(),
@@ -91,13 +101,12 @@ class PageComposer:
         map_image: Image.Image | None = None
         map_x = 0
         calendar_width = page_width
-        if show_calendar:
+        if has_bottom_strip:
             map_width, map_height = self._map_dimensions(profile, calendar_height)
             map_x = page_width - margin_sides - map_width
             min_calendar_width = 2 * margin_sides + spacing
             if (
-                not page.title_page
-                and not page.hide_local_map
+                not page.hide_local_map
                 and profile.geo.use_photo_location_maps
                 and map_width > 0
                 and map_height > 0
@@ -109,7 +118,7 @@ class PageComposer:
 
         calendar_strip = (
             self._render_calendar_strip(page, profile, settings, calendar_width)
-            if show_calendar
+            if has_bottom_strip
             else None
         )
         calendar_ink_top = 0
@@ -128,10 +137,10 @@ class PageComposer:
         content_left = margin_sides
         content_width = max(1, page_width - 2 * margin_sides)
         content_bottom = page_height - margin_bottom
-        calendar_top = content_bottom - calendar_height if show_calendar else content_bottom
+        calendar_top = content_bottom - calendar_height if has_bottom_strip else content_bottom
 
         if description_image is not None:
-            if show_calendar:
+            if has_bottom_strip:
                 # With a map in the bottom-right corner the description must end
                 # above it instead of using the calendar's blank upper margin.
                 description_bottom = calendar_top + (
@@ -143,7 +152,7 @@ class PageComposer:
             photo_bottom = description_top
         else:
             description_top = None
-            photo_bottom = calendar_top - spacing if show_calendar else content_bottom
+            photo_bottom = calendar_top - spacing if has_bottom_strip else content_bottom
         content_height = max(1, photo_bottom - content_top)
 
         if page.layout is not None:

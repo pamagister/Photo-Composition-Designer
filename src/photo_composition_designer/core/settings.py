@@ -71,6 +71,7 @@ class CalendarConfig:
     horizontalOrientation: Param[bool] = field(
         default_factory=lambda: Param(True, "horizontalOrientation")
     )
+    useTitlePage: Param[bool] = field(default_factory=lambda: Param(True, "useTitlePage"))
 
 
 @dataclass

@@ -133,6 +133,7 @@ class CalendarProfile:
     horizontal_orientation: bool = True
     use_short_day_names: bool = False
     use_short_month_names: bool = True
+    use_title_page: bool = True
     title: str = "This is the title of the composition"
 
     def to_dict(self) -> dict[str, Any]:
@@ -143,6 +144,7 @@ class CalendarProfile:
             "horizontal_orientation": self.horizontal_orientation,
             "use_short_day_names": self.use_short_day_names,
             "use_short_month_names": self.use_short_month_names,
+            "use_title_page": self.use_title_page,
             "title": self.title,
         }
 
@@ -181,6 +183,11 @@ class CalendarProfile:
                 data.get("use_short_month_names"),
                 "use_short_month_names",
                 defaults.use_short_month_names,
+            ),
+            use_title_page=_bool_or(
+                data.get("use_title_page"),
+                "use_title_page",
+                defaults.use_title_page,
             ),
             title=_str_or(data.get("title"), "title", defaults.title),
         )
@@ -411,6 +418,7 @@ class OutputProfile:
                 horizontal_orientation=settings.calendar.horizontalOrientation.value,
                 use_short_day_names=settings.layout.useShortDayNames.value,
                 use_short_month_names=settings.layout.useShortMonthNames.value,
+                use_title_page=settings.calendar.useTitlePage.value,
                 title=settings.general.compositionTitle.value,
             ),
             style=StyleProfile(
@@ -474,6 +482,7 @@ class OutputProfile:
         settings.layout.imageScoreFactor.value = self.layout.image_score_factor
         settings.layout.useShortDayNames.value = self.calendar.use_short_day_names
         settings.layout.useShortMonthNames.value = self.calendar.use_short_month_names
+        settings.calendar.useTitlePage.value = self.calendar.use_title_page
         settings.layout.usePhotoDescription.value = self.layout.use_photo_description
         settings.layout.generatePdf.value = self.layout.generate_pdf
         settings.layout.objectRecognition = self.layout.object_recognition

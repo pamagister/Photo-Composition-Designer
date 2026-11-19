@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime
 
 import pytest
@@ -305,3 +306,31 @@ def test_duplicate_project_requires_existing_project_and_name(service, database)
     with pytest.raises(ValueError, match="name"):
         service.duplicate_project(project.id, name="   ")
     assert len(service.list_projects()) == 1
+
+
+def test_use_title_page_toggle_updates_first_page_overrides(service, database):
+    project = service.create_project(
+        name="Title page",
+        page_count=2,
+        start_date=datetime(2027, 1, 4),
+    )
+
+    with database.connect() as connection:
+        first_page = PageRepository(connection).list(project.id)[0]
+        assert first_page.hide_local_map is True
+        assert first_page.hide_calendar_strip is True
+        assert first_page.hide_description is True
+
+    profile = OutputProfile.from_dict(project.output_profile)
+    without_title = replace(
+        profile,
+        calendar=replace(profile.calendar, use_title_page=False),
+    )
+    service.update_output_profile(project.id, without_title)
+
+    with database.connect() as connection:
+        first_page = PageRepository(connection).get(first_page.id)
+    assert first_page is not None
+    assert first_page.hide_local_map is False
+    assert first_page.hide_calendar_strip is False
+    assert first_page.hide_description is False

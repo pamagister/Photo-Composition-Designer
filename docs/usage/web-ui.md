@@ -78,9 +78,11 @@ slot grid on the canvas, and the unused photos below it.
 * **Crop** – open **Crop** in an occupied slot to adjust zoom and focal point.
   Crop settings are assignment properties; the source file is untouched.
 * **Description** – edit the page description at the bottom of the canvas.
-* **Hide local map** – the small toolbar checkbox overrides the project's
-  `Render local photo maps` setting for one page. The title page never shows a
-  map, so the checkbox is omitted there.
+* **Page overrides** – the collapsible **Page overrides** area in the toolbar
+  can hide the local map, calendar strip and description for one page. The
+  options only appear when the corresponding global setting is enabled. The
+  title page shows the composition title and defaults to hiding the map and
+  description.
 * **Layout** – open **Change layout**, choose a layout and select
   **Preview change**. Assignments are preserved where possible, and displaced
   photos are listed before you confirm.
@@ -112,11 +114,12 @@ originals again. Editing a page invalidates its cached preview.
 
 ## Project settings
 
-**Project settings** edits the name, start date, page count and output profile:
-calendar language and holiday countries, page size and DPI, margins and
-spacing, fonts and colors, map options, and description/PDF toggles. Removing
-pages with saved content requires confirmation. Settings are validated before
-saving, and actual render-affecting changes increment page revisions.
+**Project settings** edits the name, start date, page count, title page usage and
+composition title, and the output profile: calendar language and holiday
+countries, page size and DPI, margins and spacing, fonts and colors, map options,
+and description/PDF toggles. Removing pages with saved content requires
+confirmation. Settings are validated before saving, and actual
+render-affecting changes increment page revisions.
 
 ## Duplicate a project
 

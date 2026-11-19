@@ -14,6 +14,7 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `calendar.startDate` | `datetime.datetime(2025, 12, 29, 0, 0)` |
 | `calendar.collagesToGenerate` | `53` |
 | `calendar.horizontalOrientation` | `True` |
+| `calendar.useTitlePage` | `True` |
 | `style.backgroundColor` | `Color(20, 20, 20)` |
 | `style.fontLarge` | `DejaVuSans.ttf, 9, #ffffff` |
 | `style.fontSmall` | `DejaVuSans.ttf, 2.5, #969696` |

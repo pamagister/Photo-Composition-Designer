@@ -76,12 +76,16 @@ class ProjectService:
             for page_index in range(page_count):
                 page_start = first_day + timedelta(days=7 * page_index)
                 page_end = page_start + timedelta(days=6)
+                is_title_page = profile.calendar.use_title_page and page_index == 0
                 page_repository.create(
                     project.id,
                     page_index,
                     page_start.isoformat(),
                     page_end.isoformat(),
                     description=description,
+                    hide_local_map=is_title_page,
+                    hide_calendar_strip=is_title_page,
+                    hide_description=is_title_page,
                     created_at=project.created_at,
                 )
 
@@ -169,6 +173,24 @@ class ProjectService:
                 output_profile=profile.to_dict(),
                 updated_at=_now(),
             )
+            if profile.calendar.use_title_page and not current_profile.calendar.use_title_page:
+                pages = PageRepository(connection).list(project_id)
+                if pages:
+                    PageRepository(connection).set_local_overrides(
+                        pages[0].id,
+                        hide_local_map=True,
+                        hide_calendar_strip=True,
+                        hide_description=True,
+                    )
+            elif current_profile.calendar.use_title_page and not profile.calendar.use_title_page:
+                pages = PageRepository(connection).list(project_id)
+                if pages:
+                    PageRepository(connection).set_local_overrides(
+                        pages[0].id,
+                        hide_local_map=False,
+                        hide_calendar_strip=False,
+                        hide_description=False,
+                    )
             if profile.profile_hash() != current_profile.profile_hash():
                 PageRepository(connection).increment_revisions(project_id)
         return updated

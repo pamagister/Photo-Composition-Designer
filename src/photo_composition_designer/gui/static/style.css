@@ -508,6 +508,7 @@ summary {
 
 .editor-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   min-height: 2rem;
@@ -519,11 +520,24 @@ summary {
   font-size: 1rem;
 }
 
-.map-toggle {
-  margin-left: auto;
+.page-overrides {
+  margin-top: 0;
+  margin-left: 0;
 }
 
-.map-toggle label {
+.page-overrides > summary {
+  padding: 0.1rem 0.3rem;
+}
+
+.page-overrides form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.35rem;
+}
+
+.page-overrides label {
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -532,7 +546,7 @@ summary {
   font-size: 0.8rem;
 }
 
-.map-toggle input[type="checkbox"] {
+.page-overrides input[type="checkbox"] {
   width: auto;
   margin: 0;
 }

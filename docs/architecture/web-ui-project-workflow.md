@@ -50,11 +50,11 @@ directory, including the shared anniversary and location file paths.
 locations. The database is authoritative; thumbnails, page previews and exports
 are disposable and rebuildable.
 
-Schema version 3 contains `projects`, `source_roots`, `photos`, `layouts`,
-`layout_slots`, `pages` (including the per-page `hide_local_map` override) and
-`assignments`. Migrations are forward only. The connection enables WAL, foreign
-keys and a busy timeout, and one application process is the deployment
-assumption.
+Schema version 4 contains `projects`, `source_roots`, `photos`, `layouts`,
+`layout_slots`, `pages` (including the per-page `hide_local_map`,
+`hide_calendar_strip` and `hide_description` overrides) and `assignments`.
+Migrations are forward only. The connection enables WAL, foreign keys and a busy
+timeout, and one application process is the deployment assumption.
 
 Key invariants:
 
@@ -74,7 +74,7 @@ Key invariants:
   day/month names and title.
 * **Style:** background colour and the four fonts with colour and size.
 * **Geo:** map toggle, minimal extension and map dimensions.
-* **Size:** page width/height, DPI, JPEG quality and calendar/map heights.
+* **Size:** page width/height, DPI, JPEG quality, calendar height and map size.
 * **Layout:** margins, spacing, rounded corners, description and PDF toggles,
   image score factor and object recognition.
 
@@ -91,10 +91,12 @@ settings increments render revisions only when values actually change.
    `PageRenderInput`.
 2. `render/page.py` (`PageComposer`) composes the page: background, slot photos
    with per-assignment crop settings, local map, calendar strip below the photos,
-   description and title. The first page is treated as the title page and never
-   shows a map. Other pages use the project map toggle unless the page overrides
-   it with `hide_local_map`. The application-wide anniversary file is supplied as
-   a shared render input.
+   description and title. The first page is a title page when
+   `calendar.use_title_page` is enabled; it always shows the composition title
+   and defaults to hiding the map and description. Every page can override the
+   global map, calendar-strip and description toggles with `hide_local_map`,
+   `hide_calendar_strip` and `hide_description`. The application-wide anniversary
+   file is supplied as a shared render input.
 3. `render/slot_renderer.py` remains the slot compositing component.
 4. `ProjectRenderingService.render_preview` renders a reduced-resolution JPEG and
    caches it under a key covering page revision, layout ID/version, profile hash,
@@ -124,7 +126,8 @@ is the only seam between persistence and rendering.
 * `set_crop` stores zoom and focal point on the assignment. Source files are
   never modified.
 * `set_description` updates the page description.
-* `set_local_map_hidden` overrides the global map toggle for one page.
+* `set_local_overrides` overrides the global map, calendar-strip and description
+  toggles for one page.
 * `plan_layout_change` maps existing assignments to the nearest normalized slot
   centers and reports preserved and displaced photos without mutating state.
 * `change_layout` applies the same mapping transactionally, preserving

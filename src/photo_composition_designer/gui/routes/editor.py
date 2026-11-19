@@ -184,27 +184,30 @@ def update_description(
     return _page_fragment(request, project_id, page_id, "Description saved.")
 
 
-@router.post("/projects/{project_id}/pages/{page_id}/map")
-def set_local_map(
+@router.post("/projects/{project_id}/pages/{page_id}/overrides")
+def set_page_overrides(
     request: Request,
     project_id: int,
     page_id: int,
     hide_local_map: Annotated[str, Form()] = "",
+    hide_calendar_strip: Annotated[str, Form()] = "",
+    hide_description: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
-    """Override the global local-map setting for one page."""
+    """Set the per-page overrides for map, calendar strip and description."""
     database = _open_database(request)
     editing = PageEditingService(database)
-    hidden = hide_local_map.strip().lower() in {"1", "on", "true", "yes"}
+    hidden = {"1", "on", "true", "yes"}
     try:
-        editing.set_local_map_hidden(project_id, page_id, hidden)
+        editing.set_local_overrides(
+            project_id,
+            page_id,
+            hide_local_map=hide_local_map.strip().lower() in hidden,
+            hide_calendar_strip=hide_calendar_strip.strip().lower() in hidden,
+            hide_description=hide_description.strip().lower() in hidden,
+        )
     except ProjectError as error:
         return _error(project_id, str(error))
-    return _page_fragment(
-        request,
-        project_id,
-        page_id,
-        "Local map hidden." if hidden else "Local map shown.",
-    )
+    return _page_fragment(request, project_id, page_id, "Page overrides saved.")
 
 
 @router.get("/projects/{project_id}/pages/{page_id}/unused")

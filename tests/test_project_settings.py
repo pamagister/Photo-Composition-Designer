@@ -56,6 +56,7 @@ def _settings_form(**overrides: str) -> dict[str, str]:
         "calendar.horizontal_orientation": ("1" if profile.calendar.horizontal_orientation else ""),
         "calendar.use_short_day_names": ("1" if profile.calendar.use_short_day_names else ""),
         "calendar.use_short_month_names": ("1" if profile.calendar.use_short_month_names else ""),
+        "calendar.use_title_page": ("1" if profile.calendar.use_title_page else ""),
         "style.background_color": profile.style.background_color,
         "style.font_large.name": profile.style.font_large.name,
         "style.font_large.size": str(profile.style.font_large.size),
