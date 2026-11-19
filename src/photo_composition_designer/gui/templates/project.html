@@ -44,10 +44,11 @@
            class="page-thumb-preview"
            src="/projects/{{ project.id }}/pages/{{ pg.id }}/preview?max_width=320&v={{ pg.render_revision }}"
            alt="" loading="lazy">
-      <span class="page-thumb-meta">
-        <span class="page-thumb-number">{{ pg.page_index + 1 }}</span>
-        <span class="page-thumb-date">{{ pg.start_date }}</span>
-      </span>
+      {% set status = page_status.get(pg.id, {}) %}
+      {% set thumb_page = pg %}
+      {% set description_hint = status.get('description_missing', False) %}
+      {% set incomplete_hint = status.get('incomplete', False) %}
+      {% include "partials/page_thumb_meta.html" %}
     </a>
     {% endfor %}
   </aside>

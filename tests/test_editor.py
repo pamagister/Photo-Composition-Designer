@@ -308,6 +308,20 @@ def _list_page_ids(project_id: int) -> list[int]:
         database.close()
 
 
+def _page_slot_ids(project_id: int, page_id: int) -> list[int]:
+    """Return the layout slot ids assigned to one page."""
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.layout_id is None:
+                return []
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            return [slot.id for slot in layout.slots] if layout is not None else []
+    finally:
+        database.close()
+
+
 def test_empty_description_shows_preview_overlay(editor_client, tmp_path):
     # Page index 1 is not a title page, so its description is rendered and empty.
     project_id, _, _, _ = _seed_project(tmp_path, page_count=2)
@@ -338,3 +352,40 @@ def test_preview_overlay_hidden_by_local_override(editor_client, tmp_path):
     )
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
     assert 'class="preview-notice"' not in page.text
+
+
+def test_page_tile_shows_status_hints(editor_client, tmp_path):
+    project_id, title_page_id, photo_ids, _ = _seed_project(
+        tmp_path, page_count=2, slots_per_page=2
+    )
+    page_id = _list_page_ids(project_id)[1]  # non-title page
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+    # Empty rendered description and empty slots both flag the non-title page only.
+    assert page.text.count('aria-label="Page description is empty"') == 1
+    assert 'aria-label="Not all slots are filled"' in page.text
+    assert f'id="page-thumb-meta-{page_id}"' in page.text
+    # The title page suppresses the description hint.
+    title_slice = page.text[page.text.index(f'id="page-thumb-meta-{title_page_id}"') :]
+    assert 'aria-label="Page description is empty"' not in title_slice[:400]
+
+
+def test_page_tile_hints_clear_after_edits(editor_client, tmp_path):
+    project_id, _, photo_ids, _ = _seed_project(tmp_path, page_count=2, slots_per_page=2)
+    page_id = _list_page_ids(project_id)[1]
+    response = None
+    for slot_id in _page_slot_ids(project_id, page_id):
+        response = editor_client.post(
+            f"/projects/{project_id}/pages/{page_id}/assign",
+            data={"slot_id": slot_id, "photo_id": photo_ids[0]},
+        )
+    # The out-of-band tile meta refresh drops the incomplete hint once full.
+    assert 'id="page-thumb-meta-' in response.text
+    assert 'aria-label="Not all slots are filled"' not in response.text
+
+    editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/description",
+        data={"description": "A short note."},
+    )
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert 'aria-label="Page description is empty"' not in page.text

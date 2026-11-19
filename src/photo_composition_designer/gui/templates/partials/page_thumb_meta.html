@@ -1,0 +1,14 @@
+{# Compact page-tile meta: page number, optional status emoji hints and the
+ # start date. Shared by the full page and the out-of-band refresh. #}
+<span id="page-thumb-meta-{{ thumb_page.id }}" class="page-thumb-meta"{% if oob %} hx-swap-oob="outerHTML"{% endif %}>
+  <span class="page-thumb-ident">
+    <span class="page-thumb-number">{{ thumb_page.page_index + 1 }}</span>
+    {% if description_hint %}
+    <span class="page-thumb-flag" title="Page description is empty" aria-label="Page description is empty">&#8505;&#65039;</span>
+    {% endif %}
+    {% if incomplete_hint %}
+    <span class="page-thumb-flag" title="Not all slots are filled" aria-label="Not all slots are filled">&#10071;&#65039;</span>
+    {% endif %}
+  </span>
+  <span class="page-thumb-date">{{ thumb_page.start_date }}</span>
+</span>

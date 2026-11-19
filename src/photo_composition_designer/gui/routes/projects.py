@@ -88,25 +88,49 @@ def _project_context(
     source_states = [
         {"root": root, "exists": Path(root.path).is_dir()} for root in aggregate.source_roots
     ]
+    from photo_composition_designer.project.repositories import LayoutRepository
+
+    layout_repo = LayoutRepository(connection)
     slots: list = []
     slot_count = 0
     slot_assignment_map: dict = {}
     if selected is not None and selected.layout_id is not None:
-        from photo_composition_designer.project.repositories import LayoutRepository
-
-        layout = LayoutRepository(connection).get_by_id(selected.layout_id)
+        layout = layout_repo.get_by_id(selected.layout_id)
         if layout is not None:
             slots = list(layout.slots)
             slot_count = len(slots)
             slot_assignment_map = {
                 assignment.slot_id: assignment for assignment in selected_assignments
             }
+
+    # Per-page thumbnail hints: the description is rendered but empty, and not
+    # every slot holds a photo. Slot counts are cached per layout id.
+    layout_slot_cache: dict[int, int] = {}
+    assignments_by_page = Counter(assignment.page_id for assignment in assignments)
+    page_status: dict[int, dict[str, bool]] = {}
+    for pg in pages:
+        total_slots = 0
+        if pg.layout_id is not None:
+            if pg.layout_id not in layout_slot_cache:
+                pg_layout = layout_repo.get_by_id(pg.layout_id)
+                layout_slot_cache[pg.layout_id] = len(pg_layout.slots) if pg_layout else 0
+            total_slots = layout_slot_cache[pg.layout_id]
+        filled_slots = assignments_by_page.get(pg.id, 0)
+        page_status[pg.id] = {
+            "description_missing": bool(
+                profile.layout.use_photo_description
+                and not pg.hide_description
+                and not pg.description
+            ),
+            "incomplete": total_slots > 0 and filled_slots < total_slots,
+        }
     return {
         "project": aggregate.project,
         "project_id": aggregate.project.id,
         "profile": profile,
         "title_page": title_page,
         "pages": pages,
+        "page_status": page_status,
         "selected_page": selected,
         "page": selected,
         "page_assignments": selected_assignments,

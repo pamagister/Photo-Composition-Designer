@@ -523,13 +523,26 @@ summary {
   width: 100%;
 }
 
+.page-thumb-ident {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .page-thumb-number {
   font-weight: 700;
+}
+
+.page-thumb-flag {
+  font-size: 0.85rem;
+  line-height: 1;
 }
 
 .page-thumb-date {
   color: var(--muted);
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .editor-main {
@@ -547,7 +560,7 @@ summary {
 }
 
 .page-overrides > summary {
-  padding: 0.1rem 0.3rem;
+  padding: 0.1rem 0;
 }
 
 .page-overrides form {
