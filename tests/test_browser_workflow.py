@@ -273,6 +273,49 @@ def test_multi_select_assigns_two_photos(live_server, browser_page):
     expect(page.locator(".unused-pool").get_by_text("photo_00.jpg")).to_have_count(0)
 
 
+def test_dropzone_drag_assigns_replaces_and_swaps(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    empty_zone = page.locator('.slot-dropzone[data-slot-key="slot_0"]')
+    other_zone = page.locator('.slot-dropzone[data-slot-key="slot_1"]')
+    first_photo = page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]')
+    second_photo = page.locator(f'.unused-item[data-photo-id="{photo_ids[1]}"]')
+
+    # Drag a strip photo onto the empty dropzone -> assign.
+    first_photo.drag_to(empty_zone)
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[0])
+    )
+    expect(page.locator('.slot-dropzone[data-slot-key="slot_0"]')).to_have_class(
+        "slot-dropzone occupied"
+    )
+
+    # Drag a second strip photo onto the occupied dropzone -> replace.
+    second_photo.drag_to(page.locator('.slot-dropzone[data-slot-key="slot_0"]'))
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[1])
+    )
+
+    # Drop the second strip photo onto the still-empty other dropzone -> assign.
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[2]}"]').drag_to(other_zone)
+    expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[2])
+    )
+
+    # Drag one occupied dropzone onto the other -> swap.
+    page.locator('.slot-dropzone[data-slot-key="slot_0"]').drag_to(
+        page.locator('.slot-dropzone[data-slot-key="slot_1"]')
+    )
+    expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[2])
+    )
+    expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
+        "data-photo-id", str(photo_ids[1])
+    )
+
+
 def test_layout_change_and_page_navigation(live_server, browser_page):
     page = browser_page
     photo_ids = live_server["photo_ids"]

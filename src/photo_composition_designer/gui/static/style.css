@@ -672,11 +672,65 @@ summary {
   background: #0c0d0f;
 }
 
-.page-preview img {
+.page-preview-frame {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 19rem);
+}
+
+.page-preview-frame .page-preview-image {
   display: block;
   width: 100%;
+  height: 100%;
   max-height: calc(100vh - 19rem);
-  object-fit: contain;
+  object-fit: fill;
+}
+
+.slot-dropzone {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: outline-color 0.12s ease, background-color 0.12s ease;
+}
+
+.slot-dropzone.empty {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(47, 111, 235, 0.08);
+}
+
+.slot-dropzone .dropzone-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+.slot-dropzone.occupied:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.slot-dropzone.drag-over {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgba(47, 111, 235, 0.22);
+}
+
+.slot-dropzone.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.slot-dropzone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .preview-notice {

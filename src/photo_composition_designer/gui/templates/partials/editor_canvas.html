@@ -21,8 +21,25 @@
 
   <div class="editor-workspace">
     <div class="page-preview">
-      <img src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?v={{ page.render_revision }}"
-           alt="Rendered preview for {{ page.start_date }}" loading="eager">
+      <div class="page-preview-frame"
+           style="aspect-ratio: {{ profile.page_size_px()[0] }} / {{ profile.page_size_px()[1] }};">
+        <img class="page-preview-image"
+             src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?v={{ page.render_revision }}"
+             alt="Rendered preview for {{ page.start_date }}" loading="eager">
+        {% for overlay in slot_overlays %}
+        <div class="slot-dropzone {{ 'occupied' if overlay.occupied else 'empty' }}"
+             data-slot-id="{{ overlay.slot_id }}"
+             data-slot-key="{{ overlay.slot_key }}"
+             {% if overlay.occupied %}data-photo-id="{{ overlay.photo_id }}"{% endif %}
+             role="group"
+             tabindex="0"
+             {% if overlay.occupied %}draggable="true"{% endif %}
+             aria-label="Slot {{ overlay.slot_key }}{% if overlay.occupied %}: {{ overlay.photo_id }}{% else %}: empty{% endif %}"
+             style="left: {{ overlay.left }}%; top: {{ overlay.top }}%; width: {{ overlay.width }}%; height: {{ overlay.height }}%;">
+          {% if not overlay.occupied %}<span class="dropzone-hint">Drop photo</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
       {% if show_description_override and not page.hide_description and not page.description %}
       <div class="preview-notice" role="note">
         <span class="preview-notice-icon" aria-hidden="true">i</span>

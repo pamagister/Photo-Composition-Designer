@@ -36,6 +36,11 @@ from photo_composition_designer.project.repositories import (
     ProjectRepository,
 )
 from photo_composition_designer.project.services import ProjectService
+from photo_composition_designer.render.layout_geometry import (
+    compute_collage_box,
+    slot_overlay_rectangles,
+)
+from photo_composition_designer.render.page import PageRenderInput
 
 router = APIRouter()
 
@@ -49,6 +54,46 @@ def _load_project(
         return service.open_project(project_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+def _collage_box_for_page(page, profile):
+    """Return the collage content box for a page using the shared geometry."""
+    render_input = PageRenderInput(
+        page_date=date.fromisoformat(page.start_date),
+        description=page.description,
+        layout=None,
+        output_profile=profile,
+        title=profile.calendar.title,
+        title_page=profile.calendar.use_title_page and page.page_index == 0,
+        hide_local_map=page.hide_local_map,
+        hide_calendar_strip=page.hide_calendar_strip,
+        hide_description=page.hide_description,
+    )
+    return compute_collage_box(render_input, profile)
+
+
+def _slot_overlay_data(page, profile, slots, slot_assignment_map):
+    """Build per-slot overlay rectangles (page percentages) for the preview."""
+    if not slots:
+        return []
+    box = _collage_box_for_page(page, profile)
+    occupied = set(slot_assignment_map)
+    overlays = []
+    for rect in slot_overlay_rectangles(slots, box):
+        assignment = slot_assignment_map.get(rect.slot_id)
+        overlays.append(
+            {
+                "slot_id": rect.slot_id,
+                "slot_key": rect.slot_key,
+                "occupied": rect.slot_id in occupied,
+                "photo_id": assignment.photo_id if assignment is not None else None,
+                "left": round(rect.left, 4),
+                "top": round(rect.top, 4),
+                "width": round(rect.width, 4),
+                "height": round(rect.height, 4),
+            }
+        )
+    return overlays
 
 
 def _error_redirect(project_id: int, message: str) -> RedirectResponse:
@@ -149,6 +194,9 @@ def _project_context(
         "slot_count": slot_count,
         "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
+        "slot_overlays": _slot_overlay_data(selected, profile, slots, slot_assignment_map)
+        if selected is not None
+        else [],
         "catalogue": load_catalogue(),
         "source_states": source_states,
         "error": error,
@@ -268,6 +316,7 @@ def _page_context(
         "slot_count": slot_count,
         "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
+        "slot_overlays": _slot_overlay_data(page, profile, slots, slot_assignment_map),
         "catalogue": load_catalogue(),
     }
     return context

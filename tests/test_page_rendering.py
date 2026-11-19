@@ -22,6 +22,10 @@ from photo_composition_designer.project.repositories import (
     PageRepository,
 )
 from photo_composition_designer.project.services import ProjectService
+from photo_composition_designer.render.layout_geometry import (
+    compute_collage_box,
+    prepare_collage,
+)
 from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
 
@@ -553,3 +557,169 @@ def test_preview_invalidated_by_global_anniversaries_change(tmp_path):
         assert second != first
     finally:
         database.close()
+
+
+def _blank_page(**overrides) -> PageRenderInput:
+    """Return a minimal page render input for geometry assertions."""
+    defaults = {
+        "page_date": date(2027, 1, 4),
+        "description": "",
+        "layout": None,
+        "output_profile": OutputProfile.default(),
+        "title_page": False,
+        "hide_description": True,
+    }
+    defaults.update(overrides)
+    return PageRenderInput(**defaults)
+
+
+def _red_photo() -> Path:
+    """Write a small red JPEG into a temporary file and return its path."""
+    import tempfile
+
+    path = Path(tempfile.mkdtemp()) / "red.jpg"
+    Image.new("RGB", (40, 30), (255, 0, 0)).save(path)
+    return path
+
+
+def test_compute_collage_box_matches_renderer_content_box():
+    # No description, calendar shown: the collage fills from the top margin to
+    # just above the calendar strip (calendar_top - spacing).
+    profile = OutputProfile.default()
+    dpi = profile.size.dpi
+    page_width, page_height = profile.page_size_px()
+    margin_sides = mm_to_px(profile.layout.margin_sides, dpi)
+    margin_top = mm_to_px(profile.layout.margin_top, dpi)
+    margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
+    spacing = mm_to_px(profile.layout.spacing, dpi)
+    calendar_height = mm_to_px(profile.size.calendar_height, dpi)
+
+    page = _blank_page(output_profile=profile, hide_local_map=True)
+    box = compute_collage_box(page, profile)
+
+    calendar_top = page_height - margin_bottom - calendar_height
+    expected_bottom = calendar_top - spacing
+    assert box.page_width == page_width
+    assert box.page_height == page_height
+    assert box.left == margin_sides
+    assert box.top == margin_top
+    assert box.width == page_width - 2 * margin_sides
+    assert box.height == expected_bottom - margin_top
+
+
+def test_compute_collage_box_without_calendar_uses_bottom_margin():
+    profile = OutputProfile.default()
+    dpi = profile.size.dpi
+    page_width, page_height = profile.page_size_px()
+    margin_sides = mm_to_px(profile.layout.margin_sides, dpi)
+    margin_top = mm_to_px(profile.layout.margin_top, dpi)
+    margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
+
+    page = _blank_page(
+        output_profile=profile,
+        hide_local_map=True,
+        hide_calendar_strip=True,
+    )
+    box = compute_collage_box(page, profile)
+
+    expected_bottom = page_height - margin_bottom
+    assert box.top == margin_top
+    assert box.left == margin_sides
+    assert box.height == expected_bottom - margin_top
+
+
+def test_compute_collage_box_leaves_room_for_description():
+    # A visible description sits below the collage and above the calendar, so
+    # the collage box must end above the description's top edge.
+    profile = OutputProfile.default()
+    dpi = profile.size.dpi
+    page_height = profile.page_size_px()[1]
+    margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
+    calendar_height = mm_to_px(profile.size.calendar_height, dpi)
+    calendar_top = page_height - margin_bottom - calendar_height
+
+    page = _blank_page(
+        output_profile=profile,
+        hide_local_map=True,
+        hide_description=False,
+        description="A caption under the photos",
+    )
+    prepared = prepare_collage(page, profile)
+    box = prepared.box
+
+    assert prepared.description_image is not None
+    assert prepared.description_top is not None
+    # The collage ends at or above where the description begins.
+    assert box.top + box.height <= prepared.description_top
+    # The description stays above the calendar strip.
+    assert prepared.description_top < calendar_top
+
+
+def test_compute_collage_box_matches_composer_paste_position():
+    # The collage the composer renders must land exactly at the computed box.
+    profile = OutputProfile.default()
+    layout = LayoutTemplate(
+        key="one",
+        version=1,
+        name="One",
+        slots=(SlotTemplate("main", 0.0, 0.0, 1.0, 1.0),),
+    )
+    page = _blank_page(
+        output_profile=profile,
+        layout=layout,
+        hide_local_map=True,
+        description="",
+    )
+    box = compute_collage_box(page, profile)
+
+    red_path = _red_photo()
+    rendered = PageComposer().render(replace(page, assigned_photos={"main": SlotPhoto(red_path)}))
+    # Sample the centre of the collage box; the photo fills it.
+    red, green, blue = rendered.getpixel((box.left + box.width // 2, box.top + box.height // 2))
+    assert red > 200 and green < 60 and blue < 60
+
+
+def test_slot_overlay_rectangles_match_collage_box():
+    from photo_composition_designer.project.models import LayoutSlot
+    from photo_composition_designer.render.layout_geometry import slot_overlay_rectangles
+
+    box = compute_collage_box(_blank_page(hide_local_map=True), OutputProfile.default())
+    slots = [
+        LayoutSlot(
+            id=1,
+            layout_id=1,
+            slot_key="left",
+            position=0,
+            x=0.0,
+            y=0.0,
+            width=0.5,
+            height=1.0,
+            z_index=0,
+            crop_mode="cover",
+        ),
+        LayoutSlot(
+            id=2,
+            layout_id=1,
+            slot_key="right",
+            position=1,
+            x=0.5,
+            y=0.0,
+            width=0.5,
+            height=1.0,
+            z_index=0,
+            crop_mode="cover",
+        ),
+    ]
+
+    rects = slot_overlay_rectangles(slots, box)
+
+    left, right = rects
+    # Both slots together span the full collage box width, expressed as
+    # percentages of the full page.
+    assert left.left == (box.left / box.page_width) * 100.0
+    assert right.left == ((box.left + 0.5 * box.width) / box.page_width) * 100.0
+    assert left.width == (0.5 * box.width / box.page_width) * 100.0
+    assert left.top == (box.top / box.page_height) * 100.0
+    assert left.height == (box.height / box.page_height) * 100.0
+    # Adjacent slots share an edge exactly.
+    assert left.left + left.width == right.left

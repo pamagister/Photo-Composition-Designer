@@ -8,26 +8,24 @@ of SQLite and FastAPI: the application layer resolves photos and builds a
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date, datetime, time
+from datetime import date
 from typing import TYPE_CHECKING
 
-from PIL import Image, ImageChops
+from PIL import Image
 
 from photo_composition_designer.core.anniversaries import Anniversaries
-from photo_composition_designer.core.color import Color
-from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.layouts.loader import LayoutTemplate
-from photo_composition_designer.render.calendar import CalendarRenderer
-from photo_composition_designer.render.description import DescriptionRenderer
+from photo_composition_designer.render.layout_geometry import (
+    MapRendererFactory,
+    prepare_collage,
+)
 from photo_composition_designer.render.slot_renderer import SlotAwareRenderer, SlotPhoto
 
 if TYPE_CHECKING:
     from photo_composition_designer.render.object_detector import ObjectDetector
-
-MapRendererFactory = Callable[[list[tuple[float, float]]], Image.Image]
 
 
 @dataclass(frozen=True)
@@ -64,190 +62,35 @@ class PageComposer:
         """Render the page and return an RGB image."""
         profile = page.output_profile
         settings = profile.to_settings()
-        dpi = profile.size.dpi
-        page_width, page_height = profile.page_size_px()
-        background = Color.from_hex(profile.style.background_color).to_pil()
+        prepared = prepare_collage(page, profile, map_renderer=self._map_renderer)
+        box = prepared.box
 
-        canvas = Image.new("RGB", (page_width, page_height), background)
-
-        margin_sides = mm_to_px(profile.layout.margin_sides, dpi)
-        margin_top = mm_to_px(profile.layout.margin_top, dpi)
-        margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
-        spacing = mm_to_px(profile.layout.spacing, dpi)
-
-        calendar_height = mm_to_px(profile.size.calendar_height, dpi)
-        title_page = page.title_page and bool(page.title)
-        show_calendar = (
-            calendar_height > 0
-            and profile.calendar.use_calendar
-            and not page.hide_calendar_strip
-            and not title_page
-        )
-        has_bottom_strip = title_page or show_calendar
-        show_description = profile.layout.use_photo_description and not page.hide_description
-        content_top = margin_top
-
-        description_image: Image.Image | None = None
-        if show_description:
-            description_image = DescriptionRenderer(
-                width_px=page_width,
-                font=profile.style.font_description.to_font(),
-                spacing_px=spacing,
-                margin_side_px=margin_sides,
-                background_color=background,
-                dpi=dpi,
-            ).generate(page.description)
-
-        map_image: Image.Image | None = None
-        map_x = 0
-        calendar_width = page_width
-        if has_bottom_strip:
-            map_width, map_height = self._map_dimensions(profile, calendar_height)
-            map_x = page_width - margin_sides - map_width
-            min_calendar_width = 2 * margin_sides + spacing
-            if (
-                not page.hide_local_map
-                and profile.geo.use_photo_location_maps
-                and map_width > 0
-                and map_height > 0
-                and map_x >= min_calendar_width
-            ):
-                map_image = self._render_map(page, profile, map_width, map_height)
-                if map_image is not None:
-                    calendar_width = map_x
-
-        calendar_strip = (
-            self._render_calendar_strip(page, profile, settings, calendar_width)
-            if has_bottom_strip
-            else None
-        )
-        calendar_ink_top = 0
-        if calendar_strip is not None and description_image is not None:
-            difference = ImageChops.difference(
-                calendar_strip, Image.new("RGB", calendar_strip.size, background)
-            )
-            bounds = difference.getbbox()
-            calendar_ink_top = bounds[1] if bounds is not None else 0
-
-        description_ink_bottom = 0
-        if description_image is not None:
-            bounds = description_image.getbbox()
-            description_ink_bottom = bounds[3] if bounds is not None else description_image.height
-
-        content_left = margin_sides
-        content_width = max(1, page_width - 2 * margin_sides)
-        content_bottom = page_height - margin_bottom
-        calendar_top = content_bottom - calendar_height if has_bottom_strip else content_bottom
-
-        if description_image is not None:
-            if has_bottom_strip:
-                # With a map in the bottom-right corner the description must end
-                # above it instead of using the calendar's blank upper margin.
-                description_bottom = calendar_top + (
-                    0 if map_image is not None else calendar_ink_top
-                )
-            else:
-                description_bottom = content_bottom
-            description_top = description_bottom - description_ink_bottom
-            photo_bottom = description_top
-        else:
-            description_top = None
-            photo_bottom = calendar_top - spacing if has_bottom_strip else content_bottom
-        content_height = max(1, photo_bottom - content_top)
+        canvas = Image.new("RGB", (box.page_width, box.page_height), prepared.background)
 
         if page.layout is not None:
             collage = SlotAwareRenderer(settings, object_detector=self._object_detector).render(
                 page.layout,
                 dict(page.assigned_photos),
-                page_width=content_width,
-                page_height=content_height,
-                background_color=background,
+                page_width=box.width,
+                page_height=box.height,
+                background_color=prepared.background,
             )
-            canvas.paste(collage, (content_left, content_top))
+            canvas.paste(collage, (box.left, box.top))
 
-        if map_image is not None:
-            canvas.paste(map_image, (map_x, calendar_top))
+        if prepared.map_image is not None:
+            canvas.paste(prepared.map_image, (prepared.map_x, prepared.calendar_top))
 
-        if calendar_strip is not None:
-            canvas.paste(calendar_strip, (0, calendar_top))
+        if prepared.calendar_strip is not None:
+            canvas.paste(prepared.calendar_strip, (0, prepared.calendar_top))
 
-        if description_image is not None and description_top is not None:
+        if prepared.description_image is not None and prepared.description_top is not None:
             canvas.paste(
-                description_image,
-                (0, description_top),
-                description_image,
+                prepared.description_image,
+                (0, prepared.description_top),
+                prepared.description_image,
             )
 
         return canvas
-
-    def _render_calendar_strip(
-        self,
-        page: PageRenderInput,
-        profile: OutputProfile,
-        settings,
-        width: int,
-    ) -> Image.Image:
-        calendar_height = mm_to_px(profile.size.calendar_height, profile.size.dpi)
-        margin_sides = mm_to_px(profile.layout.margin_sides, profile.size.dpi)
-        renderer = CalendarRenderer(
-            backgroundColor=Color.from_hex(profile.style.background_color).to_pil(),
-            fontLarge=settings.style.fontLarge.value,
-            fontSmall=settings.style.fontSmall.value,
-            fontHoliday=settings.style.fontAnniversaries.value,
-            language=profile.calendar.language,
-            startDate=datetime.combine(page.page_date, time.min),
-            holidayCountries=list(profile.calendar.holiday_countries),
-            useShortDayNames=profile.calendar.use_short_day_names,
-            useShortMonthNames=profile.calendar.use_short_month_names,
-            marginSides=margin_sides,
-            anniversaries=page.anniversaries,
-            dpi=profile.size.dpi,
-            horizontal=profile.calendar.horizontal_orientation,
-        )
-        if page.title_page and page.title:
-            return renderer.generateTitle(page.title, width, calendar_height)
-        return renderer.generate(datetime.combine(page.page_date, time.min), width, calendar_height)
-
-    @staticmethod
-    def _map_dimensions(
-        profile: OutputProfile,
-        calendar_height: int,
-    ) -> tuple[int, int]:
-        """Return the map width and height for the calendar orientation."""
-        map_size = mm_to_px(profile.geo.map_size, profile.size.dpi)
-        if profile.calendar.horizontal_orientation:
-            return map_size, calendar_height
-        # A vertical calendar is a tall strip; its width is the calendar's
-        # cross-axis size, so the map matches that width and uses map_size as
-        # its height.
-        return calendar_height, map_size
-
-    def _render_map(
-        self,
-        page: PageRenderInput,
-        profile: OutputProfile,
-        map_width: int,
-        map_height: int,
-    ) -> Image.Image | None:
-        renderer = self._map_renderer or self._default_map_renderer(profile, map_width, map_height)
-        return renderer(list(page.gps_coordinates))
-
-    @staticmethod
-    def _default_map_renderer(
-        profile: OutputProfile,
-        map_width: int,
-        map_height: int,
-    ) -> MapRendererFactory:
-        from photo_composition_designer.render.map import MapRenderer
-
-        renderer = MapRenderer(
-            mapHeight=map_height,
-            mapWidth=map_width,
-            minimalExtension=profile.geo.minimal_extension,
-            backgroundColor=Color.from_hex(profile.style.background_color).to_pil(),
-            textColor1=profile.style.font_large.to_font().color.to_pil(),
-        )
-        return renderer.generate
 
 
 __all__ = ["MapRendererFactory", "PageComposer", "PageRenderInput"]

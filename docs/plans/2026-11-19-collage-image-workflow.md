@@ -218,15 +218,15 @@ tests before the overlay work begins.
 
 **Objective:** Make the large page preview a drop target aligned with the collage.
 
-- [ ] P3-W01: Extract `compute_collage_box` (and `CollageBox`) from
+- [x] P3-W01: Extract `compute_collage_box` (and `CollageBox`) from
   `PageComposer.render`, reuse it in the renderer, and add unit tests that reproduce
   the previous content-box values for representative profiles and pages. Keep
   `tests/test_page_rendering.py` green.
-- [ ] P3-W02: Add the slot overlay rectangle function and expose per-slot overlay data
+- [x] P3-W02: Add the slot overlay rectangle function and expose per-slot overlay data
   (slot id, key, occupied, photo id, percentages) through `_project_context` and
   `_page_context`; add a `TestClient` test that the overlay percentages for a known
   layout match the expected values.
-- [ ] P3-W03: Add the `.page-preview-frame` wrapper and absolutely positioned
+- [x] P3-W03: Add the `.page-preview-frame` wrapper and absolutely positioned
   `.slot-dropzone` elements in `editor_canvas.html`, plus CSS for empty, occupied,
   hover and drag-over states. Add a markup test that dropzones render with the correct
   `data-slot-id` and inline geometry.
@@ -336,9 +336,9 @@ Use the repository commands (see `Makefile`):
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-19-collage-image-workflow.md`
-- **Completed:** Phase 0 (commit `0a09bc0`, issue #49, CI run `44523159845` green); Phase 1 (commit `40d1731`, issue #50, CI run `44523159845` green)
-- **Active:** none (plan not started)
-- **Next:** create one GitHub issue for Phase 2, then start P2-W01
+- **Completed:** Phase 0 (issue #49); Phase 1 (issue #50); Phase 2 (commit `b3c334a`, issue #52); Phase 3 (issue #53, pending commit)
+- **Active:** Phase 4 (selection sync and keyboard crop)
+- **Next:** P4-W01: selection sync between dropzones and right-hand slots
 - **Relevant files:**
   - `src/photo_composition_designer/project/editing.py` (populate precedent, `PageEditingService`)
   - `src/photo_composition_designer/gui/routes/editor.py` (assign/replace/swap/crop routes)

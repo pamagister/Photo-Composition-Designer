@@ -753,3 +753,30 @@ def test_assign_selected_route_reports_noop(editor_client, tmp_path):
     assert "No empty slots or no selected photos to assign." in response.text
     assert response.headers["HX-Trigger"] == "pcd:refresh-unused"
     assert _stored_revision(page_id) == before
+
+
+def test_editor_canvas_renders_slot_dropzones_with_geometry(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_via_client(tmp_path, photo_count=4, slots=3)
+
+    response = editor_client.get(f"/projects/{project_id}/pages/{page_id}")
+
+    assert response.status_code == 200
+    text = response.text
+    assert "page-preview-frame" in text
+    # Four dropzones for the four_quadrants layout (one still empty).
+    assert text.count("slot-dropzone") >= 4
+    assert 'data-slot-id="' in text
+    assert "slot-dropzone empty" in text
+    # Inline percentage geometry is present.
+    assert "left:" in text and "top:" in text and "width:" in text and "height:" in text
+
+
+def test_editor_canvas_dropzones_mark_occupied_slots(editor_client, tmp_path):
+    project_id, page_id, photo_ids, _ = _seed_via_client(tmp_path, photo_count=4, slots=1)
+
+    response = editor_client.get(f"/projects/{project_id}/pages/{page_id}")
+
+    assert response.status_code == 200
+    # One occupied dropzone carries the assigned photo id.
+    assert "slot-dropzone occupied" in response.text
+    assert f'data-photo-id="{photo_ids[0]}"' in response.text

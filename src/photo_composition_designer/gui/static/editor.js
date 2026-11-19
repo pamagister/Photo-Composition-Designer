@@ -35,36 +35,53 @@
 
   const SOURCE_SLOT_TYPE = "application/x-pcd-slot";
 
+  /* A drop target is either a right-hand slot card or a preview dropzone; both
+   * expose data-slot-id and an occupied/empty state. */
+  function dropTarget(element) {
+    return element.closest(".slot, .slot-dropzone");
+  }
+
+  function isOccupied(target) {
+    return target.classList.contains("occupied");
+  }
+
   document.addEventListener("dragstart", function (event) {
+    /* Dragging from an occupied preview dropzone behaves like dragging from an
+     * occupied right-hand slot. */
+    const dropzone = event.target.closest(".slot-dropzone.occupied");
     const item = event.target.closest(".unused-item, .slot img");
-    if (!item) return;
-    const slot = item.closest(".slot");
-    event.dataTransfer.setData("text/plain", item.dataset.photoId || "");
+    const source = item || dropzone;
+    if (!source) return;
+    const slot = source.closest(".slot");
+    event.dataTransfer.setData("text/plain", source.dataset.photoId || "");
     if (slot) {
       event.dataTransfer.setData(SOURCE_SLOT_TYPE, slot.dataset.slotId || "");
+    } else if (dropzone) {
+      event.dataTransfer.setData(SOURCE_SLOT_TYPE, dropzone.dataset.slotId || "");
     } else {
       event.dataTransfer.setData(SOURCE_SLOT_TYPE, "");
     }
     event.dataTransfer.effectAllowed = "copyMove";
+    if (dropzone) dropzone.classList.add("dragging");
   });
 
   document.addEventListener("dragover", function (event) {
-    const slot = event.target.closest(".slot");
-    if (!slot) return;
+    const target = dropTarget(event.target);
+    if (!target) return;
     event.preventDefault();
-    slot.classList.add("drag-over");
+    target.classList.add("drag-over");
   });
 
   document.addEventListener("dragleave", function (event) {
-    const slot = event.target.closest(".slot");
-    if (slot) slot.classList.remove("drag-over");
+    const target = dropTarget(event.target);
+    if (target) target.classList.remove("drag-over");
   });
 
   document.addEventListener("drop", function (event) {
-    const slot = event.target.closest(".slot");
-    if (!slot) return;
+    const target = dropTarget(event.target);
+    if (!target) return;
     event.preventDefault();
-    slot.classList.remove("drag-over");
+    target.classList.remove("drag-over");
 
     const photoId = event.dataTransfer.getData("text/plain");
     const sourceSlotId = event.dataTransfer.getData(SOURCE_SLOT_TYPE);
@@ -74,24 +91,33 @@
     if (!canvas) return;
     const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
 
-    /* A photo dragged from another slot moves or swaps instead of replacing
-     * itself with a copy. Dropping onto its own slot is a no-op. */
+    /* A photo dragged from another slot (or occupied dropzone) moves or swaps
+     * instead of replacing itself with a copy. Dropping onto its own slot is a
+     * no-op. */
     if (sourceSlotId) {
-      if (sourceSlotId === slot.dataset.slotId) return;
+      if (sourceSlotId === target.dataset.slotId) return;
       window.htmx.ajax("POST", `${base}/swap`, {
-        values: { slot_a: sourceSlotId, slot_b: slot.dataset.slotId },
+        values: { slot_a: sourceSlotId, slot_b: target.dataset.slotId },
         target: canvas,
         swap: "outerHTML",
       });
       return;
     }
 
-    const action = slot.classList.contains("occupied") ? "replace" : "assign";
+    const action = isOccupied(target) ? "replace" : "assign";
     window.htmx.ajax("POST", `${base}/${action}`, {
-      values: { slot_id: slot.dataset.slotId, photo_id: photoId },
+      values: { slot_id: target.dataset.slotId, photo_id: photoId },
       target: canvas,
       swap: "outerHTML",
     });
+  });
+
+  document.addEventListener("dragend", function (event) {
+    const dropzone = event.target.closest(".slot-dropzone");
+    if (dropzone) dropzone.classList.remove("dragging");
+    document
+      .querySelectorAll(".slot-dropzone.drag-over, .slot.drag-over")
+      .forEach((node) => node.classList.remove("drag-over"));
   });
 
   /* Multi-select in the photo strip: track checked photos, keep the toolbar
