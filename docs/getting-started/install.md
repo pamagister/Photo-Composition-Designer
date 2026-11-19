@@ -13,13 +13,13 @@ pip install Photo-Composition-Designer
 ### Start the local web editor
 
 ```bash
-photo-composition-designer gui
+photo-composition-designer
 ```
 
-Then open `http://127.0.0.1:8767/`. The editor is the primary interface; the
-command line covers scanning, distribution, rendering, export, duplication and
-diagnostics. See the [web UI guide](../usage/web-ui.md) and the
-[CLI reference](../usage/cli.md).
+Then open `http://127.0.0.1:8767/`. The explicit `gui` command is equivalent.
+The editor is the primary interface; the command line covers scanning,
+distribution, rendering, export, duplication and diagnostics. See the
+[web UI guide](../usage/web-ui.md) and the [CLI reference](../usage/cli.md).
 
 ## Executable
 
@@ -48,7 +48,7 @@ uv pip install -e ".[dev,docs]"
 ### Start the editor from source
 
 ```bash
-uv run photo-composition-designer gui
+uv run photo-composition-designer
 ```
 
 ### Run the checks

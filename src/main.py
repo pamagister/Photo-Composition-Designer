@@ -1,4 +1,4 @@
-"""PyInstaller entry point for the unified CLI/GUI executable."""
+"""PyInstaller entry point for the GUI-first executable."""
 
 from __future__ import annotations
 

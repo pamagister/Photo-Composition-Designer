@@ -3,11 +3,12 @@
 The local web UI is the primary interface. Start it with:
 
 ```bash
-uv run photo-composition-designer gui
+uv run photo-composition-designer
 ```
 
-Then open `http://127.0.0.1:8767/`. Use `--host`, `--port` and `--log-level` to
-change the listener; the default binds to localhost only.
+Then open `http://127.0.0.1:8767/`. The explicit `gui` command is equivalent.
+Use `--host`, `--port` and `--log-level` with the `gui` command to change the
+listener; the default binds to localhost only.
 
 All data is stored in the central workspace and cannot affect source photos:
 originals are only read, never moved, renamed or modified.

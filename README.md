@@ -14,8 +14,8 @@ into slots, and export the result as a PNG set and PDF.
 
 * **Project-based workflow** – One central SQLite workspace holds every project,
   source root, photo inventory, page, layout and assignment.
-* **Local web editor** – `uv run photo-composition-designer gui` opens a
-  three-panel editor at `http://127.0.0.1:8767/`.
+* **Local web editor** – `uv run photo-composition-designer` opens a
+  three-panel editor at `http://127.0.0.1:8767/`; `gui` is the explicit form.
 * **Full-page rendering** – Pages compose photo slots, the calendar strip, the
   local map, the description, anniversaries and the title from project data.
 * **Per-project output profiles** – Calendar, style, geo, size and layout
@@ -39,7 +39,7 @@ into slots, and export the result as a PNG set and PDF.
 ## Quick start
 
 ```bash
-uv run photo-composition-designer gui
+uv run photo-composition-designer
 ```
 
 Then open `http://127.0.0.1:8767/`, create a project, add a source directory,
@@ -49,7 +49,8 @@ scan it, preview a distribution, and curate pages in the editor. See the
 ## Command-line
 
 ```
-photo-composition-designer gui       # start the local web editor
+photo-composition-designer           # start the local web editor (default)
+photo-composition-designer gui       # explicit start command
 photo-composition-designer scan      # reconcile a project's photo inventory
 photo-composition-designer distribute  # preview or apply a distribution
 photo-composition-designer render    # render a project's pages to PNG + PDF

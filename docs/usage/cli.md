@@ -1,7 +1,10 @@
 # Command line interface
 
 The `photo-composition-designer` command manages projects in the local SQLite
-workspace. Run it through `uv` inside the repository:
+workspace. Running it without arguments starts the local web editor. Supplying a
+command runs the project-oriented CLI instead.
+
+Run it through `uv` inside the repository:
 
 ```bash
 uv run photo-composition-designer --help
@@ -26,12 +29,14 @@ cache live under the platform data directory; set `PCD_DATA_DIR` and
 ## `gui`
 
 ```bash
+uv run photo-composition-designer
 uv run photo-composition-designer gui
 uv run photo-composition-designer gui --host 0.0.0.0 --port 8767 --log-level info
 ```
 
 Options: `--host` (default `127.0.0.1`), `--port` (default `8767`) and
-`--log-level` (default `info`).
+`--log-level` (default `info`). Calling the command without arguments is the
+same as the explicit `gui` command.
 
 ## `scan`
 

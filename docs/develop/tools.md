@@ -9,7 +9,7 @@ npm install -g --prefix ~/.local @playwright/cli@latest
 playwright-cli install-browser chromium
 ```
 
-Start the editor with `uv run photo-composition-designer gui` (default
+Start the editor with `uv run photo-composition-designer` (default
 `http://127.0.0.1:8767/`) and validate changes from cheapest to most realistic:
 
 - **HTTP with curl:** `curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' <url>`

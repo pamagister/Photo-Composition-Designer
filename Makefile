@@ -90,6 +90,7 @@ COMMON_PYI_OPTS = \
 	--add-data "docs:docs" \
 	--add-data "images:images" \
 	--hidden-import photo_composition_designer.cli.app \
+	--collect-data=photo_composition_designer \
 	--collect-all=holidays \
     --hidden-import=holidays.countries \
     --hidden-import=holidays.countries.* \
