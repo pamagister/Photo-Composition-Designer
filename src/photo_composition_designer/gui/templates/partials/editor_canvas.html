@@ -72,7 +72,7 @@
           <label class="sr-only" for="layout-{{ page.id }}">Page layout</label>
           <select id="layout-{{ page.id }}" name="layout_key">
             {% for key, template in catalogue.items() %}
-            <option value="{{ key }}">{{ template.name }}</option>
+            <option value="{{ key }}">{{ template.name }} ({{ template.slots | length }} Bilder)</option>
             {% endfor %}
           </select>
           <button type="submit">Preview change</button>

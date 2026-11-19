@@ -1,0 +1,52 @@
+key: eight_tiles_4x6
+version: 1
+name: "Eight tiles 4x6"
+slots:
+  - key: r1_left
+    x: 0.0
+    y: 0.0
+    width: 0.5
+    height: 0.25
+    crop_mode: cover
+  - key: r1_right
+    x: 0.5
+    y: 0.0
+    width: 0.5
+    height: 0.25
+    crop_mode: cover
+  - key: r2_left
+    x: 0.0
+    y: 0.25
+    width: 0.3333
+    height: 0.25
+    crop_mode: cover
+  - key: r2_mid
+    x: 0.3333
+    y: 0.25
+    width: 0.3333
+    height: 0.25
+    crop_mode: cover
+  - key: r2_right
+    x: 0.6667
+    y: 0.25
+    width: 0.3333
+    height: 0.25
+    crop_mode: cover
+  - key: r3_left
+    x: 0.0
+    y: 0.5
+    width: 0.6667
+    height: 0.25
+    crop_mode: cover
+  - key: r3_right
+    x: 0.6667
+    y: 0.5
+    width: 0.3333
+    height: 0.25
+    crop_mode: cover
+  - key: r4_full
+    x: 0.0
+    y: 0.75
+    width: 1.0
+    height: 0.25
+    crop_mode: cover

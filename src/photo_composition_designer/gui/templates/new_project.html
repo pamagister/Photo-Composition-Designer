@@ -26,7 +26,7 @@
       <select id="layout_key" name="layout_key">
         {% for key, layout in catalogue.items() %}
         <option value="{{ key }}" {% if form.layout_key | default('') == key %}selected{% endif %}>
-          {{ layout.name }}
+          {{ layout.name }} ({{ layout.slots | length }} Bilder)
         </option>
         {% endfor %}
       </select>

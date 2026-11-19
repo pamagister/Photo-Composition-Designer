@@ -1,0 +1,34 @@
+key: five_split_center
+version: 1
+name: "Five: center portrait, two each side"
+slots:
+  - key: left_top
+    x: 0.0
+    y: 0.0
+    width: 0.25
+    height: 0.5
+    crop_mode: cover
+  - key: left_bottom
+    x: 0.0
+    y: 0.5
+    width: 0.25
+    height: 0.5
+    crop_mode: cover
+  - key: center
+    x: 0.25
+    y: 0.0
+    width: 0.5
+    height: 1.0
+    crop_mode: cover
+  - key: right_top
+    x: 0.75
+    y: 0.0
+    width: 0.25
+    height: 0.5
+    crop_mode: cover
+  - key: right_bottom
+    x: 0.75
+    y: 0.5
+    width: 0.25
+    height: 0.5
+    crop_mode: cover

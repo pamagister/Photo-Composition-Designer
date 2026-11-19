@@ -1,0 +1,76 @@
+key: twelve_tiles_5x10
+version: 1
+name: "Twelve tiles 5x10"
+slots:
+  - key: r1_a
+    x: 0.0
+    y: 0.0
+    width: 0.3333
+    height: 0.2
+    crop_mode: cover
+  - key: r1_b
+    x: 0.3333
+    y: 0.0
+    width: 0.3333
+    height: 0.2
+    crop_mode: cover
+  - key: r1_c
+    x: 0.6667
+    y: 0.0
+    width: 0.3333
+    height: 0.2
+    crop_mode: cover
+  - key: r2_a
+    x: 0.0
+    y: 0.2
+    width: 0.6667
+    height: 0.2
+    crop_mode: cover
+  - key: r2_b
+    x: 0.6667
+    y: 0.2
+    width: 0.3333
+    height: 0.2
+    crop_mode: cover
+  - key: r3_a
+    x: 0.0
+    y: 0.4
+    width: 0.25
+    height: 0.2
+    crop_mode: cover
+  - key: r3_b
+    x: 0.25
+    y: 0.4
+    width: 0.5
+    height: 0.2
+    crop_mode: cover
+  - key: r3_c
+    x: 0.75
+    y: 0.4
+    width: 0.25
+    height: 0.2
+    crop_mode: cover
+  - key: r4_a
+    x: 0.0
+    y: 0.6
+    width: 0.2
+    height: 0.2
+    crop_mode: cover
+  - key: r4_b
+    x: 0.2
+    y: 0.6
+    width: 0.6
+    height: 0.2
+    crop_mode: cover
+  - key: r4_c
+    x: 0.8
+    y: 0.6
+    width: 0.2
+    height: 0.2
+    crop_mode: cover
+  - key: r5_full
+    x: 0.0
+    y: 0.8
+    width: 1.0
+    height: 0.2
+    crop_mode: cover

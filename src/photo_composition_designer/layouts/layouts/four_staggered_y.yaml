@@ -1,0 +1,28 @@
+key: four_staggered_y
+version: 1
+name: "Four staggered (y-split)"
+slots:
+  - key: top_left
+    x: 0.0
+    y: 0.0
+    width: 0.45
+    height: 0.48
+    crop_mode: cover
+  - key: top_right
+    x: 0.45
+    y: 0.0
+    width: 0.55
+    height: 0.48
+    crop_mode: cover
+  - key: bottom_left
+    x: 0.0
+    y: 0.48
+    width: 0.55
+    height: 0.52
+    crop_mode: cover
+  - key: bottom_right
+    x: 0.55
+    y: 0.48
+    width: 0.45
+    height: 0.52
+    crop_mode: cover
