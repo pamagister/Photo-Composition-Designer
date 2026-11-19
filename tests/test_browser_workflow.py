@@ -208,7 +208,7 @@ def test_assign_replace_move_and_remove(live_server, browser_page):
     # Add: assign the first unused photo to the empty first slot.
     first_slot.locator("select[name=photo_id]").select_option(str(photo_ids[0]))
     first_slot.get_by_role("button", name="Assign").click()
-    expect(page.locator(".editor-canvas")).to_contain_text("Photo assigned.")
+    expect(page.locator("#workspace-status")).to_contain_text("Photo assigned.")
     expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
         "data-photo-id", str(photo_ids[0])
     )
@@ -218,7 +218,7 @@ def test_assign_replace_move_and_remove(live_server, browser_page):
     first_slot.locator(".replace-controls summary").click()
     first_slot.locator(".replace-controls select[name=photo_id]").select_option(str(photo_ids[1]))
     first_slot.locator(".replace-controls").get_by_role("button", name="Replace").click()
-    expect(page.locator(".editor-canvas")).to_contain_text("Photo replaced.")
+    expect(page.locator("#workspace-status")).to_contain_text("Photo replaced.")
     expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
         "data-photo-id", str(photo_ids[1])
     )
@@ -230,7 +230,7 @@ def test_assign_replace_move_and_remove(live_server, browser_page):
         str(live_server["slot_ids"][1])
     )
     first_slot.locator(".move-controls").get_by_role("button", name="Move").click()
-    expect(page.locator(".editor-canvas")).to_contain_text("Photos swapped.")
+    expect(page.locator("#workspace-status")).to_contain_text("Photos swapped.")
     expect(_slot(page, "slot_1").locator("img")).to_have_attribute(
         "data-photo-id", str(photo_ids[1])
     )
@@ -238,7 +238,7 @@ def test_assign_replace_move_and_remove(live_server, browser_page):
 
     # Remove: the photo returns to the unused pool and the slot becomes empty.
     _slot(page, "slot_1").locator(".slot-remove button").click()
-    expect(page.locator(".editor-canvas")).to_contain_text("Photo removed.")
+    expect(page.locator("#workspace-status")).to_contain_text("Photo removed.")
     expect(_slot(page, "slot_1")).to_have_class("slot empty")
     expect(page.locator(".unused-pool").get_by_text("photo_01.jpg")).to_be_visible()
 
@@ -267,7 +267,7 @@ def test_layout_change_and_page_navigation(live_server, browser_page):
     expect(preview).to_contain_text("keeps 1 photo(s)")
     expect(preview).to_contain_text("1 photo(s) will return to the unused pool")
     preview.get_by_role("button", name="Confirm layout change").click()
-    expect(page.locator(".editor-canvas")).to_contain_text("Layout changed.")
+    expect(page.locator("#workspace-status")).to_contain_text("Layout changed.")
     expect(page.locator(".slot")).to_have_count(1)
     expect(page.locator(".unused-pool").get_by_text("photo_01.jpg")).to_be_visible()
 

@@ -5,19 +5,14 @@
 <script src="/static/editor.js" defer></script>
 {% endblock %}
 
-{% block header_context %}
-{% if project %}
-<div class="project-header-context">
-  <strong>{{ project.name }}</strong>
-  <span>{{ pages | length }} pages</span>
-  <span>updated {{ project.updated_at[:19].replace('T', ' ') }}</span>
+{% block header_status %}
+<div id="workspace-status" class="workspace-status" aria-label="Workspace status">
+  {% include "partials/workspace_status.html" %}
 </div>
-{% endif %}
 {% endblock %}
 
 {% block content %}
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
-{% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
 
 <nav class="project-actions" aria-label="Project actions">
   <a class="button" href="/projects/{{ project.id }}/preview{% if selected_page %}?page={{ selected_page.id }}{% endif %}">Preview</a>

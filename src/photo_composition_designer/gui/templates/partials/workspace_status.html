@@ -1,0 +1,20 @@
+{# Consolidated workspace status: calendar facts, current page facts and the
+ # latest save/status message, each visually separated. #}
+<span class="status-group status-calendar">
+  <strong>{{ project.name }}</strong>
+  <span class="status-divider" aria-hidden="true">|</span>
+  <span>{{ pages | length }} pages</span>
+  <span class="status-divider" aria-hidden="true">|</span>
+  <span>Calendar updated {{ project.updated_at[:19].replace('T', ' ') }}</span>
+</span>
+{% if selected_page %}
+<span class="status-group status-page">
+  <span class="status-divider" aria-hidden="true">|</span>
+  <span>Page {{ selected_page.page_index + 1 }} of {{ pages | length }}</span>
+  <span class="status-divider" aria-hidden="true">|</span>
+  <span>Page saved {{ selected_page.updated_at[:19].replace('T', ' ') }}</span>
+</span>
+{% endif %}
+{% if notice %}
+<span class="status-notice success" role="status" aria-live="polite">{{ notice }}</span>
+{% endif %}

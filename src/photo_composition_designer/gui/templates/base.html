@@ -19,7 +19,7 @@
       <a href="/layouts">Layouts</a>
       {% block header_context %}{% endblock %}
     </nav>
-    <p class="save-state" data-save-state>{{ save_state | default("Saved") }}</p>
+    {% block header_status %}<p class="save-state" data-save-state>{{ save_state | default("Saved") }}</p>{% endblock %}
   </header>
   <main id="main">
     {% block content %}{% endblock %}

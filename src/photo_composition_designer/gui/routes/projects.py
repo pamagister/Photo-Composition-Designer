@@ -217,10 +217,14 @@ def _page_context(
             slot_count = len(slots)
             slot_assignment_map = {assignment.slot_id: assignment for assignment in assignments}
     project = ProjectRepository(connection).get(project_id)
+    pages = PageRepository(connection).list(project_id)
     profile = profile_from_project(project) if project is not None else OutputProfile.default()
     title_page = profile.calendar.use_title_page and page.page_index == 0
     context = {
         "page": page,
+        "project": project,
+        "pages": pages,
+        "selected_page": page,
         "project_id": project_id,
         "profile": profile,
         "title_page": title_page,

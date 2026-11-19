@@ -9,48 +9,9 @@
        src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?max_width=320&v={{ page.render_revision }}"
        alt="" loading="lazy" hx-swap-oob="outerHTML">
   {% endif %}
-  <header class="editor-toolbar">
-    <h2>{{ page.start_date }}</h2>
-    <span class="muted">Page {{ page.page_index + 1 }}</span>
-    {% set show_map_override = profile.geo.use_photo_location_maps %}
-    {% set show_calendar_override = profile.calendar.use_calendar and profile.size.calendar_height > 0 and not title_page %}
-    {% set show_description_override = profile.layout.use_photo_description %}
-    {% if show_map_override or show_calendar_override or show_description_override %}
-    <details class="page-overrides">
-      <summary>Page overrides</summary>
-      <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/overrides"
-            hx-trigger="change"
-            hx-target="closest .editor-canvas"
-            hx-swap="outerHTML">
-        {% if show_map_override %}
-        <label title="Override the global local-map setting for this page">
-          <input type="checkbox" name="hide_local_map" value="1"
-                 {% if page.hide_local_map %}checked{% endif %}>
-          Hide local map
-        </label>
-        {% endif %}
-        {% if show_calendar_override %}
-        <label title="Override the global calendar-strip setting for this page">
-          <input type="checkbox" name="hide_calendar_strip" value="1"
-                 {% if page.hide_calendar_strip %}checked{% endif %}>
-          Hide calendar strip
-        </label>
-        {% endif %}
-        {% if show_description_override %}
-        <label title="Override the global description setting for this page">
-          <input type="checkbox" name="hide_description" value="1"
-                 {% if page.hide_description %}checked{% endif %}>
-          Hide description
-        </label>
-        {% endif %}
-      </form>
-    </details>
-    {% endif %}
-    <span class="save-state" data-save-state>
-      {{ "Saved" if notice else "Up to date" }}
-    </span>
-    {% if notice %}<span class="success" role="status" aria-live="polite">{{ notice }}</span>{% endif %}
-  </header>
+  {% set show_map_override = profile.geo.use_photo_location_maps %}
+  {% set show_calendar_override = profile.calendar.use_calendar and profile.size.calendar_height > 0 and not title_page %}
+  {% set show_description_override = profile.layout.use_photo_description %}
 
   <div class="editor-workspace">
     <div class="page-preview">
@@ -59,6 +20,43 @@
     </div>
 
     <aside class="editor-layout-panel" aria-label="Layout and page content">
+      <header class="layout-panel-header">
+        <h2>{{ page.start_date }}</h2>
+        <span class="muted">Page {{ page.page_index + 1 }}{% if pages %} of {{ pages | length }}{% endif %}</span>
+      </header>
+
+      {% if show_map_override or show_calendar_override or show_description_override %}
+      <details class="page-overrides">
+        <summary>Page overrides</summary>
+        <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/overrides"
+              hx-trigger="change"
+              hx-target="closest .editor-canvas"
+              hx-swap="outerHTML">
+          {% if show_map_override %}
+          <label title="Override the global local-map setting for this page">
+            <input type="checkbox" name="hide_local_map" value="1"
+                   {% if page.hide_local_map %}checked{% endif %}>
+            Hide local map
+          </label>
+          {% endif %}
+          {% if show_calendar_override %}
+          <label title="Override the global calendar-strip setting for this page">
+            <input type="checkbox" name="hide_calendar_strip" value="1"
+                   {% if page.hide_calendar_strip %}checked{% endif %}>
+            Hide calendar strip
+          </label>
+          {% endif %}
+          {% if show_description_override %}
+          <label title="Override the global description setting for this page">
+            <input type="checkbox" name="hide_description" value="1"
+                   {% if page.hide_description %}checked{% endif %}>
+            Hide description
+          </label>
+          {% endif %}
+        </form>
+      </details>
+      {% endif %}
+
       <details class="layout-change">
         <summary>Change layout</summary>
         <form hx-get="/projects/{{ project_id }}/pages/{{ page.id }}/layout/preview"
@@ -206,6 +204,11 @@
       </form>
     </aside>
   </div>
+  {% if oob_page_thumb %}
+  <div id="workspace-status" class="workspace-status" aria-label="Workspace status" hx-swap-oob="outerHTML">
+    {% include "partials/workspace_status.html" %}
+  </div>
+  {% endif %}
 </div>
 {% else %}
 <p class="muted">No page selected.</p>

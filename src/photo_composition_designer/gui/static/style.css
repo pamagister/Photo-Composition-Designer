@@ -68,22 +68,44 @@ a:focus {
   border-bottom: 1px solid var(--border);
 }
 
-.project-header-context {
+.workspace-status {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.75rem;
+  gap: 0.4rem 0.75rem;
   min-width: 0;
   margin-left: 0.5rem;
   color: var(--muted);
   font-size: 0.82rem;
 }
 
-.project-header-context strong {
+.workspace-status strong {
   overflow: hidden;
   color: var(--text);
   font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.status-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.status-group + .status-group {
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--border);
+}
+
+.status-divider {
+  color: var(--border);
+}
+
+.status-notice {
+  color: var(--ok);
 }
 
 .app-header nav {
@@ -463,7 +485,7 @@ summary {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  max-height: calc(100vh - 11rem);
+  max-height: calc(100vh - 15rem);
   overflow: auto;
 }
 
@@ -502,22 +524,8 @@ summary {
 }
 
 .editor-canvas-panel {
-  min-height: calc(100vh - 12rem);
+  min-height: calc(100vh - 16rem);
   padding: 0.7rem;
-}
-
-.editor-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 2rem;
-  margin-bottom: 0.45rem;
-}
-
-.editor-toolbar h2 {
-  margin: 0;
-  font-size: 1rem;
 }
 
 .page-overrides {
@@ -562,7 +570,7 @@ summary {
 .page-preview {
   display: grid;
   min-width: 0;
-  min-height: calc(100vh - 16rem);
+  min-height: calc(100vh - 20rem);
   place-items: center;
   overflow: auto;
   border-radius: 6px;
@@ -572,7 +580,7 @@ summary {
 .page-preview img {
   display: block;
   width: 100%;
-  max-height: calc(100vh - 15rem);
+  max-height: calc(100vh - 19rem);
   object-fit: contain;
 }
 
@@ -580,9 +588,22 @@ summary {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  max-height: calc(100vh - 15rem);
+  max-height: calc(100vh - 19rem);
   min-width: 0;
   overflow: auto;
+}
+
+.layout-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.1rem;
+}
+
+.layout-panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .layout-change {
@@ -973,16 +994,15 @@ summary {
     padding: 0.75rem;
   }
 
-  .project-header-context,
   .project-actions,
-  .editor-toolbar {
+  .workspace-status {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .project-header-context {
+  .workspace-status {
     align-items: flex-start;
-    gap: 0.1rem;
+    gap: 0.2rem;
     margin: 0.25rem 0;
   }
 
