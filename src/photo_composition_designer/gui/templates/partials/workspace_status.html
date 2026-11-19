@@ -12,6 +12,8 @@
   <span class="status-divider" aria-hidden="true">|</span>
   <span>Page {{ selected_page.page_index + 1 }} of {{ pages | length }}</span>
   <span class="status-divider" aria-hidden="true">|</span>
+  <span>{{ selected_page.start_date }}</span>
+  <span class="status-divider" aria-hidden="true">|</span>
   <span>Page saved {{ selected_page.updated_at[:19].replace('T', ' ') }}</span>
 </span>
 {% endif %}

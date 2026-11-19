@@ -17,14 +17,15 @@
     <div class="page-preview">
       <img src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?v={{ page.render_revision }}"
            alt="Rendered preview for {{ page.start_date }}" loading="eager">
+      {% if show_description_override and not page.hide_description and not page.description %}
+      <div class="preview-notice" role="note">
+        <span class="preview-notice-icon" aria-hidden="true">i</span>
+        <span>Page description is empty</span>
+      </div>
+      {% endif %}
     </div>
 
     <aside class="editor-layout-panel" aria-label="Layout and page content">
-      <header class="layout-panel-header">
-        <h2>{{ page.start_date }}</h2>
-        <span class="muted">Page {{ page.page_index + 1 }}{% if pages %} of {{ pages | length }}{% endif %}</span>
-      </header>
-
       {% if show_map_override or show_calendar_override or show_description_override %}
       <details class="page-overrides">
         <summary>Page overrides</summary>

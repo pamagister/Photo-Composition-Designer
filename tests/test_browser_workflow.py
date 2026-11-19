@@ -276,7 +276,7 @@ def test_layout_change_and_page_navigation(live_server, browser_page):
     expect(page).to_have_url(
         f"{live_server['base_url']}/projects/{live_server['project_id']}?page={page_ids[1]}"
     )
-    expect(page.locator(".editor-canvas")).to_contain_text("2027-01-11")
+    expect(page.locator("#workspace-status")).to_contain_text("2027-01-11")
     expect(page.locator(".page-thumb.active")).to_have_attribute("aria-current", "page")
 
 

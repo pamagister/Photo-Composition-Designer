@@ -515,8 +515,21 @@ summary {
   background: var(--surface);
 }
 
+.page-thumb-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.page-thumb-number {
+  font-weight: 700;
+}
+
 .page-thumb-date {
-  font-weight: 600;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .editor-main {
@@ -569,6 +582,7 @@ summary {
 
 .page-preview {
   display: grid;
+  position: relative;
   min-width: 0;
   min-height: calc(100vh - 20rem);
   place-items: center;
@@ -584,6 +598,34 @@ summary {
   object-fit: contain;
 }
 
+.preview-notice {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(20, 22, 26, 0.82);
+  color: var(--text);
+  font-size: 0.78rem;
+  pointer-events: none;
+}
+
+.preview-notice-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #08111f;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .editor-layout-panel {
   display: flex;
   flex-direction: column;
@@ -591,19 +633,6 @@ summary {
   max-height: calc(100vh - 19rem);
   min-width: 0;
   overflow: auto;
-}
-
-.layout-panel-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin-bottom: 0.1rem;
-}
-
-.layout-panel-header h2 {
-  margin: 0;
-  font-size: 1rem;
 }
 
 .layout-change {

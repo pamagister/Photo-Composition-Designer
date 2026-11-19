@@ -296,3 +296,45 @@ def test_empty_slot_can_reuse_a_photo_when_none_are_unused(editor_client, tmp_pa
     assert "No unused photos." in page.text
     assert f'id="assign-photo-{slot_ids[1]}"' in page.text
     assert f'<option value="{photo_ids[0]}">' in page.text
+
+
+def _list_page_ids(project_id: int) -> list[int]:
+    """Return the page ids for a project from the isolated workspace."""
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            return [page.id for page in PageRepository(connection).list(project_id)]
+    finally:
+        database.close()
+
+
+def test_empty_description_shows_preview_overlay(editor_client, tmp_path):
+    # Page index 1 is not a title page, so its description is rendered and empty.
+    project_id, _, _, _ = _seed_project(tmp_path, page_count=2)
+    page_id = _list_page_ids(project_id)[1]
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+    assert 'class="preview-notice"' in page.text
+
+
+def test_preview_overlay_hidden_when_description_present(editor_client, tmp_path):
+    project_id, _, _, _ = _seed_project(tmp_path, page_count=2)
+    page_id = _list_page_ids(project_id)[1]
+    editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/description",
+        data={"description": "A short note."},
+    )
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert 'class="preview-notice"' not in page.text
+
+
+def test_preview_overlay_hidden_by_local_override(editor_client, tmp_path):
+    project_id, _, _, _ = _seed_project(tmp_path, page_count=2)
+    page_id = _list_page_ids(project_id)[1]
+    editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/overrides",
+        data={"hide_description": "1"},
+        headers={"HX-Request": "true"},
+    )
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert 'class="preview-notice"' not in page.text
