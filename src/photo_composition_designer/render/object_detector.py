@@ -20,6 +20,34 @@ class Detection:
     bbox: tuple[float, float, float, float]
 
 
+#: Bump when the fingerprint algorithm or detection cache layout changes so old
+#: cache entries are ignored instead of being trusted.
+CACHE_VERSION = 1
+
+#: Edge length of the square thumbnail used to fingerprint an image.
+_FINGERPRINT_SIZE = 32
+
+
+def compute_image_fingerprint(image: Image.Image) -> str:
+    """Compute a fast, stable fingerprint for an image.
+
+    Strategy: convert to RGB, downscale the *entire* image to a small square
+    thumbnail and hash the thumbnail bytes together with the original size.
+    The whole image contributes to the thumbnail, so a change anywhere in the
+    photo alters the fingerprint (unlike a crop-based prototype that ignores
+    most of the image). BILINEAR resampling is used because it is several times
+    faster than LANCZOS at this scale while still averaging the full image.
+    """
+    img_copy = image.convert("RGB")
+    thumb = img_copy.resize((_FINGERPRINT_SIZE, _FINGERPRINT_SIZE), Image.Resampling.BILINEAR)
+    m = hashlib.md5()
+    # Include the original size to reduce collisions for images that share the
+    # same downsampled content.
+    m.update(f"{image.size[0]}x{image.size[1]}".encode())
+    m.update(thumb.tobytes())
+    return m.hexdigest()
+
+
 class ObjectDetector:
     """
     YOLO ONNX wrapper.
@@ -92,7 +120,7 @@ class ObjectDetector:
         # current confidence threshold so that changes to the threshold
         # result in different cache entries.
         image_hash = self._compute_image_fingerprint(image)
-        cache_key = f"{image_hash}-{self.confidence_threshold:.3f}"
+        cache_key = f"{CACHE_VERSION}-{image_hash}-{self.confidence_threshold:.3f}"
 
         # Fast in-memory hit
         if cache_key in self._memory_cache:
@@ -234,28 +262,12 @@ class ObjectDetector:
         )
 
     def _compute_image_fingerprint(self, image: Image.Image) -> str:
-        """Compute a fast fingerprint for an image.
+        """Compute a fast, stable fingerprint for an image.
 
-        Strategy: convert to RGB, create a small thumbnail (32x32) and compute
-        MD5 over the thumbnail bytes combined with the original image size to
-        reduce collisions while remaining fast.
+        Delegates to :func:`compute_image_fingerprint` so the algorithm can be
+        tested without loading the ONNX model.
         """
-        # Use a small thumbnail to be fast but robust. Prefer the LANCZOS
-        # resampling filter when available; otherwise fall back to the
-        # default resize implementation.
-        thumb_size = (32, 32)
-        img_copy = image.convert("RGB")
-        if hasattr(Image, "Resampling"):
-            thumb = img_copy.resize(thumb_size, Image.Resampling.LANCZOS)
-        else:
-            thumb = img_copy.resize(thumb_size)
-
-        m = hashlib.md5()
-        # include original size to reduce collisions for images with same
-        # downsampled content
-        m.update(f"{image.size[0]}x{image.size[1]}".encode())
-        m.update(thumb.tobytes())
-        return m.hexdigest()
+        return compute_image_fingerprint(image)
 
 
 def build_object_detector(

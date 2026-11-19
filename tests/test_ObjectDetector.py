@@ -82,3 +82,39 @@ def test_object_detector_caching(temp_dir):
     detector3 = ObjectDetector(confidence_threshold=0.5, cache_dir=temp_dir)
     detector3.detect(dummy_image)
     assert mock_session.run.call_count == 2
+
+
+def test_fingerprint_is_stable_and_full_image():
+    """The fingerprint is deterministic and covers the whole image (P1-W03)."""
+    from photo_composition_designer.render.object_detector import compute_image_fingerprint
+
+    image = Image.new("RGB", (200, 150), (10, 20, 30))
+    assert compute_image_fingerprint(image) == compute_image_fingerprint(image)
+
+    # Same size but different content must produce a different fingerprint.
+    changed = Image.new("RGB", (200, 150), (10, 20, 30))
+    for x in range(0, 60):
+        for y in range(0, 60):
+            changed.putpixel((x, y), (250, 250, 250))
+    assert compute_image_fingerprint(changed) != compute_image_fingerprint(image)
+
+    # A different size must also change the fingerprint.
+    resized = image.resize((201, 150))
+    assert compute_image_fingerprint(resized) != compute_image_fingerprint(image)
+
+
+def test_fingerprint_detects_change_outside_centre():
+    """A same-size edit away from the centre changes the fingerprint.
+
+    This guards against a crop-based fingerprint that would reuse detections for
+    photos that differ only outside a sampled region.
+    """
+    from photo_composition_designer.render.object_detector import compute_image_fingerprint
+
+    base = Image.new("RGB", (300, 200), (0, 0, 0))
+    edited = base.copy()
+    draw = ImageDraw.Draw(edited)
+    # Paint a block in the bottom-right corner, far from the centre.
+    draw.rectangle((240, 150, 299, 199), fill=(255, 255, 255))
+
+    assert compute_image_fingerprint(base) != compute_image_fingerprint(edited)

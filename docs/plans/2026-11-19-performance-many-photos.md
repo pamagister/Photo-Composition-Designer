@@ -408,26 +408,45 @@ Phases are ordered by dependency and by value-per-risk.
 
 **Objective:** Cut per-render cost without changing any cache contract.
 
-- [ ] P1-W01: Prototype JPEG `Image.draft()` and BILINEAR downscaling only on
+- [x] P1-W01: Prototype JPEG `Image.draft()` and BILINEAR downscaling only on
   the preview-specific path. Do not change the shared `SlotAwareRenderer`
   default because that also changes export pixels. Keep only a strategy that
   shows a meaningful end-to-end win and passes visual comparisons across
   representative photos, crop modes, and 320/640 widths.
+  Outcome: measured end-to-end (render + 320/640 write) BILINEAR slot resize is
+  only 4-14% faster (14 slots 1.14x, 30 slots ~1.10x, 45 slots ~1.05x) and JPEG
+  `draft()` adds ~1% (review). Threading a preview-only resample filter through
+  the shared renderer would risk export parity for a marginal, inconsistent win,
+  so no strategy is retained here. The meaningful decode/resize win is the
+  draft-profile render (D1), implemented in P3-W01.
 - [x] P1-W02: Add `PhotoRepository.get_many` / `SourceRootRepository.get_many`
   and rewrite `build_input` to batch lookups. Add a repository test asserting
   one query per entity type via a trace callback.
-- [ ] P1-W03: Only replace the `ObjectDetector` fingerprint if a faster
+  (build_input is now a constant 6 queries — profile, layout row+slots,
+  assignments, photos, source roots — down from ~2 per slot / 94 at 45 slots.)
+- [x] P1-W03: Only replace the `ObjectDetector` fingerprint if a faster
   full-image or validated source-file identity is measured and proven not to
   reuse detections for changed photos. Bump `CACHE_VERSION`, preserve
   `clear_cache` semantics and test same-size edits outside any sampled region.
-- [ ] P1-W04: Hoist calendar-strip and description rendering behind a tiny
+  (Replaced the LANCZOS 32x32 thumbnail with BILINEAR: 8.48 -> 3.04 ms/img,
+  ~2.8x faster warm `detect()`, still a full-image downsample. Added
+  `CACHE_VERSION` to the cache key; regression tests prove a same-size edit in a
+  corner changes the fingerprint.)
+- [~] P1-W04: Hoist calendar-strip and description rendering behind a tiny
   per-composer memo keyed by their inputs (in-memory, last-N), only if repeat
   measurements show a worthwhile win. The map cache is separately gated in
   P3-W04.
+  Deferred: measured `prepare_collage` (calendar + description + map) is ~6 ms
+  of a ~162 ms page render (~3.6%) with no map. Composers are created per
+  request, so a per-composer memo rarely repeats. The process-level bounded LRU
+  that can actually persist is introduced for the map in P3-W04, where calendar/
+  description entries can be added if still justified.
 - [x] P1-W05: Close preview invalidation for changed source photos. When a
   scan changes the digest/mtime of an assigned photo, invalidate the affected
   page revisions (or include the photo identity in the preview key). Add a
   regression test where the photo bytes change but GPS and path do not.
+  (Scan now also compares mtime and file_size; digest is not populated by the
+  scanner. Regression test in `tests/test_page_rendering.py`.)
 
 **Acceptance criteria**
 
@@ -435,8 +454,14 @@ Phases are ordered by dependency and by value-per-risk.
   report actual render and write time separately. The current isolated
   BILINEAR result is about 24% faster and JPEG `draft()` added only about 1%
   on this run, so neither claim is accepted without the preview-path test.
+  (Preview-path measurement: BILINEAR only 4-14% end-to-end; not retained. The
+  draft-profile D1 win is delivered in Phase 3.)
 - `build_input` query count is constant (≤4) regardless of slot count.
+  (Constant at 6: profile, layout row+slots, assignments, photos, roots. It no
+  longer scales with slots; the remaining fixed overhead is one query per
+  entity type plus the two-query layout fetch.)
 - Warm `detect()` improves measurably without weakening cache identity.
+  (Fingerprint 8.48 -> 3.04 ms/img; full-image coverage; versioned key.)
 - All existing tests pass; no export output changes.
 
 **Phase gate:** Export behavior is unchanged; detection-key changes are
