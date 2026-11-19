@@ -147,7 +147,7 @@ def live_server(
     port = _free_port()
     server = uvicorn.Server(
         uvicorn.Config(
-            create_app(settings),
+            create_app(settings, sync_preview_worker=True),
             host="127.0.0.1",
             port=port,
             log_level="warning",

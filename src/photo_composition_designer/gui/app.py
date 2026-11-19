@@ -16,6 +16,10 @@ from fastapi.staticfiles import StaticFiles
 
 from photo_composition_designer.db.schema import WorkspaceDatabase, read_version
 from photo_composition_designer.gui.dependencies import DatabaseDependency
+from photo_composition_designer.gui.preview_worker import (
+    PreviewWorker,
+    SynchronousPreviewWorker,
+)
 from photo_composition_designer.gui.routes import (
     app_settings,
     editor,
@@ -34,16 +38,28 @@ from photo_composition_designer.gui.templating import BASE_DIR
 async def lifespan(app: FastAPI):
     """Initialize the workspace schema and close the startup connection."""
     app.state.database.connect()
+    worker = getattr(app.state, "preview_worker", None)
+    if worker is not None:
+        worker.start()
     yield
+    if worker is not None:
+        worker.stop()
     app.state.database.close()
 
 
-def create_app(settings: GuiSettings | None = None) -> FastAPI:
+def create_app(
+    settings: GuiSettings | None = None,
+    *,
+    sync_preview_worker: bool = False,
+) -> FastAPI:
     """Build the local FastAPI application.
 
     Args:
         settings: Optional web settings. Defaults are resolved from the
             platform-specific application directories.
+        sync_preview_worker: If ``True``, use a synchronous preview worker
+            that renders inline. Tests use this for deterministic timing;
+            production uses the background :class:`PreviewWorker`.
     """
     settings = settings or load_gui_settings()
     settings.ensure_directories()
@@ -56,6 +72,18 @@ def create_app(settings: GuiSettings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.database = WorkspaceDatabase(settings.workspace_path())
     app.state.export_paths = set()
+    if sync_preview_worker:
+        app.state.preview_worker = SynchronousPreviewWorker(
+            app.state.database,
+            preview_dir=settings.preview_dir(),
+            anniversaries_path=settings.anniversaries_path,
+        )
+    else:
+        app.state.preview_worker = PreviewWorker(
+            app.state.database,
+            preview_dir=settings.preview_dir(),
+            anniversaries_path=settings.anniversaries_path,
+        )
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
     app.include_router(project_archive.router)
     app.include_router(projects.router)

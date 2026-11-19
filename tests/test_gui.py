@@ -27,7 +27,7 @@ def gui_settings(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client(gui_settings):
-    with TestClient(create_app(gui_settings)) as test_client:
+    with TestClient(create_app(gui_settings, sync_preview_worker=True)) as test_client:
         yield test_client
 
 

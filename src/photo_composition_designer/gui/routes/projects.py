@@ -187,9 +187,7 @@ def _project_context(
             anniversaries_path=settings.anniversaries_path,
         )
         thumb_cache_keys = {
-            pg.id: preview_cache_key_for(
-                rendering, connection, pg, max_width=320, mode="preview"
-            )
+            pg.id: preview_cache_key_for(rendering, connection, pg, max_width=320, mode="preview")
             for pg in pages
         }
 
@@ -726,6 +724,7 @@ def preview_asset(
 
 @router.get("/projects/{project_id}/preview", response_model=None)
 def preview_project(
+    request: Request,
     project_id: int,
     service: ProjectServiceDependency,
     database: DatabaseDependency,
@@ -733,22 +732,27 @@ def preview_project(
     detector: ObjectDetectorDependency,
     page: Annotated[int | None, Query(description="Page whose large preview to refresh.")] = None,
 ) -> RedirectResponse:
-    """Render cached previews and open the selected page."""
+    """Enqueue cached previews and open the selected page.
+
+    Jobs are submitted to the background worker so the request returns
+    promptly. The selected page's large preview (640 px) gets high priority;
+    the other pages' thumbnails (320 px) get background priority. The
+    worker coalesces duplicates and renders off the request thread.
+    """
+    del detector  # The worker uses the detector configured at startup.
     aggregate = _load_project(service, project_id)
     if not aggregate.pages:
         return _error_redirect(project_id, "this project has no pages to preview")
-    rendering = ProjectRenderingService(
-        database,
-        preview_dir=settings.preview_dir(),
-        anniversaries_path=settings.anniversaries_path,
-        object_detector=detector,
-    )
+    worker = getattr(request.app.state, "preview_worker", None)
     pages_by_id = {candidate.id: candidate for candidate in aggregate.pages}
     selected = pages_by_id.get(page) if page is not None else None
     target = selected or aggregate.pages[0]
-    for candidate in aggregate.pages:
-        rendering.render_preview(project_id, candidate.id, max_width=320)
-    rendering.render_preview(project_id, target.id)
+    if worker is not None:
+        for candidate in aggregate.pages:
+            worker.submit(project_id, candidate.id, max_width=320, priority=1)
+        # The selected page's large preview is high priority so the visible
+        # page catches up before the background thumbnails.
+        worker.submit(project_id, target.id, max_width=640, priority=0)
     return RedirectResponse(
         f"/projects/{project_id}?page={target.id}&previewed=1",
         status_code=303,
@@ -1022,7 +1026,12 @@ def apply_distribution(
 
     A supplied digest must match the freshly computed proposal. This rejects
     stale previews and makes a repeated confirmation a no-op.
+
+    Preview jobs for all pages are enqueued to the background worker so the
+    request returns promptly; the worker coalesces duplicates and renders
+    off the request thread.
     """
+    del detector  # The worker uses the detector configured at startup.
     from photo_composition_designer.project.distribution import DistributionService
 
     distribution = DistributionService(database)
@@ -1061,14 +1070,12 @@ def apply_distribution(
         distribution.apply(project_id, proposal)
     except (ValueError, ProjectError) as exc:
         return response(error=str(exc))
-    rendering = ProjectRenderingService(
-        database,
-        preview_dir=settings.preview_dir(),
-        anniversaries_path=settings.anniversaries_path,
-        object_detector=detector,
-    )
-    for page in PageRepository(database.connect()).list(project_id):
-        rendering.render_preview(project_id, page.id, max_width=320)
+    # Enqueue background preview jobs for all pages. The request returns
+    # promptly; the worker renders off the request thread.
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is not None:
+        for page in PageRepository(database.connect()).list(project_id):
+            worker.submit(project_id, page.id, max_width=320, priority=1)
     return response(notice="Distribution applied.")
 
 

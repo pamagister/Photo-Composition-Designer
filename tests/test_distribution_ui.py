@@ -24,7 +24,7 @@ from photo_composition_designer.project.repositories import (
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
-    return TestClient(create_app(GuiSettings()))
+    return TestClient(create_app(GuiSettings(), sync_preview_worker=True))
 
 
 def _write_photo(path: Path, color: tuple[int, int, int] = (255, 0, 0)) -> None:

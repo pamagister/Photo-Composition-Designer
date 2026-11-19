@@ -25,7 +25,7 @@ from photo_composition_designer.project.services import ProjectService
 def editor_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
-    app = create_app(GuiSettings())
+    app = create_app(GuiSettings(), sync_preview_worker=True)
     return TestClient(app)
 
 

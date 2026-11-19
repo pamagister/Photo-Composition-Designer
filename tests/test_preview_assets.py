@@ -86,11 +86,13 @@ def _cache_key(
 def test_preview_asset_serves_immutable(tmp_path, monkeypatch):
     monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
-    client = TestClient(create_app(GuiSettings()))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
     project_id, page_id = _seed(tmp_path)
 
     # Render the preview to create the file on disk.
-    rendered = client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320})
+    rendered = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320}
+    )
     assert rendered.status_code == 200
     assert rendered.headers["cache-control"] == "no-cache"
 
@@ -107,7 +109,7 @@ def test_preview_asset_serves_immutable(tmp_path, monkeypatch):
 def test_preview_asset_returns_404_when_file_absent(tmp_path, monkeypatch):
     monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
-    client = TestClient(create_app(GuiSettings()))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
     project_id, page_id = _seed(tmp_path)
 
     # No preview has been rendered yet, so the asset route must not render.
@@ -119,7 +121,7 @@ def test_preview_asset_returns_404_when_file_absent(tmp_path, monkeypatch):
 def test_preview_asset_rejects_invalid_key(tmp_path, monkeypatch):
     monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
-    client = TestClient(create_app(GuiSettings()))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
     project_id, _ = _seed(tmp_path)
 
     # A path-traversal attempt must be rejected before touching the filesystem.
@@ -134,7 +136,7 @@ def test_preview_asset_old_revision_serves_original_bytes(tmp_path, monkeypatch)
     original complete bytes after a new revision is rendered."""
     monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
-    client = TestClient(create_app(GuiSettings()))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
     project_id, page_id = _seed(tmp_path)
 
     # Render the preview at the initial revision.
@@ -146,9 +148,7 @@ def test_preview_asset_old_revision_serves_original_bytes(tmp_path, monkeypatch)
     database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
     try:
         with database.connect() as connection:
-            photo_id = connection.execute(
-                "SELECT id FROM photos ORDER BY id LIMIT 1"
-            ).fetchone()[0]
+            photo_id = connection.execute("SELECT id FROM photos ORDER BY id LIMIT 1").fetchone()[0]
             layout = connection.execute(
                 "SELECT layout_id FROM pages WHERE id = ?", (page_id,)
             ).fetchone()

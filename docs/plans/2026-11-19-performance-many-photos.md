@@ -536,11 +536,21 @@ key-shape change.
   the exporter keep the full profile. Regression test
   `test_draft_profile_derivation_covers_preview_width` proves the draft covers
   320/640 and never exceeds full DPI.)
-- [ ] P3-W02: Implement D3 with an app-lifespan-owned in-process worker and
+- [x] P3-W02: Implement D3 with an app-lifespan-owned in-process worker and
   coalescing/priority for visible-page previews versus background page refresh.
   Convert `_render_project_previews`, `preview_project`, and
   `apply_distribution` so request handlers never render every page inline;
   cover the single-page assign/replace/swap/crop flow as well.
+  (Added `gui/preview_worker.py`: `PreviewWorker` (single background thread,
+  priority queue, coalescing via a pending set, per-job error capture) and
+  `SynchronousPreviewWorker` (test-only inline renderer). The worker is
+  created in `create_app` and started/stopped in the lifespan.
+  `_render_project_previews`, `preview_project`, and `apply_distribution` now
+  submit jobs instead of rendering inline. The assign/replace/swap/crop/live
+  routes enqueue a high-priority job for the affected page. Tests use
+  `sync_preview_worker=True` for deterministic timing.
+  `tests/test_preview_worker.py` guards coalescing, priority order, start/stop,
+  and error capture.)
 - [ ] P3-W03: Add refreshing/ready/error client state for the visible preview.
   Ensure stale bytes are not presented as current and failures are surfaced;
   retain current lazy loading for page-list previews.

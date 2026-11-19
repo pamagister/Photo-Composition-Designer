@@ -14,7 +14,6 @@ from photo_composition_designer.gui.dependencies import ObjectDetectorDependency
 from photo_composition_designer.gui.routes.projects import _canvas_response
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.editing import PageEditingService
-from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     PageRepository,
@@ -57,22 +56,44 @@ def _has_unused_photos(database: WorkspaceDatabase, project_id: int) -> bool:
     return any(photo.id not in used for photo in available)
 
 
+def _enqueue_preview(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    *,
+    max_width: int = 640,
+    priority: int = 0,
+) -> None:
+    """Enqueue a preview render job for one page.
+
+    Priority 0 is for the visible page (processed first); priority 1 is
+    for background page refresh. If no worker is available (e.g. a unit
+    test that bypasses the app lifespan), the job is silently skipped;
+    production always has a worker.
+    """
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is not None:
+        worker.submit(project_id, page_id, max_width=max_width, priority=priority)
+
+
 def _render_project_previews(
     request: Request,
     database: WorkspaceDatabase,
     project_id: int,
     object_detector: ObjectDetector | None = None,
 ) -> None:
-    """Render reduced previews for all pages after completing photo allocation."""
-    settings = request.app.state.settings
-    rendering = ProjectRenderingService(
-        database,
-        preview_dir=settings.preview_dir(),
-        anniversaries_path=settings.anniversaries_path,
-        object_detector=object_detector,
-    )
+    """Enqueue reduced previews for all pages after completing photo allocation.
+
+    Jobs are submitted to the background worker with background priority
+    so the request returns promptly. The worker coalesces duplicates and
+    renders off the request thread.
+    """
+    del object_detector  # The worker uses the detector configured at startup.
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is None:
+        return
     for page in PageRepository(database.connect()).list(project_id):
-        rendering.render_preview(project_id, page.id, max_width=320)
+        worker.submit(project_id, page.id, max_width=320, priority=1)
 
 
 @router.post("/projects/{project_id}/pages/{page_id}/assign")
@@ -92,6 +113,9 @@ def assign_photo(
         editing.assign_to_empty_slot(project_id, page_id, slot_id, photo_id)
     except ProjectError as error:
         return _error(project_id, str(error))
+    # Enqueue a high-priority preview refresh for the affected page so the
+    # visible preview catches up in the background.
+    _enqueue_preview(request, project_id, page_id, max_width=640, priority=0)
     if had_unused_photos and not _has_unused_photos(database, project_id):
         _render_project_previews(request, database, project_id, detector)
     return _page_fragment(request, project_id, page_id, "Photo assigned.")
@@ -175,6 +199,8 @@ def replace_photo(
         editing.replace(project_id, page_id, slot_id, photo_id)
     except ProjectError as error:
         return _error(project_id, str(error))
+    # Enqueue a high-priority preview refresh for the affected page.
+    _enqueue_preview(request, project_id, page_id, max_width=640, priority=0)
     if had_unused_photos and not _has_unused_photos(database, project_id):
         _render_project_previews(request, database, project_id, detector)
     return _page_fragment(request, project_id, page_id, "Photo replaced.")
@@ -192,6 +218,8 @@ def swap_photos(
     database = _open_database(request)
     editing = PageEditingService(database)
     editing.swap(project_id, page_id, slot_a, slot_b)
+    # Enqueue a high-priority preview refresh for the affected page.
+    _enqueue_preview(request, project_id, page_id, max_width=640, priority=0)
     return _page_fragment(request, project_id, page_id, "Photos swapped.")
 
 
@@ -219,6 +247,8 @@ def set_crop(
         )
     except ProjectError as error:
         return _error(project_id, str(error))
+    # Enqueue a high-priority preview refresh for the affected page.
+    _enqueue_preview(request, project_id, page_id, max_width=640, priority=0)
     return _page_fragment(request, project_id, page_id, "Crop updated.")
 
 
@@ -239,6 +269,10 @@ def set_crop_live(
     revision in ``X-Page-Revision`` plus an ``HX-Trigger: pcd:crop-updated``
     header so the client can refresh the preview image without a full canvas
     re-render.
+
+    A high-priority preview job is enqueued so the background worker
+    re-renders the page at the new revision; the client polls the preview
+    endpoint until the new bytes are available.
     """
     database = _open_database(request)
     editing = PageEditingService(database)
@@ -256,6 +290,7 @@ def set_crop_live(
         )
     except ProjectError as error:
         return _error(project_id, str(error))
+    _enqueue_preview(request, project_id, page_id, max_width=640, priority=0)
     with database.connect() as connection:
         page = PageRepository(connection).get(page_id)
         revision = page.render_revision if page is not None else 0
