@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
@@ -54,6 +56,41 @@ def profile_from_project(
     if project.output_profile:
         return OutputProfile.from_dict(project.output_profile)
     return default or OutputProfile.default()
+
+
+#: Oversampling factor for draft previews. The draft page is rendered at a
+#: working resolution that covers the requested preview width at this many
+#: device pixels, so the preview stays crisp on high-DPI displays without
+#: paying for the full 300 dpi render.
+DRAFT_OVERSAMPLE = 1.5
+
+
+def draft_dpi(profile: OutputProfile, max_width: int) -> int:
+    """Return the DPI that covers ``max_width`` at ~1.5x device pixels.
+
+    The draft profile scales only ``size.dpi`` (D1). The result is the
+    smallest integer DPI whose rendered page width is at least
+    ``max_width * DRAFT_OVERSAMPLE`` pixels, capped at the full profile
+    DPI so a draft never renders above full resolution.
+    """
+    width_mm = profile.size.width
+    if width_mm <= 0 or max_width <= 0:
+        return profile.size.dpi
+    target_px = max_width * DRAFT_OVERSAMPLE
+    draft = math.ceil(target_px * 25.4 / width_mm)
+    return min(draft, profile.size.dpi)
+
+
+def draft_profile(profile: OutputProfile, max_width: int) -> OutputProfile:
+    """Return a preview-only profile with DPI scaled to cover ``max_width``.
+
+    Only ``size.dpi`` changes; every other profile value (page geometry,
+    calendar, style, geo, layout) is preserved so the draft render matches
+    the full render's composition. ``profile_hash()`` differs from the full
+    profile, so the preview cache key automatically distinguishes draft
+    from full renders without a key-shape change.
+    """
+    return replace(profile, size=replace(profile.size, dpi=draft_dpi(profile, max_width)))
 
 
 def layout_template(definition: LayoutDefinition) -> LayoutTemplate:
@@ -270,7 +307,19 @@ class ProjectRenderingService:
         max_width: int = DEFAULT_PREVIEW_WIDTH,
         mode: str = "preview",
     ) -> Path:
-        """Render a cached reduced-resolution preview for one page."""
+        """Render a cached reduced-resolution preview for one page.
+
+        The preview is rendered at a draft profile (reduced DPI) that covers
+        the requested ``max_width`` at ~1.5x device pixels (D1). This cuts
+        both the JPEG decode and the resize cost in the slot renderer while
+        keeping the preview visually close to the full render. The cache key
+        is derived from the draft profile's hash, so a draft render is
+        automatically distinguished from a full render without a key-shape
+        change.
+
+        ``render_page_image`` and the exporter are untouched: they keep the
+        full profile and pixel-exact output.
+        """
         if self._preview_dir is None:
             raise RuntimeError("preview directory is not configured")
 
@@ -280,12 +329,17 @@ class ProjectRenderingService:
             raise ProjectNotFoundError(f"page {page_id} does not exist")
         profile = self.profile_for(connection, project_id)
 
-        key = self.preview_cache_key(page, profile, max_width=max_width, mode=mode)
+        # Derive the draft profile from the full profile and the requested
+        # preview width. The key uses the draft profile's hash so a draft
+        # render is distinguished from a full render.
+        draft = draft_profile(profile, max_width)
+        key = self.preview_cache_key(page, draft, max_width=max_width, mode=mode)
         target = self._preview_dir / "pages" / f"{key}.jpg"
         if target.is_file():
             return target
 
-        image = self.render_page_image(connection, page)
+        render_input = replace(self.build_input(connection, page), output_profile=draft)
+        image = self._composer.render(render_input)
         write_preview(
             image,
             target,
@@ -305,17 +359,23 @@ def preview_cache_key_for(
 ) -> str:
     """Compute a preview cache key for a page using an existing service and connection.
 
+    The key is derived from the draft profile (reduced DPI) that
+    ``render_preview`` uses, so the key matches the actual rendered file.
     This is a convenience helper for call sites that already have a
     :class:`ProjectRenderingService` and an open database connection but only
     need the cache key (e.g. to build an immutable asset URL).
     """
     profile = rendering.profile_for(connection, page.project_id)
-    return rendering.preview_cache_key(page, profile, max_width=max_width, mode=mode)
+    draft = draft_profile(profile, max_width)
+    return rendering.preview_cache_key(page, draft, max_width=max_width, mode=mode)
 
 
 __all__ = [
     "DEFAULT_PREVIEW_WIDTH",
+    "DRAFT_OVERSAMPLE",
     "ProjectRenderingService",
+    "draft_dpi",
+    "draft_profile",
     "layout_template",
     "preview_cache_key_for",
     "profile_from_project",

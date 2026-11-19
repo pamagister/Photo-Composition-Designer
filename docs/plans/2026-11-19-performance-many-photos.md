@@ -525,10 +525,17 @@ key-shape change.
 
 **Objective:** Make editing and bulk actions feel immediate.
 
-- [ ] P3-W01: Implement D1 (draft render) in `ProjectRenderingService`: derive a
+- [x] P3-W01: Implement D1 (draft render) in `ProjectRenderingService`: derive a
   draft profile from the project profile and the requested preview width, render
   at that working resolution, and write the preview directly. `render_page_image`
   and the exporter are untouched.
+  (Added `draft_dpi` / `draft_profile` helpers: scale only `size.dpi` to cover
+  `max_width` at 1.5x device pixels, capped at the full profile DPI.
+  `render_preview` now derives the draft profile, keys the cache by the draft
+  profile's hash, and renders with the draft profile. `render_page_image` and
+  the exporter keep the full profile. Regression test
+  `test_draft_profile_derivation_covers_preview_width` proves the draft covers
+  320/640 and never exceeds full DPI.)
 - [ ] P3-W02: Implement D3 with an app-lifespan-owned in-process worker and
   coalescing/priority for visible-page previews versus background page refresh.
   Convert `_render_project_previews`, `preview_project`, and

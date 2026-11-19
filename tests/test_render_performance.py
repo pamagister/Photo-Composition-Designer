@@ -283,6 +283,34 @@ def test_draft_profile_only_scales_dpi(tmp_path):
     assert draft.profile_hash() != profile.profile_hash()
 
 
+def test_draft_profile_derivation_covers_preview_width():
+    """``draft_profile`` scales only ``size.dpi`` to cover ``max_width`` at 1.5x."""
+    from photo_composition_designer.project.rendering import draft_dpi, draft_profile
+
+    profile = OutputProfile.default()  # 216x154 mm @ 300 dpi
+    for max_width in (320, 640):
+        draft = draft_profile(profile, max_width)
+        # Only DPI changes.
+        assert draft.size.width == profile.size.width
+        assert draft.size.height == profile.size.height
+        assert draft.size.calendar_height == profile.size.calendar_height
+        assert draft.calendar == profile.calendar
+        assert draft.style == profile.style
+        assert draft.geo == profile.geo
+        assert draft.layout == profile.layout
+        # The draft DPI is capped at the full DPI and covers the preview width.
+        assert draft.size.dpi <= profile.size.dpi
+        rendered_width = round(profile.size.width * draft.size.dpi / 25.4)
+        assert rendered_width >= max_width
+        # The key distinguishes draft from full renders.
+        assert draft.profile_hash() != profile.profile_hash()
+
+    # A wider preview needs a higher DPI (up to the cap).
+    assert draft_dpi(profile, 640) >= draft_dpi(profile, 320)
+    # A very wide preview never exceeds the full DPI.
+    assert draft_dpi(profile, 10_000) == profile.size.dpi
+
+
 # ---------------------------------------------------------------------------
 # build_input batches its lookups (D7)
 # ---------------------------------------------------------------------------
