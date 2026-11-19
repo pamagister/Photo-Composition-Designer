@@ -87,7 +87,7 @@
       </details>
 
       {% if page.layout_id %}
-      <div class="slot-grid" style="--slot-columns: {{ slot_count | default(2) }};">
+      <div class="slot-grid" style="--slot-columns: {{ [slot_count, 3] | min }};">
         {% for slot in slots %}
         {% set assignment = slot_assignment_map.get(slot.id) %}
         {% set photo = photos_by_id.get(assignment.photo_id) if assignment else None %}

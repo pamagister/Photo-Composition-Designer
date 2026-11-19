@@ -263,6 +263,32 @@ def test_page_overrides_persist(client):
     assert response.text.count("checked") >= 3
 
 
+def _slot_grid_columns(client: TestClient, layout_key: str) -> str | None:
+    """Create a one-page project with a layout and return its grid column count."""
+    response = client.post(
+        "/projects",
+        data={
+            "name": "Tiled Calendar",
+            "page_count": "1",
+            "start_date": "2027-01-04",
+            "layout_key": layout_key,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    project_page = client.get(urlsplit(response.headers["location"]).path)
+    assert project_page.status_code == 200
+    match = re.search(r"--slot-columns:\s*(\d+);", project_page.text)
+    return match.group(1) if match else None
+
+
+def test_slot_grid_caps_columns_at_three(client):
+    # A five-slot layout would render every slot in one row without the cap.
+    assert _slot_grid_columns(client, "five_two_three") == "3"
+    # Two-slot layouts are unaffected.
+    assert _slot_grid_columns(client, "two_columns") == "2"
+
+
 def test_global_layout_editor_saves_new_versions(client):
     layout_data = """[
       {"key":"left","x":0,"y":0,"width":0.5,"height":1},
