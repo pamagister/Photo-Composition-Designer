@@ -289,6 +289,23 @@ def test_slot_grid_caps_columns_at_three(client):
     assert _slot_grid_columns(client, "two_columns") == "2"
 
 
+def test_populate_button_shows_when_slots_are_empty(client):
+    response = client.post(
+        "/projects",
+        data={
+            "name": "Fill Calendar",
+            "page_count": "1",
+            "start_date": "2027-01-04",
+            "layout_key": "five_two_three",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    project_page = client.get(urlsplit(response.headers["location"]).path)
+    assert project_page.status_code == 200
+    assert "Fill empty slots with unused photos" in project_page.text
+
+
 def test_global_layout_editor_saves_new_versions(client):
     layout_data = """[
       {"key":"left","x":0,"y":0,"width":0.5,"height":1},

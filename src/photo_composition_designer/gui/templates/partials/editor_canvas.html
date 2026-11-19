@@ -86,6 +86,14 @@
         <div id="layout-change-preview" aria-live="polite"></div>
       </details>
 
+      {% if slots and (slots | length) > (assignments | length) %}
+      <button type="button"
+              class="populate-button"
+              hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/populate"
+              hx-target="closest .editor-canvas"
+              hx-swap="outerHTML">Fill empty slots with unused photos</button>
+      {% endif %}
+
       {% if page.layout_id %}
       <div class="slot-grid" style="--slot-columns: {{ [slot_count, 3] | min }};">
         {% for slot in slots %}

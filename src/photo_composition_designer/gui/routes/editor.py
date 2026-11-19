@@ -97,6 +97,26 @@ def assign_photo(
     return _page_fragment(request, project_id, page_id, "Photo assigned.")
 
 
+@router.post("/projects/{project_id}/pages/{page_id}/populate")
+def populate_page(
+    request: Request,
+    project_id: int,
+    page_id: int,
+) -> HTMLResponse:
+    """Fill empty slots with unused photos in inventory order."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        assigned = editing.populate(project_id, page_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    if assigned:
+        message = f"Populated {assigned} slot(s)."
+    else:
+        message = "No empty slots or no unused photos to fill."
+    return _page_fragment(request, project_id, page_id, message)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/remove")
 def remove_photo(
     request: Request,

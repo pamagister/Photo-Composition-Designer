@@ -136,6 +136,46 @@ class PageEditingService:
             )
             PageRepository(connection).increment_revision(page_id)
 
+    def populate(self, project_id: int, page_id: int) -> int:
+        """Assign unused available photos to the page's empty slots.
+
+        Slots are filled in layout order with photos that are available and not
+        assigned anywhere in the project, in inventory (``relative_path``) order.
+        Occupied slots are left untouched. Returns the number of photos assigned.
+        """
+        with self._database.transaction() as connection:
+            page, layout = self._page_and_layout(connection, page_id)
+            assignments = AssignmentRepository(connection)
+            occupied_slots = {
+                assignment.slot_id for assignment in assignments.list_by_page(page_id)
+            }
+            empty_slots = sorted(
+                (slot for slot in layout.slots if slot.id not in occupied_slots),
+                key=lambda slot: slot.position,
+            )
+            if not empty_slots:
+                return 0
+
+            used_photo_ids = {
+                assignment.photo_id for assignment in assignments.list_by_project(project_id)
+            }
+            candidates = [
+                photo
+                for photo in PhotoRepository(connection).list(project_id, available_only=True)
+                if photo.id not in used_photo_ids
+            ]
+            pairs = list(zip(empty_slots, candidates, strict=False))
+            for slot, photo in pairs:
+                assignments.assign(
+                    project_id=project_id,
+                    page_id=page_id,
+                    slot_id=slot.id,
+                    photo_id=photo.id,
+                )
+            if pairs:
+                PageRepository(connection).increment_revision(page_id)
+            return len(pairs)
+
     def remove(self, project_id: int, page_id: int, slot_id: int) -> bool:
         """Clear a slot and return the photo to the unused pool."""
         with self._database.transaction() as connection:
