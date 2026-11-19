@@ -438,14 +438,25 @@ def test_keyboard_crop_adjusts_focus_and_refreshes_preview(live_server, browser_
     preview = page.locator(".page-preview-image")
     initial_src = preview.get_attribute("src")
 
-    # Arrow keys nudge the focal point; the preview revision must change.
-    page.keyboard.press("ArrowRight")
-    page.keyboard.press("ArrowRight")
+    # Zoom slightly before panning; at 1x there is no crop area to move.
+    page.keyboard.press("+")
+    expect(zoom).to_have_value(f"{initial_zoom + 0.02:.2f}")
     expect(preview).not_to_have_attribute("src", initial_src)
+
+    # Arrow keys nudge the focal point; the preview revision must change.
+    zoom_src = preview.get_attribute("src")
+    page.keyboard.press("ArrowRight")
+    page.keyboard.press("ArrowRight")
+    expect(preview).not_to_have_attribute("src", zoom_src)
     assert float(focus_x.input_value()) > initial_focus
 
     zoom_src = preview.get_attribute("src")
     page.keyboard.press("+")
+    expect(preview).not_to_have_attribute("src", zoom_src)
+    assert float(zoom.input_value()) == pytest.approx(initial_zoom + 0.04)
+
+    zoom_src = preview.get_attribute("src")
+    page.keyboard.press("-")
     expect(preview).not_to_have_attribute("src", zoom_src)
     assert float(zoom.input_value()) == pytest.approx(initial_zoom + 0.02)
 
@@ -460,6 +471,38 @@ def test_keyboard_crop_adjusts_focus_and_refreshes_preview(live_server, browser_
     before_field = focus_x.input_value()
     page.keyboard.press("ArrowRight")
     assert focus_x.input_value() == before_field
+
+
+def test_keyboard_pan_at_minimal_zoom_reaches_and_stops_at_crop_edge(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    zone = page.locator('.slot-dropzone[data-slot-key="slot_0"]')
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(zone)
+    if "selected" not in (zone.get_attribute("class") or ""):
+        zone.click()
+    expect(zone).to_have_class("slot-dropzone occupied selected")
+
+    slot = _slot(page, "slot_0")
+    focus_x = slot.locator('input[name="crop_focus_x"]')
+    focus_y = slot.locator('input[name="crop_focus_y"]')
+    preview = page.locator(".page-preview-image")
+    initial_src = preview.get_attribute("src")
+
+    # At 1x the source is wider than this slot, so horizontal panning remains
+    # possible while vertical movement has no uncropped source area to reveal.
+    for _ in range(25):
+        page.keyboard.press("ArrowLeft")
+    assert float(focus_x.input_value()) == pytest.approx(0.0)
+    assert float(focus_y.input_value()) == pytest.approx(0.5)
+    expect(preview).not_to_have_attribute("src", initial_src)
+
+    for _ in range(50):
+        page.keyboard.press("ArrowRight")
+    assert float(focus_x.input_value()) == pytest.approx(1.0)
+    page.keyboard.press("ArrowRight")
+    assert float(focus_x.input_value()) == pytest.approx(1.0)
 
 
 def test_layout_change_and_page_navigation(live_server, browser_page):

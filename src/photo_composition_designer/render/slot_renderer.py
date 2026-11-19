@@ -120,13 +120,19 @@ class SlotAwareRenderer:
             if self._object_detector is not None:
                 detections = self._object_detector.detect(image)
 
-            cropped, _box = self._smart_crop.crop(
+            crop_box = self._smart_crop.crop_box(
                 image=image,
                 target_width=slot_width,
                 target_height=slot_height,
                 detections=detections,
             )
-            cropped = self._apply_crop_overrides(cropped, assignment)
+            cropped = self._apply_crop_overrides(
+                image,
+                crop_box,
+                assignment,
+                target_width=slot_width,
+                target_height=slot_height,
+            )
             if rounded_corners and spacing > 0:
                 mask = Image.new("L", cropped.size, 0)
                 radius = min(spacing, cropped.width // 2, cropped.height // 2)
@@ -142,25 +148,39 @@ class SlotAwareRenderer:
         return page
 
     @staticmethod
-    def _apply_crop_overrides(image: Image.Image, assignment: SlotPhoto) -> Image.Image:
+    def _apply_crop_overrides(
+        image: Image.Image,
+        crop_box: tuple[int, int, int, int],
+        assignment: SlotPhoto,
+        *,
+        target_width: int,
+        target_height: int,
+    ) -> Image.Image:
         """Apply per-assignment zoom and focal-point overrides to a cropped image.
 
-        ``crop_zoom`` of 1.0 and a focal point of ``(0.5, 0.5)`` leave the
-        smart-cropped image unchanged. Values are clamped so the crop window
-        always stays inside the image.
+        A focal point of ``(0.5, 0.5)`` preserves the smart crop. Other values
+        pan the crop window within the source image, including areas discarded
+        by the smart crop. Values are clamped so the crop stays inside the image.
         """
         zoom = assignment.crop_zoom if assignment.crop_zoom and assignment.crop_zoom > 0 else 1.0
         focus_x = min(1.0, max(0.0, assignment.crop_focus_x))
         focus_y = min(1.0, max(0.0, assignment.crop_focus_y))
-        if abs(zoom - 1.0) < 1e-6 and abs(focus_x - 0.5) < 1e-6 and abs(focus_y - 0.5) < 1e-6:
-            return image
+        base_left, base_top, base_right, base_bottom = crop_box
+        base_width = base_right - base_left
+        base_height = base_bottom - base_top
+        crop_width = max(1, min(image.width, int(round(base_width / zoom))))
+        crop_height = max(1, min(image.height, int(round(base_height / zoom))))
+        centered_left = base_left + (base_width - crop_width) / 2
+        centered_top = base_top + (base_height - crop_height) / 2
 
-        width, height = image.size
-        crop_width = max(1, min(width, int(round(width / zoom))))
-        crop_height = max(1, min(height, int(round(height / zoom))))
-        left = int(round(focus_x * width - crop_width / 2))
-        top = int(round(focus_y * height - crop_height / 2))
-        left = max(0, min(left, width - crop_width))
-        top = max(0, min(top, height - crop_height))
+        def position(start: float, base_start: float, max_start: int, focus: float) -> int:
+            if focus < 0.5:
+                value = start + (base_start - start) * (focus * 2)
+            else:
+                value = base_start + (max_start - base_start) * ((focus - 0.5) * 2)
+            return int(round(value))
+
+        left = position(0, centered_left, image.width - crop_width, focus_x)
+        top = position(0, centered_top, image.height - crop_height, focus_y)
         cropped = image.crop((left, top, left + crop_width, top + crop_height))
-        return cropped.resize((width, height), Image.Resampling.LANCZOS)
+        return cropped.resize((target_width, target_height), Image.Resampling.LANCZOS)

@@ -94,9 +94,11 @@ control surface.
 * **Remove** – press the slot's remove button.
 * **Crop** – open **Crop** in an occupied slot to adjust zoom and focal point. You
   can also click a dropzone (or its slot) to select it and use the arrow keys to
-  nudge the focal point and `+`/`-` to zoom; the preview refreshes live. Arrow
-  keys inside text fields do not change the crop. Crop settings are assignment
-  properties; the source file is untouched.
+  pan in 2% steps and `+`/`-` to zoom in 2% steps; at 1x, panning is available
+  only along edges already cropped by the slot, and stops at the source image
+  boundary. The preview refreshes live. Arrow keys inside text fields do not
+  change the crop. Crop settings are assignment properties; the source file is
+  untouched.
 * **Description** – edit the page description at the bottom of the canvas.
 * **Page overrides** – the collapsible **Page overrides** area in the toolbar
   can hide the local map, calendar strip and description for one page. The

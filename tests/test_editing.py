@@ -858,7 +858,7 @@ def test_crop_live_persists_clamps_and_returns_revision(editor_client, tmp_path)
     finally:
         database.close()
     assert assignment.crop_zoom == pytest.approx(1.5)
-    # Focus values are clamped into [0, 1].
+    # Focus values are normalized crop positions; the renderer applies image bounds.
     assert assignment.crop_focus_x == pytest.approx(1.0)
     assert assignment.crop_focus_y == pytest.approx(0.0)
 

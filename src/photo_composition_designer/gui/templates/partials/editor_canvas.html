@@ -125,6 +125,10 @@
         <div class="slot {% if photo %}occupied{% else %}empty{% endif %}"
              data-slot-id="{{ slot.id }}"
              data-slot-key="{{ slot.slot_key }}"
+             {% if photo %}
+             data-crop-source-ratio="{{ photo.width / photo.height }}"
+             data-crop-target-ratio="{{ (profile.page_size_px()[0] * slot.width) / (profile.page_size_px()[1] * slot.height) }}"
+             {% endif %}
              role="group"
              tabindex="0"
              aria-label="Slot {{ slot.slot_key }}{% if photo %}: {{ photo.filename }}{% else %}: empty{% endif %}">
@@ -152,11 +156,11 @@
                          value="{{ assignment.crop_zoom }}">
                 </label>
                 <label>Focus X
-                  <input type="range" name="crop_focus_x" min="0" max="1" step="0.02"
+                  <input type="range" name="crop_focus_x" min="0" max="1" step="0.001"
                          value="{{ assignment.crop_focus_x }}">
                 </label>
                 <label>Focus Y
-                  <input type="range" name="crop_focus_y" min="0" max="1" step="0.02"
+                  <input type="range" name="crop_focus_y" min="0" max="1" step="0.001"
                          value="{{ assignment.crop_focus_y }}">
                 </label>
                 <button type="submit">Save crop</button>

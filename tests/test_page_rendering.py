@@ -292,6 +292,38 @@ def test_slot_renderer_applies_spacing_and_rounded_corners(tmp_path):
     assert image.getpixel((0, 0)) == (20, 20, 20)
 
 
+def test_slot_renderer_pans_into_source_area_cropped_at_one_times_zoom(tmp_path):
+    photo_path = tmp_path / "split.png"
+    photo = Image.new("RGB", (200, 100), (0, 0, 255))
+    photo.paste(Image.new("RGB", (100, 100), (255, 0, 0)), (0, 0))
+    photo.save(photo_path)
+    layout = LayoutTemplate(
+        key="square",
+        version=1,
+        name="Square",
+        slots=(SlotTemplate("main", 0.0, 0.0, 1.0, 1.0),),
+    )
+    renderer = SlotAwareRenderer(Settings())
+
+    left = renderer.render(
+        layout,
+        {"main": SlotPhoto(photo_path, crop_focus_x=0.0)},
+        page_width=100,
+        page_height=100,
+        background_color=(0, 0, 0),
+    )
+    right = renderer.render(
+        layout,
+        {"main": SlotPhoto(photo_path, crop_focus_x=1.0)},
+        page_width=100,
+        page_height=100,
+        background_color=(0, 0, 0),
+    )
+
+    assert left.getpixel((50, 50))[0] > 200
+    assert right.getpixel((50, 50))[2] > 200
+
+
 def test_render_page_shows_photo_location_map(tmp_path):
     database, project_id, page_id = _setup(tmp_path)
     profile = OutputProfile.default()

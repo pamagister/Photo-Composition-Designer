@@ -257,7 +257,8 @@
    * point and +/- nudge the zoom. Changes are debounced and sent to the live
    * crop endpoint; the preview image and sliders update in place so selection,
    * scroll and focus survive. Arrow keys inside form fields are ignored. */
-  const CROP_STEP = 0.02;
+  const PAN_STEP = 0.02;
+  const ZOOM_STEP = 0.02;
   const ZOOM_MIN = 1.0;
   const ZOOM_MAX = 3.0;
   let cropTimer = null;
@@ -265,6 +266,10 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function clampFocus(value) {
+    return clamp(value, 0, 1);
   }
 
   function selectedCropInputs() {
@@ -287,19 +292,30 @@
     let focusX = parseFloat(inputs.focusX.value);
     let focusY = parseFloat(inputs.focusY.value);
 
-    if (key === "ArrowLeft") focusX = clamp(focusX - CROP_STEP, 0, 1);
-    else if (key === "ArrowRight") focusX = clamp(focusX + CROP_STEP, 0, 1);
-    else if (key === "ArrowUp") focusY = clamp(focusY - CROP_STEP, 0, 1);
-    else if (key === "ArrowDown") focusY = clamp(focusY + CROP_STEP, 0, 1);
+    const sourceRatio = parseFloat(inputs.slot.dataset.cropSourceRatio);
+    const targetRatio = parseFloat(inputs.slot.dataset.cropTargetRatio);
+    const horizontalCrop = sourceRatio > targetRatio;
+    const verticalCrop = sourceRatio < targetRatio;
+
+    if (key === "ArrowLeft" && (zoom > ZOOM_MIN || horizontalCrop)) focusX -= PAN_STEP;
+    else if (key === "ArrowRight" && (zoom > ZOOM_MIN || horizontalCrop)) focusX += PAN_STEP;
+    else if (key === "ArrowUp" && (zoom > ZOOM_MIN || verticalCrop)) focusY -= PAN_STEP;
+    else if (key === "ArrowDown" && (zoom > ZOOM_MIN || verticalCrop)) focusY += PAN_STEP;
+    else if (key.startsWith("Arrow")) {
+      event.preventDefault();
+      return;
+    }
     else if (key === "+" || key === "=" || event.code === "NumpadAdd") {
-      zoom = clamp(zoom + CROP_STEP, ZOOM_MIN, ZOOM_MAX);
+      zoom = clamp(zoom + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX);
     } else if (key === "-" || key === "_" || event.code === "NumpadSubtract") {
-      zoom = clamp(zoom - CROP_STEP, ZOOM_MIN, ZOOM_MAX);
+      zoom = clamp(zoom - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX);
     } else handled = false;
 
     if (!handled) return;
     event.preventDefault();
 
+    focusX = clampFocus(focusX);
+    focusY = clampFocus(focusY);
     inputs.zoom.value = zoom.toFixed(2);
     inputs.focusX.value = focusX.toFixed(2);
     inputs.focusY.value = focusY.toFixed(2);

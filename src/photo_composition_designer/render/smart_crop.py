@@ -341,10 +341,10 @@ class SmartCrop:
 
         img_width, img_height = image.size
 
-        crop_box = self._get_crop_coordinates(
-            img_width=img_width,
-            img_height=img_height,
-            target_ratio=target_width / target_height,
+        crop_box = self.crop_box(
+            image,
+            target_width,
+            target_height,
             detections=detections,
         )
 
@@ -356,6 +356,21 @@ class SmartCrop:
         )
 
         return resized, crop_box
+
+    def crop_box(
+        self,
+        image: Image.Image,
+        target_width: int,
+        target_height: int,
+        detections: list[Detection] | None = None,
+    ) -> tuple[int, int, int, int]:
+        """Return the smart-crop coordinates without cropping or resizing."""
+        return self._get_crop_coordinates(
+            img_width=image.width,
+            img_height=image.height,
+            target_ratio=target_width / target_height,
+            detections=detections,
+        )
 
     def visualize_crop(
         self,
