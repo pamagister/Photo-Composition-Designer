@@ -156,8 +156,8 @@ def load_catalogue() -> dict[str, LayoutTemplate]:
 
     Built-in layouts load first; user layouts with the same key and version
     override them so users can customise a shipped template without editing
-    package code. The returned mapping is ordered by slot count (descending)
-    so consumers can present layouts from most to fewest images without
+    package code. The returned mapping is ordered by slot count (ascending)
+    so consumers can present layouts from fewest to most images without
     re-sorting.
     """
     catalogue: dict[str, LayoutTemplate] = {}
@@ -171,6 +171,6 @@ def load_catalogue() -> dict[str, LayoutTemplate]:
         sorted(
             catalogue.items(),
             key=lambda item: (len(item[1].slots), item[1].name.lower(), item[0]),
-            reverse=True,
+            reverse=False,
         )
     )

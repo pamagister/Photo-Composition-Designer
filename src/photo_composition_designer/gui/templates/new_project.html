@@ -25,9 +25,8 @@
       <label for="layout_key">Default layout</label>
       <select id="layout_key" name="layout_key">
         {% for key, layout in catalogue.items() %}
-        <option value="{{ key }}" {% if form.layout_key | default('') == key %}selected{% endif %}>
-          {{ layout.name }} ({{ layout.slots | length }} Bilder)
-        </option>
+        <option value="{{ key }}" style="text-align: right;"
+                {% if form.layout_key | default('') == key %}selected{% endif %}>[{{ layout.slots | length }}] {{ layout.name }}</option>
         {% endfor %}
       </select>
     </div>

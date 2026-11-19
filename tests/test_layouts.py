@@ -30,13 +30,9 @@ def test_catalogue_loads_curated_layouts() -> None:
         "four_staggered_y",
         "five_two_three",
         "five_split_center",
-        "six_tiles_3x4",
-        "seven_tiles_3x5",
-        "eight_tiles_4x6",
-        "nine_tiles_4x8",
-        "ten_tiles_5x8",
-        "eleven_tiles_5x9",
-        "twelve_tiles_5x10",
+        "fourteen_tiles_3x5",
+        "thirty_tiles_4x8",
+        "fortyfive_tiles_5x9",
     } <= set(catalogue)
     assert catalogue["two_columns"].version == 1
     assert len(catalogue["two_columns"].slots) == 2
@@ -45,13 +41,9 @@ def test_catalogue_loads_curated_layouts() -> None:
     assert len(catalogue["four_staggered_y"].slots) == 4
     assert len(catalogue["five_two_three"].slots) == 5
     assert len(catalogue["five_split_center"].slots) == 5
-    assert len(catalogue["six_tiles_3x4"].slots) == 6
-    assert len(catalogue["seven_tiles_3x5"].slots) == 7
-    assert len(catalogue["eight_tiles_4x6"].slots) == 8
-    assert len(catalogue["nine_tiles_4x8"].slots) == 9
-    assert len(catalogue["ten_tiles_5x8"].slots) == 10
-    assert len(catalogue["eleven_tiles_5x9"].slots) == 11
-    assert len(catalogue["twelve_tiles_5x10"].slots) == 12
+    assert len(catalogue["fourteen_tiles_3x5"].slots) == 14
+    assert len(catalogue["thirty_tiles_4x8"].slots) == 30
+    assert len(catalogue["fortyfive_tiles_5x9"].slots) == 45
 
 
 def test_every_catalogue_snapshot_roundtrips() -> None:

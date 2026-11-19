@@ -94,11 +94,13 @@ def _project_context(
     slots: list = []
     slot_count = 0
     slot_assignment_map: dict = {}
+    current_layout_key = ""
     if selected is not None and selected.layout_id is not None:
         layout = layout_repo.get_by_id(selected.layout_id)
         if layout is not None:
             slots = list(layout.slots)
             slot_count = len(slots)
+            current_layout_key = layout.key
             slot_assignment_map = {
                 assignment.slot_id: assignment for assignment in selected_assignments
             }
@@ -144,6 +146,7 @@ def _project_context(
         "photo_filter": "all" if photo_filter == "all" else "unused",
         "slots": slots,
         "slot_count": slot_count,
+        "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
         "catalogue": load_catalogue(),
         "source_states": source_states,
@@ -232,6 +235,7 @@ def _page_context(
     slots: list = []
     slot_count = 0
     slot_assignment_map: dict = {}
+    current_layout_key = ""
     if page.layout_id is not None:
         from photo_composition_designer.project.repositories import LayoutRepository
 
@@ -239,6 +243,7 @@ def _page_context(
         if layout is not None:
             slots = list(layout.slots)
             slot_count = len(slots)
+            current_layout_key = layout.key
             slot_assignment_map = {assignment.slot_id: assignment for assignment in assignments}
     project = ProjectRepository(connection).get(project_id)
     pages = PageRepository(connection).list(project_id)
@@ -260,6 +265,7 @@ def _page_context(
         "usage_counts": usage_counts,
         "slots": slots,
         "slot_count": slot_count,
+        "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
         "catalogue": load_catalogue(),
     }
