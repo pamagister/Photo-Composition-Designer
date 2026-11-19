@@ -328,6 +328,106 @@ def test_cli_exposes_gui_command():
     assert "Start the local web editor" in result.stdout
 
 
+def test_object_detection_settings_are_saved(client, tmp_path):
+    model = tmp_path / "yolo26n.onnx"
+    model.write_bytes(b"fake-model")
+
+    response = client.post(
+        "/settings",
+        data={"object_detection_enabled": "1", "yolo_model_path": str(model)},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    settings = load_gui_settings()
+    assert settings.object_detection_enabled is True
+    assert settings.yolo_model_path == model.resolve()
+    assert "Model file found." in client.get("/settings").text
+
+
+def test_object_detection_defaults_to_disabled(client):
+    assert load_gui_settings().object_detection_enabled is False
+
+
+def test_yolo_download_writes_default_model(client, monkeypatch):
+    from photo_composition_designer.gui.routes import app_settings as route
+
+    def fake_download(destination):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(b"model-bytes")
+
+    monkeypatch.setattr(route, "_download_yolo_model", fake_download)
+
+    response = client.post("/settings/yolo/download", follow_redirects=False)
+
+    assert response.status_code == 303
+    settings = load_gui_settings()
+    assert settings.yolo_model_path is not None
+    assert settings.yolo_model_path.is_file()
+    assert settings.yolo_model_path.read_bytes() == b"model-bytes"
+
+
+def test_download_yolo_model_streams_to_disk(tmp_path, monkeypatch):
+    from photo_composition_designer.gui.routes import app_settings as route
+
+    class FakeResponse:
+        def __init__(self, data):
+            self._data = data
+            self._sent = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self, size=-1):
+            if self._sent:
+                return b""
+            self._sent = True
+            return self._data
+
+    monkeypatch.setattr(
+        route.urllib.request, "urlopen", lambda *args, **kwargs: FakeResponse(b"model-bytes")
+    )
+    destination = tmp_path / "nested" / "yolo26n.onnx"
+
+    route._download_yolo_model(destination)
+
+    assert destination.read_bytes() == b"model-bytes"
+
+
+def test_yolo_download_reports_network_errors(client, monkeypatch):
+    from photo_composition_designer.gui.routes import app_settings as route
+
+    def fail(*args, **kwargs):
+        raise OSError("network unreachable")
+
+    monkeypatch.setattr(route, "_download_yolo_model", fail)
+
+    response = client.post("/settings/yolo/download", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert "error=" in response.headers["location"]
+
+
+def test_yolo_test_reports_missing_model(client):
+    response = client.post("/settings/yolo/test", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert "error=" in response.headers["location"]
+
+
+def test_build_object_detector_returns_none_when_unavailable(tmp_path):
+    from photo_composition_designer.render.object_detector import build_object_detector
+
+    missing = tmp_path / "missing.onnx"
+
+    assert build_object_detector(enabled=False, model_path=missing) is None
+    assert build_object_detector(enabled=True, model_path=None) is None
+    assert build_object_detector(enabled=True, model_path=missing) is None
+
+
 def test_check_page_is_under_construction(client):
     project_url = _create_project(client)
     project_id = urlsplit(project_url).path.split("/")[-1]

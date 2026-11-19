@@ -85,7 +85,6 @@ def _settings_form(**overrides: str) -> dict[str, str]:
         "layout.use_rounded_corners": ("1" if profile.layout.use_rounded_corners else ""),
         "layout.image_score_factor": str(profile.layout.image_score_factor),
         "layout.use_photo_description": ("1" if profile.layout.use_photo_description else ""),
-        "layout.object_recognition": ("1" if profile.layout.object_recognition else ""),
     }
     form.update(overrides)
     return form

@@ -17,6 +17,7 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.dependencies import (
     DatabaseDependency,
     InventoryServiceDependency,
+    ObjectDetectorDependency,
     ProjectServiceDependency,
     SettingsDependency,
 )
@@ -565,6 +566,7 @@ def page_preview(
     page_id: int,
     database: DatabaseDependency,
     settings: SettingsDependency,
+    detector: ObjectDetectorDependency,
     max_width: Annotated[int, Query(ge=120, le=1600)] = 640,
 ) -> FileResponse:
     """Return a cached reduced-resolution render of one page."""
@@ -572,6 +574,7 @@ def page_preview(
         database,
         preview_dir=settings.preview_dir(),
         anniversaries_path=settings.anniversaries_path,
+        object_detector=detector,
     )
     try:
         path = rendering.render_preview(project_id, page_id, max_width=max_width)
@@ -590,6 +593,7 @@ def preview_project(
     service: ProjectServiceDependency,
     database: DatabaseDependency,
     settings: SettingsDependency,
+    detector: ObjectDetectorDependency,
     page: Annotated[int | None, Query(description="Page whose large preview to refresh.")] = None,
 ) -> RedirectResponse:
     """Render cached previews and open the selected page."""
@@ -600,6 +604,7 @@ def preview_project(
         database,
         preview_dir=settings.preview_dir(),
         anniversaries_path=settings.anniversaries_path,
+        object_detector=detector,
     )
     pages_by_id = {candidate.id: candidate for candidate in aggregate.pages}
     selected = pages_by_id.get(page) if page is not None else None
@@ -871,6 +876,7 @@ def apply_distribution(
     project_id: int,
     database: DatabaseDependency,
     settings: SettingsDependency,
+    detector: ObjectDetectorDependency,
     strategy: Annotated[str, Form()] = "equal",
     seed: Annotated[str, Form()] = "",
     proposal_digest: Annotated[str, Form()] = "",
@@ -922,6 +928,7 @@ def apply_distribution(
         database,
         preview_dir=settings.preview_dir(),
         anniversaries_path=settings.anniversaries_path,
+        object_detector=detector,
     )
     for page in PageRepository(database.connect()).list(project_id):
         rendering.render_preview(project_id, page.id, max_width=320)

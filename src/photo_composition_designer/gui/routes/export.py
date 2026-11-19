@@ -15,6 +15,7 @@ from photo_composition_designer.core.errors import ProjectError, ProjectNotFound
 from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.gui.dependencies import (
     DatabaseDependency,
+    ObjectDetectorDependency,
     ProjectServiceDependency,
     SettingsDependency,
 )
@@ -182,6 +183,7 @@ def run_export(
     service: ProjectServiceDependency,
     database: DatabaseDependency,
     settings: SettingsDependency,
+    detector: ObjectDetectorDependency,
     folder: Annotated[str, Form()] = "",
     jpg: Annotated[str, Form()] = "",
     pdf: Annotated[str, Form()] = "",
@@ -214,6 +216,7 @@ def run_export(
         result = ProjectExporter(
             database,
             anniversaries_path=settings.anniversaries_path,
+            object_detector=detector,
         ).render_project(
             project_id,
             target,

@@ -329,7 +329,6 @@ class LayoutProfile:
     image_score_factor: float = 2.0
     use_photo_description: bool = True
     generate_pdf: bool = True
-    object_recognition: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -341,7 +340,6 @@ class LayoutProfile:
             "image_score_factor": self.image_score_factor,
             "use_photo_description": self.use_photo_description,
             "generate_pdf": self.generate_pdf,
-            "object_recognition": self.object_recognition,
         }
 
     @classmethod
@@ -380,11 +378,6 @@ class LayoutProfile:
                 defaults.use_photo_description,
             ),
             generate_pdf=_bool_or(data.get("generate_pdf"), "generate_pdf", defaults.generate_pdf),
-            object_recognition=_bool_or(
-                data.get("object_recognition"),
-                "object_recognition",
-                defaults.object_recognition,
-            ),
         )
 
 
@@ -449,7 +442,6 @@ class OutputProfile:
                 image_score_factor=settings.layout.imageScoreFactor.value,
                 use_photo_description=settings.layout.usePhotoDescription.value,
                 generate_pdf=settings.layout.generatePdf.value,
-                object_recognition=bool(settings.layout.objectRecognition),
             ),
         )
 
@@ -485,7 +477,6 @@ class OutputProfile:
         settings.calendar.useTitlePage.value = self.calendar.use_title_page
         settings.layout.usePhotoDescription.value = self.layout.use_photo_description
         settings.layout.generatePdf.value = self.layout.generate_pdf
-        settings.layout.objectRecognition = self.layout.object_recognition
         return settings
 
     def to_dict(self) -> dict[str, Any]:

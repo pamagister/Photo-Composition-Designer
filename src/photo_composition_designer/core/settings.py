@@ -141,7 +141,6 @@ class LayoutConfig:
         default_factory=lambda: Param(True, "usePhotoDescription")
     )
     generatePdf: Param[bool] = field(default_factory=lambda: Param(True, "generatePdf"))
-    objectRecognition: bool = True
 
 
 @dataclass

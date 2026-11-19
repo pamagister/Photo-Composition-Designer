@@ -256,3 +256,37 @@ class ObjectDetector:
         m.update(f"{image.size[0]}x{image.size[1]}".encode())
         m.update(thumb.tobytes())
         return m.hexdigest()
+
+
+def build_object_detector(
+    *,
+    enabled: bool,
+    model_path: Path | str | None,
+) -> ObjectDetector | None:
+    """Return a configured detector, or ``None`` when it should not be used.
+
+    Loading the ONNX model is comparatively expensive, so callers should cache
+    the returned instance. ``None`` is returned when detection is disabled, no
+    model path is configured, the file is missing, or the model cannot be
+    loaded; rendering then falls back to plain geometric cropping.
+
+    Args:
+        enabled: Whether object detection is switched on globally.
+        model_path: Filesystem path to the YOLO ONNX model.
+
+    Returns:
+        A ready-to-use :class:`ObjectDetector`, or ``None``.
+    """
+    if not enabled or model_path is None:
+        return None
+
+    path = Path(model_path)
+    if not path.is_file():
+        return None
+
+    logger = get_logger("base")
+    try:
+        return ObjectDetector(model_path=str(path))
+    except Exception:
+        logger.warning("Failed to load object detection model at %s", path, exc_info=True)
+        return None

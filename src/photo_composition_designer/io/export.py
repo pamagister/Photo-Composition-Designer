@@ -19,6 +19,7 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.project.models import CalendarPage
 from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import PageRepository
+from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.page import PageComposer
 
 _IMAGE_SUFFIXES = {"JPEG": ".jpg", "PNG": ".png"}
@@ -45,9 +46,10 @@ class ProjectExporter:
         *,
         composer: PageComposer | None = None,
         anniversaries_path: Path | None = None,
+        object_detector: ObjectDetector | None = None,
     ) -> None:
         self._database = database
-        self._composer = composer or PageComposer()
+        self._composer = composer or PageComposer(object_detector=object_detector)
         self._default_profile = (
             OutputProfile.from_settings(settings) if settings is not None else None
         )

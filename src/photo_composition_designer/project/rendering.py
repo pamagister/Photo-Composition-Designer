@@ -31,6 +31,7 @@ from photo_composition_designer.project.repositories import (
     ProjectRepository,
     SourceRootRepository,
 )
+from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotPhoto
 
@@ -109,9 +110,10 @@ class ProjectRenderingService:
         preview_dir: Path | None = None,
         default_profile: OutputProfile | None = None,
         anniversaries_path: Path | None = None,
+        object_detector: ObjectDetector | None = None,
     ) -> None:
         self._database = database
-        self._composer = composer or PageComposer()
+        self._composer = composer or PageComposer(object_detector=object_detector)
         self._preview_dir = Path(preview_dir) if preview_dir is not None else None
         self._default_profile = default_profile
         self._anniversaries_path = (

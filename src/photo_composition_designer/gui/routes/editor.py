@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError
 from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.gui.dependencies import ObjectDetectorDependency
 from photo_composition_designer.gui.routes.projects import _canvas_response
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.editing import PageEditingService
@@ -19,6 +20,7 @@ from photo_composition_designer.project.repositories import (
     PageRepository,
     PhotoRepository,
 )
+from photo_composition_designer.render.object_detector import ObjectDetector
 
 router = APIRouter()
 
@@ -56,7 +58,10 @@ def _has_unused_photos(database: WorkspaceDatabase, project_id: int) -> bool:
 
 
 def _render_project_previews(
-    request: Request, database: WorkspaceDatabase, project_id: int
+    request: Request,
+    database: WorkspaceDatabase,
+    project_id: int,
+    object_detector: ObjectDetector | None = None,
 ) -> None:
     """Render reduced previews for all pages after completing photo allocation."""
     settings = request.app.state.settings
@@ -64,6 +69,7 @@ def _render_project_previews(
         database,
         preview_dir=settings.preview_dir(),
         anniversaries_path=settings.anniversaries_path,
+        object_detector=object_detector,
     )
     for page in PageRepository(database.connect()).list(project_id):
         rendering.render_preview(project_id, page.id, max_width=320)
@@ -74,6 +80,7 @@ def assign_photo(
     request: Request,
     project_id: int,
     page_id: int,
+    detector: ObjectDetectorDependency,
     slot_id: int = Form(...),
     photo_id: int = Form(...),
 ) -> HTMLResponse:
@@ -86,7 +93,7 @@ def assign_photo(
     except ProjectError as error:
         return _error(project_id, str(error))
     if had_unused_photos and not _has_unused_photos(database, project_id):
-        _render_project_previews(request, database, project_id)
+        _render_project_previews(request, database, project_id, detector)
     return _page_fragment(request, project_id, page_id, "Photo assigned.")
 
 
@@ -109,6 +116,7 @@ def replace_photo(
     request: Request,
     project_id: int,
     page_id: int,
+    detector: ObjectDetectorDependency,
     slot_id: int = Form(...),
     photo_id: int = Form(...),
 ) -> HTMLResponse:
@@ -121,7 +129,7 @@ def replace_photo(
     except ProjectError as error:
         return _error(project_id, str(error))
     if had_unused_photos and not _has_unused_photos(database, project_id):
-        _render_project_previews(request, database, project_id)
+        _render_project_previews(request, database, project_id, detector)
     return _page_fragment(request, project_id, page_id, "Photo replaced.")
 
 

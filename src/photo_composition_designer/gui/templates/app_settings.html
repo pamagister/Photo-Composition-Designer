@@ -29,7 +29,42 @@
       <a class="button" href="/settings/built-in/locations.ini"
          target="_blank" rel="noopener">Show built-in format</a>
     </div>
+    <fieldset class="settings-group">
+      <legend>Object detection</legend>
+      <div class="field checkbox-field">
+        <label for="object-detection-enabled">
+          <input type="checkbox" id="object-detection-enabled"
+                 name="object_detection_enabled" value="1"
+                 {% if object_detection_enabled %}checked{% endif %}>
+          Enable object-aware cropping
+        </label>
+        <p class="muted">
+          When enabled and a YOLO model is available, smart crop keeps detected
+          objects (especially heads) inside the visible area. Off by default
+          because detection is slower.
+        </p>
+      </div>
+      <div class="field">
+        <label for="yolo-model-path">YOLO model file (yolo26n.onnx)</label>
+        <input id="yolo-model-path" name="yolo_model_path" type="text"
+               value="{{ yolo_model_path }}"
+               placeholder="Leave empty to use the OS-specific default">
+        <p class="muted">
+          {% if yolo_model_exists %}Model file found.{% else %}Model file not found yet.{% endif %}
+          Download it below or point this at an existing file.
+        </p>
+      </div>
+    </fieldset>
     <button class="primary" type="submit">Save application settings</button>
   </form>
+
+  <div class="form-row" style="margin-top: 1rem">
+    <form method="post" action="/settings/yolo/download">
+      <button type="submit">Download YOLO model</button>
+    </form>
+    <form method="post" action="/settings/yolo/test">
+      <button type="submit">Test model</button>
+    </form>
+  </div>
 </section>
 {% endblock %}
