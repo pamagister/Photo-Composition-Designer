@@ -10,7 +10,13 @@ from typing import Annotated
 from urllib.parse import quote
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
 from photo_composition_designer.core.output_profile import OutputProfile
@@ -654,36 +660,122 @@ def project_page_fragment(
 
 @router.get("/projects/{project_id}/pages/{page_id}/preview")
 def page_preview(
+    request: Request,
     project_id: int,
     page_id: int,
     database: DatabaseDependency,
     settings: SettingsDependency,
     detector: ObjectDetectorDependency,
     max_width: Annotated[int, Query(ge=120, le=1600)] = 640,
-) -> FileResponse:
+) -> Response:
     """Return a cached reduced-resolution render of one page.
 
-    This route renders on a cache miss and serves with ``Cache-Control:
-    no-cache`` so the browser always revalidates. It remains the source of
-    truth for the current page revision; the immutable asset route below
-    (``/preview-assets/{key}.jpg``) is an additive optimisation for clients
-    that can address the preview by its content-derived cache key.
+    This route never renders on a cache miss (D3). If the preview file
+    exists for the current revision, it is served with ``Cache-Control:
+    no-cache`` so the browser always revalidates. If the file is absent,
+    a background job is enqueued and ``202 Accepted`` is returned with a
+    1x1 transparent placeholder; the client polls the status endpoint
+    and reloads the image when it is ready.
+
+    The immutable asset route below (``/preview-assets/{key}.jpg``) is an
+    additive optimisation for clients that can address the preview by its
+    content-derived cache key.
+    """
+    del detector  # The worker uses the detector configured at startup.
+    rendering = ProjectRenderingService(
+        database,
+        preview_dir=settings.preview_dir(),
+        anniversaries_path=settings.anniversaries_path,
+    )
+    try:
+        path = rendering.preview_cache_path(project_id, page_id, max_width=max_width)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    if path.is_file():
+        return FileResponse(
+            path,
+            media_type="image/jpeg",
+            headers={"Cache-Control": "no-cache"},
+        )
+    # Cache miss: enqueue a high-priority render and return a placeholder.
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is not None:
+        worker.submit(project_id, page_id, max_width=max_width, priority=0)
+        # The synchronous worker renders inline; re-check before returning.
+        if path.is_file():
+            return FileResponse(
+                path,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "no-cache"},
+            )
+    # Return a 1x1 transparent GIF as a placeholder. The client polls the
+    # status endpoint and reloads the image when it is ready.
+    return Response(
+        content=_PLACEHOLDER_PNG,
+        media_type="image/png",
+        status_code=202,
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+#: A 1x1 transparent PNG used as a placeholder while a preview renders.
+_PLACEHOLDER_PNG = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4"
+    "890000000d49444154789c6360000000020001e221bc330000000049454e44ae"
+    "426082"
+)
+
+
+@router.get("/projects/{project_id}/pages/{page_id}/preview-status")
+def preview_status(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+    max_width: Annotated[int, Query(ge=120, le=1600)] = 640,
+) -> JSONResponse:
+    """Return the status of the preview render for a page.
+
+    Returns JSON ``{"status": "ready"|"refreshing"|"error", "revision": N}``.
+    If the preview file exists, the status is ``ready``. Otherwise a
+    background job is enqueued and the status is ``refreshing``. If the
+    worker recorded an error, the status is ``error``.
     """
     rendering = ProjectRenderingService(
         database,
         preview_dir=settings.preview_dir(),
         anniversaries_path=settings.anniversaries_path,
-        object_detector=detector,
     )
+    connection = database.connect()
     try:
-        path = rendering.render_preview(project_id, page_id, max_width=max_width)
+        page = PageRepository(connection).get(page_id)
+        if page is None or page.project_id != project_id:
+            return JSONResponse(
+                {"status": "error", "revision": 0, "error": "page not found"},
+                status_code=404,
+            )
+        revision = page.render_revision
+        path = rendering.preview_cache_path(project_id, page_id, max_width=max_width)
     except ProjectNotFoundError as exc:
-        raise HTTPException(404, str(exc)) from exc
-    return FileResponse(
-        path,
-        media_type="image/jpeg",
-        headers={"Cache-Control": "no-cache"},
-    )
+        return JSONResponse(
+            {"status": "error", "revision": 0, "error": str(exc)},
+            status_code=404,
+        )
+    finally:
+        connection.close()
+
+    if path.is_file():
+        return JSONResponse({"status": "ready", "revision": revision})
+
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is not None:
+        worker.submit(project_id, page_id, max_width=max_width, priority=0)
+        if worker.last_error is not None:
+            return JSONResponse(
+                {"status": "error", "revision": revision, "error": worker.last_error}
+            )
+    return JSONResponse({"status": "refreshing", "revision": revision})
 
 
 #: A preview cache key is a 24-character lowercase hex digest (SHA-256

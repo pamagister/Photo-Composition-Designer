@@ -361,6 +361,78 @@
     const image = canvas.querySelector(".page-preview-image");
     if (!image) return;
     const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
+    refreshPreview(canvas.dataset.projectId, canvas.dataset.pageId, revision);
+    /* Set a placeholder src immediately so the old image is replaced while
+     * the new one renders in the background. */
     image.src = `${base}/preview?v=${revision}`;
+  });
+
+  /* Poll the preview-status endpoint until the preview for the current
+   * revision is ready, then reload the image and hide the overlay.
+   * Shows a "refreshing" overlay while waiting. Times out after 30s. */
+  function refreshPreview(projectId, pageId, revision) {
+    const canvas = document.querySelector(".editor-canvas");
+    if (!canvas) return;
+    const overlay = canvas.querySelector(".page-preview-refreshing");
+    if (overlay) overlay.hidden = false;
+
+    const statusUrl = `/projects/${projectId}/pages/${pageId}/preview-status?max_width=640`;
+    const maxAttempts = 60; /* 30 seconds at 500 ms */
+    let attempts = 0;
+
+    function poll() {
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        if (overlay) overlay.hidden = true;
+        return;
+      }
+      fetch(statusUrl)
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          if (data.status === "ready") {
+            const image = canvas.querySelector(".page-preview-image");
+            if (image) {
+              /* Cache-bust so the browser fetches the new bytes. */
+              image.src = `/projects/${projectId}/pages/${pageId}/preview?v=${revision}&_=${Date.now()}`;
+            }
+            if (overlay) overlay.hidden = true;
+          } else if (data.status === "error") {
+            if (overlay) overlay.hidden = true;
+            /* Surface the error in the console for debugging. */
+            console.error("Preview refresh failed:", data.error || "unknown error");
+          } else {
+            setTimeout(poll, 500);
+          }
+        })
+        .catch(function () {
+          /* Network error: keep polling. */
+          setTimeout(poll, 500);
+        });
+    }
+
+    poll();
+  }
+
+  /* On page load, if the preview image is a 1x1 placeholder (the server
+   * returned 202 because the preview is still rendering), start polling. */
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.querySelector(".editor-canvas");
+    if (!canvas) return;
+    const image = canvas.querySelector(".page-preview-image");
+    if (!image) return;
+    function checkPlaceholder() {
+      if (image.complete && image.naturalWidth <= 1) {
+        refreshPreview(
+          canvas.dataset.projectId,
+          canvas.dataset.pageId,
+          canvas.dataset.renderRevision || image.getAttribute("data-revision") || "0"
+        );
+      }
+    }
+    if (image.complete) {
+      checkPlaceholder();
+    } else {
+      image.addEventListener("load", checkPlaceholder, { once: true });
+    }
   });
 })();

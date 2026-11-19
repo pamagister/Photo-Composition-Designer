@@ -178,3 +178,57 @@ def test_preview_asset_old_revision_serves_original_bytes(tmp_path, monkeypatch)
         old_response = client.get(f"/projects/{project_id}/preview-assets/{old_key}.jpg")
         assert old_response.status_code == 200
         assert old_response.content == old_bytes
+
+
+def test_preview_status_returns_ready_when_file_exists(tmp_path, monkeypatch):
+    """The status endpoint returns 'ready' when the preview file exists."""
+    monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
+    project_id, page_id = _seed(tmp_path)
+
+    # Render the preview to create the file.
+    client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320})
+
+    status = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+    )
+    assert status.status_code == 200
+    data = status.json()
+    assert data["status"] == "ready"
+    assert data["revision"] >= 0
+
+
+def test_preview_status_returns_refreshing_or_ready_when_file_absent(tmp_path, monkeypatch):
+    """The status endpoint returns 'refreshing' (or 'ready' with sync worker)
+    when the file is absent."""
+    monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
+    project_id, page_id = _seed(tmp_path)
+
+    # No preview has been rendered yet.
+    status = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+    )
+    assert status.status_code == 200
+    data = status.json()
+    # With the sync worker, the status endpoint submits a job that renders
+    # inline, so by the time the response is built the file may exist.
+    assert data["status"] in ("ready", "refreshing")
+
+
+def test_preview_route_returns_200_with_sync_worker(tmp_path, monkeypatch):
+    """The preview route returns 200 with a real image (sync worker renders
+    inline, so the file exists by the time the route checks)."""
+    monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
+    project_id, page_id = _seed(tmp_path)
+
+    response = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320}
+    )
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/jpeg"
+    assert len(response.content) > 100  # Not the 1x1 placeholder

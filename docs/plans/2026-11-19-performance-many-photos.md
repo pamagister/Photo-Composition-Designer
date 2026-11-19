@@ -551,9 +551,18 @@ key-shape change.
   `sync_preview_worker=True` for deterministic timing.
   `tests/test_preview_worker.py` guards coalescing, priority order, start/stop,
   and error capture.)
-- [ ] P3-W03: Add refreshing/ready/error client state for the visible preview.
+- [x] P3-W03: Add refreshing/ready/error client state for the visible preview.
   Ensure stale bytes are not presented as current and failures are surfaced;
   retain current lazy loading for page-list previews.
+  (Added `GET /projects/{project_id}/pages/{page_id}/preview-status` returning
+  JSON `{"status": "ready"|"refreshing"|"error", "revision": N}`. The
+  `page_preview` route no longer renders on a cache miss: it submits a
+  high-priority job and returns `202 Accepted` with a 1x1 transparent PNG
+  placeholder. The editor template adds a `.page-preview-refreshing` overlay
+  (spinner + "Refreshing preview...") and `editor.js` polls the status
+  endpoint every 500 ms (30 s timeout), reloads the image with a
+  cache-busting timestamp when ready, and logs errors to the console.
+  Sidebar thumbnails keep their `loading="lazy"` behaviour.)
 - [ ] P3-W04: Add a bounded in-process LRU for the map, keyed as in D4.
   Include calendar/description only if repeat timing demonstrates worthwhile
   savings.

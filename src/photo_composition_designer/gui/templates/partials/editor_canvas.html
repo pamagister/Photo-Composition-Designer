@@ -25,7 +25,13 @@
            style="aspect-ratio: {{ profile.page_size_px()[0] }} / {{ profile.page_size_px()[1] }};">
         <img class="page-preview-image"
              src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?v={{ page.render_revision }}"
-             alt="Rendered preview for {{ page.start_date }}" loading="eager">
+             alt="Rendered preview for {{ page.start_date }}" loading="eager"
+             data-project-id="{{ project_id }}" data-page-id="{{ page.id }}"
+             data-revision="{{ page.render_revision }}">
+        <div class="page-preview-refreshing" role="status" aria-live="polite" hidden>
+          <span class="page-preview-refreshing-spinner" aria-hidden="true"></span>
+          <span class="page-preview-refreshing-label">Refreshing preview...</span>
+        </div>
         {% for overlay in slot_overlays %}
         <div class="slot-dropzone {{ 'occupied' if overlay.occupied else 'empty' }}"
              data-slot-id="{{ overlay.slot_id }}"

@@ -348,6 +348,32 @@ class ProjectRenderingService:
         )
         return target
 
+    def preview_cache_path(
+        self,
+        project_id: int,
+        page_id: int,
+        *,
+        max_width: int = DEFAULT_PREVIEW_WIDTH,
+        mode: str = "preview",
+    ) -> Path:
+        """Return the path where the preview for a page would be stored.
+
+        This does not render the preview; it only computes the path from
+        the cache key. Callers can check ``path.is_file()`` to determine
+        whether a preview is already cached for the current revision.
+        """
+        if self._preview_dir is None:
+            raise RuntimeError("preview directory is not configured")
+
+        connection = self._database.connect()
+        page = PageRepository(connection).get(page_id)
+        if page is None or page.project_id != project_id:
+            raise ProjectNotFoundError(f"page {page_id} does not exist")
+        profile = self.profile_for(connection, project_id)
+        draft = draft_profile(profile, max_width)
+        key = self.preview_cache_key(page, draft, max_width=max_width, mode=mode)
+        return self._preview_dir / "pages" / f"{key}.jpg"
+
 
 def preview_cache_key_for(
     rendering: ProjectRenderingService,
