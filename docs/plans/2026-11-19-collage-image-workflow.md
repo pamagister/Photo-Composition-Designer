@@ -342,9 +342,9 @@ Use the repository commands (see `Makefile`):
 
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-19-collage-image-workflow.md`
-- **Completed:** Phase 0 (issue #49); Phase 1 (issue #50); Phase 2 (commit `b3c334a`, issue #52, CI green); Phase 3 (commit `599cd1b`, issue #53, CI green); Phase 4 (issue #54, pending commit/CI)
-- **Active:** none (all phases complete, Phase 4 commit pending)
-- **Next:** commit Phase 4, push, monitor CI, then close issues #52-#54
+- **Completed:** Phase 0 (issue #49); Phase 1 (issue #50); Phase 2 (commit `b3c334a`, issue #52, CI `44530348441` green); Phase 3 (commit `599cd1b`, issue #53, CI `44530348441` green); Phase 4 (commit `889cc49`, issue #54, CI `44532155168` green)
+- **Active:** none (all phases complete)
+- **Next:** none (plan complete; full interactive canvas remains deferred)
 - **Relevant files:**
   - `src/photo_composition_designer/project/editing.py` (populate precedent, `PageEditingService`)
   - `src/photo_composition_designer/gui/routes/editor.py` (assign/replace/swap/crop routes)
@@ -361,5 +361,5 @@ Use the repository commands (see `Makefile`):
   - Live keyboard crop uses a dedicated endpoint that returns only the new revision, not a full canvas re-render.
   - Populate (Phase 1) remains the fastest path for "fill everything"; multi-select and dropzones complement it.
 - **Blockers:** none
-- **Last verified:** 2026-11-19, Phase 0 + Phase 1 complete; `make fmt`, `make lint` and `uv run pytest tests/` (272 passed) green; CI run `44523159845` green on `main`.
+- **Last verified:** 2026-11-19, all phases complete; `ruff format`/`ruff check` clean and `uv run pytest` (298 passed, incl. Chromium+Firefox browser tests) green; CI runs `44530348441` and `44532155168` green on `main`.
 - **Context status:** clean
