@@ -326,3 +326,14 @@ def test_cli_exposes_gui_command():
     assert result.exit_code == 0
     assert "gui" in result.stdout
     assert "Start the local web editor" in result.stdout
+
+
+def test_check_page_is_under_construction(client):
+    project_url = _create_project(client)
+    project_id = urlsplit(project_url).path.split("/")[-1]
+
+    response = client.get(f"/projects/{project_id}/check")
+
+    assert response.status_code == 200
+    assert "Under construction." in response.text
+    assert "Back to project" in response.text

@@ -498,6 +498,47 @@ def project_detail(
     )
 
 
+@router.get("/projects/{project_id}/distribute", response_class=HTMLResponse)
+def distribution_page(
+    request: Request,
+    project_id: int,
+    service: ProjectServiceDependency,
+    database: DatabaseDependency,
+) -> HTMLResponse:
+    """Show the distribution workspace for one project."""
+    project = _load_project(service, project_id).project
+    context = _distribution_context(database, project_id, strategy="equal", seed=None)
+    return TEMPLATES.TemplateResponse(
+        request,
+        "distribute.html",
+        {
+            "page_title": f"Distribute - {project.name}",
+            "project": project,
+            "save_state": "Saved",
+            **context,
+        },
+    )
+
+
+@router.get("/projects/{project_id}/check", response_class=HTMLResponse)
+def check_page(
+    request: Request,
+    project_id: int,
+    service: ProjectServiceDependency,
+) -> HTMLResponse:
+    """Show the project check page."""
+    project = _load_project(service, project_id).project
+    return TEMPLATES.TemplateResponse(
+        request,
+        "check.html",
+        {
+            "page_title": f"Check - {project.name}",
+            "project": project,
+            "save_state": "Saved",
+        },
+    )
+
+
 @router.get("/projects/{project_id}/pages/{page_id}", response_class=HTMLResponse)
 def project_page_fragment(
     request: Request,

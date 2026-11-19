@@ -169,7 +169,9 @@ The editor keeps three main areas:
 
 The Projects overview lists every project as a row with its own archive export,
 duplication form and link into the editor. Project-level `.pcd` import/export and
-duplication live there rather than inside a single project.
+duplication live there rather than inside a single project. The project toolbar's
+**Extras** menu expands to the right and links to the `distribute` and `check`
+subpages.
 
 HTMX performs server-confirmed fragment swaps; focused JavaScript adds
 drag-and-drop. Every drag action has a keyboard-visible equivalent. Layout change

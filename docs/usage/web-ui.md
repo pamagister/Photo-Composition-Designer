@@ -58,15 +58,15 @@ pages already using an older version keep their existing layout snapshots.
 
 ## Preview and apply a distribution
 
-Choose a strategy (`Equal`, `Random` with an optional seed, or `Date aware`) in
-the **Distribution** section of **Extras**, then select **Preview distribution**.
-The preview shows per-page samples, filled and empty slots, overflow and the total
-unassigned count without changing the project. **Apply distribution** persists
-the reviewed proposal in one transaction; repeating the same confirmation is a
-no-op and a stale preview is rejected.
+Open **Extras** in the project toolbar and choose **Distribute**. On the
+distribution page, choose a strategy (`Equal`, `Random` with an optional seed, or
+`Date aware`) and select **Preview distribution**. The preview shows per-page
+samples, filled and empty slots, overflow and the total unassigned count without
+changing the project. **Apply distribution** persists the reviewed proposal in
+one transaction; repeating the same confirmation is a no-op and a stale preview
+is rejected.
 
-**Extras** also contains a **Check** section, which is currently under
-construction.
+**Extras → Check** is currently under construction.
 
 Photos that exceed the available slots stay in the unused pool. Empty slots are
 valid and are reported explicitly.

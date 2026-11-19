@@ -277,10 +277,12 @@ label {
 
 .project-duplicate {
   margin: 0;
+  flex-wrap: nowrap;
 }
 
 .project-duplicate .field {
-  flex: 0 1 14rem;
+  flex: 1 1 12rem;
+  min-width: 8rem;
 }
 
 .import-project form {
@@ -289,6 +291,17 @@ label {
   gap: 0.35rem;
   min-width: 16rem;
   margin-top: 0.5rem;
+}
+
+.export-format-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.export-format-options .field {
+  margin-bottom: 0;
 }
 
 .page-list {
@@ -465,29 +478,33 @@ label {
   color: var(--text);
 }
 
-.project-extras[open] > .extras-panel {
+.project-extras[open] > .extras-menu {
   position: absolute;
   z-index: 4;
   top: calc(100% + 0.4rem);
-  right: 0;
-  width: min(36rem, calc(100vw - 2rem));
-  max-height: 75vh;
-  overflow: auto;
-  padding: 1rem;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 0.35rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 0.75rem 2rem #0008;
 }
 
-.extras-panel h3 {
-  margin: 0 0 0.5rem;
+.extras-menu a {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
 }
 
-.extras-section + .extras-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+.extras-menu a:hover,
+.extras-menu a:focus {
+  background: var(--surface-raised);
+  color: var(--accent);
 }
 
 .project-layout {

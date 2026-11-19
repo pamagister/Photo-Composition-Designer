@@ -125,7 +125,8 @@ def test_project_detail_shows_extras_and_check_sections(
 
     assert response.status_code == 200
     assert "Extras" in response.text
-    assert "Under construction." in response.text
+    assert f'href="/projects/{project_id}/distribute"' in response.text
+    assert f'href="/projects/{project_id}/check"' in response.text
 
 
 def test_projects_page_exposes_archive_import_and_duplicate_controls(

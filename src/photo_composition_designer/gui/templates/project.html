@@ -20,16 +20,10 @@
   <a class="button" href="/projects/{{ project.id }}/settings">Settings</a>
   <details class="project-extras">
     <summary>Extras</summary>
-    <div class="extras-panel">
-      <section class="extras-section">
-        <h3>Distribution</h3>
-        {% include "partials/distribution_area.html" %}
-      </section>
-      <section class="extras-section">
-        <h3>Check</h3>
-        <p class="muted">Under construction.</p>
-      </section>
-    </div>
+    <nav class="extras-menu" aria-label="Extras">
+      <a href="/projects/{{ project.id }}/distribute">Distribute</a>
+      <a href="/projects/{{ project.id }}/check">Check</a>
+    </nav>
   </details>
 </nav>
 

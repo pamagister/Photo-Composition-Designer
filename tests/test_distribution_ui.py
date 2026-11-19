@@ -194,4 +194,17 @@ def test_created_project_opens_first_page_in_editor(client, tmp_path):
     assert f'href="/projects/{project_id}/settings"' in response.text
     assert "Source directories" not in response.text
     assert "Project created." in response.text
-    assert "Distribution" in response.text
+    assert "Distribute" in response.text
+
+
+def test_distribution_page_renders_preview_controls(client, tmp_path):
+    source = tmp_path / "photos"
+    _write_photo(source / "p.jpg")
+    project_id = _create_project(client, source)
+
+    response = client.get(f"/projects/{project_id}/distribute")
+
+    assert response.status_code == 200
+    assert "Distribute photos" in response.text
+    assert "Preview distribution" in response.text
+    assert "Back to project" in response.text

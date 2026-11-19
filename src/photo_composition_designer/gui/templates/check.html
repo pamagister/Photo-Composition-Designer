@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="project-header">
+  <div>
+    <h1>Check</h1>
+    <p class="muted">{{ project.name }} &middot; {{ project.page_count }} pages</p>
+  </div>
+  <a class="button" href="/projects/{{ project.id }}">Back to project</a>
+</div>
+
+<section class="panel">
+  <p class="muted">Under construction.</p>
+</section>
+{% endblock %}
