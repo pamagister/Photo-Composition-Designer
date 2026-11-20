@@ -19,6 +19,12 @@ from photo_composition_designer.layouts.loader import LayoutTemplate
 from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.smart_crop import SmartCrop
 
+#: Normalized tolerance for neighbour detection. The old renderer compared
+#: rounded YAML coordinates with ``1e-9``, which fails for values such as
+#: ``0.133333`` versus ``0.133334``. A tolerance scaled to render resolution
+#: treats sub-pixel drift as a true touch, so the spacing gutter is inserted.
+_NEIGHBOUR_TOLERANCE = 1e-4
+
 
 @dataclass(frozen=True)
 class SlotPhoto:
@@ -70,27 +76,32 @@ class SlotAwareRenderer:
             y0 = int(round(slot.y * page_height))
             x1 = int(round((slot.x + slot.width) * page_width))
             y1 = int(round((slot.y + slot.height) * page_height))
+            # Compare edges in normalized space with a tolerance that absorbs
+            # sub-pixel drift from rounded YAML coordinates (e.g. 0.133333).
+            # The old 1e-9 check treated almost every row as non-touching and
+            # the spacing gutter collapsed to zero.
+            tol = _NEIGHBOUR_TOLERANCE
             neighbors = {
                 "left": any(
-                    abs(other.x + other.width - slot.x) < 1e-9
+                    abs(other.x + other.width - slot.x) < tol
                     and min(other.y + other.height, slot.y + slot.height) > max(other.y, slot.y)
                     for other in layout.slots
                     if other.key != slot.key
                 ),
                 "right": any(
-                    abs(slot.x + slot.width - other.x) < 1e-9
+                    abs(slot.x + slot.width - other.x) < tol
                     and min(other.y + other.height, slot.y + slot.height) > max(other.y, slot.y)
                     for other in layout.slots
                     if other.key != slot.key
                 ),
                 "top": any(
-                    abs(other.y + other.height - slot.y) < 1e-9
+                    abs(other.y + other.height - slot.y) < tol
                     and min(other.x + other.width, slot.x + slot.width) > max(other.x, slot.x)
                     for other in layout.slots
                     if other.key != slot.key
                 ),
                 "bottom": any(
-                    abs(slot.y + slot.height - other.y) < 1e-9
+                    abs(slot.y + slot.height - other.y) < tol
                     and min(other.x + other.width, slot.x + slot.width) > max(other.x, slot.x)
                     for other in layout.slots
                     if other.key != slot.key

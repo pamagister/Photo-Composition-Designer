@@ -17,6 +17,6 @@ slots:
   - key: right
     x: 0.6666
     y: 0.0
-    width: 0.3333
+    width: 0.3334
     height: 1.0
     crop_mode: cover
