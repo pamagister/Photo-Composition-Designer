@@ -106,7 +106,9 @@ control surface.
   center the description. The options only appear when the corresponding global
   setting is enabled. The title page shows the composition title, defaults to
   hiding the map and description, and centers the description. A map is never
-  rendered on the title page or on a page without a visible calendar strip.
+  rendered on the title page or on a page without a visible calendar strip. The
+  map starts one slot spacing below the collage and follows the rounded-corner
+  setting.
 * **Layout** – open **Change layout**, choose a layout and select
   **Preview change**. Assignments are preserved where possible, and displaced
   photos are listed before you confirm.

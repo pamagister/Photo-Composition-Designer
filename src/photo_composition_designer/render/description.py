@@ -56,7 +56,7 @@ class DescriptionRenderer:
         if alignment == "left":
             text_x = self.margin_side_px
             anchor = "lb"
-        elif alignment == "middle":
+        elif alignment in {"middle", "center"}:
             text_x = self.width_px / 2
             anchor = "mb"
         else:  # right

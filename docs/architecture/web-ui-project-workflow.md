@@ -98,9 +98,10 @@ settings increments render revisions only when values actually change.
    global map, calendar-strip and description toggles with `hide_local_map`,
    `hide_calendar_strip` and `hide_description`, and can center its description
    with `center_description`. The map is a bottom-right companion of the
-   calendar strip: it spans from the collage down to the bottom margin and is
-   never rendered on the title page or without a visible calendar strip. The
-   application-wide anniversary file is supplied as a shared render input.
+   calendar strip: it starts one slot spacing below the collage, extends to the
+   bottom margin and follows the rounded-corner setting. It is never rendered on
+   the title page or without a visible calendar strip. The application-wide
+   anniversary file is supplied as a shared render input.
 3. `render/slot_renderer.py` remains the slot compositing component.
 4. `ProjectRenderingService.render_preview` renders a reduced-resolution JPEG and
    caches it under a key covering page revision, layout ID/version, profile hash,

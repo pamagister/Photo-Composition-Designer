@@ -595,16 +595,80 @@ def test_map_spans_description_and_calendar_column():
     assert prepared.map_image is not None
     assert prepared.calendar_strip is not None
     assert prepared.description_image is not None
-    assert prepared.map_top == prepared.box.top + prepared.box.height
-    assert prepared.map_top < prepared.calendar_top
-    assert prepared.calendar_strip.width == prepared.map_x
-    assert prepared.description_image.width == prepared.map_x
-
     dpi = always_profile.size.dpi
+    spacing = mm_to_px(always_profile.layout.spacing, dpi)
     map_width = mm_to_px(always_profile.geo.map_size, dpi)
     margin_sides = mm_to_px(always_profile.layout.margin_sides, dpi)
     page_width = always_profile.page_size_px()[0]
+    assert prepared.map_top == prepared.box.top + prepared.box.height + spacing
+    assert prepared.map_top < prepared.calendar_top
+    assert prepared.calendar_strip.width == prepared.map_x
+    assert prepared.description_image.width == prepared.map_x
     assert prepared.map_x + map_width == page_width - margin_sides
+
+
+def test_map_uses_spacing_and_rounded_corners():
+    profile = OutputProfile.default()
+    map_profile = replace(profile, geo=replace(profile.geo, map_mode="always"))
+    dpi = map_profile.size.dpi
+    page_width, page_height = map_profile.page_size_px()
+    spacing = mm_to_px(map_profile.layout.spacing, dpi)
+    margin_sides = mm_to_px(map_profile.layout.margin_sides, dpi)
+    margin_bottom = mm_to_px(map_profile.layout.margin_bottom, dpi)
+    calendar_height = mm_to_px(map_profile.size.calendar_height, dpi)
+    text_margin = mm_to_px(map_profile.layout.text_margin, dpi)
+    calendar_top = page_height - margin_bottom - calendar_height
+    expected_map_top = calendar_top - text_margin + spacing
+    map_width = mm_to_px(map_profile.geo.map_size, dpi)
+    map_height = page_height - margin_bottom - expected_map_top
+
+    page = _blank_page(
+        output_profile=map_profile,
+        description="",
+        hide_description=True,
+        hide_local_map=False,
+        hide_calendar_strip=False,
+        title_page=False,
+    )
+
+    def renderer(_coordinates: list[tuple[float, float]]) -> Image.Image:
+        return Image.new("RGB", (map_width, map_height), (0, 0, 255))
+
+    prepared = prepare_collage(page, map_profile, map_renderer=renderer)
+
+    assert prepared.map_image is not None
+    assert prepared.map_top == prepared.box.top + prepared.box.height + spacing
+    assert prepared.map_top == expected_map_top
+
+    image = PageComposer(map_renderer=renderer).render(page)
+    background = (20, 20, 20)
+    blue = (0, 0, 255)
+    map_pixels = [
+        (x, y)
+        for y in range(expected_map_top, page_height - margin_bottom)
+        for x in range(prepared.map_x, page_width - margin_sides)
+        if image.getpixel((x, y)) == blue
+    ]
+
+    assert map_pixels
+    assert min(y for _, y in map_pixels) == expected_map_top
+    assert max(y for _, y in map_pixels) == page_height - margin_bottom - 1
+    assert min(x for x, _ in map_pixels) == prepared.map_x
+    assert max(x for x, _ in map_pixels) == page_width - margin_sides - 1
+
+    radius = min(spacing, map_width // 2, map_height // 2)
+    assert image.getpixel((prepared.map_x, expected_map_top)) == background
+    assert image.getpixel((prepared.map_x + radius, expected_map_top)) == blue
+    assert image.getpixel((prepared.map_x, expected_map_top + radius)) == blue
+
+    square_profile = replace(
+        map_profile,
+        layout=replace(map_profile.layout, use_rounded_corners=False),
+    )
+    square_image = PageComposer(map_renderer=renderer).render(
+        replace(page, output_profile=square_profile)
+    )
+    assert square_image.getpixel((prepared.map_x, expected_map_top)) == blue
 
 
 def test_description_alignment_default_left_and_page_center_override():
@@ -651,6 +715,13 @@ def test_description_alignment_default_left_and_page_center_override():
     assert left_box[0] < center_box[0]
     assert inherited_box[0] > left_box[0]
     assert forced_box[0] == left_box[0]
+
+    width = centered.description_image.width
+    margin_sides = mm_to_px(profile.layout.margin_sides, profile.size.dpi)
+    for box in (center_box, inherited_box):
+        assert box[0] >= margin_sides - 2
+        assert box[2] <= width - margin_sides + 2
+        assert abs((box[0] + box[2]) / 2 - width / 2) <= 2
 
 
 def test_text_margin_controls_description_gap():

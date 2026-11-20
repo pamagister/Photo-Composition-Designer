@@ -13,9 +13,10 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from photo_composition_designer.core.anniversaries import Anniversaries
+from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.layouts.loader import LayoutTemplate
 from photo_composition_designer.render.layout_geometry import (
@@ -45,6 +46,25 @@ class PageRenderInput:
     hide_description: bool = False
     center_description: bool | None = None
     anniversaries: Anniversaries | None = None
+
+
+def _paste_rounded(
+    canvas: Image.Image,
+    image: Image.Image,
+    position: tuple[int, int],
+    radius: int,
+) -> None:
+    """Paste an image with rounded corners using the given radius."""
+    if radius <= 0:
+        canvas.paste(image, position)
+        return
+    mask = Image.new("L", image.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, image.width - 1, image.height - 1),
+        radius=radius,
+        fill=255,
+    )
+    canvas.paste(image, position, mask)
 
 
 class PageComposer:
@@ -79,7 +99,20 @@ class PageComposer:
             canvas.paste(collage, (box.left, box.top))
 
         if prepared.map_image is not None:
-            canvas.paste(prepared.map_image, (prepared.map_x, prepared.map_top))
+            spacing = mm_to_px(settings.layout.spacing.value, settings.size.dpi.value)
+            radius = 0
+            if settings.layout.useRoundedCorners.value and spacing > 0:
+                radius = min(
+                    spacing,
+                    prepared.map_image.width // 2,
+                    prepared.map_image.height // 2,
+                )
+            _paste_rounded(
+                canvas,
+                prepared.map_image,
+                (prepared.map_x, prepared.map_top),
+                radius,
+            )
 
         if prepared.calendar_strip is not None:
             canvas.paste(prepared.calendar_strip, (0, prepared.calendar_top))

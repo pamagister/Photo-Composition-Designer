@@ -8,6 +8,8 @@ Changelog
 Fix
 ~~~
 - Add favicon.svg. [Paul Magister]
+- Fix centered description alignment and map spacing/rounded corners Refs #72.
+  [Paul Magister]
 
 Other
 ~~~~~

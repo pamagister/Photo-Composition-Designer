@@ -315,7 +315,8 @@ def prepare_collage(
         map_image = None
         map_top = content_bottom
         if map_present:
-            map_height = content_bottom - photo_bottom
+            map_top = photo_bottom + spacing
+            map_height = content_bottom - map_top
             if map_height > 0:
                 map_image = _render_map(
                     page,
@@ -326,7 +327,6 @@ def prepare_collage(
                     allow_empty=map_mode == "always",
                 )
             if map_image is not None:
-                map_top = photo_bottom
                 break
             map_present = False
             if attempt == 1:
