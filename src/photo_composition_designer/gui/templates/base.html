@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/shutdown.js" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -41,7 +42,12 @@
       <a class="button primary" href="/projects/{{ project_id }}/export">Export photos</a>
       {% endif %}
     </nav>
-    {% block header_status %}<p class="save-state" data-save-state>{{ save_state | default("Saved") }}</p>{% endblock %}
+    <div class="header-end">
+      {% block header_status %}<p class="save-state" data-save-state>{{ save_state | default("Saved") }}</p>{% endblock %}
+      <button class="shutdown-button" type="button" data-shutdown
+              aria-label="Stop the server and close this page"
+              title="Stop server and close">&times;</button>
+    </div>
   </header>
   <main id="main">
     {% block content %}{% endblock %}

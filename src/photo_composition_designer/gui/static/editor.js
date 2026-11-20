@@ -297,6 +297,7 @@
   const ZOOM_MAX = 3.0;
   let cropTimer = null;
   let pendingCrop = null;
+  let lastCropSlotId = null;
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -367,13 +368,21 @@
   function flushCrop() {
     if (!pendingCrop) return;
     const canvas = document.querySelector(".editor-canvas");
-    if (!canvas) return;
+    if (!canvas) {
+      pendingCrop = null;
+      return;
+    }
+    const values = pendingCrop;
+    pendingCrop = null;
+    lastCropSlotId = values.slot_id;
     const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
     window.htmx.ajax("POST", `${base}/crop/live`, {
-      values: pendingCrop,
+      values: values,
     });
-    pendingCrop = null;
   }
+
+  /* Used by the shutdown button to persist a debounced crop adjustment. */
+  window.pcdFlushPending = flushCrop;
 
   document.addEventListener("keydown", function (event) {
     const field = event.target.closest("input, textarea, select, [contenteditable]");
@@ -390,6 +399,23 @@
     if (!xhr || xhr.status !== 204) return;
     const revision = xhr.getResponseHeader("X-Page-Revision");
     if (!revision) return;
+    /* The live crop is persisted; keep the form defaults in sync so the
+     * shutdown button does not report these values as unsaved. */
+    if (lastCropSlotId !== null) {
+      const slot = document.querySelector(
+        `.slot[data-slot-id="${lastCropSlotId}"]`
+      );
+      if (slot) {
+        slot
+          .querySelectorAll(
+            'input[name="crop_zoom"], input[name="crop_focus_x"], input[name="crop_focus_y"]'
+          )
+          .forEach(function (input) {
+            input.defaultValue = input.value;
+          });
+      }
+      lastCropSlotId = null;
+    }
     const canvas = document.querySelector(".editor-canvas");
     if (!canvas) return;
     const image = canvas.querySelector(".page-preview-image");

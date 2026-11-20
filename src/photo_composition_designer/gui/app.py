@@ -11,8 +11,8 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from photo_composition_designer.db.schema import WorkspaceDatabase, read_version
@@ -114,6 +114,27 @@ def create_app(
             "service": "photo-composition-designer",
             "schema_version": read_version(connection),
         }
+
+    @app.post("/shutdown")
+    async def shutdown(request: Request) -> JSONResponse:
+        """Ask the local uvicorn server to exit.
+
+        The endpoint is only available when the CLI started uvicorn and stored
+        its server instance on the application state. The browser polls
+        ``/health`` afterwards and reports when the process is gone.
+        """
+        server = getattr(request.app.state, "server", None)
+        if server is None:
+            return JSONResponse(
+                {
+                    "stopping": False,
+                    "message": "The server was not started by the CLI and cannot "
+                    "be stopped from the browser.",
+                },
+                status_code=503,
+            )
+        server.should_exit = True
+        return JSONResponse({"stopping": True})
 
     @app.get("/", response_class=HTMLResponse)
     def index() -> RedirectResponse:

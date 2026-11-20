@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 import pytest
@@ -66,6 +67,33 @@ def test_health_and_index(client):
 
     response = client.get("/static/style.css")
     assert response.status_code == 200
+
+
+def test_shutdown_reports_when_server_is_not_cli_managed(client):
+    response = client.post("/shutdown")
+
+    assert response.status_code == 503
+    assert response.json()["stopping"] is False
+    assert "message" in response.json()
+
+
+def test_shutdown_signals_the_uvicorn_server(client):
+    server = SimpleNamespace(should_exit=False)
+    client.app.state.server = server
+
+    response = client.post("/shutdown")
+
+    assert response.status_code == 200
+    assert response.json() == {"stopping": True}
+    assert server.should_exit is True
+
+
+def test_header_contains_the_shutdown_button(client):
+    response = client.get("/projects")
+
+    assert response.status_code == 200
+    assert "data-shutdown" in response.text
+    assert "/static/shutdown.js" in response.text
 
 
 def test_create_open_and_rename_project(client):
