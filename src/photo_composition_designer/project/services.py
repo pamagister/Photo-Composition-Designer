@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -26,6 +27,22 @@ def _now() -> str:
 def _as_date(value: datetime | date) -> date:
     """Normalize a date or datetime to a date."""
     return value.date() if isinstance(value, datetime) else value
+
+
+_COPY_SUFFIX_RE = re.compile(r"^(.*) copy(?:-(\d+))?$")
+
+
+def _next_copy_name(name: str, existing_names: set[str]) -> str:
+    """Return the next free automatic copy name for a project."""
+    match = _COPY_SUFFIX_RE.match(name)
+    base = match.group(1) if match else name
+    candidate = f"{base} copy"
+    if candidate not in existing_names:
+        return candidate
+    index = 1
+    while f"{base} copy-{index}" in existing_names:
+        index += 1
+    return f"{base} copy-{index}"
 
 
 class ProjectService:
@@ -284,7 +301,10 @@ class ProjectService:
             if source is None:
                 raise ProjectNotFoundError(f"project {project_id} does not exist")
 
-            duplicate_name = (name if name is not None else f"{source.name} (copy)").strip()
+            existing_names = {project.name for project in project_repository.list()}
+            duplicate_name = (
+                name if name is not None else _next_copy_name(source.name, existing_names)
+            ).strip()
             if not duplicate_name:
                 raise ValueError("project name must not be empty")
 
@@ -374,6 +394,18 @@ class ProjectService:
                 )
 
         return duplicate
+
+    def delete_project(self, project_id: int) -> None:
+        """Delete a project and its project-owned rows.
+
+        Raises:
+            ProjectNotFoundError: If the project does not exist.
+        """
+        with self._database.transaction() as connection:
+            repository = ProjectRepository(connection)
+            if repository.get(project_id) is None:
+                raise ProjectNotFoundError(f"project {project_id} does not exist")
+            repository.delete(project_id)
 
     def get_project(self, project_id: int) -> Project:
         """Return one project or raise a domain error."""

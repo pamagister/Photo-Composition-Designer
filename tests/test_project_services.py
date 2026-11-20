@@ -239,7 +239,7 @@ def test_duplicate_project_copies_state_and_stays_independent(service, database)
     duplicate = service.duplicate_project(project.id)
 
     assert duplicate.id != project.id
-    assert duplicate.name == "Family Calendar (copy)"
+    assert duplicate.name == "Family Calendar copy"
     assert duplicate.output_profile == service.get_project(project.id).output_profile
     assert duplicate.settings == project.settings
 
@@ -306,6 +306,36 @@ def test_duplicate_project_requires_existing_project_and_name(service, database)
     with pytest.raises(ValueError, match="name"):
         service.duplicate_project(project.id, name="   ")
     assert len(service.list_projects()) == 1
+
+
+def test_duplicate_project_generates_incrementing_copy_names(service):
+    project = service.create_project(
+        name="Family Calendar", page_count=1, start_date=datetime(2027, 1, 4)
+    )
+
+    first = service.duplicate_project(project.id)
+    second = service.duplicate_project(project.id)
+    third = service.duplicate_project(project.id)
+
+    assert [first.name, second.name, third.name] == [
+        "Family Calendar copy",
+        "Family Calendar copy-1",
+        "Family Calendar copy-2",
+    ]
+
+
+def test_delete_project_removes_project_owned_rows(service, database):
+    project = service.create_project(
+        name="Delete me", page_count=1, start_date=datetime(2027, 1, 4)
+    )
+
+    service.delete_project(project.id)
+
+    assert service.list_projects() == []
+    with pytest.raises(ProjectNotFoundError):
+        service.get_project(project.id)
+    with database.connect() as connection:
+        assert PageRepository(connection).list(project.id) == []
 
 
 def test_use_title_page_toggle_updates_first_page_overrides(service, database):

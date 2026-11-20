@@ -36,6 +36,7 @@ from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.models import (
     LayoutSlot,
     PhotoAsset,
+    Project,
     ProjectAggregate,
     SourceRoot,
 )
@@ -449,11 +450,44 @@ def _canvas_response(
     )
 
 
+def _project_title_image_urls(
+    database: WorkspaceDatabase,
+    projects: list[Project],
+    settings: GuiSettings,
+) -> dict[int, str]:
+    """Return cached first-page preview URLs for project tiles.
+
+    The list page only shows a compact title image. It never renders a preview
+    on demand, so projects without a cached preview fall back to a neutral
+    placeholder in the template.
+    """
+    if not projects:
+        return {}
+    connection = database.connect()
+    rendering = ProjectRenderingService(
+        database,
+        anniversaries_path=settings.anniversaries_path,
+    )
+    urls: dict[int, str] = {}
+    for project in projects:
+        pages = PageRepository(connection).list(project.id)
+        if not pages:
+            continue
+        page = pages[0]
+        key = preview_cache_key_for(rendering, connection, page, max_width=320, mode="preview")
+        if (settings.preview_dir() / "pages" / f"{key}.jpg").is_file():
+            urls[project.id] = f"/projects/{project.id}/preview-assets/{key}.jpg"
+    return urls
+
+
 @router.get("/projects", response_class=HTMLResponse)
 def list_projects(
     request: Request,
     service: ProjectServiceDependency,
+    database: DatabaseDependency,
+    settings: SettingsDependency,
     error: str = "",
+    deleted: bool = False,
 ) -> HTMLResponse:
     """List all projects in the central workspace."""
     projects = service.list_projects()
@@ -462,9 +496,11 @@ def list_projects(
         "projects.html",
         {
             "projects": projects,
+            "title_image_urls": _project_title_image_urls(database, projects, settings),
             "page_title": "Projects",
             "save_state": "Saved",
             "error": error,
+            "notice": "Project deleted." if deleted else "",
         },
     )
 
@@ -1126,6 +1162,19 @@ def rename_project(
     except (ValueError, ProjectError) as exc:
         return _error_redirect(project_id, str(exc))
     return RedirectResponse(f"/projects/{project_id}?saved=1", status_code=303)
+
+
+@router.post("/projects/{project_id}/delete", response_model=None)
+def delete_project(
+    project_id: int,
+    service: ProjectServiceDependency,
+) -> RedirectResponse:
+    """Delete a project and return to the project list."""
+    try:
+        service.delete_project(project_id)
+    except ProjectError as exc:
+        return RedirectResponse(f"/projects?error={quote(str(exc))}", status_code=303)
+    return RedirectResponse("/projects?deleted=1", status_code=303)
 
 
 @router.get("/projects/{project_id}/distribute/preview", response_class=HTMLResponse)

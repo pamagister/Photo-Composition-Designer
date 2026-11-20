@@ -158,7 +158,7 @@ def test_global_navigation_shows_project_actions_only_for_open_project(
     assert ">Extras" not in overview.text
 
 
-def test_projects_page_exposes_archive_import_and_duplicate_controls(
+def test_projects_page_renders_project_tiles_with_actions(
     client: TestClient, gui_settings: GuiSettings
 ):
     project_id = _create_project(client)
@@ -166,11 +166,56 @@ def test_projects_page_exposes_archive_import_and_duplicate_controls(
     projects = client.get("/projects")
 
     assert projects.status_code == 200
+    assert 'class="project-card"' in projects.text
+    assert f'href="/projects/{project_id}"' in projects.text
+    assert "project-card-placeholder" in projects.text
+    assert "Updated " in projects.text
+    assert "2 pages" in projects.text
+    assert "2027" in projects.text
+    assert f'action="/projects/{project_id}/duplicate"' in projects.text
+    assert ">Duplicate</button>" in projects.text
     assert f'href="/projects/{project_id}/archive"' in projects.text
-    assert "Export project (.pcd)" in projects.text
-    assert "Duplicate project" in projects.text
+    assert "Export .pcd" in projects.text
+    assert f'action="/projects/{project_id}/delete"' in projects.text
+    assert 'class="danger icon-button"' in projects.text
+    assert 'aria-label="Delete Family Calendar"' in projects.text
+    assert "return confirm(" in projects.text
+    assert 'name="name"' not in projects.text
     assert 'action="/projects/import-pcd"' in projects.text
     assert "Import project (.pcd)" in projects.text
+
+
+def test_projects_page_uses_cached_first_page_preview_as_title_image(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    _, pages = _project_state(gui_settings, project_id)
+
+    preview = client.get(f"/projects/{project_id}/pages/{pages[0].id}/preview?max_width=320")
+    assert preview.status_code == 200
+
+    projects = client.get("/projects")
+
+    assert projects.status_code == 200
+    assert f"/projects/{project_id}/preview-assets/" in projects.text
+    assert "project-card-placeholder" not in projects.text
+
+
+def test_delete_project_route_removes_project_and_returns_to_list(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    response = client.post(f"/projects/{project_id}/delete", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/projects?deleted=1"
+    assert client.get(f"/projects/{project_id}").status_code == 404
+
+    listing = client.get("/projects?deleted=1")
+    assert listing.status_code == 200
+    assert "Project deleted." in listing.text
+    assert f"/projects/{project_id}" not in listing.text
 
 
 def test_project_detail_no_longer_duplicates_archive_or_imports(
@@ -446,6 +491,25 @@ def test_duplicate_project_route_creates_independent_copy(
     source_after, source_pages_after = _project_state(gui_settings, project_id)
     assert source_after.output_profile["size"]["dpi"] == 300
     assert all(page.render_revision == 0 for page in source_pages_after)
+
+
+def test_duplicate_project_route_generates_incrementing_copy_names(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    first = client.post(f"/projects/{project_id}/duplicate", follow_redirects=False)
+    assert first.status_code == 303
+    first_id = int(urlsplit(first.headers["location"]).path.split("/")[-1])
+
+    second = client.post(f"/projects/{project_id}/duplicate", follow_redirects=False)
+    assert second.status_code == 303
+    second_id = int(urlsplit(second.headers["location"]).path.split("/")[-1])
+
+    first_project, _ = _project_state(gui_settings, first_id)
+    second_project, _ = _project_state(gui_settings, second_id)
+    assert first_project.name == "Family Calendar copy"
+    assert second_project.name == "Family Calendar copy-1"
 
 
 def test_duplicate_project_route_rejects_blank_name(client: TestClient):

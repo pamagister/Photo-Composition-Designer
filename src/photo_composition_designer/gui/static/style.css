@@ -296,21 +296,85 @@ label {
 }
 
 .project-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--gap);
 }
 
 .project-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.9rem;
+}
+
+.project-card-preview {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+
+.project-card-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.project-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
 }
 
 .project-card h2 {
-  margin: 0 0 0.35rem;
-  font-size: 1.05rem;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.project-card-meta {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.project-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.project-card-actions form {
+  margin: 0;
+}
+
+.project-card-actions .button,
+.project-card-actions button {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
 }
 
 .project-header-actions {
@@ -318,35 +382,6 @@ label {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-.project-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.project-row-main {
-  min-width: 12rem;
-}
-
-.project-row-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.project-duplicate {
-  margin: 0;
-  flex-wrap: nowrap;
-}
-
-.project-duplicate .field {
-  flex: 1 1 12rem;
-  min-width: 8rem;
 }
 
 .import-project form {
@@ -1228,6 +1263,10 @@ summary {
 
 /* Responsive layout comes last so it overrides the base grid rules. */
 @media (max-width: 1000px) {
+  .project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .project-layout {
     grid-template-columns: 1fr;
   }
@@ -1259,6 +1298,10 @@ summary {
 @media (max-width: 700px) {
   #main {
     padding: 0.75rem;
+  }
+
+  .project-grid {
+    grid-template-columns: 1fr;
   }
 
   .workspace-status {

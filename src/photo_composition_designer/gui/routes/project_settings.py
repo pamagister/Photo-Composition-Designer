@@ -285,11 +285,11 @@ async def save_project_settings(
 def duplicate_project(
     project_id: int,
     service: ProjectServiceDependency,
-    name: Annotated[str, Form()] = "",
+    name: Annotated[str | None, Form()] = None,
 ) -> RedirectResponse:
     """Duplicate a project within the workspace and open the copy."""
     try:
-        duplicate = service.duplicate_project(project_id, name=name or None)
+        duplicate = service.duplicate_project(project_id, name=name)
     except (ValueError, ProjectError) as exc:
         return RedirectResponse(
             f"/projects?error={quote(str(exc))}",
