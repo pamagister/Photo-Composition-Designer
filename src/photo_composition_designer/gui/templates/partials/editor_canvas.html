@@ -11,7 +11,9 @@
   <img id="page-thumb-preview-{{ page.id }}"
        class="page-thumb-preview"
        src="{% if thumb_cache_key %}/projects/{{ project_id }}/preview-assets/{{ thumb_cache_key }}.jpg{% else %}/projects/{{ project_id }}/pages/{{ page.id }}/preview?max_width=320&v={{ page.render_revision }}{% endif %}"
-       alt="" loading="lazy" decoding="async" hx-swap-oob="outerHTML">
+       alt="" loading="lazy" decoding="async" data-project-id="{{ project_id }}"
+       data-page-id="{{ page.id }}" data-preview-width="320"
+       data-revision="{{ page.render_revision }}" hx-swap-oob="outerHTML">
   {% set thumb_page = page %}
   {% set description_hint = show_description_override and not page.hide_description and not page.description %}
   {% set incomplete_hint = (slots | length) > 0 and (assignments | length) < (slots | length) %}
@@ -27,6 +29,7 @@
              src="/projects/{{ project_id }}/pages/{{ page.id }}/preview?v={{ page.render_revision }}"
              alt="Rendered preview for {{ page.start_date }}" loading="eager"
              data-project-id="{{ project_id }}" data-page-id="{{ page.id }}"
+             data-preview-width="640"
              data-revision="{{ page.render_revision }}">
         <div class="page-preview-refreshing" role="status" aria-live="polite" hidden>
           <span class="page-preview-refreshing-spinner" aria-hidden="true"></span>

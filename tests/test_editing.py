@@ -263,6 +263,10 @@ def test_set_description_persists_text_and_increments_revision(tmp_path):
         assert page is not None
         assert page.description == "A calm week by the lake."
         assert page.render_revision == before_revision + 1
+        revision = page.render_revision
+
+        editing.set_description(project_id, page_id, "A calm week by the lake.")
+        assert _page_revision(database, page_id) == revision
     finally:
         database.close()
 
@@ -382,12 +386,18 @@ def test_project_page_renders_sidebar_preview_thumbnails(editor_client, tmp_path
     response = editor_client.get(f"/projects/{project_id}?page={page_id}")
 
     assert response.status_code == 200
-    # Sidebar thumbnails use the immutable asset URL (computed from the cache
-    # key) when the preview file exists, or fall back to the database-resolved
-    # preview route otherwise.
-    assert f"/projects/{project_id}/preview-assets/" in response.text
+    # A missing immutable asset falls back to the route that queues its render.
+    thumbnail_url = f"/projects/{project_id}/pages/{page_id}/preview?max_width=320&v="
+    assert thumbnail_url in response.text
     assert "page-thumb-preview" in response.text
     assert 'hx-swap-oob="outerHTML"' not in response.text
+
+    thumbnail = editor_client.get(thumbnail_url.split("&v=")[0])
+    assert thumbnail.status_code == 200
+    assert thumbnail.headers["content-type"] == "image/jpeg"
+
+    refreshed = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert f"/projects/{project_id}/preview-assets/" in refreshed.text
 
 
 def _seed_via_client(
@@ -768,6 +778,13 @@ def test_populate_route_reports_assigned_and_refreshes_strip(editor_client, tmp_
     assert "Populated 1 slot(s)." in response.text
     assert response.headers["HX-Trigger"] == "pcd:refresh-unused"
     assert _stored_revision(page_id) == before + 1
+    for width in (320, 640):
+        preview = editor_client.get(
+            f"/projects/{project_id}/pages/{page_id}/preview",
+            params={"max_width": width},
+        )
+        assert preview.status_code == 200
+        assert preview.headers["content-type"] == "image/jpeg"
 
     # Filling again has nothing left to do.
     second = editor_client.post(f"/projects/{project_id}/pages/{page_id}/populate")

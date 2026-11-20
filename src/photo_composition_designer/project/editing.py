@@ -524,6 +524,8 @@ class PageEditingService:
             page = PageRepository(connection).get(page_id)
             if page is None or page.project_id != project_id:
                 raise ProjectError(f"page {page_id} does not exist")
+            if page.description == description:
+                return
             PageRepository(connection).update_description(page_id, description)
 
     def set_local_overrides(
@@ -540,6 +542,12 @@ class PageEditingService:
             page = PageRepository(connection).get(page_id)
             if page is None or page.project_id != project_id:
                 raise ProjectError(f"page {page_id} does not exist")
+            if (
+                page.hide_local_map == hide_local_map
+                and page.hide_calendar_strip == hide_calendar_strip
+                and page.hide_description == hide_description
+            ):
+                return
             PageRepository(connection).set_local_overrides(
                 page_id,
                 hide_local_map=hide_local_map,

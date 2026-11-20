@@ -253,6 +253,40 @@
     }
   });
 
+  let retainedPreviews = null;
+
+  function snapshotPreview(image) {
+    if (!image || image.naturalWidth <= 1) return null;
+    const snapshot = document.createElement("canvas");
+    snapshot.width = image.naturalWidth;
+    snapshot.height = image.naturalHeight;
+    const context = snapshot.getContext("2d");
+    if (!context) return null;
+    try {
+      context.drawImage(image, 0, 0);
+      return snapshot.toDataURL("image/jpeg", 0.9);
+    } catch (error) {
+      console.warn("Could not retain the current page preview:", error);
+      return null;
+    }
+  }
+
+  document.addEventListener("htmx:beforeSwap", function (event) {
+    const target = event.detail ? event.detail.target : null;
+    if (!(target instanceof Element) || !target.matches(".editor-canvas")) return;
+    const image = target.querySelector(".page-preview-image");
+    const thumbnail = document.getElementById(
+      `page-thumb-preview-${target.dataset.pageId}`
+    );
+    retainedPreviews = {
+      projectId: target.dataset.projectId,
+      pageId: target.dataset.pageId,
+      revision: target.dataset.renderRevision,
+      image: snapshotPreview(image),
+      thumbnail: snapshotPreview(thumbnail),
+    };
+  });
+
   /* Keyboard crop: with an occupied slot selected, arrow keys nudge the focal
    * point and +/- nudge the zoom. Changes are debounced and sent to the live
    * crop endpoint; the preview image and sliders update in place so selection,
@@ -360,27 +394,30 @@
     if (!canvas) return;
     const image = canvas.querySelector(".page-preview-image");
     if (!image) return;
-    const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
-    refreshPreview(canvas.dataset.projectId, canvas.dataset.pageId, revision);
-    /* Set a placeholder src immediately so the old image is replaced while
-     * the new one renders in the background. */
-    image.src = `${base}/preview?v=${revision}`;
+    refreshPreview(canvas.dataset.projectId, canvas.dataset.pageId, revision, image, false);
   });
 
-  /* Poll the preview-status endpoint until the preview for the current
-   * revision is ready, then reload the image and hide the overlay.
-   * Shows a "refreshing" overlay while waiting. Times out after 30s. */
-  function refreshPreview(projectId, pageId, revision) {
-    const canvas = document.querySelector(".editor-canvas");
-    if (!canvas) return;
-    const overlay = canvas.querySelector(".page-preview-refreshing");
+  /* Poll after a cache miss, then load the completed image before replacing
+   * the visible preview. The current image remains visible while rendering. */
+  function refreshPreview(projectId, pageId, revision, image, showOverlay = true) {
+    if (!image || !image.isConnected) return;
+    const width = Number(image.dataset.previewWidth || 640);
+    const isMainPreview = image.classList.contains("page-preview-image");
+    const canvas = image.closest(".editor-canvas");
+    const overlay = showOverlay && isMainPreview && canvas
+      ? canvas.querySelector(".page-preview-refreshing")
+      : null;
     if (overlay) overlay.hidden = false;
 
-    const statusUrl = `/projects/${projectId}/pages/${pageId}/preview-status?max_width=640`;
+    const statusUrl =
+      `/projects/${projectId}/pages/${pageId}/preview-status?max_width=${width}`;
+    const pollToken = Symbol("preview-poll");
+    image._previewPollToken = pollToken;
     const maxAttempts = 60; /* 30 seconds at 500 ms */
     let attempts = 0;
 
     function poll() {
+      if (!image.isConnected || image._previewPollToken !== pollToken) return;
       attempts += 1;
       if (attempts > maxAttempts) {
         if (overlay) overlay.hidden = true;
@@ -389,23 +426,42 @@
       fetch(statusUrl)
         .then(function (response) { return response.json(); })
         .then(function (data) {
+          if (!image.isConnected || image._previewPollToken !== pollToken) return;
           if (data.status === "ready") {
-            const image = canvas.querySelector(".page-preview-image");
-            if (image) {
-              /* Cache-bust so the browser fetches the new bytes. */
-              image.src = `/projects/${projectId}/pages/${pageId}/preview?v=${revision}&_=${Date.now()}`;
-            }
-            if (overlay) overlay.hidden = true;
+            const readyRevision = data.revision || revision;
+            const url =
+              `/projects/${projectId}/pages/${pageId}/preview?max_width=${width}` +
+              `&v=${readyRevision}&_=${Date.now()}`;
+            const loaded = new Image();
+            loaded.onload = function () {
+              if (!image.isConnected || image._previewPollToken !== pollToken) return;
+              if (loaded.naturalWidth <= 1) {
+                setTimeout(poll, 500);
+                return;
+              }
+              image.onload = function () {
+                if (overlay) overlay.hidden = true;
+              };
+              image.onerror = function () {
+                if (overlay) overlay.hidden = true;
+              };
+              image.dataset.revision = readyRevision;
+              image.src = url;
+            };
+            loaded.onerror = function () {
+              if (overlay) overlay.hidden = true;
+              console.error("Preview image failed to load:", url);
+            };
+            loaded.src = url;
           } else if (data.status === "error") {
             if (overlay) overlay.hidden = true;
-            /* Surface the error in the console for debugging. */
             console.error("Preview refresh failed:", data.error || "unknown error");
           } else {
             setTimeout(poll, 500);
           }
         })
         .catch(function () {
-          /* Network error: keep polling. */
+          if (!image.isConnected || image._previewPollToken !== pollToken) return;
           setTimeout(poll, 500);
         });
     }
@@ -413,26 +469,60 @@
     poll();
   }
 
-  /* On page load, if the preview image is a 1x1 placeholder (the server
-   * returned 202 because the preview is still rendering), start polling. */
-  document.addEventListener("DOMContentLoaded", function () {
+  function watchPreviewImages() {
     const canvas = document.querySelector(".editor-canvas");
-    if (!canvas) return;
-    const image = canvas.querySelector(".page-preview-image");
-    if (!image) return;
-    function checkPlaceholder() {
-      if (image.complete && image.naturalWidth <= 1) {
+    const previous = retainedPreviews;
+    if (
+      canvas &&
+      previous &&
+      canvas.dataset.projectId === previous.projectId &&
+      canvas.dataset.pageId === previous.pageId &&
+      canvas.dataset.renderRevision !== previous.revision
+    ) {
+      retainedPreviews = null;
+      const currentImages = [
+        [canvas.querySelector(".page-preview-image"), previous.image],
+        [
+          document.getElementById(`page-thumb-preview-${previous.pageId}`),
+          previous.thumbnail,
+        ],
+      ];
+      currentImages.forEach(function ([image, snapshot]) {
+        if (!image || !snapshot) return;
+        image.src = snapshot;
         refreshPreview(
-          canvas.dataset.projectId,
-          canvas.dataset.pageId,
-          canvas.dataset.renderRevision || image.getAttribute("data-revision") || "0"
+          previous.projectId,
+          previous.pageId,
+          canvas.dataset.renderRevision,
+          image,
+          false
         );
-      }
+      });
     }
-    if (image.complete) {
-      checkPlaceholder();
-    } else {
-      image.addEventListener("load", checkPlaceholder, { once: true });
-    }
-  });
+
+    document
+      .querySelectorAll(".page-preview-image, .page-thumb-preview[data-preview-width]")
+      .forEach(function (image) {
+        if (image.dataset.previewWatched) return;
+        image.dataset.previewWatched = "true";
+        const checkPlaceholder = function () {
+          if (!image.isConnected || !image.complete || image.naturalWidth > 1) return;
+          refreshPreview(
+            image.dataset.projectId,
+            image.dataset.pageId,
+            image.dataset.revision || "0",
+            image
+          );
+        };
+        image.addEventListener("load", checkPlaceholder);
+        if (image.complete) checkPlaceholder();
+      });
+  }
+
+  document.addEventListener("htmx:afterSwap", watchPreviewImages);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", watchPreviewImages, { once: true });
+  } else {
+    watchPreviewImages();
+  }
 })();

@@ -235,10 +235,10 @@ def _project_context(
             database,
             anniversaries_path=settings.anniversaries_path,
         )
-        thumb_cache_keys = {
-            pg.id: preview_cache_key_for(rendering, connection, pg, max_width=320, mode="preview")
-            for pg in pages
-        }
+        for pg in pages:
+            key = preview_cache_key_for(rendering, connection, pg, max_width=320, mode="preview")
+            if (settings.preview_dir() / "pages" / f"{key}.jpg").is_file():
+                thumb_cache_keys[pg.id] = key
 
     return {
         "project": aggregate.project,
@@ -381,6 +381,8 @@ def _page_context(
         thumb_cache_key = preview_cache_key_for(
             rendering, connection, page, max_width=320, mode="preview"
         )
+        if not (settings.preview_dir() / "pages" / f"{thumb_cache_key}.jpg").is_file():
+            thumb_cache_key = ""
 
     context = {
         "page": page,
@@ -435,6 +437,10 @@ def _canvas_response(
     if context is None:
         raise HTTPException(404, "page not found")
     context = {**context, "notice": message, "oob_page_thumb": True}
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is not None:
+        worker.submit(project_id, page_id, max_width=640, priority=0)
+        worker.submit(project_id, page_id, max_width=320, priority=1)
     return TEMPLATES.TemplateResponse(
         request,
         "partials/editor_canvas.html",
