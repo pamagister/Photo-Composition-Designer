@@ -147,7 +147,7 @@ def live_server(
     port = _free_port()
     server = uvicorn.Server(
         uvicorn.Config(
-            create_app(settings, sync_preview_worker=True),
+            create_app(settings),
             host="127.0.0.1",
             port=port,
             log_level="warning",
@@ -197,6 +197,20 @@ def _open_editor(page, live_server, page_id: int) -> None:
     expect(page.locator("#page-detail")).to_be_visible()
 
 
+def _wait_for_page_previews(page, page_id: int) -> None:
+    """Wait until both the large preview and its sidebar thumbnail have image data."""
+    page.wait_for_function(
+        """(pageId) => {
+          const images = [
+            document.querySelector(".page-preview-image"),
+            document.getElementById(`page-thumb-preview-${pageId}`)
+          ];
+          return images.every((image) => image && image.complete && image.naturalWidth > 1);
+        }""",
+        arg=page_id,
+    )
+
+
 def test_assign_replace_move_and_remove(live_server, browser_page):
     page = browser_page
     photo_ids = live_server["photo_ids"]
@@ -212,6 +226,7 @@ def test_assign_replace_move_and_remove(live_server, browser_page):
     expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
         "data-photo-id", str(photo_ids[0])
     )
+    _wait_for_page_previews(page, live_server["page_ids"][0])
 
     # Replace: swap in a different unused photo and return the old one to the pool.
     first_slot = _slot(page, "slot_0")
@@ -314,6 +329,7 @@ def test_dropzone_drag_assigns_replaces_and_swaps(live_server, browser_page):
     expect(_slot(page, "slot_0").locator("img")).to_have_attribute(
         "data-photo-id", str(photo_ids[0])
     )
+    _wait_for_page_previews(page, live_server["page_ids"][0])
     expect(page.locator('.slot-dropzone[data-slot-key="slot_0"]')).to_have_class(
         "slot-dropzone occupied"
     )

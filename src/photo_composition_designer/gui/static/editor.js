@@ -488,8 +488,8 @@
         ],
       ];
       currentImages.forEach(function ([image, snapshot]) {
-        if (!image || !snapshot) return;
-        image.src = snapshot;
+        if (!image) return;
+        if (snapshot) image.src = snapshot;
         refreshPreview(
           previous.projectId,
           previous.pageId,
