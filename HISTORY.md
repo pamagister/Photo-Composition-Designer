@@ -11,6 +11,20 @@ Fix
 
 Other
 ~~~~~
+- Perf(previews): draft previews, background worker and render caches Refs
+  #58, #59, #60, #61, #62. [Paul Magister]
+
+  Complete the many-photo render performance plan (Phases 0-4 and 6; Phase 5
+  reviewed and closed as not needed). Preview rendering now uses a draft profile
+  (reduced DPI) that covers the requested width at ~1.5x device pixels, a
+  prioritized in-process worker renders previews off the request path with
+  refreshing/ready/error client state, sidebar thumbnails use immutable asset
+  URLs, the map render is cached in a bounded LRU, object detection uses a faster
+  full-image fingerprint with low-priority warm-up, and build_input batches its
+  lookups. Cold 640 px previews dropped from ~226-436 ms to ~86-278 ms and bulk
+  refresh of 10 pages from ~8-9 s to ~1.4-2.8 s, with the full-resolution export
+  path unchanged. Adds docs/develop/preview-pipeline.md and promotes the
+  benchmark harness to scripts/benchmark_render.py.
 - Fix(build): add PyInstaller entry point for restructured package Refs
   #56. [Paul Magister]
 - Test: add fast baseline subset and testall target. [Paul Magister]

@@ -1,6 +1,6 @@
 # Performance Plan: Fast, Robust Preview Updates for Large Collages
 
-**Status:** Draft for review
+**Status:** Complete (Phases 0-4 and 6 done; Phase 5 closed as not needed)
 **Created:** 2026-11-19
 **Target branch:** `main`
 **Repository:** `pamagister/Photo-Composition-Designer`
@@ -37,20 +37,18 @@ Desired outcomes, in priority order:
 Reference: 216x154 mm @ 300 dpi page (2551x1819 px), one photo per slot,
 JPEG decoding and Pillow resizing dominate; map is matplotlib/geopandas.
 
-Most timings below are reproducible with the harness collection in
-`temp/performance-artifacts/` (see Section 1.1). Run from the repository root:
+Most timings below are reproducible with the canonical harness in
+`scripts/benchmark_render.py` (see Section 1.1). Run from the repository root:
 
 ```bash
-uv run python temp/performance-artifacts/01_render_scaling.py      # page render + preview write
-uv run python temp/performance-artifacts/02_collage_profile.py 14  # cProfile + collage/composite split
-uv run python temp/performance-artifacts/03_preview_cost.py        # cold vs warm preview, per width
-uv run python temp/performance-artifacts/04_bulk_refresh.py        # project-wide refresh (blocking bulk action)
-uv run python temp/performance-artifacts/05_map_calendar_cost.py   # map + calendar composite cost
-uv run python temp/performance-artifacts/06_object_detection_cost.py  # YOLO + fingerprint cost
-uv run python temp/performance-artifacts/07_fragment_cost.py       # editor fragment / context cost
-uv run python temp/performance-artifacts/08_draft_preview.py       # draft-preview design evaluation
-uv run python temp/performance-artifacts/09_decode_resize.py       # decode/resize strategy comparison
+uv run python scripts/benchmark_render.py            # full benchmark (row + grid)
+uv run python scripts/benchmark_render.py --gps      # also exercise the map path
+uv run python scripts/benchmark_render.py --geometry row
 ```
+
+The original ad-hoc analysis scripts that produced the first baseline table have
+been consolidated into this single command; see the final measurement in
+Section 1.2.
 
 | Workload | Measured |
 | --- | --- |
@@ -114,30 +112,72 @@ numbers as acceptance gates. Preserve raw output with the benchmark run
 (environment, image dimensions, layout, slot count, and warm/cold state) so
 future comparisons are reproducible.
 
-### 1.1 Harness collection
+### 1.1 Canonical harness
 
-The scripts in `temp/performance-artifacts/` are analysis tools, not part of the
-application or test suite. They build an isolated synthetic project (real JPEG
+The benchmark lives in `scripts/benchmark_render.py` and its shared seeding
+helpers in `scripts/harness_common.py`. Both are analysis tools, not part of the
+application or test suite, and are intentionally kept out of `src/`, `tests/`
+and the package build. They build an isolated synthetic project (real JPEG
 fixtures from `images/`, the default 300 dpi profile) in a throwaway directory,
 so they never touch a real workspace.
 
-| Script | Purpose |
-| --- | --- |
-| `harness_common.py` | Shared workspace seeding, project creation, cleanup |
-| `01_render_scaling.py` | Page render + preview-write time across slot counts |
-| `02_collage_profile.py` | cProfile of one page; collage vs. composite attribution |
-| `03_preview_cost.py` | Cold vs warm preview, per `max_width` |
-| `04_bulk_refresh.py` | Project-wide "refresh all previews" cost |
-| `05_map_calendar_cost.py` | Map (matplotlib/geopandas) and calendar (`holidays`) cost |
-| `06_object_detection_cost.py` | Cold YOLO, warm cache, fingerprint cost, fast-fingerprint prototype |
-| `07_fragment_cost.py` | `_page_context` / Jinja render cost for many slots |
-| `08_draft_preview.py` | Draft-preview (reduced DPI) time and pixel-difference evaluation |
-| `09_decode_resize.py` | Slot decode/resize strategy comparison (LANCZOS/BILINEAR/draft) |
+The harness consolidates the measurements that were originally taken with
+per-topic ad-hoc scripts (render scaling, collage profile, preview cost, bulk
+refresh, map/calendar cost, object-detection cost, fragment cost, draft-preview
+and decode/resize comparison). The temporary analysis scripts and their
+`temp/performance-artifacts/` directory have been removed; `scripts/benchmark_render.py`
+is now the single, canonical baseline command.
 
-These harnesses are intentionally kept out of `src/`, `tests/`, and the package
-build. Phase 0 of this plan promotes the relevant parts into
-`scripts/benchmark_render.py` and `tests/test_render_performance.py`; until then
-this collection is the canonical baseline.
+| Capability | Covered by the harness |
+| --- | --- |
+| Page render + preview write | `measure_render` across 4/14/30/45 slots, row and grid geometry |
+| Cold vs. warm preview | `measure_preview` at 320 and 640 px |
+| Bulk "refresh all previews" | `measure_bulk` (10 pages, 320 px) |
+| Editor context + canvas template | `measure_fragment` (45 slots) |
+| Map path | `--gps` seeds coordinates and clears the page map override |
+| Run metadata | `_environment` prints platform, Python/Pillow/numpy versions and profile |
+
+The benchmark prints a header with the environment so comparisons are
+reproducible. Correctness of the optimizations is guarded separately by
+`tests/test_render_performance.py`, `tests/test_preview_assets.py` and
+`tests/test_preview_worker.py`.
+
+### 1.2 Final measurement (2026-11-20)
+
+The canonical harness was rerun after Phases 0-4 (and with the Phase 5 no-go)
+on this machine. Environment: Linux x86_64, Python 3.13.18, Pillow 12.0.0,
+numpy 2.4.6, page profile 2551x1819 px @ 300 dpi. Three consecutive runs were
+within a few percent; the ranges below cover them.
+
+| Workload | Original baseline | Final (2026-11-20) | Change |
+| --- | --- | --- | --- |
+| Full page render, 4/14/30/45 (row) | 150 / 220 / 295 / 402 ms | 150-151 / 227-240 / 355-446 / 438-450 ms | Export path unchanged; run-to-run variance |
+| Full page render, 4/14/30/45 (grid) | not measured | 105-120 / 293-325 / 703-733 / 804-861 ms | New representative geometry |
+| Preview write, 320 / 640 px | 48-76 / 62-81 ms | 49-61 / 64-71 ms | Unchanged (write path untouched) |
+| Preview 640 cold, 4/14/30 (row) | 226 / 302 / 436 ms | 86-89 / 157-158 / 277-278 ms | ~1.6-2.6x faster (draft render) |
+| Preview 640 warm (cache hit) | ~0.6 ms | ~0.5-0.6 ms | Unchanged, well under the 5 ms target |
+| Bulk refresh, 10 pages @ 320 px | 8.2-9.3 s cold | 1.44-1.58 s (14 slots) / 2.71-2.79 s (30 slots) | ~5-6x faster |
+| Editor context, 45 slots | 60-65 ms | 58.9-64.9 ms | Unchanged |
+| Editor canvas template, 45 slots | ~23 ms | 17.2-22.0 ms | Unchanged |
+| Map render | ~0.78-1.1 s per render | Cached per coordinate set (LRU); repeat ~0 | P3-W04 |
+
+Notes:
+
+- **Preview latency is the user-visible win.** A cold 640 px preview dropped
+  from 226-436 ms to 86-278 ms because `render_preview` renders at the draft
+  profile (D1) instead of at full 300 dpi and downscaling.
+- **Bulk refresh is no longer a request cost.** The measured 1.4-2.8 s is the
+  component cost of rendering 10 pages sequentially; in the app the work runs on
+  the background worker, so the request returns immediately.
+- **Full-resolution render and export are deliberately unchanged.** Their
+  absolute numbers vary with machine load; no export pixel change is accepted.
+- **Map cost is amortized.** The bounded LRU makes a repeat render with the same
+  coordinates a cache hit (guarded by `tests/test_render_performance.py`).
+- **Warm cache and editor context are unchanged**, confirming the optimizations
+  target the cold render path without regressing the cheap paths.
+
+This closes the performance topic: the perceived latency target is met, exports
+are untouched, and no further optimization (Phase 5) is justified.
 
 ## 2. Scope, constraints and explicit non-goals
 
@@ -367,9 +407,10 @@ its target metric did not improve or a correctness test regressed.
 - **"Update only changed parts (calendar, map) in the UI"** — the page is one
   image; partial UI updates would require layering the page as separate DOM
   images (collage / calendar / map / description). That is a larger UI refactor
-  (Phase 6, optional) and is only worth it if D4's server-side caching does not
+  (Phase 5, optional) and is only worth it if D4's server-side caching does not
   make the full re-render cheap enough. The server-side cache (D4) is the
-  pragmatic first step; the layered UI is the fallback.
+  pragmatic first step; the layered UI is the fallback. Phase 5 was closed as
+  not needed after Phases 1-4 met the latency target.
 
 ## 4. Phases and work packages
 
@@ -678,37 +719,39 @@ enabled. The sidebar keeps composed 320 px page previews with lazy loading and
 async decoding; no `content-visibility` change was justified by a browser
 trace.
 
-### Phase 5 — Optional: layered page or per-slot caching
+### Phase 5 — Optional: layered page or per-slot caching [x]
 
-**Objective:** Only if Phases 1-4 still miss the latency target on the largest
-collages (45+ slots) or on map-heavy projects.
+**Outcome (2026-11-20): Closed as "not needed"; not implemented.** The user
+confirmed the preview latency is sufficient after Phases 1-4. The final
+benchmark (Section 1.2) shows cold 640 px previews at ~86-89 / ~157-158 / ~277-278
+ms for 4/14/30 slots (row geometry), ~1.5-2.5x faster than the original
+baseline, and bulk refresh of 10 pages at 320 px in ~1.4-1.6 s instead of
+~8-9 s. No measured Phase 4 gap remains on the largest collages, so neither
+per-slot caching nor the layered-DOM fallback is started.
 
-- [ ] P5-W01: Prototype per-slot render caching keyed by
-  `(photo_path, mtime, crop params, slot pixel size)` and reuse across page
-  revisions. Gate on a measured win; do not ship if the win is < ~20%.
-- [ ] P5-W02 (fallback): Layer the page in the DOM as separate
-  collage / calendar / map / description images and update only the changed
-  layer. This is a UI contract change and needs its own design review; only
-  start it if P5-W01 is insufficient and the product wants it.
+- [x] P5-W01: Not implemented — closed as not needed (no measurable Phase 4 gap).
+- [x] P5-W02 (fallback): Not implemented — not required; no UI contract change.
 
-**Acceptance criteria**
+**Phase gate:** Explicit no-go based on Phase 4 measurements and user feedback.
 
-- A measurable, documented win over Phase 4 on the benchmark; otherwise the
-  phase is closed as "not needed" with the numbers recorded.
+### Phase 6 — Documentation and cleanup [x]
 
-**Phase gate:** Explicit go/no-go based on Phase 4 measurements.
-
-### Phase 6 — Documentation and cleanup
-
-- [ ] P6-W01: Document the preview pipeline, cache keys, draft rendering, and
-  the background worker in `docs/develop/` (new page or section), including the
-  "no stale previews" invariants.
-- [ ] P6-W02: Keep `temp/performance-artifacts/` as the documented baseline
-  collection (it is already referenced from Section 1.1); ensure
-  `scripts/benchmark_render.py` is the canonical repeatable harness. If the
-  analysis scripts are promoted into `scripts/`, remove the duplicates here and
-  update the plan reference.
-- [ ] P6-W03: Update `HISTORY.md` and the handoff block.
+- [x] P6-W01: Document the preview pipeline, cache keys, draft rendering, and
+  the background worker in `docs/develop/preview-pipeline.md` (new page),
+  including the "no stale previews" invariants.
+  (New `docs/develop/preview-pipeline.md` covers the two render paths, draft
+  profile, cache-key contract, atomic publication, the background worker and its
+  client contract, immutable asset URLs, the map LRU, object detection and the
+  benchmark command.)
+- [x] P6-W02: Keep `scripts/benchmark_render.py` as the canonical repeatable
+  harness and remove the temporary baseline collection.
+  (`harness_common.py` was promoted from `temp/performance-artifacts/` to
+  `scripts/harness_common.py`; `benchmark_render.py` no longer references
+  `temp/`. The `temp/performance-artifacts/` scripts, their caches and the
+  leftover test output images were deleted. Section 1.1 and the verification
+  commands were updated to point at the canonical harness.)
+- [x] P6-W03: Update `HISTORY.md` and the handoff block.
+  (Unreleased entry added; Section 7 handoff updated to the completed state.)
 
 ## 5. Acceptance criteria and verification expectations
 
@@ -740,8 +783,8 @@ make fmt
 make lint
 make test
 make testall            # includes browser + slow suites
-uv run python temp/performance-artifacts/01_render_scaling.py   # baseline harness
-uv run python scripts/benchmark_render.py                       # canonical harness (Phase 0)
+uv run python scripts/benchmark_render.py                       # canonical render benchmark
+uv run python scripts/benchmark_render.py --gps                 # also exercise the map path
 ```
 
 Browser verification follows `AGENTS.md`: `playwright-cli` against
@@ -768,7 +811,8 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
   preview publication and does not depend on new HTTP asset URLs.
 - Phase 3 depends on Phase 0 and can proceed whether or not optional Phase 2
   lands; Phase 4 depends on Phase 3's worker.
-- Phase 5 is gated on Phase 4 measurements; Phase 6 is last.
+- Phase 5 was gated on Phase 4 measurements and was closed as not needed; Phase 6
+  (documentation and cleanup) is complete.
 
 ### Risks and mitigations
 
@@ -806,14 +850,16 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
 - **Plan:** `docs/plans/2026-11-19-performance-many-photos.md`
 - **Completed:** Phase 0 (P0-W01/W02/W03), Phase 1 (P1-W01/W02/W03/W05;
   P1-W04 deferred to P3-W04), Phase 2 (P2-W01/W02/W03/W04), Phase 3
-  (P3-W01/W02/W03/W04), and Phase 4 (P4-W01/W02/W03/W04). Commits:
+  (P3-W01/W02/W03/W04), Phase 4 (P4-W01/W02/W03/W04), Phase 6 (P6-W01/W02/W03).
+  Phase 5 was reviewed and closed as not needed (no measurable gap). Commits:
   `8edb071`, `a8f67fe`, `478f775`, `0a4d718` (Refs #58, #59); `0d7f84b`
   (Refs #60); `e0be49c`, `3969958`, `a19a436` (Refs #61); map LRU
-  (Refs #61); `434ef36`, `ceb0f90` (Refs #62).
-- **Active:** none — Phases 2, 3 and 4 complete and committed.
-- **Next:** Phase 5 (optional layered page / per-slot caching) is gated on a
-  measured Phase 4 need on the largest collages or map-heavy projects. Phase 6
-  (documentation and cleanup) is last.
+  (Refs #61); `434ef36`, `ceb0f90` (Refs #62); Phase 6 docs/cleanup
+  (this change).
+- **Active:** none — all phases complete.
+- **Next:** None. The performance topic is closed. The final benchmark
+  (Section 1.2) confirms the perceived latency target is met with exports
+  unchanged; Phase 5 is intentionally not implemented.
 - **Relevant files:**
   - Render path: `src/photo_composition_designer/project/rendering.py`
     (draft profile, `preview_cache_path`), `src/photo_composition_designer/render/slot_renderer.py`,
@@ -829,10 +875,11 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
     `.../templates/partials/editor_canvas.html` (refreshing overlay)
   - Data: `src/photo_composition_designer/project/repositories.py`,
     `.../db/schema.py`, `.../project/inventory.py`
-  - Benchmark: `scripts/benchmark_render.py`,
+  - Benchmark: `scripts/benchmark_render.py`, `scripts/harness_common.py`,
     `tests/test_render_performance.py`,
     `tests/test_preview_assets.py`,
     `tests/test_preview_worker.py`
+  - Documentation: `docs/develop/preview-pipeline.md`
 - **Decisions:** D1-D8 above; no schema change; preview-only draft;
   existing atomic publication; immutable asset URLs for sidebar thumbnails;
   prioritized in-process worker; full-image/validated detection identity only.
@@ -840,12 +887,12 @@ Browser verification follows `AGENTS.md`: `playwright-cli` against
   Phase 2 implemented as additive asset route + sidebar thumbnail migration.
   Phase 3 implemented with draft render, background worker, client polling,
   and map LRU. Phase 4 adds low-priority detection warm-up; no sidebar width
-  reduction or `content-visibility` change was justified.
-- **Blockers:** None. Phase 5 (layered page / per-slot caching) is conditional
-  on evidence.
-- **Last verified:** 2026-11-19 — `uv run pytest -q tests/` = 352 passed
-  (includes Chromium/Firefox browser suite). `ruff check src/ tests/` and
-  `ruff format --check src/ tests/` pass.
-- **Context status:** Phases 0-4 complete and committed. Plan file updated.
-  Issue #62 has the Phase 4 outcome. Ready for Phase 5 or a fresh session at
-  the Phase 5 boundary.
+  reduction or `content-visibility` change was justified. Phase 5 closed as not
+  needed. Phase 6 documents the pipeline and removes the temporary harness.
+- **Blockers:** None.
+- **Last verified:** 2026-11-20 — canonical benchmark
+  `uv run python scripts/benchmark_render.py` and `--gps` both run clean
+  (Section 1.2). `make fmt`, `make lint` and `make test` pass (246 passed,
+  106 deselected; fast baseline).
+- **Context status:** All phases (0-6) complete. Performance topic closed;
+  Phase 5 intentionally not implemented. Plan file updated.

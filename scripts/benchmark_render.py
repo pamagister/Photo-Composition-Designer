@@ -2,8 +2,9 @@
 
 This is the single benchmark command referenced by
 ``docs/plans/2026-11-19-performance-many-photos.md``. It supersedes the ad-hoc
-scripts in ``temp/performance-artifacts/`` by consolidating their measurements
-into one documented command. It covers:
+scripts that were used to establish the original baseline and consolidates
+their measurements into one documented command. The shared seeding helpers live
+in ``scripts/harness_common.py`` (kept out of ``src/`` and ``tests/``). It covers:
 
 * full page render and preview-write time across 4/14/30/45 slots,
 * two representative layout geometries (a single row and a multi-row grid),
@@ -37,12 +38,13 @@ from pathlib import Path
 
 from PIL import Image
 
-# Repository root and the performance-artifact helpers live next to each other.
+# Repository root and the sibling benchmark helpers live next to each other.
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "src"))
-if str(REPO_ROOT / "temp" / "performance-artifacts") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "temp" / "performance-artifacts"))
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
 from harness_common import cleanup, new_workspace, seed_project  # noqa: E402
 
