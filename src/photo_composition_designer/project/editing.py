@@ -536,6 +536,7 @@ class PageEditingService:
         hide_local_map: bool,
         hide_calendar_strip: bool,
         hide_description: bool,
+        center_description: bool | None = None,
     ) -> None:
         """Set the per-page overrides for map, calendar strip and description."""
         with self._database.transaction() as connection:
@@ -546,6 +547,7 @@ class PageEditingService:
                 page.hide_local_map == hide_local_map
                 and page.hide_calendar_strip == hide_calendar_strip
                 and page.hide_description == hide_description
+                and page.center_description == center_description
             ):
                 return
             PageRepository(connection).set_local_overrides(
@@ -553,6 +555,7 @@ class PageEditingService:
                 hide_local_map=hide_local_map,
                 hide_calendar_strip=hide_calendar_strip,
                 hide_description=hide_description,
+                center_description=center_description,
             )
 
     def unused_pool(self, project_id: int) -> list[PhotoAsset]:

@@ -161,6 +161,19 @@
                value="{{ values['layout.spacing'] }}" required>
       </div>
       <div class="field">
+        <label for="layout-text-margin">Text margin (mm)</label>
+        <input id="layout-text-margin" type="number" min="0" step="0.1"
+               name="layout.text_margin"
+               value="{{ values['layout.text_margin'] }}" required>
+      </div>
+      <div class="field">
+        <label for="layout-description-alignment">Description alignment</label>
+        <select id="layout-description-alignment" name="layout.description_alignment">
+          <option value="left" {% if values['layout.description_alignment'] == 'left' %}selected{% endif %}>Left</option>
+          <option value="center" {% if values['layout.description_alignment'] == 'center' %}selected{% endif %}>Center</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="layout-score">Image score factor</label>
         <input id="layout-score" type="number" min="0" step="0.1"
                name="layout.image_score_factor"
@@ -188,13 +201,29 @@
   <fieldset class="settings-group">
     <legend>Map</legend>
     <div class="settings-grid">
-      <div class="field checkbox-field">
-        <label for="geo-maps">
-          <input type="checkbox" id="geo-maps"
-                 name="geo.use_photo_location_maps" value="1"
-                 {% if values['geo.use_photo_location_maps'] %}checked{% endif %}>
-          Render local photo maps
-        </label>
+      <div class="field checkbox-field settings-wide">
+        <span class="field-label">Local map</span>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="geo.map_mode" value="off"
+                   {% if values['geo.map_mode'] == 'off' %}checked{% endif %}>
+            No map
+          </label>
+          <label>
+            <input type="radio" name="geo.map_mode" value="auto"
+                   {% if values['geo.map_mode'] == 'auto' %}checked{% endif %}>
+            Auto (only with location info)
+          </label>
+          <label>
+            <input type="radio" name="geo.map_mode" value="always"
+                   {% if values['geo.map_mode'] == 'always' %}checked{% endif %}>
+            Always (also without location info)
+          </label>
+        </div>
+        <p class="muted">
+          The title page never shows a map. Pages without a calendar strip do
+          not show a map.
+        </p>
       </div>
       <div class="field">
         <label for="geo-extension">Minimal map extension</label>
@@ -207,7 +236,8 @@
         <input id="geo-size" type="number" min="1" name="geo.map_size"
                value="{{ values['geo.map_size'] }}" required>
         <p class="muted">
-          Width for a horizontal calendar, height for a vertical calendar.
+          Width for a horizontal calendar; a vertical calendar uses its
+          cross-axis size.
         </p>
       </div>
     </div>

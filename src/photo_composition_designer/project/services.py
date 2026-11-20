@@ -103,6 +103,7 @@ class ProjectService:
                     hide_local_map=is_title_page,
                     hide_calendar_strip=is_title_page,
                     hide_description=is_title_page,
+                    center_description=True if is_title_page else None,
                     created_at=project.created_at,
                 )
 
@@ -198,6 +199,7 @@ class ProjectService:
                         hide_local_map=True,
                         hide_calendar_strip=True,
                         hide_description=True,
+                        center_description=True,
                     )
             elif current_profile.calendar.use_title_page and not profile.calendar.use_title_page:
                 pages = PageRepository(connection).list(project_id)
@@ -207,6 +209,7 @@ class ProjectService:
                         hide_local_map=False,
                         hide_calendar_strip=False,
                         hide_description=False,
+                        center_description=None,
                     )
             if profile.profile_hash() != current_profile.profile_hash():
                 PageRepository(connection).increment_revisions(project_id)
@@ -376,6 +379,7 @@ class ProjectService:
                     description=page.description,
                     layout_id=page.layout_id,
                     layout_version=page.layout_version,
+                    center_description=page.center_description,
                     created_at=timestamp,
                 )
                 duplicate_page_ids[page.id] = copied_page.id

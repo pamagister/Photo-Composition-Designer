@@ -70,7 +70,7 @@ def _settings_form(**overrides: str) -> dict[str, str]:
         "style.font_anniversaries.name": profile.style.font_anniversaries.name,
         "style.font_anniversaries.size": str(profile.style.font_anniversaries.size),
         "style.font_anniversaries.color": profile.style.font_anniversaries.color,
-        "geo.use_photo_location_maps": "1" if profile.geo.use_photo_location_maps else "",
+        "geo.map_mode": profile.geo.map_mode,
         "geo.minimal_extension": str(profile.geo.minimal_extension),
         "geo.map_size": str(profile.geo.map_size),
         "size.width": str(profile.size.width),
@@ -82,6 +82,8 @@ def _settings_form(**overrides: str) -> dict[str, str]:
         "layout.margin_bottom": str(profile.layout.margin_bottom),
         "layout.margin_sides": str(profile.layout.margin_sides),
         "layout.spacing": str(profile.layout.spacing),
+        "layout.text_margin": str(profile.layout.text_margin),
+        "layout.description_alignment": profile.layout.description_alignment,
         "layout.use_rounded_corners": ("1" if profile.layout.use_rounded_corners else ""),
         "layout.image_score_factor": str(profile.layout.image_score_factor),
         "layout.use_photo_description": ("1" if profile.layout.use_photo_description else ""),
@@ -111,6 +113,9 @@ def test_settings_page_shows_current_profile(client: TestClient):
     assert "Project settings" in response.text
     assert 'name="size.dpi"' in response.text
     assert 'value="300"' in response.text
+    assert 'name="geo.map_mode"' in response.text
+    assert 'name="layout.text_margin"' in response.text
+    assert 'name="layout.description_alignment"' in response.text
     assert 'name="layout.generate_pdf"' not in response.text
     assert "Duplicate project" not in response.text
 
@@ -279,6 +284,31 @@ def test_settings_save_persists_profile_and_invalidates_pages(
     )
     _, pages_after_repeat = _project_state(gui_settings, project_id)
     assert all(page.render_revision == 1 for page in pages_after_repeat)
+
+
+def test_settings_save_persists_map_and_layout_fields(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(
+            **{
+                "geo.map_mode": "always",
+                "layout.text_margin": "2.5",
+                "layout.description_alignment": "center",
+            }
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    project, _ = _project_state(gui_settings, project_id)
+    profile = OutputProfile.from_dict(project.output_profile)
+    assert profile.geo.map_mode == "always"
+    assert profile.layout.text_margin == 2.5
+    assert profile.layout.description_alignment == "center"
 
 
 def test_settings_save_persists_nested_font_values(client: TestClient, gui_settings: GuiSettings):

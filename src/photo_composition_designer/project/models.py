@@ -81,6 +81,7 @@ class CalendarPage:
     hide_local_map: bool = False
     hide_calendar_strip: bool = False
     hide_description: bool = False
+    center_description: bool | None = None
 
 
 @dataclass(slots=True)

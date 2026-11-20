@@ -26,7 +26,6 @@ _BOOL_FIELDS = (
     "calendar.use_short_day_names",
     "calendar.use_short_month_names",
     "calendar.use_title_page",
-    "geo.use_photo_location_maps",
     "layout.use_rounded_corners",
     "layout.use_photo_description",
 )
@@ -51,6 +50,7 @@ _FLOAT_FIELDS = (
     "style.font_description.size",
     "style.font_anniversaries.size",
     "layout.image_score_factor",
+    "layout.text_margin",
 )
 
 _TEXT_FIELDS = (
@@ -66,6 +66,8 @@ _TEXT_FIELDS = (
     "style.font_description.color",
     "style.font_anniversaries.name",
     "style.font_anniversaries.color",
+    "geo.map_mode",
+    "layout.description_alignment",
 )
 
 
@@ -142,7 +144,7 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
         "style.font_anniversaries.name": profile.style.font_anniversaries.name,
         "style.font_anniversaries.size": profile.style.font_anniversaries.size,
         "style.font_anniversaries.color": profile.style.font_anniversaries.color,
-        "geo.use_photo_location_maps": profile.geo.use_photo_location_maps,
+        "geo.map_mode": profile.geo.map_mode,
         "geo.minimal_extension": profile.geo.minimal_extension,
         "geo.map_size": profile.geo.map_size,
         "size.width": profile.size.width,
@@ -154,6 +156,8 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
         "layout.margin_bottom": profile.layout.margin_bottom,
         "layout.margin_sides": profile.layout.margin_sides,
         "layout.spacing": profile.layout.spacing,
+        "layout.text_margin": profile.layout.text_margin,
+        "layout.description_alignment": profile.layout.description_alignment,
         "layout.use_rounded_corners": profile.layout.use_rounded_corners,
         "layout.image_score_factor": profile.layout.image_score_factor,
         "layout.use_photo_description": profile.layout.use_photo_description,

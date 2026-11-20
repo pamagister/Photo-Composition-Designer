@@ -102,10 +102,11 @@ control surface.
   untouched.
 * **Description** – edit the page description at the bottom of the canvas.
 * **Page overrides** – the collapsible **Page overrides** area in the toolbar
-  can hide the local map, calendar strip and description for one page. The
-  options only appear when the corresponding global setting is enabled. The
-  title page shows the composition title and defaults to hiding the map and
-  description.
+  can hide the local map, calendar strip and description for one page, and can
+  center the description. The options only appear when the corresponding global
+  setting is enabled. The title page shows the composition title, defaults to
+  hiding the map and description, and centers the description. A map is never
+  rendered on the title page or on a page without a visible calendar strip.
 * **Layout** – open **Change layout**, choose a layout and select
   **Preview change**. Assignments are preserved where possible, and displaced
   photos are listed before you confirm.
@@ -139,8 +140,10 @@ originals again. Editing a page invalidates its cached preview.
 
 **Project settings** edits the name, start date, page count, title page usage and
 composition title, and the output profile: calendar language and holiday
-countries, page size and DPI, margins and spacing, fonts and colors, map options,
-and the description toggle. Removing pages with saved content requires
+countries, page size and DPI, margins, slot spacing, text margin, description
+alignment, fonts and colors, map mode, and the description toggle. The map can
+be turned off, restricted to pages with location data, or forced on for every
+page with a visible calendar strip. Removing pages with saved content requires
 confirmation. Settings are validated before saving, and actual
 render-affecting changes increment page revisions.
 

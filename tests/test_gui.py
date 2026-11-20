@@ -58,7 +58,7 @@ def test_health_and_index(client):
     assert response.json() == {
         "ok": True,
         "service": "photo-composition-designer",
-        "schema_version": 4,
+        "schema_version": 5,
     }
 
     response = client.get("/", follow_redirects=False)
@@ -282,6 +282,7 @@ def test_page_overrides_persist(client):
             "hide_local_map": "1",
             "hide_calendar_strip": "1",
             "hide_description": "1",
+            "center_description": "1",
         },
         headers={"HX-Request": "true"},
     )

@@ -458,11 +458,13 @@ def test_local_overrides_persist_and_invalidates_preview(tmp_path):
             hide_local_map=False,
             hide_calendar_strip=False,
             hide_description=False,
+            center_description=None,
         )
         with database.connect() as connection:
             page = PageRepository(connection).get(page_id)
             assert page is not None
             assert page.hide_local_map is False
+            assert page.center_description is None
             revision = page.render_revision
 
         editing.set_local_overrides(
@@ -471,6 +473,7 @@ def test_local_overrides_persist_and_invalidates_preview(tmp_path):
             hide_local_map=True,
             hide_calendar_strip=True,
             hide_description=True,
+            center_description=True,
         )
 
         with database.connect() as connection:
@@ -479,6 +482,7 @@ def test_local_overrides_persist_and_invalidates_preview(tmp_path):
         assert page.hide_local_map is True
         assert page.hide_calendar_strip is True
         assert page.hide_description is True
+        assert page.center_description is True
         assert page.render_revision == revision + 1
     finally:
         database.close()

@@ -364,6 +364,16 @@ def test_render_page_uses_empty_map_without_coordinates(tmp_path):
         calls.append(coordinates)
         return Image.new("RGB", (10, 10), (0, 0, 255))
 
+    default_profile = OutputProfile.default()
+    always_profile = replace(
+        default_profile,
+        geo=replace(default_profile.geo, map_mode="always"),
+    )
+    ProjectService(database).save_project(
+        project_id,
+        output_profile=always_profile.to_dict(),
+    )
+
     with database.transaction() as connection:
         connection.execute("UPDATE pages SET hide_local_map = 0 WHERE id = ?", (page_id,))
 
@@ -464,6 +474,213 @@ def test_page_local_map_override_hides_map(tmp_path):
         assert calls == []
     finally:
         database.close()
+
+
+def test_auto_map_mode_hides_map_without_coordinates(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    calls: list[list[tuple[float, float]]] = []
+
+    def renderer(coordinates: list[tuple[float, float]]):
+        calls.append(coordinates)
+        return Image.new("RGB", (10, 10), (0, 0, 255))
+
+    composer = PageComposer(map_renderer=renderer)
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+            composer.render(render_input)
+
+        assert calls == []
+    finally:
+        database.close()
+
+
+def test_map_requires_visible_calendar(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    calls: list[list[tuple[float, float]]] = []
+
+    def renderer(coordinates: list[tuple[float, float]]):
+        calls.append(coordinates)
+        return Image.new("RGB", (10, 10), (0, 0, 255))
+
+    default_profile = OutputProfile.default()
+    always_profile = replace(
+        default_profile,
+        geo=replace(default_profile.geo, map_mode="always"),
+    )
+    ProjectService(database).save_project(
+        project_id,
+        output_profile=always_profile.to_dict(),
+    )
+
+    with database.transaction() as connection:
+        connection.execute(
+            "UPDATE pages SET hide_local_map = 0, hide_calendar_strip = 1 WHERE id = ?",
+            (page_id,),
+        )
+
+    composer = PageComposer(map_renderer=renderer)
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            render_input = replace(rendering.build_input(connection, page), title_page=False)
+            composer.render(render_input)
+
+        assert calls == []
+    finally:
+        database.close()
+
+
+def test_title_page_never_shows_map_even_without_local_override(tmp_path):
+    database, project_id, page_id = _setup(tmp_path)
+    calls: list[list[tuple[float, float]]] = []
+
+    def renderer(coordinates: list[tuple[float, float]]):
+        calls.append(coordinates)
+        return Image.new("RGB", (10, 10), (0, 0, 255))
+
+    default_profile = OutputProfile.default()
+    always_profile = replace(
+        default_profile,
+        geo=replace(default_profile.geo, map_mode="always"),
+    )
+    ProjectService(database).save_project(
+        project_id,
+        output_profile=always_profile.to_dict(),
+    )
+
+    with database.transaction() as connection:
+        connection.execute(
+            "UPDATE pages SET hide_local_map = 0, hide_calendar_strip = 0 WHERE id = ?",
+            (page_id,),
+        )
+        connection.execute("UPDATE photos SET gps_lat = 51.05, gps_lon = 13.73")
+
+    composer = PageComposer(map_renderer=renderer)
+    try:
+        rendering = ProjectRenderingService(database, composer=composer)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            composer.render(rendering.build_input(connection, page))
+
+        assert calls == []
+    finally:
+        database.close()
+
+
+def test_map_spans_description_and_calendar_column():
+    profile = OutputProfile.default()
+    always_profile = replace(profile, geo=replace(profile.geo, map_mode="always"))
+    page = _blank_page(
+        output_profile=always_profile,
+        description="Map column",
+        hide_local_map=False,
+        hide_description=False,
+        title_page=False,
+        hide_calendar_strip=False,
+    )
+
+    prepared = prepare_collage(
+        page,
+        always_profile,
+        map_renderer=lambda _coordinates: Image.new("RGB", (20, 20), (0, 0, 255)),
+    )
+
+    assert prepared.map_image is not None
+    assert prepared.calendar_strip is not None
+    assert prepared.description_image is not None
+    assert prepared.map_top == prepared.box.top + prepared.box.height
+    assert prepared.map_top < prepared.calendar_top
+    assert prepared.calendar_strip.width == prepared.map_x
+    assert prepared.description_image.width == prepared.map_x
+
+    dpi = always_profile.size.dpi
+    map_width = mm_to_px(always_profile.geo.map_size, dpi)
+    margin_sides = mm_to_px(always_profile.layout.margin_sides, dpi)
+    page_width = always_profile.page_size_px()[0]
+    assert prepared.map_x + map_width == page_width - margin_sides
+
+
+def test_description_alignment_default_left_and_page_center_override():
+    profile = OutputProfile.default()
+    base = {
+        "output_profile": profile,
+        "description": "A description used for alignment checks",
+        "hide_local_map": True,
+        "hide_description": False,
+        "title_page": False,
+        "hide_calendar_strip": False,
+    }
+
+    left = prepare_collage(_blank_page(**base), profile)
+    centered = prepare_collage(
+        _blank_page(**base, center_description=True),
+        profile,
+    )
+    center_profile = replace(
+        profile,
+        layout=replace(profile.layout, description_alignment="center"),
+    )
+    inherited_center = prepare_collage(
+        _blank_page(**{**base, "output_profile": center_profile}),
+        center_profile,
+    )
+    forced_left = prepare_collage(
+        _blank_page(**{**base, "output_profile": center_profile}, center_description=False),
+        center_profile,
+    )
+
+    assert left.description_image is not None
+    assert centered.description_image is not None
+    assert inherited_center.description_image is not None
+    assert forced_left.description_image is not None
+    left_box = left.description_image.getbbox()
+    center_box = centered.description_image.getbbox()
+    inherited_box = inherited_center.description_image.getbbox()
+    forced_box = forced_left.description_image.getbbox()
+    assert left_box is not None
+    assert center_box is not None
+    assert inherited_box is not None
+    assert forced_box is not None
+    assert left_box[0] < center_box[0]
+    assert inherited_box[0] > left_box[0]
+    assert forced_box[0] == left_box[0]
+
+
+def test_text_margin_controls_description_gap():
+    profile = OutputProfile.default()
+    base = {
+        "description": "A description used for spacing checks",
+        "hide_local_map": True,
+        "hide_description": False,
+        "title_page": False,
+        "hide_calendar_strip": False,
+    }
+    zero_profile = replace(profile, layout=replace(profile.layout, text_margin=0.0))
+    wide_profile = replace(profile, layout=replace(profile.layout, text_margin=3.0))
+
+    zero = prepare_collage(
+        _blank_page(**{**base, "output_profile": zero_profile}),
+        zero_profile,
+    )
+    wide = prepare_collage(
+        _blank_page(**{**base, "output_profile": wide_profile}),
+        wide_profile,
+    )
+
+    assert zero.description_top is not None
+    assert wide.description_top is not None
+    zero_photo_bottom = zero.box.top + zero.box.height
+    wide_photo_bottom = wide.box.top + wide.box.height
+    assert zero.description_top > wide.description_top
+    assert zero_photo_bottom > wide_photo_bottom
+    assert zero.calendar_top == wide.calendar_top
 
 
 def test_render_page_honours_custom_profile_size(tmp_path):
@@ -672,14 +889,14 @@ def test_compute_collage_box_matches_renderer_content_box():
     margin_sides = mm_to_px(profile.layout.margin_sides, dpi)
     margin_top = mm_to_px(profile.layout.margin_top, dpi)
     margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
-    spacing = mm_to_px(profile.layout.spacing, dpi)
+    text_margin = mm_to_px(profile.layout.text_margin, dpi)
     calendar_height = mm_to_px(profile.size.calendar_height, dpi)
 
     page = _blank_page(output_profile=profile, hide_local_map=True)
     box = compute_collage_box(page, profile)
 
     calendar_top = page_height - margin_bottom - calendar_height
-    expected_bottom = calendar_top - spacing
+    expected_bottom = calendar_top - text_margin
     assert box.page_width == page_width
     assert box.page_height == page_height
     assert box.left == margin_sides

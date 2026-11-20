@@ -236,13 +236,18 @@ class StyleProfile:
 class GeoProfile:
     """Map rendering settings."""
 
-    use_photo_location_maps: bool = True
+    map_mode: str = "auto"
     minimal_extension: int = 7
     map_size: int = 20
 
+    @property
+    def use_photo_location_maps(self) -> bool:
+        """Return whether maps are enabled at all (legacy compatibility)."""
+        return self.map_mode != "off"
+
     def to_dict(self) -> dict[str, Any]:
         return {
-            "use_photo_location_maps": self.use_photo_location_maps,
+            "map_mode": self.map_mode,
             "minimal_extension": self.minimal_extension,
             "map_size": self.map_size,
         }
@@ -257,12 +262,25 @@ class GeoProfile:
         raw_size = data.get("map_size")
         if raw_size is None:
             raw_size = data.get("map_width")
+        raw_mode = data.get("map_mode")
+        if raw_mode is None:
+            legacy_enabled = data.get("use_photo_location_maps")
+            if legacy_enabled is None:
+                map_mode = defaults.map_mode
+            else:
+                _require(
+                    isinstance(legacy_enabled, bool),
+                    "use_photo_location_maps must be a boolean",
+                )
+                map_mode = "auto" if legacy_enabled else "off"
+        else:
+            map_mode = _str_or(raw_mode, "map_mode", defaults.map_mode)
+            _require(
+                map_mode in {"off", "auto", "always"},
+                "map_mode must be 'off', 'auto' or 'always'",
+            )
         return cls(
-            use_photo_location_maps=_bool_or(
-                data.get("use_photo_location_maps"),
-                "use_photo_location_maps",
-                defaults.use_photo_location_maps,
-            ),
+            map_mode=map_mode,
             minimal_extension=_int_or(
                 data.get("minimal_extension"),
                 "minimal_extension",
@@ -325,6 +343,8 @@ class LayoutProfile:
     margin_bottom: int = 3
     margin_sides: int = 3
     spacing: int = 2
+    text_margin: float = 1.5
+    description_alignment: str = "left"
     use_rounded_corners: bool = True
     image_score_factor: float = 2.0
     use_photo_description: bool = True
@@ -336,6 +356,8 @@ class LayoutProfile:
             "margin_bottom": self.margin_bottom,
             "margin_sides": self.margin_sides,
             "spacing": self.spacing,
+            "text_margin": self.text_margin,
+            "description_alignment": self.description_alignment,
             "use_rounded_corners": self.use_rounded_corners,
             "image_score_factor": self.image_score_factor,
             "use_photo_description": self.use_photo_description,
@@ -347,6 +369,15 @@ class LayoutProfile:
         defaults = cls()
         if not isinstance(data, dict):
             return defaults
+        description_alignment = _str_or(
+            data.get("description_alignment"),
+            "description_alignment",
+            defaults.description_alignment,
+        )
+        _require(
+            description_alignment in {"left", "center"},
+            "description_alignment must be 'left' or 'center'",
+        )
         return cls(
             margin_top=_int_or(
                 data.get("margin_top"), "margin_top", defaults.margin_top, minimum=0
@@ -361,6 +392,13 @@ class LayoutProfile:
                 data.get("margin_sides"), "margin_sides", defaults.margin_sides, minimum=0
             ),
             spacing=_int_or(data.get("spacing"), "spacing", defaults.spacing, minimum=0),
+            text_margin=_float_or(
+                data.get("text_margin"),
+                "text_margin",
+                defaults.text_margin,
+                minimum=0.0,
+            ),
+            description_alignment=description_alignment,
             use_rounded_corners=_bool_or(
                 data.get("use_rounded_corners"),
                 "use_rounded_corners",
@@ -422,7 +460,7 @@ class OutputProfile:
                 font_anniversaries=FontSpec.from_font(settings.style.fontAnniversaries.value),
             ),
             geo=GeoProfile(
-                use_photo_location_maps=settings.geo.usePhotoLocationMaps.value,
+                map_mode=settings.geo.mapMode.value,
                 minimal_extension=settings.geo.minimalExtension.value,
                 map_size=settings.size.mapSize.value,
             ),
@@ -438,6 +476,8 @@ class OutputProfile:
                 margin_bottom=settings.layout.marginBottom.value,
                 margin_sides=settings.layout.marginSides.value,
                 spacing=settings.layout.spacing.value,
+                text_margin=settings.layout.textMargin.value,
+                description_alignment=settings.layout.descriptionAlignment.value,
                 use_rounded_corners=settings.layout.useRoundedCorners.value,
                 image_score_factor=settings.layout.imageScoreFactor.value,
                 use_photo_description=settings.layout.usePhotoDescription.value,
@@ -458,7 +498,7 @@ class OutputProfile:
         settings.style.fontSmall.value = self.style.font_small.to_font()
         settings.style.fontDescription.value = self.style.font_description.to_font()
         settings.style.fontAnniversaries.value = self.style.font_anniversaries.to_font()
-        settings.geo.usePhotoLocationMaps.value = self.geo.use_photo_location_maps
+        settings.geo.mapMode.value = self.geo.map_mode
         settings.geo.minimalExtension.value = self.geo.minimal_extension
         settings.size.width.value = self.size.width
         settings.size.height.value = self.size.height
@@ -470,6 +510,8 @@ class OutputProfile:
         settings.layout.marginBottom.value = self.layout.margin_bottom
         settings.layout.marginSides.value = self.layout.margin_sides
         settings.layout.spacing.value = self.layout.spacing
+        settings.layout.textMargin.value = self.layout.text_margin
+        settings.layout.descriptionAlignment.value = self.layout.description_alignment
         settings.layout.useRoundedCorners.value = self.layout.use_rounded_corners
         settings.layout.imageScoreFactor.value = self.layout.image_score_factor
         settings.layout.useShortDayNames.value = self.calendar.use_short_day_names

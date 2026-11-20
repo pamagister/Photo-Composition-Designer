@@ -87,19 +87,19 @@ class PreparedCollage:
     description_top: int | None
     map_image: Image.Image | None
     map_x: int
+    map_top: int
     calendar_strip: Image.Image | None
     calendar_top: int
 
 
-def _map_dimensions(profile: OutputProfile, calendar_height: int) -> tuple[int, int]:
-    """Return the map width and height for the calendar orientation."""
+def _map_width(profile: OutputProfile, calendar_height: int) -> int:
+    """Return the map width for the calendar orientation."""
     map_size = mm_to_px(profile.geo.map_size, profile.size.dpi)
     if profile.calendar.horizontal_orientation:
-        return map_size, calendar_height
+        return map_size
     # A vertical calendar is a tall strip; its width is the calendar's
-    # cross-axis size, so the map matches that width and uses map_size as
-    # its height.
-    return calendar_height, map_size
+    # cross-axis size, so the map matches that width.
+    return calendar_height
 
 
 def _render_map(
@@ -108,12 +108,14 @@ def _render_map(
     map_width: int,
     map_height: int,
     map_renderer: MapRendererFactory | None,
+    *,
+    allow_empty: bool = False,
 ) -> Image.Image | None:
     # Custom renderers (e.g., test doubles) bypass the cache so tests
     # that inject a fake renderer see exactly the expected output.
     if map_renderer is not None:
         return map_renderer(list(page.gps_coordinates))
-    if not page.gps_coordinates:
+    if not page.gps_coordinates and not allow_empty:
         return None
     key = _map_cache_key(profile, map_width, map_height, list(page.gps_coordinates))
     cached = _map_cache.get(key)
@@ -205,6 +207,7 @@ def prepare_collage(
     margin_top = mm_to_px(profile.layout.margin_top, dpi)
     margin_bottom = mm_to_px(profile.layout.margin_bottom, dpi)
     spacing = mm_to_px(profile.layout.spacing, dpi)
+    text_margin = mm_to_px(profile.layout.text_margin, dpi)
 
     calendar_height = mm_to_px(profile.size.calendar_height, dpi)
     title_page = page.title_page and bool(page.title)
@@ -216,77 +219,121 @@ def prepare_collage(
     )
     has_bottom_strip = title_page or show_calendar
     show_description = profile.layout.use_photo_description and not page.hide_description
+
     content_top = margin_top
-
-    description_image: Image.Image | None = None
-    if show_description:
-        description_image = DescriptionRenderer(
-            width_px=page_width,
-            font=profile.style.font_description.to_font(),
-            spacing_px=spacing,
-            margin_side_px=margin_sides,
-            background_color=background,
-            dpi=dpi,
-        ).generate(page.description)
-
-    map_image: Image.Image | None = None
-    map_x = 0
-    calendar_width = page_width
-    if has_bottom_strip:
-        map_width, map_height = _map_dimensions(profile, calendar_height)
-        map_x = page_width - margin_sides - map_width
-        min_calendar_width = 2 * margin_sides + spacing
-        if (
-            not page.hide_local_map
-            and profile.geo.use_photo_location_maps
-            and map_width > 0
-            and map_height > 0
-            and map_x >= min_calendar_width
-        ):
-            map_image = _render_map(page, profile, map_width, map_height, map_renderer)
-            if map_image is not None:
-                calendar_width = map_x
-
-    calendar_strip = (
-        _render_calendar_strip(page, profile, settings, calendar_width)
-        if has_bottom_strip
-        else None
-    )
-    calendar_ink_top = 0
-    if calendar_strip is not None and description_image is not None:
-        # A title page replaces the calendar with the composition title, whose
-        # first ink sits lower than a calendar's day names. Measure a real
-        # calendar strip instead so the description keeps the same distance from
-        # the page bottom as on pages with a calendar.
-        ink_strip = calendar_strip
-        if title_page and map_image is None:
-            ink_strip = _render_calendar_strip(
-                page, profile, settings, calendar_width, force_calendar=True
-            )
-        calendar_ink_top = _strip_ink_top(ink_strip, background)
-
-    description_ink_bottom = 0
-    if description_image is not None:
-        bounds = description_image.getbbox()
-        description_ink_bottom = bounds[3] if bounds is not None else description_image.height
-
     content_left = margin_sides
     content_width = max(1, page_width - 2 * margin_sides)
     content_bottom = page_height - margin_bottom
     calendar_top = content_bottom - calendar_height if has_bottom_strip else content_bottom
 
-    if description_image is not None:
-        if has_bottom_strip:
-            # With a map in the bottom-right corner the description must end
-            # above it instead of using the calendar's blank upper margin.
-            description_bottom = calendar_top + (0 if map_image is not None else calendar_ink_top)
-        else:
-            description_bottom = content_bottom
-        description_top = description_bottom - description_ink_bottom
-        photo_bottom = description_top
+    map_width = _map_width(profile, calendar_height)
+    map_x = page_width - margin_sides - map_width
+    min_calendar_width = 2 * margin_sides + spacing
+    map_mode = profile.geo.map_mode
+    # The map is a bottom-right companion of the calendar strip. Without a
+    # visible calendar there is no map, regardless of the global map mode.
+    map_present = (
+        show_calendar
+        and map_mode != "off"
+        and not page.hide_local_map
+        and not title_page
+        and (map_mode == "always" or bool(page.gps_coordinates))
+        and map_width > 0
+        and map_x >= min_calendar_width
+    )
+
+    if page.center_description is not None:
+        center_description = page.center_description
     else:
-        description_top = None
-        photo_bottom = calendar_top - spacing if has_bottom_strip else content_bottom
+        center_description = profile.layout.description_alignment == "center"
+    description_alignment = "center" if center_description else "left"
+
+    description_image: Image.Image | None = None
+    description_top: int | None = None
+    calendar_strip: Image.Image | None = None
+    map_image: Image.Image | None = None
+    map_top = content_bottom
+
+    # Rendering the map can fail (for example an injected renderer returning
+    # None). In that case retry once with the full page width so the calendar
+    # and description never keep a reserved map column without a map.
+    for attempt in range(2):
+        calendar_width = map_x if map_present else page_width
+
+        if show_description:
+            description_image = DescriptionRenderer(
+                width_px=calendar_width,
+                font=profile.style.font_description.to_font(),
+                spacing_px=0,
+                margin_side_px=margin_sides,
+                background_color=background,
+                dpi=dpi,
+            ).generate(page.description, alignment=description_alignment)
+        else:
+            description_image = None
+
+        calendar_strip = (
+            _render_calendar_strip(page, profile, settings, calendar_width)
+            if has_bottom_strip
+            else None
+        )
+
+        calendar_ink_top = 0
+        if calendar_strip is not None and description_image is not None:
+            # A title page replaces the calendar with the composition title,
+            # whose first ink sits lower than a calendar's day names. Measure a
+            # real calendar strip instead so the description keeps the same
+            # distance from the page bottom as on pages with a calendar.
+            ink_strip = calendar_strip
+            if title_page:
+                ink_strip = _render_calendar_strip(
+                    page, profile, settings, calendar_width, force_calendar=True
+                )
+            calendar_ink_top = _strip_ink_top(ink_strip, background)
+
+        description_ink_top = 0
+        description_ink_bottom = 0
+        if description_image is not None:
+            bounds = description_image.getbbox()
+            if bounds is not None:
+                description_ink_top = bounds[1]
+                description_ink_bottom = bounds[3]
+            else:
+                description_ink_bottom = description_image.height
+
+        if description_image is not None:
+            if has_bottom_strip:
+                description_bottom = calendar_top + calendar_ink_top - text_margin
+            else:
+                description_bottom = content_bottom
+            description_top = description_bottom - description_ink_bottom
+            photo_bottom = description_top + description_ink_top - text_margin
+        else:
+            description_top = None
+            photo_bottom = calendar_top - text_margin if has_bottom_strip else content_bottom
+
+        map_image = None
+        map_top = content_bottom
+        if map_present:
+            map_height = content_bottom - photo_bottom
+            if map_height > 0:
+                map_image = _render_map(
+                    page,
+                    profile,
+                    map_width,
+                    map_height,
+                    map_renderer,
+                    allow_empty=map_mode == "always",
+                )
+            if map_image is not None:
+                map_top = photo_bottom
+                break
+            map_present = False
+            if attempt == 1:
+                break
+            continue
+        break
+
     content_height = max(1, photo_bottom - content_top)
 
     box = CollageBox(
@@ -304,6 +351,7 @@ def prepare_collage(
         description_top=description_top,
         map_image=map_image,
         map_x=map_x,
+        map_top=map_top,
         calendar_strip=calendar_strip,
         calendar_top=calendar_top,
     )

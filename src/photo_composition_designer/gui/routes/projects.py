@@ -85,6 +85,7 @@ def _collage_box_for_page(page, profile):
         hide_local_map=page.hide_local_map,
         hide_calendar_strip=page.hide_calendar_strip,
         hide_description=page.hide_description,
+        center_description=page.center_description,
     )
     return compute_collage_box(render_input, profile)
 

@@ -20,7 +20,7 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `style.fontSmall` | `DejaVuSans.ttf, 2.5, #969696` |
 | `style.fontDescription` | `DejaVuSans.ttf, 2.5, #969696` |
 | `style.fontAnniversaries` | `DejaVuSans.ttf, 2.0, #ff0000` |
-| `geo.usePhotoLocationMaps` | `True` |
+| `geo.mapMode` | `'auto'` |
 | `geo.minimalExtension` | `7` |
 | `size.width` | `216` |
 | `size.height` | `154` |
@@ -32,6 +32,8 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `layout.marginBottom` | `3` |
 | `layout.marginSides` | `3` |
 | `layout.spacing` | `2` |
+| `layout.textMargin` | `1.5` |
+| `layout.descriptionAlignment` | `'left'` |
 | `layout.useRoundedCorners` | `True` |
 | `layout.imageScoreFactor` | `2.0` |
 | `layout.useShortDayNames` | `False` |

@@ -105,9 +105,7 @@ class StyleConfig:
 class GeoConfig:
     """GEO category."""
 
-    usePhotoLocationMaps: Param[bool] = field(
-        default_factory=lambda: Param(True, "usePhotoLocationMaps")
-    )
+    mapMode: Param[str] = field(default_factory=lambda: Param("auto", "mapMode"))
     minimalExtension: Param[int] = field(default_factory=lambda: Param(7, "minimalExtension"))
 
 
@@ -131,6 +129,10 @@ class LayoutConfig:
     marginBottom: Param[int] = field(default_factory=lambda: Param(3, "marginBottom"))
     marginSides: Param[int] = field(default_factory=lambda: Param(3, "marginSides"))
     spacing: Param[int] = field(default_factory=lambda: Param(2, "spacing"))
+    textMargin: Param[float] = field(default_factory=lambda: Param(1.5, "textMargin"))
+    descriptionAlignment: Param[str] = field(
+        default_factory=lambda: Param("left", "descriptionAlignment")
+    )
     useRoundedCorners: Param[bool] = field(default_factory=lambda: Param(True, "useRoundedCorners"))
     imageScoreFactor: Param[float] = field(default_factory=lambda: Param(2.0, "imageScoreFactor"))
     useShortDayNames: Param[bool] = field(default_factory=lambda: Param(False, "useShortDayNames"))

@@ -350,6 +350,7 @@ def test_use_title_page_toggle_updates_first_page_overrides(service, database):
         assert first_page.hide_local_map is True
         assert first_page.hide_calendar_strip is True
         assert first_page.hide_description is True
+        assert first_page.center_description is True
 
     profile = OutputProfile.from_dict(project.output_profile)
     without_title = replace(
@@ -364,3 +365,4 @@ def test_use_title_page_toggle_updates_first_page_overrides(service, database):
     assert first_page.hide_local_map is False
     assert first_page.hide_calendar_strip is False
     assert first_page.hide_description is False
+    assert first_page.center_description is None

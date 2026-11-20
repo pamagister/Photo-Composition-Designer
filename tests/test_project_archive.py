@@ -79,6 +79,7 @@ def _create_project(database: WorkspaceDatabase) -> int:
             hide_local_map=True,
             hide_calendar_strip=True,
             hide_description=True,
+            center_description=True,
         )
         AssignmentRepository(connection).assign(project.id, page.id, layout.slots[0].id, photo.id)
     return project.id
@@ -112,6 +113,7 @@ def test_pcd_roundtrip_preserves_project_references_without_photo_files(tmp_path
     assert pages[0].hide_local_map is True
     assert pages[0].hide_calendar_strip is True
     assert pages[0].hide_description is True
+    assert pages[0].center_description is True
     source_database.close()
     destination_database.close()
 

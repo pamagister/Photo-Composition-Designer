@@ -11,6 +11,9 @@ Fix
 
 Other
 ~~~~~
+- Add configurable text margins, left/center description alignment and a
+  three-state map mode. The map now spans the calendar and description column
+  and requires a visible calendar strip.
 - Perf(previews): draft previews, background worker and render caches Refs
   #58, #59, #60, #61, #62. [Paul Magister]
 

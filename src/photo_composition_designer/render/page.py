@@ -43,6 +43,7 @@ class PageRenderInput:
     hide_local_map: bool = False
     hide_calendar_strip: bool = False
     hide_description: bool = False
+    center_description: bool | None = None
     anniversaries: Anniversaries | None = None
 
 
@@ -78,7 +79,7 @@ class PageComposer:
             canvas.paste(collage, (box.left, box.top))
 
         if prepared.map_image is not None:
-            canvas.paste(prepared.map_image, (prepared.map_x, prepared.calendar_top))
+            canvas.paste(prepared.map_image, (prepared.map_x, prepared.map_top))
 
         if prepared.calendar_strip is not None:
             canvas.paste(prepared.calendar_strip, (0, prepared.calendar_top))

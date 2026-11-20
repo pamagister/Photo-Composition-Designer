@@ -73,10 +73,11 @@ Key invariants:
 * **Calendar:** language, holiday countries, calendar toggle, orientation, short
   day/month names and title.
 * **Style:** background colour and the four fonts with colour and size.
-* **Geo:** map toggle, minimal extension and map dimensions.
+* **Geo:** map mode (`off`, `auto`, `always`), minimal extension and map size.
 * **Size:** page width/height, DPI, JPEG quality, calendar height and map size.
-* **Layout:** margins, spacing, rounded corners, description toggle, image score
-  factor and object recognition. Whether a PDF is written is chosen per export.
+* **Layout:** margins, slot spacing, text margin, description alignment and
+  toggle, rounded corners, image score factor and object recognition. Whether a
+  PDF is written is chosen per export.
 
 New projects snapshot the current `core/settings.py` defaults into
 `projects.output_profile_json`. Existing projects with an empty snapshot receive a
@@ -95,8 +96,11 @@ settings increments render revisions only when values actually change.
    `calendar.use_title_page` is enabled; it always shows the composition title
    and defaults to hiding the map and description. Every page can override the
    global map, calendar-strip and description toggles with `hide_local_map`,
-   `hide_calendar_strip` and `hide_description`. The application-wide anniversary
-   file is supplied as a shared render input.
+   `hide_calendar_strip` and `hide_description`, and can center its description
+   with `center_description`. The map is a bottom-right companion of the
+   calendar strip: it spans from the collage down to the bottom margin and is
+   never rendered on the title page or without a visible calendar strip. The
+   application-wide anniversary file is supplied as a shared render input.
 3. `render/slot_renderer.py` remains the slot compositing component.
 4. `ProjectRenderingService.render_preview` renders a reduced-resolution JPEG and
    caches it under a key covering page revision, layout ID/version, profile hash,

@@ -1,5 +1,5 @@
 {% if page %}
-{% set show_map_override = profile.geo.use_photo_location_maps %}
+{% set show_map_override = profile.geo.map_mode != 'off' and not title_page %}
 {% set show_calendar_override = profile.calendar.use_calendar and profile.size.calendar_height > 0 and not title_page %}
 {% set show_description_override = profile.layout.use_photo_description %}
 
@@ -90,6 +90,14 @@
             <input type="checkbox" name="hide_description" value="1"
                    {% if page.hide_description %}checked{% endif %}>
             Hide description
+          </label>
+          <label title="Center this page description instead of inheriting the project alignment">
+            <input type="checkbox" name="center_description" value="1"
+                   {% if page.center_description %}checked{% endif %}>
+            Center description
+            <span class="muted">
+              (project: {{ 'center' if profile.layout.description_alignment == 'center' else 'left' }})
+            </span>
           </label>
           {% endif %}
         </form>

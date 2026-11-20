@@ -122,6 +122,7 @@ def export_project_archive(database: WorkspaceDatabase, project_id: int) -> byte
                 "hide_local_map": page.hide_local_map,
                 "hide_calendar_strip": page.hide_calendar_strip,
                 "hide_description": page.hide_description,
+                "center_description": page.center_description,
                 "created_at": page.created_at,
             }
             for page in pages
@@ -501,6 +502,7 @@ def import_project_archive(
             old_id = int(page["id"])
             old_layout_id = page.get("layout_id")
             layout_id = layout_ids[int(old_layout_id)] if old_layout_id is not None else None
+            raw_center = page.get("center_description")
             created = page_repository.create(
                 project.id,
                 int(page["page_index"]),
@@ -512,6 +514,7 @@ def import_project_archive(
                 hide_local_map=bool(page.get("hide_local_map", False)),
                 hide_calendar_strip=bool(page.get("hide_calendar_strip", False)),
                 hide_description=bool(page.get("hide_description", False)),
+                center_description=None if raw_center is None else bool(raw_center),
                 created_at=timestamp,
             )
             page_ids[old_id] = created.id

@@ -426,6 +426,9 @@ class PageRepository:
             hide_local_map=bool(row["hide_local_map"]),
             hide_calendar_strip=bool(row["hide_calendar_strip"]),
             hide_description=bool(row["hide_description"]),
+            center_description=(
+                None if row["center_description"] is None else bool(row["center_description"])
+            ),
         )
 
     def create(
@@ -441,6 +444,7 @@ class PageRepository:
         hide_local_map: bool = False,
         hide_calendar_strip: bool = False,
         hide_description: bool = False,
+        center_description: bool | None = None,
         created_at: str | None = None,
     ) -> CalendarPage:
         """Insert one page."""
@@ -449,8 +453,8 @@ class PageRepository:
             "INSERT INTO pages("
             "project_id, page_index, start_date, end_date, description, layout_id, "
             "layout_version, render_revision, hide_local_map, hide_calendar_strip, "
-            "hide_description, created_at, updated_at"
-            ") VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)",
+            "hide_description, center_description, created_at, updated_at"
+            ") VALUES(?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)",
             (
                 project_id,
                 page_index,
@@ -462,6 +466,7 @@ class PageRepository:
                 int(hide_local_map),
                 int(hide_calendar_strip),
                 int(hide_description),
+                None if center_description is None else int(center_description),
                 timestamp,
                 timestamp,
             ),
@@ -554,16 +559,19 @@ class PageRepository:
         hide_local_map: bool,
         hide_calendar_strip: bool,
         hide_description: bool,
+        center_description: bool | None = None,
     ) -> CalendarPage:
         """Set the per-page overrides for the global map, calendar and description."""
         self._connection.execute(
             "UPDATE pages SET hide_local_map = ?, hide_calendar_strip = ?, "
-            "hide_description = ?, render_revision = render_revision + 1, updated_at = ? "
+            "hide_description = ?, center_description = ?, "
+            "render_revision = render_revision + 1, updated_at = ? "
             "WHERE id = ?",
             (
                 int(hide_local_map),
                 int(hide_calendar_strip),
                 int(hide_description),
+                None if center_description is None else int(center_description),
                 _now(),
                 page_id,
             ),

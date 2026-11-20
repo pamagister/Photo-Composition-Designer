@@ -301,6 +301,7 @@ def set_page_overrides(
     hide_local_map: Annotated[str, Form()] = "",
     hide_calendar_strip: Annotated[str, Form()] = "",
     hide_description: Annotated[str, Form()] = "",
+    center_description: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     """Set the per-page overrides for map, calendar strip and description."""
     database = _open_database(request)
@@ -313,6 +314,7 @@ def set_page_overrides(
             hide_local_map=hide_local_map.strip().lower() in hidden,
             hide_calendar_strip=hide_calendar_strip.strip().lower() in hidden,
             hide_description=hide_description.strip().lower() in hidden,
+            center_description=(True if center_description.strip().lower() in hidden else None),
         )
     except ProjectError as error:
         return _error(project_id, str(error))

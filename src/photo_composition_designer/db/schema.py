@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from types import TracebackType
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 INITIAL_SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -203,6 +203,7 @@ MIGRATIONS: dict[int, str] = {
     SET hide_local_map = 1, hide_calendar_strip = 1, hide_description = 1
     WHERE page_index = 0;
     """,
+    5: "ALTER TABLE pages ADD COLUMN center_description INTEGER;",
 }
 
 

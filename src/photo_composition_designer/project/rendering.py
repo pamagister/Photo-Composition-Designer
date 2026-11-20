@@ -229,6 +229,7 @@ class ProjectRenderingService:
             hide_local_map=page.hide_local_map,
             hide_calendar_strip=page.hide_calendar_strip,
             hide_description=page.hide_description,
+            center_description=page.center_description,
             anniversaries=Anniversaries(self._anniversaries_path),
         )
 

@@ -75,6 +75,38 @@ def test_geo_map_size_replaces_legacy_map_dimensions():
     assert "map_width" not in profile.to_dict()["geo"]
 
 
+def test_geo_map_mode_replaces_legacy_boolean():
+    disabled = OutputProfile.from_dict({"geo": {"use_photo_location_maps": False}})
+    enabled = OutputProfile.from_dict({"geo": {"use_photo_location_maps": True}})
+
+    assert disabled.geo.map_mode == "off"
+    assert disabled.geo.use_photo_location_maps is False
+    assert enabled.geo.map_mode == "auto"
+    assert enabled.geo.use_photo_location_maps is True
+    assert disabled.to_dict()["geo"]["map_mode"] == "off"
+
+
+def test_layout_text_margin_and_description_alignment():
+    profile = OutputProfile.default()
+
+    assert profile.layout.text_margin == 1.5
+    assert profile.layout.description_alignment == "left"
+
+    changed = OutputProfile.from_dict(
+        {"layout": {"text_margin": 2.5, "description_alignment": "center"}}
+    )
+    assert changed.layout.text_margin == 2.5
+    assert changed.layout.description_alignment == "center"
+
+
+def test_invalid_map_mode_and_description_alignment_are_rejected():
+    with pytest.raises(OutputProfileError):
+        OutputProfile.from_dict({"geo": {"map_mode": "sometimes"}})
+
+    with pytest.raises(OutputProfileError):
+        OutputProfile.from_dict({"layout": {"description_alignment": "right"}})
+
+
 def test_profiles_are_independent():
     first = OutputProfile.default()
     second = OutputProfile.default()
