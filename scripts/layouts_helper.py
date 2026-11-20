@@ -1,10 +1,12 @@
-"""Validate layout YAML files and generate row-based tile templates.
+"""Validate layout YAML files and generate row-based layout templates.
 
 Run from the repository root:
 
-    uv run python scripts/layouts/validate_layouts.py --check
-    uv run python scripts/layouts/validate_layouts.py --write-row-templates
-    uv run python scripts/layouts/validate_layouts.py --path path/to/layout.yaml
+    uv run python scripts/layouts_helper.py validate --check
+    uv run python scripts/layouts_helper.py validate --path path/to/layout.yaml
+    uv run python scripts/layouts_helper.py generate \
+        --columns 4,3,5 --heights 30,40,30 --output path/to/layout.yaml
+    uv run python scripts/layouts_helper.py write-templates
 
 The validator enforces the layout contract used by
 :class:`photo_composition_designer.render.slot_renderer.SlotAwareRenderer`:
@@ -22,7 +24,7 @@ normalized neighbour tolerance.
 
 Use ``--neighbour-tol`` to reproduce the old ``1e-9`` renderer behaviour::
 
-    uv run python scripts/layouts/validate_layouts.py \
+    uv run python scripts/layouts_helper.py validate \
         --path legacy.yaml --neighbour-tol 1e-9
 
 Layouts shipped by this repository must pack the page edge-to-edge with zero
@@ -33,12 +35,13 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 BUILTIN_LAYOUTS = ROOT / "src/photo_composition_designer/layouts/layouts"
 DEFAULT_DPI = 300
 DEFAULT_PAGE_WIDTH_MM = 216.0
@@ -293,31 +296,30 @@ def _check_spacing(
                     )
 
 
-def validate_layout(
-    path: Path,
+def validate_data(
+    data: dict,
     *,
+    key: str,
+    file_name: str | None,
     page_width: int,
     page_height: int,
     spacing_px: int,
     min_gap_px: int,
     neighbour_tol: float = RENDERER_NEIGHBOUR_TOLERANCE,
 ) -> Report:
-    """Validate one layout file against the renderer geometry."""
+    """Validate a raw layout mapping against the renderer geometry."""
     report = Report()
-    key = path.stem
-    try:
-        data = load_layout(path)
-    except (OSError, ValueError, yaml.YAMLError) as exc:
-        report.add(key, "error", "*", f"cannot load: {exc}")
+    if not isinstance(data, dict):
+        report.add(key, "error", "*", "top-level mapping expected")
         return report
 
     declared_key = str(data.get("key", key))
-    if declared_key != key:
+    if file_name is not None and declared_key != key:
         report.add(
             declared_key,
             "warning",
             "*",
-            f"file name {path.name!r} does not match key {declared_key!r}",
+            f"file name {file_name!r} does not match key {declared_key!r}",
         )
 
     try:
@@ -364,6 +366,36 @@ def validate_layout(
     return report
 
 
+def validate_layout(
+    path: Path,
+    *,
+    page_width: int,
+    page_height: int,
+    spacing_px: int,
+    min_gap_px: int,
+    neighbour_tol: float = RENDERER_NEIGHBOUR_TOLERANCE,
+) -> Report:
+    """Validate one layout file against the renderer geometry."""
+    key = path.stem
+    try:
+        data = load_layout(path)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        report = Report()
+        report.add(key, "error", "*", f"cannot load: {exc}")
+        return report
+
+    return validate_data(
+        data,
+        key=key,
+        file_name=path.name,
+        page_width=page_width,
+        page_height=page_height,
+        spacing_px=spacing_px,
+        min_gap_px=min_gap_px,
+        neighbour_tol=neighbour_tol,
+    )
+
+
 def iter_yaml_files(targets: list[Path]) -> list[Path]:
     """Expand a mix of files and directories into YAML layout files."""
     files: list[Path] = []
@@ -381,66 +413,117 @@ def page_dimensions(mm_width: float, mm_height: float, dpi: int) -> tuple[int, i
 
 
 # ---------------------------------------------------------------------------
-# Row-based tile templates
+# Row-based layout generation
 # ---------------------------------------------------------------------------
 
-# Each template is defined as (columns per row, row heights). Row heights are
-# normalized and sum to 1.0. Columns per row are explicit so mixed templates
-# remain valid. The generator lays out each row edge-to-edge with zero
-# normalized gaps; the renderer creates the spacing gutter.
-_ROW_TEMPLATES: dict[str, dict[str, tuple[float, ...]]] = {
+
+@dataclass(frozen=True)
+class RowTemplate:
+    """Column counts, row height weights and display name of one template."""
+
+    columns: tuple[int, ...]
+    heights: tuple[float, ...]
+    name: str
+
+
+# Row heights are relative weights and are normalized to sum to 1.0. Columns
+# per row are explicit so mixed templates remain valid. The generator lays out
+# each row edge-to-edge with zero normalized gaps; the renderer creates the
+# spacing gutter.
+BUILTIN_ROW_TEMPLATES: dict[str, RowTemplate] = {
     # 3 rows: fixed 4-col and 5-col, plus a 3-4-5 mixed with 40-35-25 heights.
-    "tiles_3_rows_4col": {
-        "columns": (4, 4, 4),
-        "heights": (1 / 3, 1 / 3, 1 / 3),
-    },
-    "tiles_3_rows_5col": {
-        "columns": (5, 5, 5),
-        "heights": (1 / 3, 1 / 3, 1 / 3),
-    },
-    "tiles_3_rows_mixed": {
-        "columns": (3, 4, 5),
-        "heights": (0.40, 0.35, 0.25),
-    },
+    "tiles_3_rows_4col": RowTemplate(
+        columns=(4, 4, 4),
+        heights=(1 / 3, 1 / 3, 1 / 3),
+        name="Tiles 3 rows 4 columns",
+    ),
+    "tiles_3_rows_5col": RowTemplate(
+        columns=(5, 5, 5),
+        heights=(1 / 3, 1 / 3, 1 / 3),
+        name="Tiles 3 rows 5 columns",
+    ),
+    "tiles_3_rows_mixed": RowTemplate(
+        columns=(3, 4, 5),
+        heights=(0.40, 0.35, 0.25),
+        name="Tiles 3 rows mixed (3-4-5)",
+    ),
     # 4 rows: fixed 5-col and 6-col, plus a 6-7-5-6 mixed with equal heights.
-    "tiles_4_rows_5col": {
-        "columns": (5, 5, 5, 5),
-        "heights": (0.25, 0.25, 0.25, 0.25),
-    },
-    "tiles_4_rows_6col": {
-        "columns": (6, 6, 6, 6),
-        "heights": (0.25, 0.25, 0.25, 0.25),
-    },
-    "tiles_4_rows_mixed": {
-        "columns": (6, 7, 5, 6),
-        "heights": (0.25, 0.25, 0.25, 0.25),
-    },
+    "tiles_4_rows_5col": RowTemplate(
+        columns=(5, 5, 5, 5),
+        heights=(0.25, 0.25, 0.25, 0.25),
+        name="Tiles 4 rows 5 columns",
+    ),
+    "tiles_4_rows_6col": RowTemplate(
+        columns=(6, 6, 6, 6),
+        heights=(0.25, 0.25, 0.25, 0.25),
+        name="Tiles 4 rows 6 columns",
+    ),
+    "tiles_4_rows_mixed": RowTemplate(
+        columns=(6, 7, 5, 6),
+        heights=(0.25, 0.25, 0.25, 0.25),
+        name="Tiles 4 rows mixed (6-7-5-6)",
+    ),
     # 5 rows: fixed 5-col and 6-col, plus a 6-7-5-6-7 mixed with equal heights.
-    "tiles_5_rows_5col": {
-        "columns": (5, 5, 5, 5, 5),
-        "heights": (0.2, 0.2, 0.2, 0.2, 0.2),
-    },
-    "tiles_5_rows_6col": {
-        "columns": (6, 6, 6, 6, 6),
-        "heights": (0.2, 0.2, 0.2, 0.2, 0.2),
-    },
-    "tiles_5_rows_mixed": {
-        "columns": (6, 7, 5, 6, 7),
-        "heights": (0.2, 0.2, 0.2, 0.2, 0.2),
-    },
+    "tiles_5_rows_5col": RowTemplate(
+        columns=(5, 5, 5, 5, 5),
+        heights=(0.2, 0.2, 0.2, 0.2, 0.2),
+        name="Tiles 5 rows 5 columns",
+    ),
+    "tiles_5_rows_6col": RowTemplate(
+        columns=(6, 6, 6, 6, 6),
+        heights=(0.2, 0.2, 0.2, 0.2, 0.2),
+        name="Tiles 5 rows 6 columns",
+    ),
+    "tiles_5_rows_mixed": RowTemplate(
+        columns=(6, 7, 5, 6, 7),
+        heights=(0.2, 0.2, 0.2, 0.2, 0.2),
+        name="Tiles 5 rows mixed (6-7-5-6-7)",
+    ),
 }
 
-_NAME_OVERRIDES: dict[str, str] = {
-    "tiles_3_rows_4col": "Tiles 3 rows 4 columns",
-    "tiles_3_rows_5col": "Tiles 3 rows 5 columns",
-    "tiles_3_rows_mixed": "Tiles 3 rows mixed (3-4-5)",
-    "tiles_4_rows_5col": "Tiles 4 rows 5 columns",
-    "tiles_4_rows_6col": "Tiles 4 rows 6 columns",
-    "tiles_4_rows_mixed": "Tiles 4 rows mixed (6-7-5-6)",
-    "tiles_5_rows_5col": "Tiles 5 rows 5 columns",
-    "tiles_5_rows_6col": "Tiles 5 rows 6 columns",
-    "tiles_5_rows_mixed": "Tiles 5 rows mixed (6-7-5-6-7)",
-}
+
+def parse_columns(text: str) -> list[int]:
+    """Parse a comma-separated list of positive column counts.
+
+    Raises:
+        ValueError: If a value is not an integer or is not positive.
+    """
+    try:
+        columns = [int(part.strip()) for part in text.split(",")]
+    except ValueError as exc:
+        raise ValueError(f"columns must be comma-separated integers: {text!r}") from exc
+    if not columns or any(count < 1 for count in columns):
+        raise ValueError(f"every row needs at least one column: {text!r}")
+    return columns
+
+
+def parse_heights(text: str) -> list[float]:
+    """Parse a comma-separated list of positive row height weights.
+
+    Raises:
+        ValueError: If a value is not a number or is not positive.
+    """
+    try:
+        heights = [float(part.strip()) for part in text.split(",")]
+    except ValueError as exc:
+        raise ValueError(f"heights must be comma-separated numbers: {text!r}") from exc
+    if not heights or any(height <= 0 for height in heights):
+        raise ValueError(f"every row height must be positive: {text!r}")
+    return heights
+
+
+def normalize_weights(weights: Sequence[float]) -> list[float]:
+    """Scale positive weights so they sum to 1.0.
+
+    Raises:
+        ValueError: If the weights are empty or do not have a positive sum.
+    """
+    if not weights:
+        raise ValueError("at least one row is required")
+    total = sum(weights)
+    if total <= 0:
+        raise ValueError("row heights must have a positive sum")
+    return [weight / total for weight in weights]
 
 
 def _partition(total: float, parts: int) -> list[float]:
@@ -456,7 +539,7 @@ def _partition(total: float, parts: int) -> list[float]:
     return edges
 
 
-def _height_edges(heights: tuple[float, ...]) -> list[float]:
+def _height_edges(heights: Sequence[float]) -> list[float]:
     """Return rounded cumulative y edges for the given row heights."""
     edges = [0.0]
     accumulated = 0.0
@@ -467,22 +550,40 @@ def _height_edges(heights: tuple[float, ...]) -> list[float]:
     return edges
 
 
-def generate_row_template(key: str) -> dict:
-    """Generate a normalized row-based layout definition.
+def build_row_layout(
+    key: str,
+    columns: Sequence[int],
+    *,
+    name: str | None = None,
+    heights: Sequence[float] | None = None,
+) -> dict:
+    """Build a normalized row-based layout definition.
+
+    ``columns`` gives the number of equal-width slots per row. ``heights``
+    gives row height weights, for example percentages; values are normalized
+    so they sum to 1.0. When omitted, rows share the page equally.
 
     Each row is laid out edge-to-edge: the first slot starts at x=0, every slot
     ends exactly where the next begins, and the last slot ends at x=1. Row
     heights follow the same edge-to-edge rule so consecutive rows touch. This
     is required for :class:`SlotAwareRenderer` to insert the spacing gutter;
     any positive normalized gap would instead be pasted over by the next slot.
-    """
-    spec = _ROW_TEMPLATES[key]
-    columns = spec["columns"]
-    heights = spec["heights"]
-    if len(columns) != len(heights):
-        raise ValueError(f"{key}: columns and heights length mismatch")
 
-    y_edges = _height_edges(heights)
+    Raises:
+        ValueError: If the key is empty, no rows are given, a row has no
+            columns, or the height count does not match the row count.
+    """
+    if not key.strip():
+        raise ValueError("layout key must be a non-empty string")
+    if not columns:
+        raise ValueError("at least one row is required")
+    if any(count < 1 for count in columns):
+        raise ValueError("every row needs at least one column")
+    weights = normalize_weights(heights if heights is not None else [1.0] * len(columns))
+    if len(weights) != len(columns):
+        raise ValueError(f"got {len(columns)} rows but {len(weights)} row heights")
+
+    y_edges = _height_edges(weights)
     slots: list[dict] = []
     for row_index, ncols in enumerate(columns):
         x_edges = _partition(1.0, ncols)
@@ -504,57 +605,59 @@ def generate_row_template(key: str) -> dict:
     return {
         "key": key,
         "version": 1,
-        "name": _NAME_OVERRIDES.get(key, key.replace("_", " ").title()),
+        "name": name or key.replace("_", " ").title(),
         "slots": slots,
     }
 
 
-def write_row_templates(target_dir: Path, *, dry_run: bool = False) -> list[Path]:
-    """Write the new row-based template YAML files.
+def yaml_text(data: dict) -> str:
+    """Serialize a layout mapping to deterministic YAML text."""
+    return yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
+
+
+def write_yaml(path: Path, data: dict, *, dry_run: bool = False) -> bool:
+    """Write a layout mapping, skipping unchanged files.
+
+    Returns:
+        ``True`` when the file was (or would be) written, ``False`` when the
+        existing content already matches.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = yaml_text(data)
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return False
+    if not dry_run:
+        path.write_text(text, encoding="utf-8")
+    return True
+
+
+def write_builtin_templates(target_dir: Path, *, dry_run: bool = False) -> list[Path]:
+    """Write the built-in row-based template YAML files.
 
     Existing files with the same key are replaced only when their content differs.
-    Returns the list of written paths.
+    Returns the list of written (or would-be-written) paths.
     """
-    target_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
-    for key in _ROW_TEMPLATES:
-        data = generate_row_template(key)
+    for key, spec in BUILTIN_ROW_TEMPLATES.items():
+        data = build_row_layout(
+            key,
+            spec.columns,
+            name=spec.name,
+            heights=spec.heights,
+        )
         path = target_dir / f"{key}.yaml"
-        text = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
-        if path.exists() and path.read_text(encoding="utf-8") == text:
-            continue
-        if not dry_run:
-            path.write_text(text, encoding="utf-8")
-        written.append(path)
+        if write_yaml(path, data, dry_run=dry_run):
+            written.append(path)
     return written
 
 
-def main() -> int:
-    """CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="Validate layout YAMLs against renderer spacing geometry."
-    )
-    parser.add_argument(
-        "--path",
-        action="append",
-        default=[],
-        help="YAML file or directory to validate. Repeatable. Defaults to built-in layouts.",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Validate and exit non-zero on errors.",
-    )
-    parser.add_argument(
-        "--write-row-templates",
-        action="store_true",
-        help="Write the new row-based templates into the built-in layouts directory.",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="With --write-row-templates: only report what would be written.",
-    )
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def _add_geometry_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add the page and spacing options shared by validate and generate."""
     parser.add_argument(
         "--neighbour-tol",
         type=float,
@@ -594,20 +697,54 @@ def main() -> int:
         default=2.0,
         help="Layout spacing in mm (default: 2).",
     )
-    args = parser.parse_args()
 
+
+def _geometry(args: argparse.Namespace) -> tuple[int, int, int, int]:
+    """Resolve page pixels, spacing pixels and the minimum gap from CLI args."""
     width_px, height_px = page_dimensions(args.width_mm, args.height_mm, args.dpi)
     spacing_px = round(args.spacing_mm / 25.4 * args.dpi)
     min_gap_px = args.min_gap_px
     if min_gap_px is None:
         min_gap_px = 1 if spacing_px > 0 else 0
+    return width_px, height_px, spacing_px, min_gap_px
 
-    if args.write_row_templates:
-        written = write_row_templates(BUILTIN_LAYOUTS, dry_run=args.dry_run)
-        for path in written:
-            print(f"write {path.relative_to(ROOT)}")
-        return 0
 
+def _print_report(report: Report) -> tuple[int, int]:
+    """Print all findings and return ``(errors, warnings)``."""
+    errors = 0
+    warnings = 0
+    for issue in report.issues:
+        prefix = "ERROR" if issue.severity == "error" else "WARN "
+        location = f"{issue.layout}:{issue.slot}"
+        print(f"{prefix} {location}: {issue.message}")
+        if issue.severity == "error":
+            errors += 1
+        else:
+            warnings += 1
+    return errors, warnings
+
+
+def _resolve_output(raw_output: str | None, key: str | None) -> Path | None:
+    """Resolve the generate output target.
+
+    ``None`` and ``-`` mean standard output. An existing directory is expanded
+    to ``<key>.yaml`` inside it.
+    """
+    if raw_output is None or raw_output == "-":
+        return None
+    path = Path(raw_output)
+    if path.is_dir():
+        if not key:
+            raise ValueError("--key is required when --output is a directory")
+        return path / f"{key}.yaml"
+    if path.suffix.lower() not in {".yaml", ".yml"}:
+        raise ValueError(f"--output must end in .yaml or .yml: {raw_output}")
+    return path
+
+
+def _run_validate(args: argparse.Namespace) -> int:
+    """Handle the ``validate`` subcommand."""
+    width_px, height_px, spacing_px, min_gap_px = _geometry(args)
     targets = [Path(p) for p in args.path] if args.path else [BUILTIN_LAYOUTS]
     files = iter_yaml_files(targets)
     if not files:
@@ -629,14 +766,9 @@ def main() -> int:
     errors = 0
     warnings = 0
     for report in reports:
-        for issue in report.issues:
-            prefix = "ERROR" if issue.severity == "error" else "WARN "
-            location = f"{issue.layout}:{issue.slot}"
-            print(f"{prefix} {location}: {issue.message}")
-            if issue.severity == "error":
-                errors += 1
-            else:
-                warnings += 1
+        report_errors, report_warnings = _print_report(report)
+        errors += report_errors
+        warnings += report_warnings
 
     total_slots = sum(
         len(raw_slots(load_layout(path), layout_key=path.stem)) for path in files if path.exists()
@@ -651,6 +783,147 @@ def main() -> int:
     if args.check and errors:
         return 1
     return 0
+
+
+def _run_generate(args: argparse.Namespace) -> int:
+    """Handle the ``generate`` subcommand."""
+    try:
+        columns = parse_columns(args.columns)
+        heights = parse_heights(args.heights) if args.heights else None
+        output = _resolve_output(args.output, args.key)
+        key = args.key or (output.stem if output is not None else "")
+        if not key:
+            raise ValueError("--key is required when writing to stdout")
+        data = build_row_layout(key, columns, name=args.name, heights=heights)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    if args.check:
+        width_px, height_px, spacing_px, min_gap_px = _geometry(args)
+        report = validate_data(
+            data,
+            key=key,
+            file_name=output.name if output is not None else None,
+            page_width=width_px,
+            page_height=height_px,
+            spacing_px=spacing_px,
+            min_gap_px=min_gap_px,
+            neighbour_tol=args.neighbour_tol,
+        )
+        errors, warnings = _print_report(report)
+        if errors:
+            return 1
+        print(f"OK {key}: {len(data['slots'])} slots, {warnings} warning(s)")
+
+    text = yaml_text(data)
+    if output is None:
+        sys.stdout.write(text)
+        return 0
+
+    if write_yaml(output, data, dry_run=args.dry_run):
+        prefix = "dry-run write" if args.dry_run else "write"
+        print(f"{prefix} {output}")
+    else:
+        print(f"unchanged {output}")
+    return 0
+
+
+def _run_write_templates(args: argparse.Namespace) -> int:
+    """Handle the ``write-templates`` subcommand."""
+    written = write_builtin_templates(BUILTIN_LAYOUTS, dry_run=args.dry_run)
+    prefix = "dry-run write" if args.dry_run else "write"
+    for path in written:
+        print(f"{prefix} {path.relative_to(ROOT)}")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser."""
+    parser = argparse.ArgumentParser(
+        description="Validate layout YAMLs and generate row-based templates.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    validate_parser = subparsers.add_parser(
+        "validate",
+        help="Validate layout YAML files against renderer spacing geometry.",
+    )
+    validate_parser.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        help="YAML file or directory to validate. Repeatable. Defaults to built-in layouts.",
+    )
+    validate_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit non-zero when validation reports errors.",
+    )
+    _add_geometry_arguments(validate_parser)
+    validate_parser.set_defaults(handler=_run_validate)
+
+    generate_parser = subparsers.add_parser(
+        "generate",
+        help="Generate a row-based layout YAML file from column and height specifications.",
+    )
+    generate_parser.add_argument(
+        "--columns",
+        required=True,
+        help="Comma-separated slot count per row, e.g. 4,3,5.",
+    )
+    generate_parser.add_argument(
+        "--heights",
+        help=(
+            "Comma-separated row height weights (percentages), e.g. 30,40,30. "
+            "Values are normalized to sum to 1.0; omit for equal heights."
+        ),
+    )
+    generate_parser.add_argument(
+        "--key",
+        help="Layout key. Defaults to the output file stem.",
+    )
+    generate_parser.add_argument(
+        "--name",
+        help="Display name. Defaults to a title-cased key.",
+    )
+    generate_parser.add_argument(
+        "--output",
+        "-o",
+        help="Output YAML file or existing directory. Defaults to stdout.",
+    )
+    generate_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Do not write the output file.",
+    )
+    generate_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Validate the generated layout and exit non-zero on errors.",
+    )
+    _add_geometry_arguments(generate_parser)
+    generate_parser.set_defaults(handler=_run_generate)
+
+    templates_parser = subparsers.add_parser(
+        "write-templates",
+        help="Write the built-in row-based template YAML files.",
+    )
+    templates_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Only report what would be written.",
+    )
+    templates_parser.set_defaults(handler=_run_write_templates)
+
+    return parser
+
+
+def main() -> int:
+    """CLI entry point."""
+    parser = build_parser()
+    args = parser.parse_args()
+    return args.handler(args)
 
 
 if __name__ == "__main__":

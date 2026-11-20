@@ -14,7 +14,32 @@ This directory contains the built-in YAML layout templates.
 A layout such as `four_quadrants.yaml` is correct even though the photos touch
 in the YAML: the renderer adds the spacing afterwards.
 
-## Tile template naming
+## Tile template generation and validation
+
+The helper at `scripts/layouts_helper.py` both validates layout YAML and
+generates row-based templates.
+
+Generate a layout from a column count per row and optional row height
+percentages (normalized to 100%):
+
+```bash
+uv run python scripts/layouts_helper.py generate \
+  --columns 4,3,5 --heights 30,40,30 \
+  --key my_layout --name "My layout" --output path/to/my_layout.yaml --check
+```
+
+Omit `--heights` for equal row heights. Omit `--output` to print YAML to
+stdout.
+
+The built-in tile YAML files are generated from presets. Change
+`BUILTIN_ROW_TEMPLATES` in `scripts/layouts_helper.py` instead of editing them
+by hand, then run:
+
+```bash
+uv run python scripts/layouts_helper.py write-templates
+```
+
+### Tile template naming
 
 Tile templates are named by row count, not by image count:
 
@@ -31,17 +56,11 @@ Tile templates are named by row count, not by image count:
 - `tiles_5_rows_mixed`: 5 rows with mixed columns, currently 6-7-5-6-7 and
   equal row heights.
 
-The tile YAML files are generated. Change `_ROW_TEMPLATES` in
-`scripts/layouts/validate_layouts.py` instead of editing them by hand, then run:
-
-```bash
-uv run python scripts/layouts/validate_layouts.py --write-row-templates
-```
-
 ## Validation
 
 ```bash
-uv run python scripts/layouts/validate_layouts.py --check
+uv run python scripts/layouts_helper.py validate --check
+uv run python scripts/layouts_helper.py validate --path path/to/layout.yaml
 ```
 
 The validator checks exact tiling (no gaps, no overlaps) and simulates the
@@ -49,7 +68,7 @@ renderer's pixel insets. To reproduce legacy failures caused by the old
 `1e-9` neighbour tolerance:
 
 ```bash
-uv run python scripts/layouts/validate_layouts.py --path old.yaml --neighbour-tol 1e-9
+uv run python scripts/layouts_helper.py validate --path old.yaml --neighbour-tol 1e-9
 ```
 
 Relevant tests:
