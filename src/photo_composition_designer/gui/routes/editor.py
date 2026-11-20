@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from photo_composition_designer.core.errors import ProjectError
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.dependencies import ObjectDetectorDependency
-from photo_composition_designer.gui.routes.projects import _canvas_response
+from photo_composition_designer.gui.routes.project_context import _canvas_response
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.repositories import (

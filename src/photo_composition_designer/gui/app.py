@@ -27,8 +27,11 @@ from photo_composition_designer.gui.routes import (
     layouts,
     media,
     project_archive,
+    project_distribution,
+    project_inventory,
+    project_lifecycle,
+    project_preview,
     project_settings,
-    projects,
 )
 from photo_composition_designer.gui.routes import export as export_routes
 from photo_composition_designer.gui.settings import GuiSettings, load_gui_settings
@@ -99,7 +102,10 @@ def create_app(
         )
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
     app.include_router(project_archive.router)
-    app.include_router(projects.router)
+    app.include_router(project_lifecycle.router)
+    app.include_router(project_preview.router)
+    app.include_router(project_inventory.router)
+    app.include_router(project_distribution.router)
     app.include_router(project_settings.router)
     app.include_router(app_settings.router)
     app.include_router(layouts.router)
