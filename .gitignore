@@ -168,6 +168,7 @@ cython_debug/
 #.idea/
 .idea/workspace.xml
 .idea/jsonSchemas.xml
+.idea/shelf/*
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
@@ -248,3 +249,4 @@ cython_debug/
 
 # Serena (MCP code intelligence) local artifacts
 /.serena/logs/
+/.serena/*
