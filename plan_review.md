@@ -141,7 +141,7 @@ behavior changes before final verification.
 - **Plan:** `plan_review.md`
 - **Completed:** Phase 1 preview job-scoped errors, Phase 2 lock option fix, Phase 3 route split, Phase 4 verification
 - **Active:** None
-- **Next:** Push batches and monitor CI
+- **Next:** None
 - **Relevant files:** `src/photo_composition_designer/gui/preview_worker.py`,
   `src/photo_composition_designer/gui/routes/project_context.py`,
   `src/photo_composition_designer/gui/routes/project_lifecycle.py`,
@@ -155,5 +155,5 @@ behavior changes before final verification.
   associate worker errors with relevant preview jobs; split routes by
   responsibility; leave optional CI and typing improvements deferred.
 - **Blockers:** None
-- **Last verified:** 2026-11-20; `make lock` resolved 104 packages; `make lint` passed; `make test` passed (280 tests).
+- **Last verified:** 2026-11-20; `make lock` resolved 104 packages; `make lint` passed; `make test` passed (280 tests); CI run 44782795088 succeeded.
 - **Context status:** clean
