@@ -199,6 +199,60 @@ def test_preview_status_returns_ready_when_file_exists(tmp_path, monkeypatch):
     assert data["revision"] >= 0
 
 
+def test_preview_status_is_scoped_to_the_requested_job(tmp_path, monkeypatch):
+    """A stale failure for another width must not fail the requested preview."""
+    monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
+    project_id, page_id = _seed(tmp_path)
+
+    worker = client.app.state.preview_worker
+    worker._job_errors[("other", 0, 0, "preview")] = "unrelated stale failure"
+
+    status = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+    )
+    assert status.status_code == 200
+    assert status.json()["status"] in ("ready", "refreshing")
+
+
+def test_preview_status_reports_only_the_failed_job(tmp_path, monkeypatch):
+    """The status endpoint returns the error for the exact requested job."""
+    monkeypatch.setenv("PCD_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("PCD_CACHE_DIR", str(tmp_path / "cache"))
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
+    project_id, page_id = _seed(tmp_path)
+
+    # The status endpoint submits the requested job, which clears its prior
+    # failure. Seed the error after submission via a one-shot submit that
+    # raises before the endpoint's status check.
+    worker = client.app.state.preview_worker
+    worker._job_errors[("unrelated", 0, 0, "preview")] = "unrelated stale failure"
+
+    original_submit = worker.submit
+
+    def submit_then_fail(project_id, page_id, **kwargs):
+        original_submit(project_id, page_id, **kwargs)
+        key = (project_id, page_id, kwargs["max_width"], kwargs.get("mode", "preview"))
+        worker._job_errors[key] = "boom"
+
+    worker.submit = submit_then_fail
+    status = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+    )
+    assert status.status_code == 200
+    assert status.json()["status"] == "error"
+    assert status.json()["error"] == "boom"
+
+    # A different width for the same page is not affected by the 320 failure.
+    worker.submit = original_submit
+    worker._job_errors.pop((project_id, page_id, 640, "preview"), None)
+    other = client.get(
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 640}
+    )
+    assert other.json()["status"] in ("ready", "refreshing")
+
+
 def test_preview_status_returns_refreshing_or_ready_when_file_absent(tmp_path, monkeypatch):
     """The status endpoint returns 'refreshing' (or 'ready' with sync worker)
     when the file is absent."""

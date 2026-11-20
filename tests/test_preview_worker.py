@@ -18,6 +18,7 @@ from photo_composition_designer.gui.preview_worker import (
     PreviewWorker,
     SynchronousPreviewWorker,
     WarmupJob,
+    _preview_job_key,
 )
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.repositories import PageRepository
@@ -166,7 +167,31 @@ def test_async_worker_records_error(tmp_path):
         worker.submit(9999, 9999, max_width=320, priority=1)
         worker._queue.join()
         assert worker.last_error is not None
+        assert worker.error_for(9999, 9999, max_width=320) == worker.last_error
         worker.stop()
+    finally:
+        database.close()
+
+
+def test_worker_error_is_scoped_to_preview_job(tmp_path):
+    """A failure on one job must not mark another preview job as failed."""
+    database, project_id, page_id = _seed(tmp_path)
+    try:
+        worker = SynchronousPreviewWorker(database, preview_dir=tmp_path / "previews")
+        worker.submit(9999, 9999, max_width=320)
+        failed_key = _preview_job_key(9999, 9999, 320, "preview")
+        assert worker.error_for(9999, 9999, max_width=320) is not None
+        assert worker.error_for(project_id, page_id, max_width=320) is None
+
+        worker.submit(project_id, page_id, max_width=320)
+        assert worker.error_for(project_id, page_id, max_width=320) is None
+        assert worker.error_for(9999, 9999, max_width=640) is None
+
+        # Re-submitting the failed job clears its stale error, then the
+        # synchronous worker re-renders and records the failure again.
+        worker._job_errors[failed_key] = "stale"
+        worker.submit(9999, 9999, max_width=320)
+        assert worker.error_for(9999, 9999, max_width=320) is not None
     finally:
         database.close()
 

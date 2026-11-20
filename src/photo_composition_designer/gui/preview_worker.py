@@ -24,6 +24,13 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.render.object_detector import ObjectDetector
 
+PreviewJobKey = tuple[int, int, int, str]
+
+
+def _preview_job_key(project_id: int, page_id: int, max_width: int, mode: str) -> PreviewJobKey:
+    """Return the identity used to coalesce and track one preview job."""
+    return (project_id, page_id, max_width, mode)
+
 
 @dataclass(frozen=True)
 class PreviewJob:
@@ -34,6 +41,11 @@ class PreviewJob:
     max_width: int
     mode: str
     priority: int  # 0 = visible page (high), 1 = background (low)
+
+    @property
+    def key(self) -> PreviewJobKey:
+        """Return the coalescing and status-tracking identity of this job."""
+        return _preview_job_key(self.project_id, self.page_id, self.max_width, self.mode)
 
 
 @dataclass(frozen=True)
@@ -79,12 +91,13 @@ class PreviewWorker:
         self._detector_provider = detector_provider
         self._queue: queue.PriorityQueue = queue.PriorityQueue()
         self._lock = threading.Lock()
-        self._pending: set[tuple[int, int, int, str]] = set()
+        self._pending: set[PreviewJobKey] = set()
         self._pending_warmups: set[tuple[int, str, tuple[int, int]]] = set()
         self._warmed: set[tuple[int, str, tuple[int, int]]] = set()
         self._seq = 0
         self._thread = threading.Thread(target=self._run, daemon=True, name="preview-worker")
         self._last_error: str | None = None
+        self._job_errors: dict[PreviewJobKey, str] = {}
 
     def start(self) -> None:
         """Start the background worker thread."""
@@ -116,11 +129,13 @@ class PreviewWorker:
         Priority 0 is for the visible page (processed first); priority 1
         is for background page refresh.
         """
-        job_key = (project_id, page_id, max_width, mode)
+        job_key = _preview_job_key(project_id, page_id, max_width, mode)
         with self._lock:
             if job_key in self._pending:
                 return
             self._pending.add(job_key)
+            # A retry supersedes the previous failure for this exact job.
+            self._job_errors.pop(job_key, None)
             self._seq += 1
             seq = self._seq
         job = PreviewJob(project_id, page_id, max_width, mode, priority)
@@ -159,6 +174,26 @@ class PreviewWorker:
         """Return the last error message, or ``None`` if no error occurred."""
         return self._last_error
 
+    def error_for(
+        self,
+        project_id: int,
+        page_id: int,
+        *,
+        max_width: int = 320,
+        mode: str = "preview",
+    ) -> str | None:
+        """Return the recorded failure for one preview job, if any.
+
+        Errors are associated with the job's project, page, width, and mode
+        so a stale failure cannot incorrectly mark another preview request as
+        failed. Submitting a new job clears only that job's previous failure.
+        """
+        return self._job_errors.get(_preview_job_key(project_id, page_id, max_width, mode))
+
+    def _record_job_error(self, key: PreviewJobKey, message: str) -> None:
+        with self._lock:
+            self._job_errors[key] = message
+
     def _resolve_detector(self) -> ObjectDetector | None:
         """Return the detector configured for the current app settings."""
         if self._detector_provider is not None:
@@ -178,7 +213,10 @@ class PreviewWorker:
                 else:
                     self._render(job)
             except Exception as exc:  # noqa: BLE001
-                self._last_error = str(exc)
+                message = str(exc)
+                self._last_error = message
+                if not isinstance(job, WarmupJob):
+                    self._record_job_error(job.key, message)
             finally:
                 if isinstance(job, WarmupJob):
                     key = (job.project_id, str(job.photo_path), job.identity)
@@ -186,9 +224,7 @@ class PreviewWorker:
                         self._pending_warmups.discard(key)
                 else:
                     with self._lock:
-                        self._pending.discard(
-                            (job.project_id, job.page_id, job.max_width, job.mode)
-                        )
+                        self._pending.discard(job.key)
                 self._queue.task_done()
 
     def _warm(self, job: WarmupJob) -> None:
@@ -240,6 +276,7 @@ class SynchronousPreviewWorker:
         self._detector_provider = detector_provider
         self._warmed: set[tuple[int, str, tuple[int, int]]] = set()
         self._last_error: str | None = None
+        self._job_errors: dict[PreviewJobKey, str] = {}
 
     def start(self) -> None:
         """No-op for the synchronous worker."""
@@ -264,6 +301,8 @@ class SynchronousPreviewWorker:
     ) -> None:
         """Render the preview inline (synchronous)."""
         del priority  # Unused; the synchronous worker renders immediately.
+        key = _preview_job_key(project_id, page_id, max_width, mode)
+        self._job_errors.pop(key, None)
         try:
             rendering = ProjectRenderingService(
                 self._database,
@@ -278,7 +317,9 @@ class SynchronousPreviewWorker:
                 mode=mode,
             )
         except Exception as exc:  # noqa: BLE001
-            self._last_error = str(exc)
+            message = str(exc)
+            self._last_error = message
+            self._job_errors[key] = message
 
     def submit_warmup(
         self,
@@ -308,10 +349,23 @@ class SynchronousPreviewWorker:
     def last_error(self) -> str | None:
         return self._last_error
 
+    def error_for(
+        self,
+        project_id: int,
+        page_id: int,
+        *,
+        max_width: int = 320,
+        mode: str = "preview",
+    ) -> str | None:
+        """Return the recorded failure for one preview job, if any."""
+        return self._job_errors.get(_preview_job_key(project_id, page_id, max_width, mode))
+
 
 __all__ = [
     "PreviewJob",
+    "PreviewJobKey",
     "PreviewWorker",
     "SynchronousPreviewWorker",
     "WarmupJob",
+    "_preview_job_key",
 ]
