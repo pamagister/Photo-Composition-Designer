@@ -11,13 +11,35 @@
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
+  {% set project_id = project.id if project is defined and project is not none else none %}
   <header class="app-header">
     <nav aria-label="Main navigation">
-      <a class="brand" href="/">PCD</a>
       <a href="/projects">Projects</a>
-      <a href="/settings">App settings</a>
-      <a href="/layouts">Layouts</a>
-      {% block header_context %}{% endblock %}
+      <details class="nav-dropdown">
+        <summary>Settings <span class="nav-chevron" aria-hidden="true"></span></summary>
+        <div class="nav-dropdown-menu">
+          <a href="/settings">App Settings</a>
+          <a href="/layouts">Layouts</a>
+          {% if project_id %}
+          <a href="/projects/{{ project_id }}/settings">Project Settings</a>
+          {% endif %}
+        </div>
+      </details>
+      {% if project_id %}
+      <details class="nav-dropdown">
+        <summary>Extras <span class="nav-chevron" aria-hidden="true"></span></summary>
+        <div class="nav-dropdown-menu">
+          <a href="/projects/{{ project_id }}/preview{% if selected_page is defined and selected_page %}?page={{ selected_page.id }}{% endif %}">Preview</a>
+          <a href="/projects/{{ project_id }}/distribute">Distribute</a>
+          <a href="/projects/{{ project_id }}/check">Check</a>
+        </div>
+      </details>
+      {% endif %}
+      <a class="button" href="https://photo-composition-designer.readthedocs.io/en/stable/"
+         target="_blank" rel="noopener noreferrer">Help <span aria-hidden="true">&#8599;</span></a>
+      {% if project_id %}
+      <a class="button primary" href="/projects/{{ project_id }}/export">Export photos</a>
+      {% endif %}
     </nav>
     {% block header_status %}<p class="save-state" data-save-state>{{ save_state | default("Saved") }}</p>{% endblock %}
   </header>

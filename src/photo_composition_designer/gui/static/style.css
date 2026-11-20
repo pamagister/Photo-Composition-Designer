@@ -110,13 +110,77 @@ a:focus {
 
 .app-header nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
 }
 
-.brand {
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.nav-dropdown {
+  position: relative;
+  margin: 0;
+}
+
+.nav-dropdown > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.nav-dropdown > summary:hover,
+.nav-dropdown > summary:focus {
+  border-color: var(--accent);
+}
+
+.nav-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-chevron {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg) translateY(-0.1rem);
+}
+
+.nav-dropdown[open] > summary .nav-chevron {
+  transform: rotate(225deg) translateY(-0.1rem);
+}
+
+.nav-dropdown[open] > .nav-dropdown-menu {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 0.75rem 2rem #0008;
+}
+
+.nav-dropdown-menu a {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a:focus {
+  background: var(--surface-raised);
+  color: var(--accent);
 }
 
 .save-state {
@@ -450,61 +514,6 @@ label {
 
 .project-header form {
   max-width: 24rem;
-}
-
-.project-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.75rem;
-  padding: 0.45rem 0.55rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.project-extras {
-  position: relative;
-  margin: 0;
-}
-
-.project-extras > summary {
-  display: inline-block;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-.project-extras[open] > .extras-menu {
-  position: absolute;
-  z-index: 4;
-  top: calc(100% + 0.4rem);
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  min-width: 12rem;
-  padding: 0.35rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 0.75rem 2rem #0008;
-}
-
-.extras-menu a {
-  display: block;
-  padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  color: var(--text);
-  text-decoration: none;
-}
-
-.extras-menu a:hover,
-.extras-menu a:focus {
-  background: var(--surface-raised);
-  color: var(--accent);
 }
 
 .project-layout {
@@ -1252,7 +1261,6 @@ summary {
     padding: 0.75rem;
   }
 
-  .project-actions,
   .workspace-status {
     flex-direction: column;
     align-items: stretch;
@@ -1321,10 +1329,5 @@ summary {
 
   .photo-strip-header {
     flex-wrap: wrap;
-  }
-
-  .project-actions .button {
-    flex: 1 1 8rem;
-    text-align: center;
   }
 }

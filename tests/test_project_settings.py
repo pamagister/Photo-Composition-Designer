@@ -128,6 +128,36 @@ def test_project_detail_shows_extras_and_check_sections(
     assert f'href="/projects/{project_id}/check"' in response.text
 
 
+def test_global_navigation_shows_project_actions_only_for_open_project(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+
+    detail = client.get(f"/projects/{project_id}")
+
+    assert detail.status_code == 200
+    assert 'href="/projects"' in detail.text
+    assert 'href="/settings"' in detail.text
+    assert 'href="/layouts"' in detail.text
+    assert f'href="/projects/{project_id}/settings"' in detail.text
+    assert f'href="/projects/{project_id}/preview' in detail.text
+    assert f'href="/projects/{project_id}/distribute"' in detail.text
+    assert f'href="/projects/{project_id}/check"' in detail.text
+    assert f'href="/projects/{project_id}/export"' in detail.text
+    assert 'href="https://photo-composition-designer.readthedocs.io/en/stable/"' in detail.text
+    assert 'target="_blank"' in detail.text
+    assert 'rel="noopener noreferrer"' in detail.text
+    assert ">PCD</a>" not in detail.text
+
+    overview = client.get("/projects")
+
+    assert overview.status_code == 200
+    assert f'href="/projects/{project_id}/settings"' not in overview.text
+    assert f'href="/projects/{project_id}/preview"' not in overview.text
+    assert f'href="/projects/{project_id}/export"' not in overview.text
+    assert ">Extras" not in overview.text
+
+
 def test_projects_page_exposes_archive_import_and_duplicate_controls(
     client: TestClient, gui_settings: GuiSettings
 ):

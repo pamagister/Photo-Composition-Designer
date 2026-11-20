@@ -14,19 +14,6 @@
 {% block content %}
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 
-<nav class="project-actions" aria-label="Project actions">
-  <a class="button" href="/projects/{{ project.id }}/preview{% if selected_page %}?page={{ selected_page.id }}{% endif %}">Preview</a>
-  <a class="button primary" href="/projects/{{ project.id }}/export">Export photos</a>
-  <a class="button" href="/projects/{{ project.id }}/settings">Settings</a>
-  <details class="project-extras">
-    <summary>Extras</summary>
-    <nav class="extras-menu" aria-label="Extras">
-      <a href="/projects/{{ project.id }}/distribute">Distribute</a>
-      <a href="/projects/{{ project.id }}/check">Check</a>
-    </nav>
-  </details>
-</nav>
-
 <div class="editor-shell">
   <aside class="editor-sidebar" aria-label="Pages">
     <h2>Pages</h2>
