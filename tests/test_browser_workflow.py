@@ -568,3 +568,51 @@ def test_export_workflow(live_server, browser_page):
     expect(result.locator(".export-files a")).to_have_count(2)
     first_file = result.locator(".export-files a").first
     assert f"/projects/{project_id}/export/files" in first_file.get_attribute("href")
+
+
+def test_preview_keeps_page_aspect_ratio_on_wide_and_narrow_viewports(live_server, browser_page):
+    """The large preview letterboxes instead of stretching.
+
+    A wide, short viewport must produce side bars; a narrow, tall viewport keeps
+    the existing top/bottom bars. In both cases the rendered frame ratio has to
+    match the configured page ratio.
+    """
+    page = browser_page
+    _open_editor(page, live_server, live_server["page_ids"][0])
+
+    cases = (
+        ({"width": 1600, "height": 560}, "side"),
+        ({"width": 500, "height": 1000}, "vertical"),
+    )
+    for viewport, expected_bars in cases:
+        page.set_viewport_size(viewport)
+        page.wait_for_function(
+            """() => {
+              const frame = document.querySelector('.page-preview-frame');
+              if (!frame) return false;
+              const box = frame.getBoundingClientRect();
+              if (box.width < 1 || box.height < 1) return false;
+              const expected = parseFloat(
+                getComputedStyle(frame).getPropertyValue('--page-aspect')
+              );
+              return Math.abs(box.width / box.height - expected) < 0.01;
+            }"""
+        )
+        metrics = page.evaluate(
+            """() => {
+              const frame = document.querySelector('.page-preview-frame');
+              const container = document.querySelector('.page-preview');
+              const box = frame.getBoundingClientRect();
+              const area = container.getBoundingClientRect();
+              return {
+                width: box.width,
+                height: box.height,
+                containerWidth: area.width,
+                containerHeight: area.height,
+              };
+            }"""
+        )
+        if expected_bars == "side":
+            assert metrics["width"] < metrics["containerWidth"] - 1
+        else:
+            assert metrics["height"] < metrics["containerHeight"] - 1

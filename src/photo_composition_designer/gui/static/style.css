@@ -673,10 +673,12 @@ summary {
 }
 
 .page-preview-frame {
+  --preview-max-height: calc(100vh - 19rem);
   position: relative;
-  width: 100%;
+  width: min(100%, calc(var(--preview-max-height) * var(--page-aspect)));
   max-width: 100%;
-  max-height: calc(100vh - 19rem);
+  max-height: var(--preview-max-height);
+  aspect-ratio: var(--page-aspect);
 }
 
 .page-preview-frame .page-preview-image {
@@ -1274,8 +1276,8 @@ summary {
     min-height: 45vh;
   }
 
-  .page-preview img {
-    max-height: 58vh;
+  .page-preview-frame {
+    --preview-max-height: 58vh;
   }
 
   .editor-layout-panel {
