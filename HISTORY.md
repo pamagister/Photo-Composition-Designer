@@ -4,32 +4,220 @@ Changelog
 
 (unreleased)
 ------------
+- Feat(gui): polish export, navigation and settings Refs #73, #74, #75,
+  #76, #77. [Paul Magister]
+- Fix(layout): center descriptions and inset map with rounded corners
+  Refs #72. [Paul Magister]
+
+  - Treat the description renderer's center alignment as centered instead of falling through to right alignment.\n- Start the local map one slot spacing below the collage while keeping it flush to the side and bottom margins.\n- Apply the rounded-photo-corner setting to the local map using the same radius rule as slot photos.
+- Feat(layout): add text margins, description alignment and map modes
+  Refs #71. [Paul Magister]
+
+  - Add layout.text_margin (1.5 mm) between collage, description and calendar.
+  - Add project and per-page description alignment with a centered title page by default.
+  - Replace the map boolean with off/auto/always map modes.
+  - Span the map across the calendar and description column and require a visible calendar strip.
+  - Persist the per-page center_description override and migrate existing profiles and pages.
+- Feat(layouts): generalize layout helper with generate command Refs
+  #70. [Paul Magister]
+
+  - Move scripts/layouts/validate_layouts.py to scripts/layouts_helper.py.
+  - Add validate, generate and write-templates subcommands.
+  - Generate row layouts from column counts and optional row height percentages.
+  - Update layout catalogue agent notes and add helper tests.
+- Feat(gui): add stop-server button to the header Refs #69. [Paul
+  Magister]
+- Feat(layouts): rework tiled layouts into row-based templates and add
+  validator Refs #68. [Paul Magister]
+
+  Replace the old image-count-based tile templates (fourteen/thirty/fortyfive
+  tiles) with row-based templates named by row count:
+
+  - tiles_3_rows_*: 4-col, 5-col, and mixed 3-4-5 with 40/35/25 row heights
+  - tiles_4_rows_*: 5-col, 6-col, and mixed 6-7-5-6 with equal row heights
+  - tiles_5_rows_*: 5-col, 6-col, and mixed 6-7-5-6-7 with equal row heights
+
+  Add scripts/layouts/validate_layouts.py which validates exact tiling (no
+  gaps, no overlaps) and simulates the renderer's pixel insets so collapsed
+  spacing gaps (neighbour edges not recognised due to sub-pixel rounding) are
+  reported as errors.
+
+  Update slot_renderer.py neighbour tolerance from 1e-9 to 1e-4 so rounded
+  YAML coordinates such as 0.133333 vs 0.13334 are still recognised as
+  touching neighbours and receive the spacing gutter.
+
+  Adjust tests/test_layouts.py to assert the new row-based tile templates
+  instead of the removed legacy ones.
+- Feat(gui): rework project tiles and actions Refs #66. [Paul Magister]
+
+  Show projects as responsive tiles with a cached first-page title image or a neutral placeholder. Add direct Duplicate, Export .pcd and confirmed Delete actions, and generate incrementing copy names without a name dialog.
+- Feat(gui): rework global navigation Refs #66. [Paul Magister]
+
+  Replace the brand link and per-project action row with one top navigation. Settings and Extras use dropdowns, project-specific entries appear only while a project is loaded, and Help opens the stable docs in a new tab. Move Preview under Extras and keep Export photos as the primary action.
+- Fix(gui): preserve preview aspect ratio on wide viewports Refs #67.
+  [Paul Magister]
+- .gitignore: .idea/shelf and .serena. [Paul Magister]
+- Docs(plan): complete many-photo performance plan and clean up temp
+  harness Refs #58, #59, #60, #61, #62. [Paul Magister]
+
+  Close the render-performance plan: Phase 5 is reviewed and closed as not
+  needed (Phase 1-4 meet the latency target), Phase 6 is done.
+
+  - Add docs/develop/preview-pipeline.md documenting the render paths, draft
+    profile, cache-key contract, atomic publication, background worker, immutable
+    asset URLs, map LRU and detection caching, including the no-stale invariants.
+  - Promote harness_common.py to scripts/ and remove temp/performance-artifacts/
+    plus leftover test output images; benchmark_render.py is now self-contained.
+  - Record the final benchmark (2026-11-20) versus the original baseline in
+    Section 1.2 and update the handoff.
+  - Update HISTORY.md.
+
+  Verified: make fmt, make lint, make test (246 passed); benchmark runs with and
+  without --gps.
+- Bugfix: aktualisierungs-Lifecycle: jetzt geht es. Es hing vermutlich
+  von vornherein am browser-cache. [Paul Magister]
+- Bugfix: aktualisierungs-Lifecycle: teilweise behoben: Erst wenn ich
+  auf die kleine Vorschau-Kachel klicke, wird die kleine Kachel und die
+  große Vorschau neu gerendert und aktualisiert. Nach einem normalen
+  Drag-and-drop aus dem Inventar auf eine Drop-Zone werden kleien und
+  große Vorschau schwarz und bleiben komplett schwarz. [Paul Magister]
+- Delete serena config locally. it is configured globally. [Paul
+  Magister]
+- Docs(plan): mark Phase 4 complete and update handoff Refs #62. [Paul
+  Magister]
+- Perf(gui): warm object detection in the background Refs #62. [Paul
+  Magister]
+
+  Share one cached ONNX detector between request handling and the preview worker, and enqueue low-priority detection warm-ups for available project photos when object-aware cropping is enabled. Warm-up jobs coalesce, run below preview work, and are skipped when detection is disabled. Sidebar thumbnails now decode asynchronously. Adds worker and slot-render tests proving a warmed photo performs no YOLO inference.
+- Test(render): align profile invalidation with draft preview Refs #62.
+  [Paul Magister]
+
+  Draft previews derive their cache key from the reduced-DPI profile, so a full-profile DPI change above the draft DPI does not change the rendered bytes. Assert that behavior and keep a real style change for invalidation coverage.
+- Style: format test_preview_worker.py Refs #61. [Paul Magister]
+- Perf(render): bounded LRU cache for map renders (P3-W04) Refs #61.
+  [Paul Magister]
+
+  Add a module-level OrderedDict LRU (cap 16) in render/layout_geometry.py
+  keyed by (profile_hash, map_width, map_height, sorted(gps_coordinates)).
+  _render_map checks the cache before rendering and stores the result after.
+  Custom renderers (test doubles) bypass the cache. clear_map_cache() is
+  exported for tests.
+
+  Calendar and description are not cached: the calendar strip is ~38 ms
+  with a per-date key (few hits), and the description is small.
+
+  Tests in test_render_performance.py prove the key changes on
+  coordinate/profile/dimension changes, a repeat is a hit, and the cache
+  stays bounded.
+
+  Phase 3 is now complete: draft render (P3-W01), background worker
+  (P3-W02), client state (P3-W03), and map LRU (P3-W04).
+- Feat(gui): refreshing/ready/error preview client state (P3-W03) Refs
+  #61. [Paul Magister]
+
+  The preview route no longer renders on a cache miss. If the file is
+  absent, it submits a high-priority background job and returns 202
+  Accepted with a 1x1 transparent PNG placeholder. A new status endpoint
+  (GET /projects/{project_id}/pages/{page_id}/preview-status) returns
+  JSON {status: ready|refreshing|error, revision: N}.
+
+  The editor template adds a .page-preview-refreshing overlay (spinner +
+  'Refreshing preview...') and editor.js polls the status endpoint every
+  500 ms (30 s timeout), reloads the image with a cache-busting timestamp
+  when ready, and logs errors to the console. Sidebar thumbnails keep
+  their loading=lazy behaviour.
+
+  Stale bytes are never presented as current: the cache key includes the
+  revision, so a new revision produces a new key and a new URL. The
+  placeholder is shown only while the current revision's preview is
+  rendering.
+
+  Tests in test_preview_assets.py cover the status endpoint (ready when
+  file exists, refreshing/ready when absent) and the 200-with-real-image
+  path (sync worker).
+- Perf(gui): background preview worker for bulk refresh (D3) Refs #61.
+  [Paul Magister]
+
+  Add an app-lifespan-owned in-process worker (gui/preview_worker.py) that
+  renders previews off the request thread. The worker coalesces duplicate
+  jobs (same project/page/width/mode) and prioritises visible-page previews
+  (priority 0) over background page refresh (priority 1). SQLite
+  connections are created and closed in the worker thread.
+
+  Convert _render_project_previews, preview_project, and apply_distribution
+  so request handlers submit jobs instead of rendering every page inline.
+  The assign/replace/swap/crop/live routes enqueue a high-priority job for
+  the affected page so the visible preview catches up in the background.
+
+  A SynchronousPreviewWorker renders inline for tests. All test fixtures
+  use sync_preview_worker=True for deterministic timing.
+
+  tests/test_preview_worker.py guards coalescing, priority order,
+  start/stop, and error capture.
+- Perf(rendering): draft-profile preview render (D1) Refs #61. [Paul
+  Magister]
+
+  Derive a preview-only draft profile from the project profile and the
+  requested preview width. The draft scales only size.dpi to the smallest
+  integer that covers max_width at 1.5x device pixels, capped at the full
+  profile DPI so a draft never renders above full resolution.
+
+  render_preview now keys the cache by the draft profile's hash and renders
+  with the draft profile, cutting both the JPEG decode and the resize cost
+  in the slot renderer. render_page_image and the exporter keep the full
+  profile and pixel-exact output.
+
+  Regression test test_draft_profile_derivation_covers_preview_width proves
+  the draft covers 320/640 and never exceeds full DPI. The existing
+  draft-vs-full closeness test and export-parity test still pass.
+- Feat(preview): immutable asset URLs for sidebar thumbnails Refs #60.
+  [Paul Magister]
+
+  Add GET /projects/{project_id}/preview-assets/{cache_key}.jpg that serves a
+  cached preview by its content-derived cache key without consulting mutable
+  page state. The route never renders on a miss (404) and serves with
+  Cache-Control: public, max-age=31536000, immutable so the browser can cache
+  the sidebar thumbnails permanently.
+
+  Migrate the sidebar page thumbnails in project.html and editor_canvas.html
+  to the immutable asset URL. The cache key is computed per page from the
+  same render inputs the preview renderer uses (revision, layout, profile
+  hash, anniversaries signature, mode, width). The large selected-page preview
+  stays on the existing database-resolved route so it always renders on a
+  cache miss.
+
+  Old revisions' files are retained on disk so an in-flight request for an
+  old URL still serves the original complete bytes. Tests in
+  tests/test_preview_assets.py guard the contract: immutable headers, 404 on
+  absent file, 400 on invalid key, and old-revision bytes stability.
+- Fix(build): resolve pytest and httpx warnings in make precommit Refs
+  #65. [Paul Magister]
+- Docs(plan): mark Phase 0 and Phase 1 complete, update handoff Refs
+  #58, #59. [Paul Magister]
+- Perf(detector): faster full-image fingerprint with versioned cache
+  Refs #59. [Paul Magister]
+- Fix(inventory): invalidate previews when source photo bytes change
+  Refs #59. [Paul Magister]
+- Perf(rendering): batch build_input photo and root lookups Refs #59.
+  [Paul Magister]
+- Test(perf): add render benchmark harness and correctness guards Refs
+  #58. [Paul Magister]
+- Plan: performance. [Paul Magister]
+- Feat(cli): start web UI by default Refs #57. [Paul Magister]
+
+  Running the entry point without arguments now starts the local web UI; any argument keeps the Typer CLI. Collect package data in PyInstaller so templates and static assets are present in frozen builds.
+
+
+2.0.1 (2026-11-19)
+------------------
 
 Fix
 ~~~
 - Add favicon.svg. [Paul Magister]
-- Fix centered description alignment and map spacing/rounded corners Refs #72.
-  [Paul Magister]
 
 Other
 ~~~~~
-- Add configurable text margins, left/center description alignment and a
-  three-state map mode. The map now spans the calendar and description column
-  and requires a visible calendar strip.
-- Perf(previews): draft previews, background worker and render caches Refs
-  #58, #59, #60, #61, #62. [Paul Magister]
-
-  Complete the many-photo render performance plan (Phases 0-4 and 6; Phase 5
-  reviewed and closed as not needed). Preview rendering now uses a draft profile
-  (reduced DPI) that covers the requested width at ~1.5x device pixels, a
-  prioritized in-process worker renders previews off the request path with
-  refreshing/ready/error client state, sidebar thumbnails use immutable asset
-  URLs, the map render is cached in a bounded LRU, object detection uses a faster
-  full-image fingerprint with low-priority warm-up, and build_input batches its
-  lookups. Cold 640 px previews dropped from ~226-436 ms to ~86-278 ms and bulk
-  refresh of 10 pages from ~8-9 s to ~1.4-2.8 s, with the full-resolution export
-  path unchanged. Adds docs/develop/preview-pipeline.md and promotes the
-  benchmark harness to scripts/benchmark_render.py.
+- Docs: Update HISTORY.md for release 2.0.1. [Paul Magister]
 - Fix(build): add PyInstaller entry point for restructured package Refs
   #56. [Paul Magister]
 - Test: add fast baseline subset and testall target. [Paul Magister]
