@@ -20,6 +20,7 @@
     {% for pg in pages %}
     <a href="/projects/{{ project.id }}?page={{ pg.id }}"
        class="page-thumb {% if selected_page and pg.id == selected_page.id %}active{% endif %}"
+       aria-keyshortcuts="ArrowUp ArrowDown"
        {% if selected_page and pg.id == selected_page.id %}aria-current="page"{% endif %}>
       <img id="page-thumb-preview-{{ pg.id }}"
            class="page-thumb-preview"

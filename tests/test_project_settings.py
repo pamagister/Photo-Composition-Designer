@@ -554,3 +554,85 @@ def test_duplicate_project_route_rejects_blank_name(client: TestClient):
     assert response.status_code == 303
     assert "/projects" in response.headers["location"]
     assert "name" in response.headers["location"]
+
+
+def test_settings_page_shows_calendar_language_and_holiday_choices(
+    client: TestClient,
+):
+    project_id = _create_project(client)
+
+    response = client.get(f"/projects/{project_id}/settings")
+
+    assert response.status_code == 200
+    assert 'name="calendar.language"' in response.text
+    assert '<option value="de_DE"' in response.text
+    assert '<option value="de_AT"' in response.text
+    assert '<option value="en_US"' in response.text
+    assert 'data-holiday-country="DE"' in response.text
+    assert 'value="SN"' in response.text
+    assert 'data-holiday-country="US"' in response.text
+    assert 'value="CA"' in response.text
+    assert 'data-holiday-country="IT"' in response.text
+    assert "Italy uses nationwide holidays." in response.text
+
+
+def test_settings_save_persists_multiple_holiday_subdivisions(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    form = _settings_form(**{"calendar.language": "de_AT"})
+    data = {key: value for key, value in form.items() if key != "calendar.holiday_countries"}
+    data["calendar.holiday_countries"] = ["1", "9"]
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=data,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    project, _ = _project_state(gui_settings, project_id)
+    profile = OutputProfile.from_dict(project.output_profile)
+    assert profile.calendar.language == "de_AT"
+    assert profile.calendar.holiday_countries == ("1", "9")
+
+
+def test_settings_save_without_holiday_subdivisions_uses_nationwide(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    form = _settings_form()
+    data = {key: value for key, value in form.items() if key != "calendar.holiday_countries"}
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=data,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    project, _ = _project_state(gui_settings, project_id)
+    profile = OutputProfile.from_dict(project.output_profile)
+    assert profile.calendar.holiday_countries == ()
+
+
+def test_settings_page_keeps_legacy_holiday_values_visible(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(
+            **{
+                "calendar.language": "en_US",
+                "calendar.holiday_countries": "SN, BY",
+            }
+        ),
+        follow_redirects=False,
+    )
+
+    response = client.get(f"/projects/{project_id}/settings")
+
+    assert response.status_code == 200
+    assert "SN (current)" in response.text
+    assert "BY (current)" in response.text

@@ -33,6 +33,7 @@ from photo_composition_designer.gui.routes import (
 from photo_composition_designer.gui.routes import export as export_routes
 from photo_composition_designer.gui.settings import GuiSettings, load_gui_settings
 from photo_composition_designer.gui.templating import BASE_DIR
+from photo_composition_designer.io.export import ExportProgressTracker
 from photo_composition_designer.render.object_detector import ObjectDetector
 
 
@@ -74,6 +75,7 @@ def create_app(
     app.state.settings = settings
     app.state.database = WorkspaceDatabase(settings.workspace_path())
     app.state.export_paths = set()
+    app.state.export_progress = ExportProgressTracker()
     app.state.object_detector_cache = {}
     app.state.object_detector_lock = threading.Lock()
 

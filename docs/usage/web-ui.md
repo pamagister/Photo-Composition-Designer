@@ -123,10 +123,11 @@ changes the layout.
 ### Keyboard accessibility
 
 Every drag-and-drop action has a keyboard equivalent: the slot selects, the
-remove button, the move control and the layout form. Slots expose group labels,
-notices are announced as status messages, focus is always visible, and a skip
-link jumps to the main content. At narrow widths the panels stack and the page
-list becomes a horizontal strip; no control is hidden in a drawer.
+remove button, the move control and the layout form. With a page thumbnail
+focused, ArrowUp and ArrowDown move to the previous or next page. Slots expose
+group labels, notices are announced as status messages, focus is always visible,
+and a skip link jumps to the main content. At narrow widths the panels stack and
+the page list becomes a horizontal strip; no control is hidden in a drawer.
 
 ## Page previews and caching
 
@@ -143,11 +144,13 @@ originals again. Editing a page invalidates its cached preview.
 **Project settings** edits the name, start date, page count, title page usage and
 composition title, and the output profile: calendar language and holiday
 countries, page size and DPI, margins, slot spacing, text margin, description
-alignment, fonts and colors, map mode, and the description toggle. The map can
-be turned off, restricted to pages with location data, or forced on for every
-page with a visible calendar strip. Removing pages with saved content requires
-confirmation. Settings are validated before saving, and actual
-render-affecting changes increment page revisions.
+alignment, fonts and colors, map mode, and the description toggle. The calendar
+language is a dropdown of region-qualified locales; holiday countries are a
+language-dependent checkbox selection of subdivisions, and no selection means
+nationwide holidays. The map can be turned off, restricted to pages with location
+data, or forced on for every page with a visible calendar strip. Removing pages
+with saved content requires confirmation. Settings are validated before saving,
+and actual render-affecting changes increment page revisions.
 
 ## Duplicate a project
 
@@ -166,7 +169,8 @@ archive: source references remain relative and relinkable.
   overridden for this export. The default destination is a project-specific
   folder under the OS Pictures/Bilder directory when it exists; an absolute local
   path or workspace-relative folder can be entered instead. At least one format
-  must be selected.
+  must be selected. A live percentage appears in the rendering message, and the
+  exported folder path is a link that opens the folder in the OS file manager.
 * **Export project (.pcd)** on the Projects overview downloads a reference-only
   project archive. **Import project (.pcd)** creates a new project from such an
   archive. Archives include layout snapshots, assignments and source references,

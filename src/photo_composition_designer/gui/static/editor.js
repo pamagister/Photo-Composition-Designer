@@ -31,6 +31,30 @@
     if (sidebar) sidebar.scrollTop = position.sidebarY;
   });
 
+  /* Page thumbnails: ArrowUp/ArrowDown move to the previous/next page. The
+   * handler stops propagation so the crop keyboard controls below do not also
+   * consume the arrow keys while a thumbnail is focused. */
+  const pageThumbs = Array.from(
+    document.querySelectorAll(".editor-sidebar .page-thumb")
+  );
+  const sidebar = document.querySelector(".editor-sidebar");
+  if (sidebar && pageThumbs.length > 1) {
+    sidebar.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      const current = event.target.closest(".page-thumb");
+      if (!current) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const currentIndex = pageThumbs.indexOf(current);
+      if (currentIndex < 0) return;
+      const nextIndex = currentIndex + (event.key === "ArrowDown" ? 1 : -1);
+      if (nextIndex < 0 || nextIndex >= pageThumbs.length) return;
+      const next = pageThumbs[nextIndex];
+      next.focus();
+      next.click();
+    });
+  }
+
   if (!document.querySelector(".editor-canvas")) return;
 
   const SOURCE_SLOT_TYPE = "application/x-pcd-slot";

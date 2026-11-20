@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="/static/project-settings.js" defer></script>
+{% endblock %}
+
 {% block content %}
 <div class="project-header">
   <div>
@@ -90,14 +94,71 @@
       </div>
       <div class="field">
         <label for="calendar-language">Language</label>
-        <input id="calendar-language" name="calendar.language"
-               value="{{ values['calendar.language'] }}" required>
+        <select id="calendar-language" name="calendar.language" required>
+          {% for option in language_options %}
+          <option value="{{ option.code }}"
+                  {% if values['calendar.language'] == option.code %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+          {% endfor %}
+          {% if values['calendar.language'] not in (language_options | map(attribute='code')) %}
+          <option value="{{ values['calendar.language'] }}" selected>
+            {{ values['calendar.language'] }} (current)
+          </option>
+          {% endif %}
+        </select>
       </div>
       <div class="field">
-        <label for="calendar-countries">Holiday countries</label>
-        <input id="calendar-countries" name="calendar.holiday_countries"
-               value="{{ values['calendar.holiday_countries'] }}"
-               placeholder="SN, DE">
+        <span class="field-label" id="calendar-countries-label">Holiday countries</span>
+        <p class="muted">No selection means nationwide holidays.</p>
+        <div class="holiday-options" aria-labelledby="calendar-countries-label">
+          {% for option in language_options %}
+          <fieldset class="holiday-option-group"
+                    data-holiday-country="{{ option.country }}"
+                    {% if selected_country != option.country %}hidden{% endif %}>
+            <legend>{{ option.label }}</legend>
+            {% if option.subdivisions %}
+            <div class="holiday-option-grid">
+              {% for subdivision in option.subdivisions %}
+              <label class="holiday-option">
+                <input type="checkbox" name="calendar.holiday_countries"
+                       value="{{ subdivision.code }}"
+                       {% if subdivision.code in selected_holiday_countries %}checked{% endif %}>
+                <span>{{ subdivision.label }}</span>
+                <span class="muted">{{ subdivision.code }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="muted">{{ option.note }}</p>
+            {% endif %}
+            {% if selected_country == option.country %}
+            {% set known_codes = option.subdivisions | map(attribute='code') | list %}
+            {% for code in selected_holiday_countries if code not in known_codes %}
+            <label class="holiday-option">
+              <input type="checkbox" name="calendar.holiday_countries"
+                     value="{{ code }}" checked>
+              <span>{{ code }} (current)</span>
+            </label>
+            {% endfor %}
+            {% endif %}
+          </fieldset>
+          {% endfor %}
+          {% set known_countries = language_options | map(attribute='country') | list %}
+          {% if selected_country and selected_country not in known_countries %}
+          <fieldset class="holiday-option-group"
+                    data-holiday-country="{{ selected_country }}">
+            <legend>Current holidays ({{ selected_country }})</legend>
+            {% for code in selected_holiday_countries %}
+            <label class="holiday-option">
+              <input type="checkbox" name="calendar.holiday_countries"
+                     value="{{ code }}" checked>
+              <span>{{ code }}</span>
+            </label>
+            {% endfor %}
+          </fieldset>
+          {% endif %}
+        </div>
       </div>
     </div>
   </fieldset>

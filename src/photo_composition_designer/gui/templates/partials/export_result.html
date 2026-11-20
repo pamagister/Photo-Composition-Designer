@@ -4,7 +4,7 @@
 {% elif result %}
 <p class="success" role="status">
   Exported {{ result.rendered_pages }} of {{ result.pages }} page(s) to
-  <code>{{ folder }}</code>.
+  <a href="{{ folder_url }}" title="Open in file manager"><code>{{ folder }}</code></a>.
 </p>
 {% if result.warnings %}
 <div class="export-warnings">

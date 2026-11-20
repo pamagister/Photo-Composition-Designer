@@ -153,3 +153,19 @@ def test_render_project_pdf_only_writes_no_page_files(tmp_path, monkeypatch):
     assert result.rendered_pages == 2
     assert result.pdf_path is not None
     assert list((tmp_path / "out").glob("page_*")) == []
+
+
+def test_render_project_reports_progress(tmp_path, monkeypatch):
+    database, project_id = _setup_project(tmp_path, monkeypatch)
+    updates: list[tuple[int, int]] = []
+
+    ProjectExporter(database).render_project(
+        project_id,
+        tmp_path / "progress",
+        write_pdf=False,
+        progress=lambda completed, total: updates.append((completed, total)),
+    )
+
+    assert updates[0] == (0, 2)
+    assert updates[-1] == (2, 2)
+    assert [completed for completed, _ in updates] == [0, 1, 2]

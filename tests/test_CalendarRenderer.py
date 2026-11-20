@@ -2,7 +2,7 @@ import holidays
 import pytest
 
 from photo_composition_designer.core.settings import Settings as ConfigParameterManager
-from photo_composition_designer.render.calendar import CalendarRenderer
+from photo_composition_designer.render.calendar import CalendarRenderer, calendar_country_code
 
 from .TestHelper import temp_dir
 
@@ -155,3 +155,13 @@ def test_get_combined_holidays_includes_subdivision_holidays():
     sample_date = next(iter(subdiv_only))
     assert sample_date in combined
     assert combined.get(sample_date) == sn.get(sample_date)
+
+
+def test_calendar_country_code_supports_regionless_locales():
+    assert calendar_country_code("de_DE") == "DE"
+    assert calendar_country_code("de-AT") == "AT"
+    assert calendar_country_code("en") == "US"
+    assert calendar_country_code("fr") == "FR"
+    assert calendar_country_code("es") == "ES"
+    assert calendar_country_code("it") == "IT"
+    assert calendar_country_code("nl") == ""

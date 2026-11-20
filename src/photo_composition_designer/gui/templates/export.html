@@ -5,6 +5,9 @@
 {% endblock %}
 
 {% block content %}
+{% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
+{% if open_error %}<p class="error" role="alert">{{ open_error }}</p>{% endif %}
+
 <div class="project-header">
   <div>
     <h1>Export project</h1>
@@ -29,7 +32,8 @@
 
 <div class="panel">
   <h2>Render pages</h2>
-  <form hx-post="/projects/{{ project.id }}/export"
+  <form id="export-form" data-project-id="{{ project.id }}"
+        hx-post="/projects/{{ project.id }}/export"
         hx-target="#export-result"
         hx-swap="innerHTML"
         hx-indicator="#export-progress"
@@ -69,8 +73,8 @@
     </div>
     <button class="primary" id="export-submit" type="submit">Export pages</button>
     <p class="muted">Source originals are read only and are never copied or modified.</p>
-    <span id="export-progress" class="htmx-indicator muted">
-      Rendering pages... this can take a moment.
+    <span id="export-progress" class="htmx-indicator muted" role="status" aria-live="polite">
+      Rendering pages... <span data-export-progress>0%</span> this can take a moment.
     </span>
   </form>
 </div>

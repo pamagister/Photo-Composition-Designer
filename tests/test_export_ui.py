@@ -13,6 +13,7 @@ from starlette.testclient import TestClient
 from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.app import create_app
+from photo_composition_designer.gui.routes import export as export_route
 from photo_composition_designer.gui.routes.export import _default_export_folder
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.project.distribution import DistributionService
@@ -131,6 +132,28 @@ def test_export_page_shows_effective_profile_and_actions(
     assert 'name="jpeg_quality"' in response.text
     assert f"project_{project_id}" in response.text
     assert "Source originals are" in response.text
+
+
+def test_export_progress_endpoint_tracks_export(
+    client: TestClient, gui_settings: GuiSettings, tmp_path: Path
+):
+    project_id, _ = _seed_project(gui_settings, tmp_path)
+
+    idle = client.get(f"/projects/{project_id}/export/progress")
+    assert idle.status_code == 200
+    assert idle.json()["status"] == "idle"
+    assert idle.json()["percent"] == 0
+
+    response = client.post(
+        f"/projects/{project_id}/export",
+        data={"folder": "progress", "jpg": "1", "pdf": "", "dpi": "100"},
+    )
+    assert response.status_code == 200
+
+    done = client.get(f"/projects/{project_id}/export/progress").json()
+    assert done["status"] == "done"
+    assert done["completed"] == done["total"] == 2
+    assert done["percent"] == 100
 
 
 def test_web_export_writes_ordered_pages_and_pdf(
@@ -319,3 +342,60 @@ def test_preview_route_renders_pages_in_project_order(
     assert "Page previews refreshed." in response.text
     previews = list((gui_settings.preview_dir() / "pages").glob("*.jpg"))
     assert len(previews) == 3  # one thumbnail per page plus the large selected preview
+
+
+def test_export_folder_link_opens_only_exported_folders(
+    client: TestClient,
+    gui_settings: GuiSettings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    project_id, _ = _seed_project(gui_settings, tmp_path)
+    response = client.post(
+        f"/projects/{project_id}/export",
+        data={"folder": "opened", "jpg": "1", "pdf": "", "dpi": "100"},
+    )
+    assert response.status_code == 200
+    assert f"/projects/{project_id}/export/folder?folder=opened" in response.text
+
+    opened: list[Path] = []
+    monkeypatch.setattr(
+        export_route,
+        "_open_in_file_manager",
+        lambda path: opened.append(path) or True,
+    )
+    response = client.get(
+        f"/projects/{project_id}/export/folder?folder=opened",
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"].endswith("opened=1")
+    assert opened == [(gui_settings.export_dir() / "opened").resolve()]
+
+    unknown = client.get(
+        f"/projects/{project_id}/export/folder?folder=unknown",
+        follow_redirects=False,
+    )
+    assert unknown.status_code == 404
+
+
+def test_export_folder_open_failure_returns_to_export_page(
+    client: TestClient,
+    gui_settings: GuiSettings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    project_id, _ = _seed_project(gui_settings, tmp_path)
+    client.post(
+        f"/projects/{project_id}/export",
+        data={"folder": "opened", "jpg": "1", "pdf": "", "dpi": "100"},
+    )
+    monkeypatch.setattr(export_route, "_open_in_file_manager", lambda path: False)
+
+    response = client.get(
+        f"/projects/{project_id}/export/folder?folder=opened",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "open_error=" in response.headers["location"]

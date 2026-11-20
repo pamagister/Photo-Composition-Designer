@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
 from photo_composition_designer.core.output_profile import OutputProfile
@@ -82,6 +83,29 @@ def _default_export_folder(settings: GuiSettings, project_id: int) -> Path:
     return settings.export_dir() / f"project_{project_id}"
 
 
+def _open_in_file_manager(path: Path) -> bool:
+    """Open a folder in the platform file manager, returning success."""
+    try:
+        if sys.platform == "win32":
+            start_file = getattr(os, "startfile", None)
+            if start_file is None:
+                return False
+            start_file(path)
+        elif sys.platform == "darwin":
+            command = ["open", str(path)]
+        else:
+            command = ["xdg-open", str(path)]
+        if sys.platform != "win32":
+            subprocess.Popen(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+    except OSError:
+        return False
+    return True
+
+
 def _export_file_url(project_id: int, folder: str, path: Path) -> str:
     """Return a safe download URL for one exported file."""
     return f"/projects/{project_id}/export/files?folder={quote(folder)}&name={quote(path.name)}"
@@ -94,6 +118,8 @@ def _export_context(
     folder: str = "",
     result: ExportResult | None = None,
     error: str = "",
+    notice: str = "",
+    open_error: str = "",
     profile: OutputProfile | None = None,
     dpi: str = "",
     jpeg_quality: str = "",
@@ -123,7 +149,10 @@ def _export_context(
         "result": result,
         "file_rows": file_rows,
         "pdf_url": pdf_url,
+        "folder_url": f"/projects/{project_id}/export/folder?folder={quote(default_folder)}",
         "error": error,
+        "notice": notice,
+        "open_error": open_error,
     }
 
 
@@ -143,6 +172,9 @@ def _export_page(
     *,
     context: dict[str, object] | None = None,
     status_code: int = 200,
+    error: str = "",
+    notice: str = "",
+    open_error: str = "",
 ) -> HTMLResponse:
     """Render the full export page."""
     project = _get_project(service, project_id)
@@ -156,7 +188,14 @@ def _export_page(
             "profile": profile,
             "save_state": "Saved",
             **(
-                _export_context(settings, project_id, profile=profile)
+                _export_context(
+                    settings,
+                    project_id,
+                    profile=profile,
+                    error=error,
+                    notice=notice,
+                    open_error=open_error,
+                )
                 if context is None
                 else context
             ),
@@ -173,7 +212,39 @@ def export_page(
     settings: SettingsDependency,
 ) -> HTMLResponse:
     """Show the project export form and effective output settings."""
-    return _export_page(request, service, settings, project_id)
+    notice = "Export folder opened." if request.query_params.get("opened") == "1" else ""
+    open_error = request.query_params.get("open_error", "")
+    return _export_page(
+        request,
+        service,
+        settings,
+        project_id,
+        notice=notice,
+        open_error=open_error,
+    )
+
+
+@router.get("/projects/{project_id}/export/folder")
+def open_export_folder(
+    request: Request,
+    project_id: int,
+    settings: SettingsDependency,
+    folder: str = "",
+) -> RedirectResponse:
+    """Open a previously exported folder in the OS file manager."""
+    try:
+        target, _ = _export_folder(settings, project_id, folder)
+    except ValueError as exc:
+        raise HTTPException(404, "export folder not found") from exc
+    if target.resolve() not in request.app.state.export_paths or not target.is_dir():
+        raise HTTPException(404, "export folder not found")
+    if not _open_in_file_manager(target):
+        return RedirectResponse(
+            f"/projects/{project_id}/export?open_error="
+            f"{quote('Could not open the export folder in the file manager.')}",
+            status_code=303,
+        )
+    return RedirectResponse(f"/projects/{project_id}/export?opened=1", status_code=303)
 
 
 @router.post("/projects/{project_id}/export", response_model=None)
@@ -195,6 +266,8 @@ def run_export(
     profile = profile_from_project(project)
     requested_dpi = dpi.strip()
     requested_quality = jpeg_quality.strip()
+    progress = request.app.state.export_progress
+    progress_started = False
     try:
         write_jpg = bool(jpg)
         write_pdf = bool(pdf)
@@ -213,6 +286,8 @@ def run_export(
             effective_quality = profile.size.jpeg_quality
         requested_folder = folder.strip() or str(_default_export_folder(settings, project_id))
         target, relative_folder = _export_folder(settings, project_id, requested_folder)
+        progress.start(project_id)
+        progress_started = True
         result = ProjectExporter(
             database,
             anniversaries_path=settings.anniversaries_path,
@@ -225,9 +300,13 @@ def run_export(
             image_format="JPEG",
             jpeg_quality=effective_quality,
             dpi=effective_dpi,
+            progress=lambda completed, total: progress.update(project_id, completed, total),
         )
         request.app.state.export_paths.add(target.resolve())
+        progress.finish(project_id, status="done")
     except (OSError, ValueError, ProjectError) as exc:
+        if progress_started:
+            progress.finish(project_id, status="error", error=str(exc))
         context = _export_context(
             settings,
             project_id,
@@ -263,6 +342,21 @@ def run_export(
         project_id,
         context,
         profile=profile,
+    )
+
+
+@router.get("/projects/{project_id}/export/progress")
+def export_progress(request: Request, project_id: int) -> JSONResponse:
+    """Return the current export progress for the browser indicator."""
+    state = request.app.state.export_progress.get(project_id)
+    return JSONResponse(
+        {
+            "status": state.status,
+            "completed": state.completed,
+            "total": state.total,
+            "percent": state.percent,
+            "error": state.error,
+        }
     )
 
 

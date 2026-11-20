@@ -554,6 +554,45 @@ def test_layout_change_and_page_navigation(live_server, browser_page):
     expect(page.locator(".page-thumb.active")).to_have_attribute("aria-current", "page")
 
 
+def test_pages_sidebar_arrow_keys_navigate(live_server, browser_page):
+    page = browser_page
+    page_ids = live_server["page_ids"]
+    base = f"{live_server['base_url']}/projects/{live_server['project_id']}"
+    _open_editor(page, live_server, page_ids[0])
+
+    first = page.locator(f'a.page-thumb[href$="page={page_ids[0]}"]')
+    first.focus()
+    page.keyboard.press("ArrowUp")
+    expect(page).to_have_url(f"{base}?page={page_ids[0]}")
+
+    page.keyboard.press("ArrowDown")
+    expect(page).to_have_url(f"{base}?page={page_ids[1]}")
+
+    second = page.locator(f'a.page-thumb[href$="page={page_ids[1]}"]')
+    second.focus()
+    page.keyboard.press("ArrowDown")
+    expect(page).to_have_url(f"{base}?page={page_ids[1]}")
+
+    page.keyboard.press("ArrowUp")
+    expect(page).to_have_url(f"{base}?page={page_ids[0]}")
+
+
+def test_calendar_language_switch_shows_matching_holiday_group(live_server, browser_page):
+    page = browser_page
+    page.goto(f"{live_server['base_url']}/projects/{live_server['project_id']}/settings")
+    language = page.locator("#calendar-language")
+
+    language.select_option("de_AT")
+    expect(page.locator('[data-holiday-country="AT"]')).to_be_visible()
+    expect(page.locator('[data-holiday-country="DE"]')).to_be_hidden()
+    page.locator('[data-holiday-country="AT"] input[value="9"]').check()
+
+    language.select_option("en_US")
+    expect(page.locator('[data-holiday-country="US"]')).to_be_visible()
+    expect(page.locator('[data-holiday-country="AT"]')).to_be_hidden()
+    expect(page.locator('[data-holiday-country="AT"] input[value="9"]')).not_to_be_checked()
+
+
 def test_export_workflow(live_server, browser_page):
     page = browser_page
     project_id = live_server["project_id"]

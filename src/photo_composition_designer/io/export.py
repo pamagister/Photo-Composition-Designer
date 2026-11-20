@@ -8,7 +8,9 @@ formats: individual JPEG/PNG pages and/or a combined PDF.
 from __future__ import annotations
 
 import tempfile
-from dataclasses import dataclass
+import threading
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from PIL import Image
@@ -34,6 +36,57 @@ class ExportResult:
     pdf_path: Path | None
     warnings: tuple[str, ...] = ()
     rendered_pages: int = 0
+
+
+@dataclass
+class ExportProgress:
+    """Mutable progress record for one project export."""
+
+    status: str = "idle"
+    completed: int = 0
+    total: int = 0
+    error: str = ""
+
+    @property
+    def percent(self) -> int:
+        """Return completion as an integer percentage."""
+        if self.total <= 0:
+            return 0
+        return min(100, round(self.completed * 100 / self.total))
+
+
+class ExportProgressTracker:
+    """Thread-safe progress records shared by the export route and poller."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._states: dict[int, ExportProgress] = {}
+
+    def start(self, project_id: int) -> None:
+        """Mark an export as running and reset its counters."""
+        with self._lock:
+            self._states[project_id] = ExportProgress(status="running")
+
+    def update(self, project_id: int, completed: int, total: int) -> None:
+        """Record the number of processed pages."""
+        with self._lock:
+            state = self._states.setdefault(project_id, ExportProgress(status="running"))
+            state.completed = completed
+            state.total = total
+
+    def finish(self, project_id: int, *, status: str, error: str = "") -> None:
+        """Mark an export as done or failed."""
+        with self._lock:
+            state = self._states.setdefault(project_id, ExportProgress())
+            state.status = status
+            state.error = error
+            if status == "done":
+                state.completed = state.total
+
+    def get(self, project_id: int) -> ExportProgress:
+        """Return a snapshot of the current progress record."""
+        with self._lock:
+            return replace(self._states.get(project_id, ExportProgress()))
 
 
 class ProjectExporter:
@@ -121,6 +174,7 @@ class ProjectExporter:
         image_format: str = "PNG",
         jpeg_quality: int | None = None,
         dpi: int | None = None,
+        progress: Callable[[int, int], None] | None = None,
     ) -> ExportResult:
         """Render all pages in project order and write the requested outputs.
 
@@ -128,6 +182,11 @@ class ProjectExporter:
         is always composed from a lossless render of each page, so disabling the
         JPEG output does not reduce the PDF quality. Missing or unavailable
         assets are reported as warnings instead of aborting the export.
+
+        ``progress`` is called with ``(completed, total)`` before rendering and
+        after every page, including pages that could not be rendered. This lets
+        callers expose a live progress indicator without changing the synchronous
+        export contract.
         """
         image_format = image_format.upper()
         if image_format not in _IMAGE_SUFFIXES:
@@ -143,6 +202,9 @@ class ProjectExporter:
         service = self._service()
         profile = service.profile_for(connection, project_id)
         pages = PageRepository(connection).list(project_id)
+        total_pages = len(pages)
+        if progress is not None:
+            progress(0, total_pages)
         effective_dpi = int(dpi) if dpi is not None else profile.size.dpi
         effective_quality = (
             int(jpeg_quality) if jpeg_quality is not None else profile.size.jpeg_quality
@@ -151,32 +213,38 @@ class ProjectExporter:
         with tempfile.TemporaryDirectory(prefix="pcd-export-") as temporary:
             temporary_dir = Path(temporary)
             pdf_sources: list[Path] = []
+            processed_pages = 0
             for page in pages:
-                warnings.extend(service.assignment_warnings(connection, page))
                 try:
-                    image = service.render_page_image(connection, page)
-                except (OSError, ValueError) as error:
-                    warnings.append(f"page {page.page_index} could not be rendered: {error}")
-                    continue
-                rendered_pages += 1
-                if write_pages:
-                    rendered.append(
-                        self._save_page(
-                            image,
-                            page,
-                            output_dir,
-                            image_format=image_format,
-                            quality=effective_quality,
-                            dpi=effective_dpi,
+                    warnings.extend(service.assignment_warnings(connection, page))
+                    try:
+                        image = service.render_page_image(connection, page)
+                    except (OSError, ValueError) as error:
+                        warnings.append(f"page {page.page_index} could not be rendered: {error}")
+                        continue
+                    rendered_pages += 1
+                    if write_pages:
+                        rendered.append(
+                            self._save_page(
+                                image,
+                                page,
+                                output_dir,
+                                image_format=image_format,
+                                quality=effective_quality,
+                                dpi=effective_dpi,
+                            )
                         )
-                    )
-                if write_pdf:
-                    if write_pages and image_format == "PNG":
-                        pdf_sources.append(rendered[-1])
-                    else:
-                        pdf_source = temporary_dir / f"page_{page.page_index:03d}.png"
-                        image.save(pdf_source, format="PNG")
-                        pdf_sources.append(pdf_source)
+                    if write_pdf:
+                        if write_pages and image_format == "PNG":
+                            pdf_sources.append(rendered[-1])
+                        else:
+                            pdf_source = temporary_dir / f"page_{page.page_index:03d}.png"
+                            image.save(pdf_source, format="PNG")
+                            pdf_sources.append(pdf_source)
+                finally:
+                    processed_pages += 1
+                    if progress is not None:
+                        progress(processed_pages, total_pages)
 
             pdf_path: Path | None = None
             if write_pdf and pdf_sources:
@@ -221,4 +289,4 @@ class ProjectExporter:
                 image.close()
 
 
-__all__ = ["ExportResult", "ProjectExporter"]
+__all__ = ["ExportProgress", "ExportProgressTracker", "ExportResult", "ProjectExporter"]

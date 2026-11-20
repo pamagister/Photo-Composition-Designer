@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
 from photo_composition_designer.core.output_profile import OutputProfile, OutputProfileError
+from photo_composition_designer.gui.calendar_options import calendar_language_options
 from photo_composition_designer.gui.dependencies import ProjectServiceDependency
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.rendering import profile_from_project
@@ -90,6 +91,37 @@ def _is_checked(value: Any) -> bool:
     return str(value).lower() in {"1", "true", "on", "yes"}
 
 
+_LANGUAGE_REGION_DEFAULTS = {
+    "de": "de_DE",
+    "en": "en_US",
+    "fr": "fr_FR",
+    "es": "es_ES",
+    "it": "it_IT",
+}
+
+
+def _display_language(language: str) -> str:
+    """Show a region-qualified locale for legacy region-less values."""
+    return _LANGUAGE_REGION_DEFAULTS.get(language.lower(), language)
+
+
+def _countries_from_form(form: Mapping[str, Any]) -> str:
+    """Join repeated holiday country checkboxes or a legacy comma-separated value."""
+    getlist = getattr(form, "getlist", None)
+    values = getlist("calendar.holiday_countries") if callable(getlist) else []
+    if not values:
+        raw = form.get("calendar.holiday_countries")
+        if raw is None:
+            values = []
+        elif isinstance(raw, (list, tuple)):
+            values = [str(item) for item in raw]
+        else:
+            values = [str(raw)]
+    return ",".join(
+        part.strip() for value in values for part in str(value).split(",") if part.strip()
+    )
+
+
 def _profile_from_form(form: Mapping[str, Any]) -> OutputProfile:
     """Build a validated output profile from submitted settings fields."""
     payload: dict[str, Any] = {}
@@ -100,8 +132,11 @@ def _profile_from_form(form: Mapping[str, Any]) -> OutputProfile:
     for name in _FLOAT_FIELDS:
         _assign_field(payload, name, _number_from_form(form, name, float))
     for name in _TEXT_FIELDS:
+        if name == "calendar.holiday_countries":
+            continue
         value = form.get(name)
         _assign_field(payload, name, "" if value is None else str(value).strip())
+    _assign_field(payload, "calendar.holiday_countries", _countries_from_form(form))
     return OutputProfile.from_dict(payload)
 
 
@@ -124,7 +159,7 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
     """Flatten a profile into the form field values used by the template."""
     return {
         "calendar.use_calendar": profile.calendar.use_calendar,
-        "calendar.language": profile.calendar.language,
+        "calendar.language": _display_language(profile.calendar.language),
         "calendar.holiday_countries": ",".join(profile.calendar.holiday_countries),
         "calendar.title": profile.calendar.title,
         "calendar.horizontal_orientation": profile.calendar.horizontal_orientation,
@@ -171,8 +206,10 @@ def _values_from_form(form: Mapping[str, Any]) -> dict[str, Any]:
         {
             name: "" if form.get(name) is None else str(form.get(name))
             for name in (*_INT_FIELDS, *_FLOAT_FIELDS, *_TEXT_FIELDS)
+            if name != "calendar.holiday_countries"
         }
     )
+    values["calendar.holiday_countries"] = _countries_from_form(form)
     values.update(
         {
             "project.name": str(form.get("project.name", "")),
@@ -219,6 +256,13 @@ def _settings_response(
                 "project.confirm_remove": False,
             }
         )
+    language = str(form_values.get("calendar.language", ""))
+    selected_country = language.split("_")[1].upper() if "_" in language else ""
+    selected_holiday_countries = [
+        part.strip()
+        for part in str(form_values.get("calendar.holiday_countries", "")).split(",")
+        if part.strip()
+    ]
     return TEMPLATES.TemplateResponse(
         request,
         "project_settings.html",
@@ -227,6 +271,9 @@ def _settings_response(
             "project": project,
             "profile": profile,
             "values": form_values,
+            "language_options": calendar_language_options(),
+            "selected_country": selected_country,
+            "selected_holiday_countries": selected_holiday_countries,
             "source_states": source_states,
             "error": error,
             "save_state": "Saved",

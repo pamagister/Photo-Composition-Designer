@@ -19,6 +19,22 @@ from photo_composition_designer.core.helpers import mm_to_px
 from photo_composition_designer.core.moon_phase import MoonPhase
 from photo_composition_designer.core.settings import Settings as ConfigParameterManager
 
+_LANGUAGE_COUNTRY_FALLBACK = {
+    "de": "DE",
+    "en": "US",
+    "fr": "FR",
+    "es": "ES",
+    "it": "IT",
+}
+
+
+def calendar_country_code(language: str) -> str:
+    """Return the ISO country code for a locale, with region-less fallbacks."""
+    parts = language.replace("-", "_").split("_")
+    if len(parts) > 1 and parts[1]:
+        return parts[1].upper()
+    return _LANGUAGE_COUNTRY_FALLBACK.get(parts[0].lower(), "")
+
 
 @dataclass
 class DayRenderInfo:
@@ -66,15 +82,16 @@ class CalendarRenderer:
         self.dpi = dpi
         self.horizontal = horizontal
 
-        # Extract country code from locale ("de_DE" → "DE")
-        country_code = language.split("_")[1].upper()
-
-        self.localHolidays = self.get_combined_holidays(
-            startDate.year,
-            country_code,
-            holidayCountries,
-            language=self.language,
-        )
+        country_code = calendar_country_code(language)
+        if country_code:
+            self.localHolidays = self.get_combined_holidays(
+                startDate.year,
+                country_code,
+                holidayCountries,
+                language=self.language,
+            )
+        else:
+            self.localHolidays = holidays.HolidayBase()
 
     @classmethod
     def from_config(cls, config: ConfigParameterManager) -> CalendarRenderer:

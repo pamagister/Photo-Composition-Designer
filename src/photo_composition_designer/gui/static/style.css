@@ -1266,6 +1266,57 @@ summary {
   align-items: center;
 }
 
+.holiday-options {
+  max-height: 14rem;
+  overflow: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.holiday-option-group {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.holiday-option-group:last-child {
+  margin-bottom: 0;
+}
+
+.holiday-option-group legend {
+  padding: 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.holiday-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.25rem 0.75rem;
+}
+
+.holiday-option {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.holiday-option input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.holiday-option .muted {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
 .ini-preview {
   max-height: 60vh;
   overflow: auto;
