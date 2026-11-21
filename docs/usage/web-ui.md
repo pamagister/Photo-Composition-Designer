@@ -1,14 +1,22 @@
 # Web UI guide
 
-The local web UI is the primary interface. Start it with:
+The local web UI is the primary interface.
 
-```bash
-uv run photo-composition-designer
-```
+## Start the app
+
+- **Windows installer:** open the Start Menu and choose **Photo Composition
+  Designer**. The shortcut runs `photo-composition-designer.exe gui
+  --open-browser` and opens the project page in your browser. Keep the console
+  window open while the app runs, or stop it with **Stop server** in the web UI.
+- **Linux archive:** run `./photo-composition-designer` from the extracted
+  folder.
+- **From source or PyPI:** run `photo-composition-designer`, or
+  `uv run photo-composition-designer` inside the repository.
 
 Then open `http://127.0.0.1:8767/`. The explicit `gui` command is equivalent.
 Use `--host`, `--port` and `--log-level` with the `gui` command to change the
-listener; the default binds to localhost only.
+listener; the default binds to localhost only. Add `--open-browser` to open the
+browser automatically once the server is ready.
 
 All data is stored in the central workspace and cannot affect source photos:
 originals are only read, never moved, renamed or modified.

@@ -64,18 +64,20 @@ pipx install Photo-Composition-Designer
 
 ### Standalone installer
 
-Prefer not to set up Python? Download the latest Linux archive:
+Prefer not to set up Python? Install the Windows app with the installer:
+
+- [⬇️ Download the Windows installer](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-setup.exe)
+
+The installer is per-user by default, adds a Start Menu shortcut and starts the
+web UI in your browser. The console window stays open while the app runs; close
+it or use **Stop server** to quit.
+
+On Linux, download the archive instead:
 
 - [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
 
-Windows and macOS archives are optional and are attached only to releases that
-include them. See the
-[latest release page](https://github.com/pamagister/Photo-Composition-Designer/releases/latest)
-for the archives available for the current version.
-
-Unzip the archive and start the app from the extracted folder. On Windows and
-macOS, double-click the launcher; on Linux, run `./photo-composition-designer`
-from a terminal. For source installs and more options, see
+Unzip the archive and run `./photo-composition-designer` from a terminal. For
+source installs and more options, see
 [Installation](docs/getting-started/install.md).
 
 ## 🚀 Start the app

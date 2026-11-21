@@ -23,11 +23,29 @@ distribution, rendering, export, duplication and diagnostics. See the
 
 ## Executable
 
-Download the latest executable:
+### Windows installer (recommended)
 
-- [Download for Windows](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-win.zip)
-- [Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
-- [Download for macOS](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-macos.zip)
+Download the installer from the
+[latest release](https://github.com/pamagister/Photo-Composition-Designer/releases/latest):
+
+- [Download the Windows installer](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-setup.exe)
+
+The installer is per-user by default and adds a Start Menu shortcut. The
+shortcut runs `photo-composition-designer.exe gui --open-browser`: a console
+window stays open while the server runs, and the browser opens on the project
+page. Close the console window or use **Stop server** in the web UI to stop the
+app. The installer also offers an optional desktop icon and includes an
+uninstaller.
+
+### Archives
+
+- [Download the Windows ZIP](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-win.zip)
+- [Download the Linux ZIP](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
+
+Unzip the archive and start the app from the extracted folder. On Windows, run
+`photo-composition-designer.exe gui --open-browser` from a terminal to open the
+browser automatically; double-clicking the executable starts the editor without
+opening a browser. On Linux, run `./photo-composition-designer` from a terminal.
 
 ## Run from source
 

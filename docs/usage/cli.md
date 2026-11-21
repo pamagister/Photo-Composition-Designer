@@ -31,12 +31,15 @@ cache live under the platform data directory; set `PCD_DATA_DIR` and
 ```bash
 uv run photo-composition-designer
 uv run photo-composition-designer gui
+uv run photo-composition-designer gui --open-browser
 uv run photo-composition-designer gui --host 0.0.0.0 --port 8767 --log-level info
 ```
 
-Options: `--host` (default `127.0.0.1`), `--port` (default `8767`) and
-`--log-level` (default `info`). Calling the command without arguments is the
-same as the explicit `gui` command.
+Options: `--host` (default `127.0.0.1`), `--port` (default `8767`),
+`--log-level` (default `info`) and `--open-browser`. Calling the command without
+arguments is the same as the explicit `gui` command. With `--open-browser`, the
+command opens the web UI in the default browser once the local server accepts a
+connection.
 
 ## `scan`
 
