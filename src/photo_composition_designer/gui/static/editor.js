@@ -188,7 +188,7 @@
   });
 
   function syncSelection() {
-    const toolbar = document.querySelector(".photo-select-toolbar");
+    const toolbar = document.querySelector(".photo-strip-header");
     if (!toolbar) return;
     const selected = document.querySelectorAll(".unused-item-checkbox:checked");
     const countLabel = toolbar.querySelector("[data-selection-count]");

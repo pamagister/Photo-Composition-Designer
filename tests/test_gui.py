@@ -364,7 +364,7 @@ def test_unused_pool_renders_selection_checkbox_and_toolbar(client, source_dir):
 
     page = client.get(project_path)
     assert page.status_code == 200
-    assert "photo-select-toolbar" in page.text
+    assert "photo-strip-header" in page.text
     assert "Assign selected" in page.text
     assert "unused-item-checkbox" in page.text
     assert 'value="unused"' in page.text or "selected" in page.text

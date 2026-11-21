@@ -3,36 +3,34 @@
      data-page-id="{{ selected_page.id if selected_page else page_id }}">
   <div class="photo-strip-header">
     <h2>Photos</h2>
-    <label for="photo-filter">Show</label>
-    <select id="photo-filter"
-            name="filter"
-            hx-get="/projects/{{ project.id if project else project_id }}/pages/{{ selected_page.id if selected_page else page_id }}/unused"
-            hx-trigger="change"
-            hx-target="#unused-area"
-            hx-swap="innerHTML">
-      <option value="unused" {% if photo_filter != 'all' %}selected{% endif %}>
-        Unused
-      </option>
-      <option value="all" {% if photo_filter == 'all' %}selected{% endif %}>
-        All photos
-      </option>
-    </select>
-    <span class="muted">{{ photos | length }} in inventory</span>
-  </div>
-  {% set counts = usage_counts if usage_counts is defined else {} %}
-  {% set pool_project_id = project.id if project else project_id %}
-  {% set pool_page_id = selected_page.id if selected_page else page_id %}
-  <div class="photo-select-toolbar" aria-live="polite">
-    <span class="selection-count" data-selection-count>0 selected</span>
+    <span class="selection-count" data-selection-count aria-live="polite">0 selected</span>
     <button type="button"
             class="assign-selected-btn"
             disabled
-            hx-post="/projects/{{ pool_project_id }}/pages/{{ pool_page_id }}/assign-selected"
+            hx-post="/projects/{{ project.id if project else project_id }}/pages/{{ selected_page.id if selected_page else page_id }}/assign-selected"
             hx-include=".unused-item-checkbox:checked"
             hx-target=".editor-canvas"
             hx-swap="outerHTML">Assign selected</button>
-    <button type="button" class="clear-selection-btn" disabled>Clear</button>
+    <button type="button" class="clear-selection-btn" disabled>Clear selection</button>
+    <div class="photo-strip-meta">
+      <label for="photo-filter">Show</label>
+      <select id="photo-filter"
+              name="filter"
+              hx-get="/projects/{{ project.id if project else project_id }}/pages/{{ selected_page.id if selected_page else page_id }}/unused"
+              hx-trigger="change"
+              hx-target="#unused-area"
+              hx-swap="innerHTML">
+        <option value="unused" {% if photo_filter != 'all' %}selected{% endif %}>
+          Unused
+        </option>
+        <option value="all" {% if photo_filter == 'all' %}selected{% endif %}>
+          All photos
+        </option>
+      </select>
+      <span class="muted">{{ photos | length }} in inventory</span>
+    </div>
   </div>
+  {% set counts = usage_counts if usage_counts is defined else {} %}
   <div class="unused-pool">
     {% for photo in photos
         if photo_filter == 'all' or (photo.available and counts.get(photo.id, 0) == 0) %}
