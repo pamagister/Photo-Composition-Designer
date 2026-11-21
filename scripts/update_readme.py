@@ -15,6 +15,8 @@ dst.write_text(
     prefix
     + source_content.replace(r"](getting-started/", r"](docs/getting-started/").replace(
         r"](_static/", r"](docs/_static/").replace(
+        r"](architecture/", r"](docs/architecture/").replace(
+        r"](develop/", r"](docs/develop/").replace(
         r"](funding/", r"](docs/funding/").replace(
         r"](getting-started/", r"](docs/getting-started/").replace(
         r"](usage/", r"](docs/usage/"),

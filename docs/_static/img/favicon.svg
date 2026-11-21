@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Photo Composition Designer">
+  <rect width="64" height="64" rx="14" fill="#3d8bfd"/>
+  <rect x="13" y="17" width="38" height="35" rx="5" fill="#ffffff"/>
+  <path d="M13 22a5 5 0 0 1 5-5h28a5 5 0 0 1 5 5v4H13z" fill="#e8f0ff"/>
+  <path d="M22 11v9M42 11v9" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <rect x="20" y="32" width="9" height="9" rx="2" fill="#3d8bfd"/>
+  <rect x="35" y="32" width="9" height="9" rx="2" fill="#6aa9ff"/>
+</svg>

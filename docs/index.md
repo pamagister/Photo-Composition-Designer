@@ -1,67 +1,122 @@
-# Welcome to Photo-Composition-Designer
+# Photo-Composition-Designer
 
-Photo-Composition-Designer is a local-first, browser-based calendar composition
-editor. You create a project, point it at a directory of source photos, preview a
-distribution of photos across calendar pages, curate each page by dragging photos
-into slots, and export the result as a PNG set and PDF.
+**Turn a folder of photos into a beautifully designed calendar or collage
+book - locally, privately and without a cloud account.**
 
 [![Github CI Status](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions)
+[![GitHub release](https://img.shields.io/github/v/release/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/releases)
+[![Read the Docs](https://readthedocs.org/projects/Photo-Composition-Designer/badge/?version=stable)](https://Photo-Composition-Designer.readthedocs.io/en/stable/)
 [![License](https://img.shields.io/github/license/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/issues)
+[![PyPI](https://img.shields.io/pypi/v/Photo-Composition-Designer)](https://pypi.org/project/Photo-Composition-Designer/)
+[![Downloads](https://pepy.tech/badge/Photo-Composition-Designer)](https://pepy.tech/project/Photo-Composition-Designer/)
 
-## Features
+![The local Photo-Composition-Designer editor](_static/img/gui_main.png)
 
-* **Project-based workflow** – One central SQLite workspace holds every project,
-  source root, photo inventory, page, layout and assignment.
-* **Local web editor** – `uv run photo-composition-designer` opens a
-  three-panel editor at `http://127.0.0.1:8767/`; `gui` is the explicit form.
-* **Full-page rendering** – Pages compose photo slots, the calendar strip, the
-  local map, the description, anniversaries and the title from project data.
-* **Per-project output profiles** – Calendar, style, geo, size and layout
-  settings are snapshotted per project and editable in the browser, so workspace
-  defaults never change an existing project.
-* **Source-relative photo references** – Originals are never moved, renamed or
-  modified; a source root can be safely relinked if it moves.
-* **GPS and local map** – EXIF GPS first, `locations.ini` filename fallback
-  second, and a cached local map with a default point when no coordinates exist.
-* **Versioned YAML layouts** – Curated slot layouts ship in the box; users can
-  add their own `*.yaml` files without writing code.
-* **Distribution proposals** – Equal, seeded-random and date-aware strategies
-  preview per-page samples, counts, empty slots and overflow without mutating
-  state; applying is atomic.
-* **Accessible editing** – Assign, replace, swap and remove have keyboard
-  controls as well as drag-and-drop, with visible focus, labelled slots and a
-  skip link.
-* **Ordered export** – Render pages from project data and export PNG pages plus a
-  PDF that follows the project page order.
+## ✨ Features
 
-## Quick start
+Photo-Composition-Designer is a local-first desktop app with a browser-based
+editor. It helps you turn a directory of photos into calendar pages and collage
+layouts, then export them as print-ready images and a PDF.
+
+- 🗓️ **Calendar and collage pages** - weekly pages with a calendar strip,
+  holidays, anniversaries and page descriptions.
+- 🖱️ **Visual editor** - drag photos into slots, crop and zoom, swap or remove
+  them, and see the page update immediately.
+- 🧩 **Layouts for every project** - ready-made slot layouts, plus your own
+  versioned YAML layouts. Assignments stay put when you change a layout.
+- 🗺️ **Maps from your photos** - GPS data is read first, then location names in
+  file names. Maps are rendered locally and cached.
+- 🎲 **Automatic distribution** - equal, seeded-random or date-aware proposals
+  with a preview before anything changes.
+- 🖨️ **Print-ready export** - JPG pages and a combined PDF in the project's page
+  order, with configurable DPI and quality.
+- 🔒 **Local and private** - no accounts, no uploads, no cloud services. Your
+  source photos are only read, never modified.
+- ♿ **Keyboard accessible** - every drag-and-drop action has a keyboard
+  equivalent, with visible focus and labelled controls.
+- 📦 **Portable projects** - duplicate projects inside the workspace or exchange
+  reference-only `.pcd` archives.
+
+## 🖼️ Example output
+
+*Pages created with Photo-Composition-Designer:*
+
+![Example collages created with Photo-Composition-Designer](_static/img/collages.png)
+
+## 📦 Installation
+
+### PyPI (recommended)
+
+Install with pip:
 
 ```bash
-uv run photo-composition-designer
+pip install Photo-Composition-Designer
 ```
 
-Then open `http://127.0.0.1:8767/`, create a project, add a source directory,
-scan it, preview a distribution, and curate pages in the editor. See the
-[web UI guide](usage/web-ui.md) for the complete workflow.
+Or keep it isolated from your other Python projects with pipx:
 
-## Command-line
-
-```
-photo-composition-designer           # start the local web editor (default)
-photo-composition-designer gui       # explicit start command
-photo-composition-designer scan      # reconcile a project's photo inventory
-photo-composition-designer distribute  # preview or apply a distribution
-photo-composition-designer render    # render a project's pages to PNG + PDF
-photo-composition-designer export    # export a project as PDF
-photo-composition-designer duplicate # copy a project within the workspace
-photo-composition-designer doctor    # check workspace and project health
+```bash
+pipx install Photo-Composition-Designer
 ```
 
-## Storage
+### Standalone installer
 
-The central workspace and caches live under the platform data directory:
+Prefer not to set up Python? Download the latest Linux archive:
 
+- [⬇️ Download for Linux](https://github.com/pamagister/Photo-Composition-Designer/releases/latest/download/photo-composition-designer-linux.zip)
+
+Windows and macOS archives are optional and are attached only to releases that
+include them. See the
+[latest release page](https://github.com/pamagister/Photo-Composition-Designer/releases/latest)
+for the archives available for the current version.
+
+Unzip the archive and start the app from the extracted folder. On Windows and
+macOS, double-click the launcher; on Linux, run `./photo-composition-designer`
+from a terminal. For source installs and more options, see
+[Installation](getting-started/install.md).
+
+## 🚀 Start the app
+
+Run:
+
+```bash
+photo-composition-designer
 ```
+
+Then open <http://127.0.0.1:8767/> in your browser. The editor runs locally and
+does not upload your photos.
+
+## 🧭 Your first project
+
+1. **Create a project** - open **Projects**, choose **New project** and set the
+   name, number of pages and first week's start date.
+2. **Add your photos** - add a source directory and **Scan** it. Originals are
+   only read.
+3. **Distribute** - open **Extras > Distribute**, choose a strategy and preview
+   the result. **Apply distribution** saves it.
+4. **Curate** - drag photos into slots, crop and zoom, edit the page description
+   and change the layout.
+5. **Export** - export JPG pages, a PDF or both.
+
+The full step-by-step walkthrough is in the [web UI guide](usage/web-ui.md).
+
+## ⚙️ Settings
+
+- **Project settings** - calendar language and holidays, page size and DPI,
+  margins, fonts, colors, map mode and the description. Each project keeps its
+  own settings.
+- **App settings** - the shared `anniversaries.ini` and `locations.ini` files.
+- **Layouts** - choose or define the slot layout used by your pages. Layout
+  versions are snapshotted per project, so older pages keep their look.
+
+See the [configuration reference](usage/config.md) for all options.
+
+## 🗂️ Storage and exported files
+
+The workspace and caches live in your platform data directory:
+
+```text
 ~/.local/share/photo-composition-designer/
   workspace.sqlite3
   thumbnails/
@@ -70,35 +125,39 @@ The central workspace and caches live under the platform data directory:
   exports/
 ```
 
-Environment overrides (`PCD_DATA_DIR`, `PCD_CACHE_DIR`) keep tests and portable
-installs isolated.
+- `workspace.sqlite3` holds your projects, pages, layouts and assignments.
+- `thumbnails/`, `previews/` and `cache/` are disposable and rebuild on demand.
+- `exports/` contains rendered pages and PDFs.
 
-## Known limitations
+`PCD_DATA_DIR` and `PCD_CACHE_DIR` override the default locations.
 
-* **Reference-only export** – Pages reference the source photos. Moving a source
-  directory requires relinking, and no self-contained project archive is written.
-* **No undo history** – Every edit is committed atomically and is immediately
-  persisted, but there is no multi-step undo/redo. Re-edit the affected slot or
-  page manually. See the
-  [architecture notes](architecture/web-ui-project-workflow.md) for the rationale.
-* **Single-process desktop use** – The editor targets one local user on a laptop
-  or desktop. Narrow screens stack panels instead of using drawers.
-* **No cloud services** – Maps are rendered locally; there are no accounts,
+## 📚 Learn more
+
+- [Web UI guide](usage/web-ui.md) - the complete editor workflow.
+- [Configuration reference](usage/config.md) - every setting.
+- [CLI reference](usage/cli.md) - scan, distribute, render, export and more.
+- [Architecture notes](architecture/web-ui-project-workflow.md) - how the
+  workspace and project workflow fit together.
+- [Support the project](funding/funding.md) - sponsor, PayPal or crypto.
+
+## 📌 Good to know
+
+- **Reference-only exports** - exported pages point to your source photos.
+  Moving a source directory requires relinking it; a `.pcd` archive does not
+  contain the photos.
+- **No undo history** - every edit is saved immediately. Re-edit a slot or page
+  to correct it.
+- **One local user** - the editor is designed for a single person on a laptop
+  or desktop.
+- **No cloud services** - maps are rendered locally; there are no accounts,
   synchronization or online map tiles.
 
-## Development
+## 🛠️ For developers
 
-```bash
-make lint          # ruff lint and format checks
-make test          # lint plus the full pytest suite with coverage
-```
+Sources, environment setup and checks are described in
+[Development tools](develop/tools.md) and the
+[installation guide](getting-started/install.md).
 
-Critical editor flows are also covered by a small Playwright suite:
+---
 
-```bash
-uv run playwright install chromium firefox
-uv run pytest tests/test_browser_workflow.py -m browser
-```
-
-The browser tests skip automatically when Playwright or the browser binaries are
-missing.
+Licensed under the terms in the [LICENSE](https://github.com/pamagister/Photo-Composition-Designer/blob/main/LICENSE).

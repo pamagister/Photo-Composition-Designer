@@ -3,3 +3,19 @@
     max-width: 1000px;
     margin: 0 auto;
 }
+
+/* Keep the SVG sidebar logo at the size of the previous PNG logo. The theme
+   selector is more specific than a plain descendant selector, so mirror it. */
+.wy-side-nav-search > a img.logo,
+.wy-side-nav-search .wy-dropdown > a img.logo {
+    width: 180px;
+    height: 180px;
+}
+
+/* Give the landing-page screenshots depth without touching badge images. */
+.rst-content img[src*="_static/img/gui_main"],
+.rst-content img[src*="_static/img/collages"] {
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+    margin: 1rem 0;
+}

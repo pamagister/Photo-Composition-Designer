@@ -1,6 +1,6 @@
 site_name: Photo-Composition-Designer
 site_url: !ENV READTHEDOCS_CANONICAL_URL
-site_description: A feature-rich Python project template with with auto-generated CLI, GUI and parameterized configuration.
+site_description: Turn a folder of photos into a beautifully designed calendar or collage book - locally, privately and without a cloud account.
 repo_url: https://github.com/pamagister/Photo-Composition-Designer
 repo_name: GitHub
 
@@ -12,9 +12,14 @@ repo_name: GitHub
 
 theme:
   name: readthedocs
+  custom_dir: overrides
   highlightjs: true
-  logo: _static/img/logo.png
-  favicon: _static/img/favicon.png
+  # Use the same project icon as the local web editor (see
+  # src/photo_composition_designer/gui/static/favicon.svg). The readthedocs
+  # theme ignores theme.favicon for the <link> tag, so overrides/main.html
+  # wires it up explicitly.
+  logo: _static/img/favicon.svg
+  favicon: _static/img/favicon.svg
   features:
     - navigation.instant
 
