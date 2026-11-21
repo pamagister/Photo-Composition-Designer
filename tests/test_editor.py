@@ -243,7 +243,7 @@ def test_page_layout_actions_include_confirming_clear_button(editor_client, tmp_
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
 
     assert page.status_code == 200
-    assert 'class="layout-clear-button"' in page.text
+    assert 'class="danger icon-button layout-clear-button"' in page.text
     assert f'hx-post="/projects/{project_id}/pages/{page_id}/assignments/clear"' in page.text
     assert "Remove all photo assignments from this page?" in page.text
 
