@@ -1,14 +1,10 @@
 name: CI
 
-# Linux is the always-on quality gate. Cross-platform tests are opt-in to keep
-# normal feedback fast and runner usage predictable.
+# Linux is the always-on quality gate. Fast Windows tests run on main and on
+# pull requests targeting main, not on every feature-branch push.
 #
-# Opt in by:
-#   - adding --all to the commit subject or pull request title
-#   - running this workflow manually with all=true
-#
-# Every push to any branch runs CI, so feature and plan branches get feedback
-# before a pull request exists.
+# Every push to any branch runs the Linux job, so feature and plan branches get
+# feedback before a pull request exists.
 
 on:
   push:
@@ -18,15 +14,7 @@ on:
       - 'HISTORY.md'
   pull_request:
     branches: [ main ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-    inputs:
-      all:
-        description: 'Also test Windows and macOS'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,31 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Detects the `--all` opt-in once per run. It runs in parallel with `tests`
-  # and publishes the result as a job output for the optional platform jobs.
-  flags:
-    runs-on: ubuntu-latest
-    outputs:
-      build_all: ${{ steps.detect.outputs.build_all }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - id: detect
-        shell: bash
-        env:
-          INPUT_ALL: ${{ inputs.all }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          COMMIT_SUBJECT="$(git log -1 --format=%s)"
-          if [[ "$COMMIT_SUBJECT" == *"--all"* || "$PR_TITLE" == *"--all"* || "$INPUT_ALL" == "true" ]]; then
-            echo "build_all=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "build_all=false" >> "$GITHUB_OUTPUT"
-          fi
-
   tests:
-    # Required check for every push and pull request; optional platforms are advisory.
     name: Linux / lint + tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -75,15 +39,10 @@ jobs:
       - name: Run linter and tests
         run: make test
 
-  tests-cross-platform:
-    name: Tests / ${{ matrix.os }}
-    needs: [flags, tests]
-    if: needs.flags.outputs.build_all == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  tests-windows:
+    name: Windows / fast tests
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -94,5 +53,5 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
-      - name: Run tests
-        run: uv run pytest -s -vvvv -l --tb=long tests
+      - name: Run fast tests
+        run: uv run pytest -s -vvvv -l --tb=long -m fast tests

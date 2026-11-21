@@ -2,20 +2,8 @@ name: Release
 
 # Triggered by a tag push, normally created by `make release`.
 #
-# Linux-only release (default):
-#   make release
-#
-# Release with optional Windows/macOS builds:
-#   make release ALL=1
-#   This appends `--all` to the subject of the tagged HISTORY.md commit.
-#   The `flags` job reads that subject, so the tag itself must point at the
-#   commit carrying the marker.
-#
-# Re-run the pipeline for an existing tag:
-#   gh workflow run release.yml --ref <tag> -f all=true
-#
-# A tag push always runs the quality gate, creates the GitHub release,
-# publishes to PyPI and builds Linux. Windows/macOS builds are opt-in.
+# Every release runs the Linux and Windows quality gates, creates the GitHub
+# release, publishes to PyPI and builds the Linux and Windows artifacts.
 
 permissions:
   contents: write
@@ -25,43 +13,14 @@ on:
     tags:
       - '*'
   workflow_dispatch:
-    inputs:
-      all:
-        description: 'Also build Windows and macOS'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Detects `--all` in the tagged commit subject (or the manual `all` input)
-  # and exposes it as a job output.
-  flags:
-    runs-on: ubuntu-latest
-    outputs:
-      build_all: ${{ steps.detect.outputs.build_all }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - id: detect
-        shell: bash
-        env:
-          INPUT_ALL: ${{ github.event.inputs.all }}
-        run: |
-          COMMIT_SUBJECT="$(git log -1 --format=%s)"
-          if [[ "$COMMIT_SUBJECT" == *"--all"* || "$INPUT_ALL" == "true" ]]; then
-            echo "build_all=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "build_all=false" >> "$GITHUB_OUTPUT"
-          fi
-
   # Quality gate: lint + unit tests before any release artifact is created.
   quality:
-    needs: flags
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -77,6 +36,22 @@ jobs:
           python-version: '3.11'
       - name: Run quality gate (lint + tests)
         run: make test
+
+  # Fast Windows tests gate the Windows build.
+  quality-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+        with:
+          python-version: '3.11'
+      - name: Run fast tests
+        run: uv run pytest -s -vvvv -l --tb=long -m fast tests
 
   release:
     needs: quality
@@ -148,13 +123,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Optional build job: `--all` in the tagged commit or the manual `all`
-  # input. Runs only after the GitHub release exists.
   build-windows:
-    needs: [release, flags]
-    if: needs.flags.outputs.build_all == 'true'
+    needs: [release, quality-windows]
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
         with:
@@ -166,49 +141,42 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+      - name: Prepare Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Get-Command make -ErrorAction SilentlyContinue)) {
+            choco install make -y --no-progress
+          }
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) {
+            choco install innosetup -y --no-progress
+          }
+          $dir = Split-Path (Get-Command iscc -ErrorAction Stop).Source
+          Add-Content -Path $env:GITHUB_PATH -Value $dir
       - name: Build Unified EXE with PyInstaller
         run: make build-win
-      - name: Prepare ZIP file for release
+      - name: Create portable USAGE.txt
         run: |
-          echo "  - Double-click to start GUI" >> release\USAGE.txt
-          echo "  - Run from command line for CLI options" >> release\USAGE.txt
-          powershell Compress-Archive -Path release\* -DestinationPath photo-composition-designer-win.zip
-      - name: Upload ZIP to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3
-        with:
-          files: photo-composition-designer-win.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          cat > release/USAGE.txt <<'EOF'
+          Photo Composition Designer
 
-  # Optional build job: `--all` in the tagged commit or the manual `all`
-  # input. Runs only after the GitHub release exists.
-  build-macos:
-    needs: [release, flags]
-    if: needs.flags.outputs.build_all == 'true'
-    runs-on: macos-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.11'
-      - name: Setup Environment # Composite Action
-        uses: ./.github/actions/setup-environment
-        with:
-          python-version: '3.11'
-      - name: Build Unified Executable and App Bundle with PyInstaller
-        run: make build-macos
+          Start the web UI:
+            photo-composition-designer.exe gui --open-browser
+
+          The console window stays open. Close it or use "Stop server" in the web UI.
+          EOF
+      - name: Verify release contents
+        run: uv run python scripts/verify_release.py release
+      - name: Build Windows installer
+        run: make installer-win
       - name: Prepare ZIP file for release
         run: |
-          cd release
-          zip -r ../photo-composition-designer-macos.zip .
-      - name: Upload ZIP to GitHub Release
+          powershell Compress-Archive -Path release/* -DestinationPath photo-composition-designer-win.zip
+      - name: Upload release assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
-          files: photo-composition-designer-macos.zip
+          files: |
+            photo-composition-designer-win.zip
+            dist/photo-composition-designer-setup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
