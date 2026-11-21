@@ -33,7 +33,11 @@ from photo_composition_designer.project.repositories import (
     ProjectRepository,
     SourceRootRepository,
 )
-from photo_composition_designer.render.layout_geometry import CollageBox, compute_collage_box
+from photo_composition_designer.render.layout_geometry import (
+    CollageBox,
+    PreparedCollage,
+    prepare_collage,
+)
 from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotPhoto
@@ -114,11 +118,11 @@ def layout_template(definition: LayoutDefinition) -> LayoutTemplate:
     )
 
 
-def collage_box_for_page(page: CalendarPage, profile: OutputProfile) -> CollageBox:
-    """Return the collage content box for a page using the shared geometry.
+def prepared_collage_for_page(page: CalendarPage, profile: OutputProfile) -> PreparedCollage:
+    """Return the rendered sub-images and collage content box for a page.
 
-    This is the same geometry the renderer and editor overlay use, so auto
-    layouts are generated against the real content box aspect ratio.
+    The result is the same geometry the renderer and editor overlay use, so
+    overlays such as the description rectangle line up with the rendered page.
     """
     render_input = PageRenderInput(
         page_date=date.fromisoformat(page.start_date),
@@ -132,7 +136,16 @@ def collage_box_for_page(page: CalendarPage, profile: OutputProfile) -> CollageB
         hide_description=page.hide_description,
         center_description=page.center_description,
     )
-    return compute_collage_box(render_input, profile)
+    return prepare_collage(render_input, profile)
+
+
+def collage_box_for_page(page: CalendarPage, profile: OutputProfile) -> CollageBox:
+    """Return the collage content box for a page using the shared geometry.
+
+    This is the same geometry the renderer and editor overlay use, so auto
+    layouts are generated against the real content box aspect ratio.
+    """
+    return prepared_collage_for_page(page, profile).box
 
 
 def collage_aspect_for_page(page: CalendarPage, profile: OutputProfile) -> float:
@@ -434,6 +447,7 @@ __all__ = [
     "draft_dpi",
     "draft_profile",
     "layout_template",
+    "prepared_collage_for_page",
     "preview_cache_key_for",
     "profile_from_project",
     "write_preview",

@@ -257,6 +257,18 @@
     }
   }
 
+  /* The description overlay is a jump target, not a photo dropzone: clicking
+   * it focuses the description field in the layout panel. */
+  document.addEventListener("click", function (event) {
+    const overlay = event.target.closest("[data-description-overlay]");
+    if (!overlay) return;
+    const canvas = overlay.closest(".editor-canvas");
+    const field = canvas ? canvas.querySelector(".description-form textarea") : null;
+    if (!field) return;
+    field.focus({ preventScroll: true });
+    field.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
+
   document.addEventListener("click", function (event) {
     const dropzone = event.target.closest(".slot-dropzone");
     if (dropzone) {

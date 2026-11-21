@@ -29,6 +29,7 @@ from photo_composition_designer.project.models import (
 from photo_composition_designer.project.rendering import (
     ProjectRenderingService,
     collage_box_for_page,
+    prepared_collage_for_page,
     preview_cache_key_for,
     profile_from_project,
 )
@@ -39,7 +40,10 @@ from photo_composition_designer.project.repositories import (
     ProjectRepository,
 )
 from photo_composition_designer.project.services import ProjectService
-from photo_composition_designer.render.layout_geometry import slot_overlay_rectangles
+from photo_composition_designer.render.layout_geometry import (
+    PreparedCollage,
+    slot_overlay_rectangles,
+)
 from photo_composition_designer.render.object_detector import ObjectDetector
 
 
@@ -59,14 +63,41 @@ def _collage_box_for_page(page, profile):
     return collage_box_for_page(page, profile)
 
 
-def _slot_overlay_data(page, profile, slots, slot_assignment_map):
-    """Build per-slot overlay rectangles (page percentages) for the preview."""
-    if not slots:
-        return []
-    box = _collage_box_for_page(page, profile)
+def _description_overlay_data(prepared: PreparedCollage) -> dict[str, float] | None:
+    """Return the clickable description rectangle as page percentages.
+
+    The description image is pasted at the left page edge, so the overlay uses
+    the same position and size as the rendered description. It is deliberately
+    not a photo drop target; the editor only uses it to jump to the description
+    form.
+    """
+    image = prepared.description_image
+    if image is None or prepared.description_top is None:
+        return None
+    page_width = prepared.box.page_width
+    page_height = prepared.box.page_height
+    return {
+        "left": 0.0,
+        "top": round(prepared.description_top / page_height * 100.0, 4),
+        "width": round(image.width / page_width * 100.0, 4),
+        "height": round(image.height / page_height * 100.0, 4),
+    }
+
+
+def _preview_overlay_data(page, profile, slots, slot_assignment_map):
+    """Build the preview overlay rectangles (page percentages).
+
+    Returns the per-slot dropzones and the clickable description rectangle.
+    Both are derived from the shared collage geometry so they line up with the
+    rendered preview at any size.
+    """
+    show_description = profile.layout.use_photo_description and not page.hide_description
+    if not slots and not show_description:
+        return [], None
+    prepared = prepared_collage_for_page(page, profile)
     occupied = set(slot_assignment_map)
     overlays = []
-    for rect in slot_overlay_rectangles(slots, box):
+    for rect in slot_overlay_rectangles(slots, prepared.box):
         assignment = slot_assignment_map.get(rect.slot_id)
         overlays.append(
             {
@@ -80,6 +111,12 @@ def _slot_overlay_data(page, profile, slots, slot_assignment_map):
                 "height": round(rect.height, 4),
             }
         )
+    return overlays, _description_overlay_data(prepared)
+
+
+def _slot_overlay_data(page, profile, slots, slot_assignment_map):
+    """Build per-slot overlay rectangles (page percentages) for the preview."""
+    overlays, _ = _preview_overlay_data(page, profile, slots, slot_assignment_map)
     return overlays
 
 
@@ -211,6 +248,13 @@ def _project_context(
             if (settings.preview_dir() / "pages" / f"{key}.jpg").is_file():
                 thumb_cache_keys[pg.id] = key
 
+    if selected is not None:
+        slot_overlays, description_overlay = _preview_overlay_data(
+            selected, profile, slots, slot_assignment_map
+        )
+    else:
+        slot_overlays, description_overlay = [], None
+
     return {
         "project": aggregate.project,
         "project_id": aggregate.project.id,
@@ -234,9 +278,8 @@ def _project_context(
         "slot_count": slot_count,
         "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
-        "slot_overlays": _slot_overlay_data(selected, profile, slots, slot_assignment_map)
-        if selected is not None
-        else [],
+        "slot_overlays": slot_overlays,
+        "description_overlay": description_overlay,
         "catalogue": layout_choices(),
         "source_states": source_states,
         "error": error,
@@ -295,6 +338,10 @@ def _page_context(
         if not (settings.preview_dir() / "pages" / f"{thumb_cache_key}.jpg").is_file():
             thumb_cache_key = ""
 
+    slot_overlays, description_overlay = _preview_overlay_data(
+        page, profile, slots, slot_assignment_map
+    )
+
     context = {
         "page": page,
         "project": project,
@@ -313,7 +360,8 @@ def _page_context(
         "slot_count": slot_count,
         "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
-        "slot_overlays": _slot_overlay_data(page, profile, slots, slot_assignment_map),
+        "slot_overlays": slot_overlays,
+        "description_overlay": description_overlay,
         "catalogue": layout_choices(),
         "thumb_cache_key": thumb_cache_key,
     }

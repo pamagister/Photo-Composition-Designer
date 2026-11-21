@@ -897,6 +897,43 @@ summary {
   outline-offset: 2px;
 }
 
+/* The description overlay is a jump target, not a photo dropzone: it stays
+ * invisible until hovered or focused and never shows a "drop photo" hint. */
+.description-overlay {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.description-overlay:hover,
+.description-overlay:focus-visible {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: rgba(47, 111, 235, 0.12);
+}
+
+.description-overlay-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 0.72rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+}
+
+.description-overlay:hover .description-overlay-hint,
+.description-overlay:focus-visible .description-overlay-hint {
+  opacity: 1;
+}
+
 .auto-actions {
   display: flex;
   flex-wrap: wrap;

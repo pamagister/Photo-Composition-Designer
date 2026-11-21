@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -454,6 +455,40 @@ def test_preview_overlay_hidden_by_local_override(editor_client, tmp_path):
     )
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
     assert 'class="preview-notice"' not in page.text
+
+
+def test_description_overlay_is_a_jump_target_not_a_photo_dropzone(editor_client, tmp_path):
+    project_id, _, _, _ = _seed_project(tmp_path, page_count=2)
+    page_id = _list_page_ids(project_id)[1]
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert page.status_code == 200
+
+    match = re.search(r'<button[^>]*class="description-overlay"[^>]*>', page.text)
+    assert match is not None
+    tag = match.group(0)
+    assert 'data-description-overlay="1"' in tag
+    # The description area must not behave like a slot dropzone.
+    assert "data-slot-id" not in tag
+    assert "dropzone-hint" not in tag
+    assert "Drop photo" not in tag
+
+    style = re.search(r'style="([^"]+)"', tag)
+    assert style is not None
+    assert "left: 0.0%" in style.group(1)
+    for property_name in ("top", "width", "height"):
+        assert f"{property_name}:" in style.group(1)
+
+
+def test_description_overlay_hidden_by_local_override(editor_client, tmp_path):
+    project_id, _, _, _ = _seed_project(tmp_path, page_count=2)
+    page_id = _list_page_ids(project_id)[1]
+    editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/overrides",
+        data={"hide_description": "1"},
+        headers={"HX-Request": "true"},
+    )
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+    assert 'data-description-overlay="1"' not in page.text
 
 
 def test_page_tile_shows_status_hints(editor_client, tmp_path):

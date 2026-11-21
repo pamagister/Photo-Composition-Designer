@@ -108,7 +108,9 @@ control surface.
   boundary. The preview refreshes live. Arrow keys inside text fields do not
   change the crop. Crop settings are assignment properties; the source file is
   untouched.
-* **Description** – edit the page description at the bottom of the canvas.
+* **Description** – edit the page description at the bottom of the canvas. Click
+  the description area in the large preview to jump straight to the description
+  field. The area is a navigation target, not a photo dropzone.
 * **Page overrides** – the collapsible **Page overrides** area in the toolbar
   can hide the local map, calendar strip and description for one page, and can
   center the description. The options only appear when the corresponding global

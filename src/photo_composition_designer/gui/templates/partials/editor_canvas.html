@@ -59,6 +59,15 @@
         </div>
         {% endfor %}
         {% endif %}
+        {% if description_overlay %}
+        <button type="button"
+                class="description-overlay"
+                data-description-overlay="1"
+                aria-label="Jump to the page description editor"
+                style="left: {{ description_overlay.left }}%; top: {{ description_overlay.top }}%; width: {{ description_overlay.width }}%; height: {{ description_overlay.height }}%;">
+          <span class="description-overlay-hint" aria-hidden="true">Edit description</span>
+        </button>
+        {% endif %}
       </div>
       {% if not slot_overlays and not (is_auto_layout and not slots) %}
       <p class="preview-hint" role="note">No slots to show on this page.</p>
