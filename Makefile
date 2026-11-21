@@ -78,17 +78,24 @@ VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
 RELEASE_DIR := release
 DIST_DIR := dist
 
+# PyInstaller expects ";" as the data separator on Windows and ":" elsewhere.
+ifeq ($(OS),Windows_NT)
+PYI_DATA_SEP := ;
+else
+PYI_DATA_SEP := :
+endif
+
 
 # Alle *.ini im Top-Level auflisten und mit zum Release packen
 
 # Gemeinsame PyInstaller-Optionen
 COMMON_PYI_OPTS = \
-	--add-data "anniversaries.ini:." \
-	--add-data "locations_en.ini:." \
-	--add-data "locations_de.ini:." \
-	--add-data "res:res" \
-	--add-data "docs:docs" \
-	--add-data "images:images" \
+	--add-data "anniversaries.ini$(PYI_DATA_SEP)." \
+	--add-data "locations_en.ini$(PYI_DATA_SEP)." \
+	--add-data "locations_de.ini$(PYI_DATA_SEP)." \
+	--add-data "res$(PYI_DATA_SEP)res" \
+	--add-data "docs$(PYI_DATA_SEP)docs" \
+	--add-data "images$(PYI_DATA_SEP)images" \
 	--hidden-import photo_composition_designer.cli.app \
 	--collect-data=photo_composition_designer \
 	--collect-all=holidays \
@@ -122,6 +129,11 @@ prepare-release:
 	cp -R images $(RELEASE_DIR)/
 
 
+.PHONY: check-release
+check-release:   ## Verify that a release directory contains all runtime assets.
+	uv run python scripts/verify_release.py $(RELEASE_DIR)
+
+
 # ==========================
 #   WINDOWS BUILD
 # ==========================
@@ -135,7 +147,14 @@ build-win: clean
 
 	$(MAKE) prepare-release
 	cp $(DIST_DIR)/$(NAME).exe $(RELEASE_DIR)/
+	$(MAKE) check-release
 
+
+.PHONY: installer-win
+installer-win:   ## Build the Windows installer with Inno Setup.
+	@echo "Building Windows installer"
+	@command -v iscc >/dev/null 2>&1 || { echo "Inno Setup (iscc) not found"; exit 1; }
+	cd installer && iscc /DMyAppVersion=$(VERSION) windows-installer.iss
 
 
 # ==========================
@@ -173,6 +192,7 @@ build-linux: clean
 
 	$(MAKE) prepare-release
 	cp $(DIST_DIR)/$(NAME) $(RELEASE_DIR)/
+	$(MAKE) check-release
 
 
 # ==========================

@@ -32,9 +32,20 @@ def gui(
     host: Annotated[str, typer.Option(help="Host interface to bind.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to listen on.")] = 8767,
     log_level: Annotated[str, typer.Option(help="Uvicorn log level.")] = "info",
+    open_browser: Annotated[
+        bool,
+        typer.Option("--open-browser", help="Open the web UI in the browser once it is ready."),
+    ] = False,
 ) -> None:
     """Start the local web editor."""
-    raise typer.Exit(code=gui_command.run(host=host, port=port, log_level=log_level))
+    raise typer.Exit(
+        code=gui_command.run(
+            host=host,
+            port=port,
+            log_level=log_level,
+            open_browser=open_browser,
+        )
+    )
 
 
 @app.command()

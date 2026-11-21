@@ -12,6 +12,7 @@ from typer.testing import CliRunner
 
 import photo_composition_designer.launcher as launcher_entry
 from photo_composition_designer.cli.app import app as cli_app
+from photo_composition_designer.cli.commands import gui as gui_command
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.project.distribution import DistributionService
@@ -121,6 +122,56 @@ def test_cli_help_lists_project_commands():
     assert result.exit_code == 0
     for command in ("gui", "scan", "distribute", "render", "export", "duplicate", "doctor"):
         assert command in result.stdout
+
+
+def test_gui_open_browser_forwards_flag(monkeypatch: pytest.MonkeyPatch):
+    calls: list[dict[str, object]] = []
+    monkeypatch.setattr(gui_command, "run", lambda **kwargs: calls.append(kwargs) or 0)
+
+    result = _invoke("gui", "--open-browser")
+
+    assert result.exit_code == 0
+    assert calls == [
+        {
+            "host": "127.0.0.1",
+            "port": 8767,
+            "log_level": "info",
+            "open_browser": True,
+        }
+    ]
+
+
+def test_gui_without_open_browser_keeps_default(monkeypatch: pytest.MonkeyPatch):
+    calls: list[dict[str, object]] = []
+    monkeypatch.setattr(gui_command, "run", lambda **kwargs: calls.append(kwargs) or 0)
+
+    result = _invoke("gui")
+
+    assert result.exit_code == 0
+    assert calls[0]["open_browser"] is False
+
+
+def test_open_browser_helper_opens_expected_url(monkeypatch: pytest.MonkeyPatch):
+    opened: list[str] = []
+    monkeypatch.setattr(gui_command, "_wait_for_server", lambda host, port, timeout=30.0: True)
+    monkeypatch.setattr(gui_command.webbrowser, "open", lambda url: opened.append(url))
+
+    gui_command._open_browser_when_ready("127.0.0.1", 8767)
+
+    assert opened == ["http://127.0.0.1:8767/"]
+
+
+def test_open_browser_helper_skips_when_server_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    opened: list[str] = []
+    monkeypatch.setattr(gui_command, "_wait_for_server", lambda host, port, timeout=30.0: False)
+    monkeypatch.setattr(gui_command.webbrowser, "open", lambda url: opened.append(url))
+
+    gui_command._open_browser_when_ready("127.0.0.1", 8767, timeout=0.01)
+
+    assert opened == []
+    assert "Browser launch skipped" in capsys.readouterr().out
 
 
 def test_scan_command_reconciles_inventory(workspace: GuiSettings, tmp_path: Path):

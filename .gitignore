@@ -32,6 +32,14 @@ MANIFEST
 *.manifest
 *.spec
 
+# Release build artifacts
+release/
+photo-composition-designer-linux.zip
+photo-composition-designer-win.zip
+
+# Playwright CLI scratch space
+.playwright-cli/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
