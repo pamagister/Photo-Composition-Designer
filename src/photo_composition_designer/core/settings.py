@@ -135,6 +135,7 @@ class LayoutConfig:
     )
     useRoundedCorners: Param[bool] = field(default_factory=lambda: Param(True, "useRoundedCorners"))
     imageScoreFactor: Param[float] = field(default_factory=lambda: Param(2.0, "imageScoreFactor"))
+    autoTargetSlots: Param[int] = field(default_factory=lambda: Param(6, "autoTargetSlots"))
     useShortDayNames: Param[bool] = field(default_factory=lambda: Param(False, "useShortDayNames"))
     useShortMonthNames: Param[bool] = field(
         default_factory=lambda: Param(True, "useShortMonthNames")

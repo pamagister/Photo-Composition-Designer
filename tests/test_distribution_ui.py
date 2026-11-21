@@ -14,8 +14,10 @@ from photo_composition_designer.core.appdata import data_dir
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.app import create_app
 from photo_composition_designer.gui.settings import GuiSettings
+from photo_composition_designer.layouts.loader import AUTO_LAYOUT_KEY
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
+    LayoutRepository,
     PageRepository,
 )
 
@@ -208,3 +210,49 @@ def test_distribution_page_renders_preview_controls(client, tmp_path):
     assert "Distribute photos" in response.text
     assert "Preview distribution" in response.text
     assert "Back to project" in response.text
+
+
+def test_auto_distribution_uses_target_capacity_and_generates_layout(client, tmp_path):
+    source = tmp_path / "photos"
+    for index in range(3):
+        _write_photo(source / f"p{index}.jpg", (index * 50, 0, 0))
+    response = client.post(
+        "/projects",
+        data={
+            "name": "Auto distribution",
+            "page_count": "1",
+            "start_date": "2027-01-04",
+            "layout_key": "auto",
+            "source_path": str(source),
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    project_id = int(urlsplit(response.headers["location"]).path.split("/")[-1])
+
+    preview = client.get(f"/projects/{project_id}/distribute/preview?strategy=equal")
+
+    assert preview.status_code == 200
+    assert "3 of 6 slots filled" in preview.text
+
+    digest = _digest(preview.text)
+    applied = client.post(
+        f"/projects/{project_id}/distribute/apply",
+        data={"strategy": "equal", "proposal_digest": digest},
+        headers={"HX-Request": "true"},
+    )
+
+    assert applied.status_code == 200
+    assert "Distribution applied." in applied.text
+    database = _database()
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).list(project_id)[0]
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            assert layout.key == AUTO_LAYOUT_KEY
+            assert len(layout.slots) == 3
+            assert len(AssignmentRepository(connection).list_by_page(page.id)) == 3
+    finally:
+        database.close()

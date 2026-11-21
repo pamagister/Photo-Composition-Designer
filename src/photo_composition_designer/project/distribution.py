@@ -21,11 +21,22 @@ from datetime import datetime
 
 from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.layouts.auto_layout import (
+    AutoPhoto,
+    build_auto_layout,
+    order_photos,
+)
+from photo_composition_designer.layouts.loader import AUTO_LAYOUT_KEY, AUTO_LAYOUT_NAME
+from photo_composition_designer.project.importance import ImportanceScorer
 from photo_composition_designer.project.models import (
     CalendarPage,
     DistributionProposal,
     LayoutSlot,
     PhotoAsset,
+)
+from photo_composition_designer.project.rendering import (
+    collage_aspect_for_page,
+    profile_from_project,
 )
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
@@ -34,6 +45,7 @@ from photo_composition_designer.project.repositories import (
     PhotoRepository,
     ProjectRepository,
 )
+from photo_composition_designer.render.object_detector import ObjectDetector
 
 #: Aspect-ratio band treated as square for orientation matching.
 _ORIENTATION_SQUARE_MIN = 0.9
@@ -99,12 +111,31 @@ class DistributionService:
     def _load_pages(self, connection, project_id: int) -> list[CalendarPage]:
         return PageRepository(connection).list(project_id)
 
-    def _page_slot_capacity(self, connection, page: CalendarPage) -> int:
-        """Return the number of slots available on a page's layout."""
+    def _page_slot_capacity(
+        self,
+        connection,
+        page: CalendarPage,
+        auto_target_slots: int,
+    ) -> int:
+        """Return the number of slots available on a page's layout.
+
+        Automatic pages have no fixed slot count; their capacity comes from the
+        project's ``auto_target_slots`` setting so distribution can fill them.
+        """
         if page.layout_id is None:
             return 0
         layout = LayoutRepository(connection).get_by_id(page.layout_id)
-        return len(layout.slots) if layout else 0
+        if layout is None:
+            return 0
+        if layout.key == AUTO_LAYOUT_KEY:
+            return max(1, auto_target_slots)
+        return len(layout.slots)
+
+    def capacity_for_page(self, connection, project_id: int, page: CalendarPage) -> int:
+        """Return the capacity used by distribution previews for one page."""
+        project = ProjectRepository(connection).get(project_id)
+        profile = profile_from_project(project) if project is not None else OutputProfile.default()
+        return self._page_slot_capacity(connection, page, profile.layout.auto_target_slots)
 
     def _unassigned_photo_ids(self, connection, project_id: int) -> list[int]:
         assigned = {a.photo_id for a in AssignmentRepository(connection).list(project_id)}
@@ -127,7 +158,14 @@ class DistributionService:
             if not pages:
                 return DistributionProposal(strategy=strategy, pages=[], unassigned=[])
 
-            capacities = [self._page_slot_capacity(connection, page) for page in pages]
+            project = ProjectRepository(connection).get(project_id)
+            profile = (
+                profile_from_project(project) if project is not None else OutputProfile.default()
+            )
+            capacities = [
+                self._page_slot_capacity(connection, page, profile.layout.auto_target_slots)
+                for page in pages
+            ]
             total_capacity = sum(capacities)
             photos = self._unassigned_photo_ids(connection, project_id)
 
@@ -318,11 +356,25 @@ class DistributionService:
             ordered.append(photo_id)
         return ordered
 
-    def apply(self, project_id: int, proposal: DistributionProposal) -> None:
+    def apply(
+        self,
+        project_id: int,
+        proposal: DistributionProposal,
+        *,
+        object_detector: ObjectDetector | None = None,
+    ) -> None:
         """Atomically replace assignments for a project with this proposal.
 
         Photos are matched to slots by orientation (portrait to portrait, etc.)
-        where possible before the assignments are persisted.
+        where possible before the assignments are persisted. Automatic pages
+        are regenerated from the photos they receive, so their geometry always
+        matches the actual set and orientation mix.
+
+        Args:
+            project_id: Project whose assignments are replaced.
+            proposal: Proposal produced by :meth:`propose`.
+            object_detector: Optional detector used for content importance
+                weighting on automatic pages.
         """
         with self._database.transaction() as connection:
             pages = {page.id: page for page in self._load_pages(connection, project_id)}
@@ -331,7 +383,11 @@ class DistributionService:
 
             assignment_repo = AssignmentRepository(connection)
             layout_repo = LayoutRepository(connection)
+            page_repo = PageRepository(connection)
             project = ProjectRepository(connection).get(project_id)
+            profile = (
+                profile_from_project(project) if project is not None else OutputProfile.default()
+            )
             page_aspect = self._page_aspect(project)
             photos_by_id = {
                 photo.id: photo for photo in PhotoRepository(connection).list(project_id)
@@ -345,6 +401,20 @@ class DistributionService:
                 layout = layout_repo.get_by_id(page.layout_id)
                 if layout is None:
                     continue
+                if layout.key == AUTO_LAYOUT_KEY:
+                    self._apply_auto_page(
+                        connection,
+                        project_id,
+                        page,
+                        photo_ids,
+                        photos_by_id,
+                        profile,
+                        assignment_repo,
+                        layout_repo,
+                        page_repo,
+                        object_detector,
+                    )
+                    continue
                 ordered_ids = self._match_photos_to_slots(
                     layout.slots, photo_ids, photos_by_id, page_aspect
                 )
@@ -355,4 +425,68 @@ class DistributionService:
                         slot_id=slot.id,
                         photo_id=photo_id,
                     )
-            PageRepository(connection).increment_revisions(project_id)
+            page_repo.increment_revisions(project_id)
+
+    def _apply_auto_page(
+        self,
+        connection,
+        project_id: int,
+        page: CalendarPage,
+        photo_ids: list[int],
+        photos_by_id: dict[int, PhotoAsset],
+        profile: OutputProfile,
+        assignment_repo: AssignmentRepository,
+        layout_repo: LayoutRepository,
+        page_repo: PageRepository,
+        object_detector: ObjectDetector | None,
+    ) -> None:
+        """Regenerate one automatic page from the photos it receives."""
+        photos = [photos_by_id[photo_id] for photo_id in photo_ids if photo_id in photos_by_id]
+        if not photos:
+            # No photos to arrange. Leave the existing snapshot untouched so
+            # the page keeps its empty state and slot count.
+            return
+
+        scorer = ImportanceScorer(
+            object_detector,
+            profile.layout.image_score_factor,
+        )
+        importance = scorer.score_photos(connection, photos)
+        engine_photos = tuple(
+            AutoPhoto(
+                key=str(index),
+                width=photo.width,
+                height=photo.height,
+                importance=score,
+            )
+            for index, (photo, score) in enumerate(zip(photos, importance, strict=True))
+        )
+        ordered_photos = [photos[int(photo.key)] for photo in order_photos(engine_photos)]
+        aspect = collage_aspect_for_page(page, profile)
+        slots = build_auto_layout(engine_photos, aspect)
+
+        version = layout_repo.next_version(AUTO_LAYOUT_KEY)
+        slot_rows = [
+            LayoutSlot(
+                id=0,
+                layout_id=0,
+                slot_key=slot.key,
+                position=index,
+                x=slot.x,
+                y=slot.y,
+                width=slot.width,
+                height=slot.height,
+                z_index=0,
+                crop_mode="cover",
+            )
+            for index, slot in enumerate(slots)
+        ]
+        layout = layout_repo.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, slot_rows)
+        page_repo.set_layout(page.id, layout.id, layout.version)
+        for slot, photo in zip(layout.slots, ordered_photos, strict=False):
+            assignment_repo.assign(
+                project_id=project_id,
+                page_id=page.id,
+                slot_id=slot.id,
+                photo_id=photo.id,
+            )

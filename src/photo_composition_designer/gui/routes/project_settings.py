@@ -14,8 +14,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
 from photo_composition_designer.core.output_profile import OutputProfile, OutputProfileError
 from photo_composition_designer.gui.calendar_options import calendar_language_options
-from photo_composition_designer.gui.dependencies import ProjectServiceDependency
+from photo_composition_designer.gui.dependencies import (
+    DatabaseDependency,
+    ObjectDetectorDependency,
+    ProjectServiceDependency,
+)
 from photo_composition_designer.gui.templating import TEMPLATES
+from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.rendering import profile_from_project
 from photo_composition_designer.project.services import ProjectService
 
@@ -43,6 +48,7 @@ _INT_FIELDS = (
     "layout.margin_bottom",
     "layout.margin_sides",
     "layout.spacing",
+    "layout.auto_target_slots",
 )
 
 _FLOAT_FIELDS = (
@@ -195,6 +201,7 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
         "layout.description_alignment": profile.layout.description_alignment,
         "layout.use_rounded_corners": profile.layout.use_rounded_corners,
         "layout.image_score_factor": profile.layout.image_score_factor,
+        "layout.auto_target_slots": profile.layout.auto_target_slots,
         "layout.use_photo_description": profile.layout.use_photo_description,
     }
 
@@ -298,6 +305,8 @@ async def save_project_settings(
     request: Request,
     project_id: int,
     service: ProjectServiceDependency,
+    database: DatabaseDependency,
+    detector: ObjectDetectorDependency,
 ) -> HTMLResponse | RedirectResponse:
     """Validate and persist the per-project output profile."""
     form = await request.form()
@@ -320,6 +329,7 @@ async def save_project_settings(
             confirm_remove=_is_checked(form.get("project.confirm_remove")),
         )
         service.update_output_profile(project_id, profile)
+        PageEditingService(database, object_detector=detector).regenerate_auto_layouts(project_id)
     except (ValueError, ProjectError) as exc:
         return _settings_response(
             request,

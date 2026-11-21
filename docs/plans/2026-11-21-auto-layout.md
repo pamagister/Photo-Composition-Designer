@@ -309,17 +309,17 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 5: Distribution and project settings
 
-**Status:** Pending
+**Status:** Done (pushed, CI green 2026-11-21)
 
 **Objective:** Integrate auto pages with distribution and output-profile changes.
 
-- [ ] P5-W01: Add `auto_target_slots` to the layout profile (default 6) and use it as the
+- [x] P5-W01: Add `auto_target_slots` to the layout profile (default 6) and use it as the
   capacity of auto pages in `DistributionService`; generate the auto layout after applying
   a proposal.
-- [ ] P5-W02: Regenerate auto snapshots for a project when its output profile changes
+- [x] P5-W02: Regenerate auto snapshots for a project when its output profile changes
   (page size, DPI, spacing, score factor) or when photos become available after a source
   rescan.
-- [ ] P5-W03: Expose `auto_target_slots` in the project settings form and configuration
+- [x] P5-W03: Expose `auto_target_slots` in the project settings form and configuration
   docs (run `make fmt` so `docs/usage/config.md` and `README.md` are regenerated).
 
 **Acceptance criteria**

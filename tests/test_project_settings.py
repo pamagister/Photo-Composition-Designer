@@ -86,6 +86,7 @@ def _settings_form(**overrides: str) -> dict[str, str]:
         "layout.description_alignment": profile.layout.description_alignment,
         "layout.use_rounded_corners": ("1" if profile.layout.use_rounded_corners else ""),
         "layout.image_score_factor": str(profile.layout.image_score_factor),
+        "layout.auto_target_slots": str(profile.layout.auto_target_slots),
         "layout.use_photo_description": ("1" if profile.layout.use_photo_description else ""),
     }
     form.update(overrides)
@@ -116,8 +117,24 @@ def test_settings_page_shows_current_profile(client: TestClient):
     assert 'name="geo.map_mode"' in response.text
     assert 'name="layout.text_margin"' in response.text
     assert 'name="layout.description_alignment"' in response.text
+    assert 'name="layout.auto_target_slots"' in response.text
     assert 'name="layout.generate_pdf"' not in response.text
     assert "Duplicate project" not in response.text
+
+
+def test_settings_save_persists_auto_target_slots(client: TestClient, gui_settings: GuiSettings):
+    project_id = _create_project(client)
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(**{"layout.auto_target_slots": "4"}),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    project, _pages = _project_state(gui_settings, project_id)
+    profile = OutputProfile.from_dict(project.output_profile)
+    assert profile.layout.auto_target_slots == 4
 
 
 def test_project_detail_shows_extras_and_check_sections(

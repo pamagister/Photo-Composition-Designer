@@ -19,7 +19,6 @@ from photo_composition_designer.gui.dependencies import (
 from photo_composition_designer.gui.routes.project_context import _load_project
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.repositories import (
-    LayoutRepository,
     PageRepository,
     PhotoRepository,
 )
@@ -49,13 +48,9 @@ def _distribution_context(
         connection = database.connect()
         pages = PageRepository(connection).list(project_id)
         photos_by_id = {photo.id: photo for photo in PhotoRepository(connection).list(project_id)}
-        layout_repository = LayoutRepository(connection)
-        capacities: list[int] = []
-        for page in pages:
-            layout = (
-                layout_repository.get_by_id(page.layout_id) if page.layout_id is not None else None
-            )
-            capacities.append(len(layout.slots) if layout is not None else 0)
+        capacities = [
+            distribution.capacity_for_page(connection, project_id, page) for page in pages
+        ]
         summary = distribution.summarize(proposal, capacities=capacities)
         digest = distribution.digest(proposal)
         for page, photo_ids, capacity in zip(pages, proposal.pages, capacities, strict=False):
@@ -160,7 +155,6 @@ def apply_distribution(
     request returns promptly; the worker coalesces duplicates and renders
     off the request thread.
     """
-    del detector  # The worker uses the detector configured at startup.
     from photo_composition_designer.project.distribution import DistributionService
 
     distribution = DistributionService(database)
@@ -196,7 +190,7 @@ def apply_distribution(
         )
 
     try:
-        distribution.apply(project_id, proposal)
+        distribution.apply(project_id, proposal, object_detector=detector)
     except (ValueError, ProjectError) as exc:
         return response(error=str(exc))
     # Enqueue background preview jobs for all pages. The request returns

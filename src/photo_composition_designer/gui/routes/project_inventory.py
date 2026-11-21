@@ -11,9 +11,11 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.dependencies import (
     DatabaseDependency,
     InventoryServiceDependency,
+    ObjectDetectorDependency,
 )
 from photo_composition_designer.gui.routes.project_context import _error_redirect
 from photo_composition_designer.gui.templating import TEMPLATES
+from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     PhotoRepository,
@@ -98,12 +100,15 @@ def preview_source_remap(
 def remap_source_root(
     project_id: int,
     source_root_id: int,
+    database: DatabaseDependency,
     inventory: InventoryServiceDependency,
+    detector: ObjectDetectorDependency,
     new_root: Annotated[str, Form()],
 ) -> RedirectResponse:
     """Relink a source root to a new directory and rescan atomically."""
     try:
         inventory.apply_remap(project_id, source_root_id=source_root_id, new_root=new_root)
+        PageEditingService(database, object_detector=detector).regenerate_auto_layouts(project_id)
     except ValueError as exc:
         return _error_redirect(project_id, str(exc))
     return RedirectResponse(f"/projects/{project_id}?remapped=1", status_code=303)
@@ -147,11 +152,14 @@ def remove_source_root(
 def scan_project(
     request: Request,
     project_id: int,
+    database: DatabaseDependency,
     inventory: InventoryServiceDependency,
+    detector: ObjectDetectorDependency,
 ) -> HTMLResponse | RedirectResponse:
     """Scan the active source root and return a summary fragment."""
     try:
         summary = inventory.scan(project_id)
+        PageEditingService(database, object_detector=detector).regenerate_auto_layouts(project_id)
     except ValueError as exc:
         message = str(exc)
         if request.headers.get("HX-Request") == "true":
