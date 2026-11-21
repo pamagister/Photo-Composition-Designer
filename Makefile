@@ -154,7 +154,7 @@ build-win: clean
 installer-win:   ## Build the Windows installer with Inno Setup.
 	@echo "Building Windows installer"
 	@command -v iscc >/dev/null 2>&1 || { echo "Inno Setup (iscc) not found"; exit 1; }
-	cd installer && iscc /DMyAppVersion=$(VERSION) windows-installer.iss
+	cd installer && MSYS_NO_PATHCONV=1 iscc /DMyAppVersion=$(VERSION) windows-installer.iss
 
 
 # ==========================
