@@ -258,3 +258,20 @@ cython_debug/
 # Serena (MCP code intelligence) local artifacts
 /.serena/logs/
 /.serena/*
+/collages/auto_01.jpg
+/collages/auto_02.jpg
+/collages/auto_03.jpg
+/collages/auto_04.jpg
+/collages/auto_05.jpg
+/collages/auto_06.jpg
+/collages/auto_07.jpg
+/collages/auto_08.jpg
+/collages/auto_10.jpg
+/collages/auto_12.jpg
+/collages/auto_15.jpg
+/collages/auto_20.jpg
+/collages/auto_25.jpg
+/collages/auto_30.jpg
+/collages/auto_contact_sheet.jpg
+/collages/auto_importance_off_06.jpg
+/collages/auto_importance_on_06.jpg
