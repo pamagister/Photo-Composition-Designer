@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -115,19 +114,3 @@ def cli_main() -> int:
     """Run the Typer command-line interface."""
     app()
     return 0
-
-
-def gui_main() -> int:
-    """Start the local web editor with its default settings."""
-    return gui_command.run()
-
-
-def main() -> int:
-    """Start the web UI by default, or the CLI when arguments are provided."""
-    if len(sys.argv) > 1:
-        return cli_main()
-    return gui_main()
-
-
-if __name__ == "__main__":
-    sys.exit(main())

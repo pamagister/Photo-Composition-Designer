@@ -10,7 +10,7 @@ import pytest
 from PIL import Image
 from typer.testing import CliRunner
 
-import photo_composition_designer.cli.app as cli_entry
+import photo_composition_designer.launcher as launcher_entry
 from photo_composition_designer.cli.app import app as cli_app
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.settings import GuiSettings
@@ -96,22 +96,22 @@ def _invoke(*args: str):
 
 
 def test_main_starts_gui_without_arguments(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(cli_entry.sys, "argv", ["photo-composition-designer"])
+    monkeypatch.setattr(launcher_entry.sys, "argv", ["photo-composition-designer"])
     calls: list[str] = []
-    monkeypatch.setattr(cli_entry, "cli_main", lambda: calls.append("cli") or 0)
-    monkeypatch.setattr(cli_entry, "gui_main", lambda: calls.append("gui") or 0)
+    monkeypatch.setattr(launcher_entry, "cli_main", lambda: calls.append("cli") or 0)
+    monkeypatch.setattr(launcher_entry.gui_command, "run", lambda: calls.append("gui") or 0)
 
-    assert cli_entry.main() == 0
+    assert launcher_entry.main() == 0
     assert calls == ["gui"]
 
 
 def test_main_runs_cli_with_arguments(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(cli_entry.sys, "argv", ["photo-composition-designer", "doctor"])
+    monkeypatch.setattr(launcher_entry.sys, "argv", ["photo-composition-designer", "doctor"])
     calls: list[str] = []
-    monkeypatch.setattr(cli_entry, "cli_main", lambda: calls.append("cli") or 7)
-    monkeypatch.setattr(cli_entry, "gui_main", lambda: calls.append("gui") or 0)
+    monkeypatch.setattr(launcher_entry, "cli_main", lambda: calls.append("cli") or 7)
+    monkeypatch.setattr(launcher_entry.gui_command, "run", lambda: calls.append("gui") or 0)
 
-    assert cli_entry.main() == 7
+    assert launcher_entry.main() == 7
     assert calls == ["cli"]
 
 
