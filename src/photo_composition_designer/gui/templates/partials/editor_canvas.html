@@ -113,7 +113,7 @@
           <select id="layout-{{ page.id }}" name="layout_key">
             {% for key, template in catalogue.items() %}
             <option value="{{ key }}" style="text-align: right;"
-                    {% if key == current_layout_key %}selected{% endif %}>[{{ template.slots | length }}] {{ template.name }}</option>
+                    {% if key == current_layout_key %}selected{% endif %}>{% if key == 'auto' %}Automatic (from photos){% else %}[{{ template.slots | length }}] {{ template.name }}{% endif %}</option>
             {% endfor %}
           </select>
           <button type="submit">Preview change</button>

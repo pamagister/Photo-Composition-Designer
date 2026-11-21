@@ -355,8 +355,13 @@ def _leaves(node: _Node) -> list[_Node]:
     return out
 
 
-def _order_photos(photos: tuple[AutoPhoto, ...]) -> tuple[AutoPhoto, ...]:
-    """Order by orientation (portrait, square, landscape), stable within a class."""
+def order_photos(photos: list[AutoPhoto] | tuple[AutoPhoto, ...]) -> tuple[AutoPhoto, ...]:
+    """Order photos by orientation (portrait, square, landscape).
+
+    The input order is preserved inside an orientation class. This is the same
+    ordering :func:`build_auto_layout` uses, exposed so callers can map the
+    returned ``auto_<i>`` slots back to their source photos.
+    """
     indexed = sorted(
         enumerate(photos),
         key=lambda pair: (round(pair[1].aspect, 2), pair[0]),
@@ -402,7 +407,7 @@ def build_auto_layout(
             AutoPhoto(key=photo.key, width=photo.width, height=photo.height, importance=effective)
         )
 
-    ordered = _order_photos(tuple(weighted))
+    ordered = order_photos(tuple(weighted))
     engine = _Engine(balance_weight)
     decision, _cost = engine.search(ordered, _quantize(canvas_aspect))
     node = _materialise(ordered, decision, _Rect(0.0, 0.0, 1.0, 1.0))

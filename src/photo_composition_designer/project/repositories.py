@@ -670,6 +670,14 @@ class LayoutRepository:
         ).fetchone()
         return self._row_to_layout(row) if row is not None else None
 
+    def next_version(self, key: str) -> int:
+        """Return the next strictly increasing version for a layout key."""
+        row = self._connection.execute(
+            "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM layouts WHERE key = ?",
+            (key,),
+        ).fetchone()
+        return int(row["next"])
+
     def get_by_id(self, layout_id: int) -> LayoutDefinition | None:
         """Return a layout by row ID."""
         row = self._connection.execute(

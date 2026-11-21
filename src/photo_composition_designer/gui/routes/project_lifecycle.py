@@ -27,7 +27,12 @@ from photo_composition_designer.gui.routes.project_context import (
 )
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.gui.templating import TEMPLATES
-from photo_composition_designer.layouts.loader import load_catalogue
+from photo_composition_designer.layouts.loader import (
+    AUTO_LAYOUT_KEY,
+    AUTO_LAYOUT_NAME,
+    layout_choices,
+    load_catalogue,
+)
 from photo_composition_designer.project.models import LayoutSlot, Project
 from photo_composition_designer.project.rendering import (
     ProjectRenderingService,
@@ -47,6 +52,19 @@ def _assign_layout_to_all_pages(
     from photo_composition_designer.project.repositories import (
         LayoutRepository,
     )
+
+    if layout_key == AUTO_LAYOUT_KEY:
+        # Auto geometry depends on photos, which a fresh project does not have
+        # yet, so every page receives its own empty automatic snapshot. Photo
+        # management and distribution regenerate it later.
+        with database.transaction() as connection:
+            layout_repo = LayoutRepository(connection)
+            page_repo = PageRepository(connection)
+            for page in page_repo.list(project_id):
+                version = layout_repo.next_version(AUTO_LAYOUT_KEY)
+                layout = layout_repo.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, [])
+                page_repo.set_layout(page.id, layout.id, layout.version)
+        return
 
     catalogue = load_catalogue()
     template = catalogue.get(layout_key)
@@ -142,7 +160,7 @@ def new_project_form(request: Request) -> HTMLResponse:
             "save_state": "Unsaved",
             "error": "",
             "form": {},
-            "catalogue": load_catalogue(),
+            "catalogue": layout_choices(),
         },
     )
 
@@ -167,7 +185,7 @@ def create_project(
         "layout_key": layout_key,
         "source_path": source_path,
     }
-    catalogue = load_catalogue()
+    catalogue = layout_choices()
     if layout_key and layout_key not in catalogue:
         return TEMPLATES.TemplateResponse(
             request,

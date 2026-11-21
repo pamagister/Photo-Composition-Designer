@@ -8,7 +8,6 @@ the route handlers stay thin.
 from __future__ import annotations
 
 from collections import Counter
-from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
@@ -21,7 +20,7 @@ from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.io.media import resolve_source_path
-from photo_composition_designer.layouts.loader import load_catalogue
+from photo_composition_designer.layouts.loader import layout_choices
 from photo_composition_designer.project.models import (
     PhotoAsset,
     ProjectAggregate,
@@ -29,6 +28,7 @@ from photo_composition_designer.project.models import (
 )
 from photo_composition_designer.project.rendering import (
     ProjectRenderingService,
+    collage_box_for_page,
     preview_cache_key_for,
     profile_from_project,
 )
@@ -39,12 +39,8 @@ from photo_composition_designer.project.repositories import (
     ProjectRepository,
 )
 from photo_composition_designer.project.services import ProjectService
-from photo_composition_designer.render.layout_geometry import (
-    compute_collage_box,
-    slot_overlay_rectangles,
-)
+from photo_composition_designer.render.layout_geometry import slot_overlay_rectangles
 from photo_composition_designer.render.object_detector import ObjectDetector
-from photo_composition_designer.render.page import PageRenderInput
 
 
 def _load_project(
@@ -60,19 +56,7 @@ def _load_project(
 
 def _collage_box_for_page(page, profile):
     """Return the collage content box for a page using the shared geometry."""
-    render_input = PageRenderInput(
-        page_date=date.fromisoformat(page.start_date),
-        description=page.description,
-        layout=None,
-        output_profile=profile,
-        title=profile.calendar.title,
-        title_page=profile.calendar.use_title_page and page.page_index == 0,
-        hide_local_map=page.hide_local_map,
-        hide_calendar_strip=page.hide_calendar_strip,
-        hide_description=page.hide_description,
-        center_description=page.center_description,
-    )
-    return compute_collage_box(render_input, profile)
+    return collage_box_for_page(page, profile)
 
 
 def _slot_overlay_data(page, profile, slots, slot_assignment_map):
@@ -253,7 +237,7 @@ def _project_context(
         "slot_overlays": _slot_overlay_data(selected, profile, slots, slot_assignment_map)
         if selected is not None
         else [],
-        "catalogue": load_catalogue(),
+        "catalogue": layout_choices(),
         "source_states": source_states,
         "error": error,
         "notice": notice,
@@ -330,7 +314,7 @@ def _page_context(
         "current_layout_key": current_layout_key,
         "slot_assignment_map": slot_assignment_map,
         "slot_overlays": _slot_overlay_data(page, profile, slots, slot_assignment_map),
-        "catalogue": load_catalogue(),
+        "catalogue": layout_choices(),
         "thumb_cache_key": thumb_cache_key,
     }
     return context

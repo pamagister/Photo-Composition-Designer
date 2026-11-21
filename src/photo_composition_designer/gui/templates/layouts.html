@@ -10,7 +10,13 @@
     <h2>Available layouts</h2>
     <ul>
       {% for layout in catalogue.values() | sort(attribute="key") %}
-      <li><a href="/layouts?key={{ layout.key }}">{{ layout.name }} <span class="muted">{{ layout.key }} v{{ layout.version }}</span></a></li>
+      <li>
+        {% if layout.key == 'auto' %}
+        {{ layout.name }} <span class="muted">(generated from the photos on each page)</span>
+        {% else %}
+        <a href="/layouts?key={{ layout.key }}">{{ layout.name }} <span class="muted">{{ layout.key }} v{{ layout.version }}</span></a>
+        {% endif %}
+      </li>
       {% endfor %}
     </ul>
   </div>

@@ -228,20 +228,20 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 2: Catalogue integration and layout selection
 
-**Status:** Pending
+**Status:** Done locally (push deferred; stopped after this phase per user request)
 
 **Objective:** Make "Automatic" selectable at the top of every layout list and persist it.
 
-- [ ] P2-W01: Add a `layout_choices()` helper that returns the auto entry first, followed
+- [x] P2-W01: Add a `layout_choices()` helper that returns the auto entry first, followed
   by the YAML catalogue. Use it in `new_project.html`, `partials/editor_canvas.html` and the
   read-only `layouts.html`. Keep `load_catalogue()` unchanged for existing callers.
-- [ ] P2-W02: Extend `PageEditingService` with auto support: `_resolve_template("auto")`
+- [x] P2-W02: Extend `PageEditingService` with auto support: `_resolve_template("auto")`
   returns a virtual descriptor, `_ensure_auto_layout(connection, photos, canvas_aspect)`
   creates a new snapshot with a fresh version, and `plan_layout_change` /
   `change_layout` handle the auto key. Remap assignments by slot index.
-- [ ] P2-W03: Handle auto in `_assign_layout_to_all_pages` and in project creation so a new
+- [x] P2-W03: Handle auto in `_assign_layout_to_all_pages` and in project creation so a new
   project with the auto default gets empty auto snapshots on every page.
-- [ ] P2-W04: Add service tests for switching to auto with 0, 3 and 7 assigned photos and
+- [x] P2-W04: Add service tests for switching to auto with 0, 3 and 7 assigned photos and
   for the preserved crop overrides; add `TestClient` tests for the layout preview and apply
   endpoints with `layout_key=auto`.
 
@@ -425,9 +425,13 @@ Repository commands (see `Makefile`):
 - **Completed:** P0 – prototype `/home/paul/.opencode/plan/auto_layout_proto.py`, review
   collages in `collages/` (FULL HD, 1–30 photos), exact-tiling and orientation checks;
   P1 – pure engine `layouts/auto_layout.py` + `tests/test_auto_layout.py` (162 tests, all
-  green; coverage 1.0, no overlap, deterministic)
-- **Active:** none
-- **Next:** P2-W01 `layout_choices()` helper and catalogue integration
+  green; coverage 1.0, no overlap, deterministic);
+  P2 – `layout_choices()` with auto first, `PageEditingService` auto switch
+  (`_plan_auto_change`, `_change_layout_auto`, `_auto_layout_for_page`), auto handling in
+  project creation, `collage_aspect_for_page` helper, `LayoutRepository.next_version`,
+  service + TestClient tests (`tests/test_auto_layout_integration.py`, 10 tests)
+- **Active:** none (stopped after Phase 2 per user request)
+- **Next:** P3-W01 `PageEditingService.auto_add` / `auto_reflow` / `auto_remove_empty`
 - **Relevant files:**
   - `src/photo_composition_designer/layouts/loader.py` (catalogue, `LayoutTemplate`)
   - `src/photo_composition_designer/project/editing.py` (`PageEditingService`)

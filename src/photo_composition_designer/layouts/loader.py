@@ -18,6 +18,10 @@ from photo_composition_designer.core.appdata import data_dir
 
 VALID_CROP_MODES = frozenset({"cover", "contain", "stretch"})
 
+#: Stable key and display name of the automatic (content-aware) layout.
+AUTO_LAYOUT_KEY = "auto"
+AUTO_LAYOUT_NAME = "Automatic"
+
 
 class LayoutValidationError(ValueError):
     """Raised when a layout definition is malformed."""
@@ -174,3 +178,24 @@ def load_catalogue() -> dict[str, LayoutTemplate]:
             reverse=False,
         )
     )
+
+
+def auto_layout_template() -> LayoutTemplate:
+    """Return the virtual descriptor for the automatic layout.
+
+    The automatic layout has no fixed slots; its geometry is derived from the
+    photos on a page when a snapshot is generated. The descriptor exists so the
+    layout pickers can present "Automatic" alongside the static catalogue.
+    """
+    return LayoutTemplate(key=AUTO_LAYOUT_KEY, version=1, name=AUTO_LAYOUT_NAME, slots=())
+
+
+def layout_choices() -> dict[str, LayoutTemplate]:
+    """Return the automatic layout first, followed by the YAML catalogue.
+
+    Consumers that present a layout list (project wizard, per-page layout
+    selector, global layout page) use this helper so "Automatic" is always the
+    first option. :func:`load_catalogue` stays unchanged for callers that need
+    only the static templates.
+    """
+    return {AUTO_LAYOUT_KEY: auto_layout_template(), **load_catalogue()}

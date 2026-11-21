@@ -14,8 +14,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from photo_composition_designer.gui.dependencies import SettingsDependency
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.layouts.loader import (
+    AUTO_LAYOUT_KEY,
     LayoutTemplate,
     LayoutValidationError,
+    layout_choices,
     load_catalogue,
     validate_layout,
 )
@@ -32,8 +34,8 @@ def _layout_context(
     name: str = "",
     slots_json: str = "",
 ) -> dict[str, Any]:
-    catalogue = load_catalogue()
-    selected = catalogue.get(selected_key)
+    catalogue = layout_choices()
+    selected = load_catalogue().get(selected_key)
     if selected is not None and not name:
         name = selected.name
     if selected is not None and not slots_json:
@@ -85,6 +87,8 @@ def save_layout(
     key = key.strip()
     name = name.strip()
     try:
+        if key == AUTO_LAYOUT_KEY:
+            raise ValueError("The automatic layout is generated and cannot be edited.")
         if not _LAYOUT_KEY.fullmatch(key):
             raise ValueError(
                 "Layout key must use lowercase letters, digits, hyphens or underscores."

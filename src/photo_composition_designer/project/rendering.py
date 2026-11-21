@@ -33,6 +33,7 @@ from photo_composition_designer.project.repositories import (
     ProjectRepository,
     SourceRootRepository,
 )
+from photo_composition_designer.render.layout_geometry import CollageBox, compute_collage_box
 from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotPhoto
@@ -111,6 +112,33 @@ def layout_template(definition: LayoutDefinition) -> LayoutTemplate:
             for slot in definition.slots
         ),
     )
+
+
+def collage_box_for_page(page: CalendarPage, profile: OutputProfile) -> CollageBox:
+    """Return the collage content box for a page using the shared geometry.
+
+    This is the same geometry the renderer and editor overlay use, so auto
+    layouts are generated against the real content box aspect ratio.
+    """
+    render_input = PageRenderInput(
+        page_date=date.fromisoformat(page.start_date),
+        description=page.description,
+        layout=None,
+        output_profile=profile,
+        title=profile.calendar.title,
+        title_page=profile.calendar.use_title_page and page.page_index == 0,
+        hide_local_map=page.hide_local_map,
+        hide_calendar_strip=page.hide_calendar_strip,
+        hide_description=page.hide_description,
+        center_description=page.center_description,
+    )
+    return compute_collage_box(render_input, profile)
+
+
+def collage_aspect_for_page(page: CalendarPage, profile: OutputProfile) -> float:
+    """Return the width-to-height aspect ratio of a page's collage box."""
+    box = collage_box_for_page(page, profile)
+    return box.width / box.height
 
 
 def write_preview(
@@ -401,6 +429,8 @@ __all__ = [
     "DEFAULT_PREVIEW_WIDTH",
     "DRAFT_OVERSAMPLE",
     "ProjectRenderingService",
+    "collage_aspect_for_page",
+    "collage_box_for_page",
     "draft_dpi",
     "draft_profile",
     "layout_template",

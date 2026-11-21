@@ -15,8 +15,18 @@ from photo_composition_designer.core.errors import (
     ProjectError,
 )
 from photo_composition_designer.db.schema import WorkspaceDatabase
-from photo_composition_designer.layouts.loader import LayoutTemplate, load_catalogue
-from photo_composition_designer.project.models import LayoutSlot, PhotoAsset
+from photo_composition_designer.layouts.auto_layout import AutoPhoto, AutoSlot, build_auto_layout
+from photo_composition_designer.layouts.loader import (
+    AUTO_LAYOUT_KEY,
+    AUTO_LAYOUT_NAME,
+    LayoutTemplate,
+    load_catalogue,
+)
+from photo_composition_designer.project.models import LayoutSlot, PhotoAsset, PhotoAssignment
+from photo_composition_designer.project.rendering import (
+    collage_aspect_for_page,
+    profile_from_project,
+)
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     LayoutRepository,
@@ -384,6 +394,157 @@ class PageEditingService:
         return repository.add(template.key, template.version, template.name, slots)
 
     @staticmethod
+    def _auto_pairs(connection, page) -> list[tuple[PhotoAssignment, PhotoAsset]]:
+        """Return a page's valid assignments ordered by their current slot.
+
+        Assignments are ordered by the position of their current slot so the
+        reading order of the previous layout seeds the automatic layout.
+        Assignments whose photo is missing or has invalid dimensions are
+        skipped; they will be reported as displaced.
+        """
+        assignments = AssignmentRepository(connection).list_by_page(page.id)
+        old_layout = (
+            LayoutRepository(connection).get_by_id(page.layout_id)
+            if page.layout_id is not None
+            else None
+        )
+        positions = {slot.id: slot.position for slot in old_layout.slots} if old_layout else {}
+        assignments.sort(key=lambda item: (positions.get(item.slot_id, item.slot_id), item.id))
+
+        photos = PhotoRepository(connection).get_many([item.photo_id for item in assignments])
+        pairs: list[tuple[PhotoAssignment, PhotoAsset]] = []
+        for assignment in assignments:
+            photo = photos.get(assignment.photo_id)
+            if photo is None or photo.width <= 0 or photo.height <= 0:
+                continue
+            pairs.append((assignment, photo))
+        return pairs
+
+    def _auto_layout_for_page(
+        self, connection, project_id: int, page
+    ) -> tuple[list[tuple[PhotoAssignment, PhotoAsset]], tuple[AutoSlot, ...]]:
+        """Build the automatic slots for a page and the ordered assignment pairs.
+
+        The returned pairs are ordered to match the slots: ``pairs[i]`` is the
+        assignment that should occupy ``auto_<i>``.
+        """
+        pairs = self._auto_pairs(connection, page)
+        project = ProjectRepository(connection).get(project_id)
+        if project is None:
+            raise ProjectError(f"project {project_id} does not exist")
+        profile = profile_from_project(project)
+        aspect = collage_aspect_for_page(page, profile)
+
+        engine_photos = [
+            AutoPhoto(key=str(photo.id), width=photo.width, height=photo.height)
+            for _, photo in pairs
+        ]
+        indexed = sorted(
+            enumerate(engine_photos),
+            key=lambda pair: (round(pair[1].aspect, 2), pair[0]),
+        )
+        ordered_pairs = [pairs[index] for index, _ in indexed]
+        ordered_photos = tuple(photo for _, photo in indexed)
+        slots = build_auto_layout(ordered_photos, aspect)
+        return ordered_pairs, slots
+
+    def _plan_auto_change(self, project_id: int, page_id: int) -> LayoutChangePreview:
+        """Preview an automatic layout change without persisting a snapshot."""
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            pairs, slots = self._auto_layout_for_page(connection, project_id, page)
+            pair_ids = {assignment.id for assignment, _ in pairs}
+            displaced = [
+                item
+                for item in AssignmentRepository(connection).list_by_page(page_id)
+                if item.id not in pair_ids
+            ]
+            photos = PhotoRepository(connection)
+            displaced_photos = tuple(
+                photo
+                for photo in (photos.get(item.photo_id) for item in displaced)
+                if photo is not None
+            )
+            preserved = tuple((photo.id, f"auto_{index}") for index, (_, photo) in enumerate(pairs))
+            return LayoutChangePreview(
+                page_id=page_id,
+                layout_key=AUTO_LAYOUT_KEY,
+                layout_name=AUTO_LAYOUT_NAME,
+                slot_count=len(slots),
+                preserved=preserved,
+                displaced=displaced_photos,
+            )
+
+    def _change_layout_auto(self, project_id: int, page_id: int) -> LayoutChangePreview:
+        """Apply an automatic layout change with a fresh persisted snapshot."""
+        with self._database.transaction() as connection:
+            page_repository = PageRepository(connection)
+            page = page_repository.get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+
+            pairs, slots = self._auto_layout_for_page(connection, project_id, page)
+            layout_repository = LayoutRepository(connection)
+            version = layout_repository.next_version(AUTO_LAYOUT_KEY)
+            slot_rows = [
+                LayoutSlot(
+                    id=0,
+                    layout_id=0,
+                    slot_key=slot.key,
+                    position=index,
+                    x=slot.x,
+                    y=slot.y,
+                    width=slot.width,
+                    height=slot.height,
+                    z_index=0,
+                    crop_mode="cover",
+                )
+                for index, slot in enumerate(slots)
+            ]
+            layout = layout_repository.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, slot_rows)
+
+            assignments = AssignmentRepository(connection)
+            existing = assignments.list_by_page(page_id)
+            pair_ids = {assignment.id for assignment, _ in pairs}
+            displaced = [item for item in existing if item.id not in pair_ids]
+            for assignment in existing:
+                assignments.remove(assignment.id)
+            # Point the page at the new snapshot before inserting assignments so
+            # the repository validates the new slot ids against the new layout.
+            page_repository.set_layout(page_id, layout.id, layout.version)
+            for index, (assignment, _photo) in enumerate(pairs):
+                target = layout.slots[index]
+                assignments.assign(
+                    project_id=project_id,
+                    page_id=page_id,
+                    slot_id=target.id,
+                    photo_id=assignment.photo_id,
+                    crop_zoom=assignment.crop_zoom,
+                    crop_focus_x=assignment.crop_focus_x,
+                    crop_focus_y=assignment.crop_focus_y,
+                )
+
+            photos = PhotoRepository(connection)
+            displaced_photos = tuple(
+                photo
+                for photo in (photos.get(item.photo_id) for item in displaced)
+                if photo is not None
+            )
+            preserved = tuple(
+                (photo.id, layout.slots[index].slot_key) for index, (_, photo) in enumerate(pairs)
+            )
+            return LayoutChangePreview(
+                page_id=page_id,
+                layout_key=AUTO_LAYOUT_KEY,
+                layout_name=AUTO_LAYOUT_NAME,
+                slot_count=len(layout.slots),
+                preserved=preserved,
+                displaced=displaced_photos,
+            )
+
+    @staticmethod
     def _plan_mapping(
         assignments: list,
         old_slots: list[LayoutSlot],
@@ -427,6 +588,8 @@ class PageEditingService:
         layout_key: str,
     ) -> LayoutChangePreview:
         """Preview a layout change without mutating the project."""
+        if layout_key == AUTO_LAYOUT_KEY:
+            return self._plan_auto_change(project_id, page_id)
         template = self._resolve_template(layout_key)
         new_slots = _rects_from_template(template)
         with self._database.transaction() as connection:
@@ -462,6 +625,8 @@ class PageEditingService:
         layout_key: str,
     ) -> LayoutChangePreview:
         """Apply a layout change atomically, preserving as many assignments as fit."""
+        if layout_key == AUTO_LAYOUT_KEY:
+            return self._change_layout_auto(project_id, page_id)
         template = self._resolve_template(layout_key)
         with self._database.transaction() as connection:
             page_repository = PageRepository(connection)
