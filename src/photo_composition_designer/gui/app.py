@@ -14,6 +14,8 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
+from starlette.types import Scope
 
 from photo_composition_designer.db.schema import WorkspaceDatabase, read_version
 from photo_composition_designer.gui.dependencies import DatabaseDependency, resolve_object_detector
@@ -51,6 +53,20 @@ async def lifespan(app: FastAPI):
     if worker is not None:
         worker.stop()
     app.state.database.close()
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Serve local static assets with revalidation.
+
+    The GUI is a local-first app whose CSS and JavaScript are edited alongside
+    the templates. Revalidating on every request prevents a stale cached
+    stylesheet from hiding template or style changes until a hard reload.
+    """
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 def create_app(
@@ -100,7 +116,7 @@ def create_app(
             anniversaries_path=settings.anniversaries_path,
             detector_provider=detector_provider,
         )
-    app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+    app.mount("/static", NoCacheStaticFiles(directory=str(BASE_DIR / "static")), name="static")
     app.include_router(project_archive.router)
     app.include_router(project_lifecycle.router)
     app.include_router(project_preview.router)

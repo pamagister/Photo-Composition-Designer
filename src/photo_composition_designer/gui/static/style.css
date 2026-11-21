@@ -190,9 +190,10 @@ a:focus {
   border-top: 1px solid var(--border);
 }
 
-.nav-dropdown-danger {
+.nav-dropdown-menu .nav-dropdown-danger {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.45rem;
   width: 100%;
   padding: 0.45rem 0.6rem;
@@ -200,11 +201,15 @@ a:focus {
   border-radius: 6px;
   background: transparent;
   color: var(--danger);
+  font: inherit;
   text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
 }
 
-.nav-dropdown-danger:hover,
-.nav-dropdown-danger:focus {
+.nav-dropdown-menu .nav-dropdown-danger:hover,
+.nav-dropdown-menu .nav-dropdown-danger:focus {
   background: var(--surface-raised);
 }
 

@@ -253,8 +253,9 @@ def test_extras_menu_offers_clear_all_assignments(editor_client, tmp_path):
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
 
     assert page.status_code == 200
+    assert 'class="nav-dropdown-danger"' in page.text
     assert f'action="/projects/{project_id}/assignments/clear"' in page.text
-    assert "Clear all assignments" in page.text
+    assert "Clear assignments" in page.text
     assert "Remove all photo assignments for this project?" in page.text
 
 

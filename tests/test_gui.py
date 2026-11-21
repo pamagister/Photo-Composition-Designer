@@ -96,6 +96,13 @@ def test_header_contains_the_shutdown_button(client):
     assert "/static/shutdown.js" in response.text
 
 
+def test_static_assets_are_revalidated(client):
+    response = client.get("/static/style.css")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-cache"
+
+
 def test_create_open_and_rename_project(client):
     project_url = _create_project(client)
 
