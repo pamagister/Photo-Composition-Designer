@@ -123,6 +123,7 @@ def assign_selected_photos(
     request: Request,
     project_id: int,
     page_id: int,
+    detector: ObjectDetectorDependency,
     photo_id: Annotated[list[int], Form()],
     slot_id: int | None = Form(None),
 ) -> HTMLResponse:
@@ -131,17 +132,33 @@ def assign_selected_photos(
     ``photo_id`` is a repeated form field carrying the selected photo ids in the
     order the user checked them. When ``slot_id`` is provided, the first
     eligible photo is assigned there before filling remaining empty slots.
+    Automatic pages ignore ``slot_id`` and add every selected photo, filling
+    empty slots first and reflowing once when more photos are selected than
+    there are holes.
     """
     database = _open_database(request)
-    editing = PageEditingService(database)
+    editing = PageEditingService(database, object_detector=detector)
     try:
-        assigned = editing.assign_selected(project_id, page_id, photo_id, slot_id=slot_id)
+        if editing.uses_auto_layout(project_id, page_id):
+            added, regenerated = editing.auto_add_many(project_id, page_id, photo_id)
+            if added == 0:
+                message = "No empty slots or no selected photos to assign."
+            elif added == 1:
+                message = "Added 1 photo and layout reflowed." if regenerated else "Added 1 photo."
+            else:
+                message = (
+                    f"Added {added} photos and layout reflowed."
+                    if regenerated
+                    else f"Added {added} photos."
+                )
+        else:
+            assigned = editing.assign_selected(project_id, page_id, photo_id, slot_id=slot_id)
+            if assigned:
+                message = f"Assigned {assigned} photo(s)."
+            else:
+                message = "No empty slots or no selected photos to assign."
     except ProjectError as error:
         return _error(project_id, str(error))
-    if assigned:
-        message = f"Assigned {assigned} photo(s)."
-    else:
-        message = "No empty slots or no selected photos to assign."
     return _page_fragment(request, project_id, page_id, message)
 
 
@@ -165,19 +182,32 @@ def auto_add_photo(
     project_id: int,
     page_id: int,
     detector: ObjectDetectorDependency,
-    photo_id: int = Form(...),
+    photo_id: Annotated[list[int], Form()],
 ) -> HTMLResponse:
-    """Add a photo to an automatic page, filling a hole or growing the grid."""
+    """Add one or more photos to an automatic page.
+
+    Empty slots are filled first. When the page has no empty slot left, the
+    grid is regenerated once for all remaining photos.
+    """
     database = _open_database(request)
     editing = PageEditingService(database, object_detector=detector)
     had_unused_photos = _has_unused_photos(database, project_id)
     try:
-        regenerated = editing.auto_add(project_id, page_id, photo_id)
+        added, regenerated = editing.auto_add_many(project_id, page_id, photo_id)
     except ProjectError as error:
         return _error(project_id, str(error))
     if had_unused_photos and not _has_unused_photos(database, project_id):
         _render_project_previews(request, database, project_id, detector)
-    message = "Photo added and layout reflowed." if regenerated else "Photo added."
+    if added == 0:
+        message = "No photos added."
+    elif added == 1:
+        message = "Photo added and layout reflowed." if regenerated else "Photo added."
+    else:
+        message = (
+            f"{added} photos added and layout reflowed."
+            if regenerated
+            else f"{added} photos added."
+        )
     return _page_fragment(request, project_id, page_id, message)
 
 

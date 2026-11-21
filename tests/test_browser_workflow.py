@@ -574,6 +574,34 @@ def test_auto_layout_add_reflow_and_remove_empty(live_server, browser_page):
     _wait_for_page_previews(page, page_id)
 
 
+def test_auto_dropzone_adds_all_selected_photos(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    page_id = live_server["page_ids"][0]
+    _open_editor(page, live_server, page_id)
+
+    page.locator(".layout-change summary").click()
+    page.locator('.layout-change select[name="layout_key"]').select_option("auto")
+    page.get_by_role("button", name="Preview change").click()
+    preview = page.locator("#layout-change-preview")
+    expect(preview).to_contain_text("Automatic")
+    page.locator(".layout-change").get_by_role("button", name="Apply layout").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Layout changed.")
+
+    for photo_id in photo_ids[:2]:
+        page.locator(f'.unused-item-checkbox[value="{photo_id}"]').check()
+    expect(page.get_by_role("button", name="Assign selected")).to_be_enabled()
+
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[0]}"]').drag_to(
+        page.locator(".auto-dropzone")
+    )
+
+    expect(page.locator("#workspace-status")).to_contain_text("2 photos added and layout reflowed.")
+    expect(page.locator(".slot-grid .slot")).to_have_count(2)
+    expect(page.locator(".unused-pool").get_by_text("photo_00.jpg")).to_have_count(0)
+    expect(page.locator(".unused-pool").get_by_text("photo_01.jpg")).to_have_count(0)
+
+
 def test_layout_change_and_page_navigation(live_server, browser_page):
     page = browser_page
     photo_ids = live_server["photo_ids"]

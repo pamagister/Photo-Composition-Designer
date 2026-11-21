@@ -698,6 +698,131 @@ class PageEditingService:
             self._persist_auto_snapshot(connection, project_id, page, ordered_pairs, slots)
             return True
 
+    def auto_add_many(
+        self,
+        project_id: int,
+        page_id: int,
+        photo_ids: list[int] | tuple[int, ...],
+    ) -> tuple[int, bool]:
+        """Add several photos to an automatic page in one transaction.
+
+        Empty slots are filled first. Any remaining photos trigger one reflow
+        that keeps existing crop overrides and hole placeholders. Unavailable
+        or unknown photos are skipped.
+
+        Returns:
+            ``(added, regenerated)`` where ``added`` is the number of photos
+            placed and ``regenerated`` indicates whether a new snapshot was
+            written.
+
+        Raises:
+            ProjectError: If the page is not an automatic layout.
+        """
+        with self._database.transaction() as connection:
+            page_repository = PageRepository(connection)
+            page = page_repository.get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            layout = (
+                LayoutRepository(connection).get_by_id(page.layout_id)
+                if page.layout_id is not None
+                else None
+            )
+            if not self._is_auto_layout(layout):
+                raise ProjectError(f"page {page_id} does not use the automatic layout")
+            return self._auto_add_many_in_transaction(
+                connection, project_id, page, layout, photo_ids
+            )
+
+    def _auto_add_many_in_transaction(
+        self,
+        connection,
+        project_id: int,
+        page,
+        layout,
+        photo_ids: list[int] | tuple[int, ...],
+    ) -> tuple[int, bool]:
+        """Add photos using an already-open transaction and validated page."""
+        photo_repository = PhotoRepository(connection)
+        selected: list[tuple[int, PhotoAsset]] = []
+        seen: set[int] = set()
+        for photo_id in photo_ids:
+            if photo_id in seen:
+                continue
+            photo = photo_repository.get(photo_id)
+            if photo is None or not photo.available:
+                continue
+            seen.add(photo_id)
+            selected.append((photo_id, photo))
+        if not selected:
+            return 0, False
+
+        assignments = AssignmentRepository(connection)
+        occupied = {assignment.slot_id for assignment in assignments.list_by_page(page.id)}
+        empty_slots = [slot for slot in layout.slots if slot.id not in occupied]
+        remaining: list[tuple[int, PhotoAsset]] = []
+        added = 0
+        for photo_id, photo in selected:
+            if not empty_slots:
+                remaining.append((photo_id, photo))
+                continue
+            slot = empty_slots.pop(0)
+            assignments.assign(
+                project_id=project_id,
+                page_id=page.id,
+                slot_id=slot.id,
+                photo_id=photo_id,
+            )
+            added += 1
+
+        if not remaining:
+            PageRepository(connection).increment_revision(page.id)
+            return added, False
+
+        pairs = self._auto_pairs(connection, page)
+        occupied = {assignment.slot_id for assignment in assignments.list_by_page(page.id)}
+        if len(occupied) < len(layout.slots):
+            pairs = self._pairs_with_holes(page, layout, pairs, occupied)
+        for photo_id, photo in remaining:
+            pairs.append(
+                (
+                    PhotoAssignment(
+                        id=0,
+                        project_id=project_id,
+                        page_id=page.id,
+                        slot_id=0,
+                        photo_id=photo_id,
+                        crop_zoom=1.0,
+                        crop_focus_x=0.5,
+                        crop_focus_y=0.5,
+                        created_at="",
+                    ),
+                    photo,
+                )
+            )
+        importance = self._importance_for_photos(
+            connection, project_id, [photo for _, photo in pairs]
+        )
+        ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs, importance)
+        slots = build_auto_layout(
+            ordered_photos, self._collage_aspect(connection, project_id, page)
+        )
+        self._persist_auto_snapshot(connection, project_id, page, ordered_pairs, slots)
+        return added + len(remaining), True
+
+    def uses_auto_layout(self, project_id: int, page_id: int) -> bool:
+        """Return whether a page currently uses an automatic snapshot."""
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            layout = (
+                LayoutRepository(connection).get_by_id(page.layout_id)
+                if page.layout_id is not None
+                else None
+            )
+            return self._is_auto_layout(layout)
+
     def auto_reflow(self, project_id: int, page_id: int) -> bool:
         """Regenerate an automatic layout with one slot per assigned photo.
 

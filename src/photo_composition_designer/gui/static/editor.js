@@ -116,10 +116,18 @@
     const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
 
     /* The generic auto-layout dropzones have no slot id; they add the dropped
-     * photo to the page, filling a hole or growing the grid. */
+     * photo to the page, filling a hole or growing the grid. When the dropped
+     * photo is part of a multi-selection, every selected photo is added in one
+     * request. */
     if (target.hasAttribute("data-auto-dropzone")) {
+      const selectedPhotos = Array.from(
+        document.querySelectorAll(".unused-item-checkbox:checked")
+      ).map((checkbox) => checkbox.value);
+      const orderedPhotos = selectedPhotos.includes(photoId)
+        ? [photoId, ...selectedPhotos.filter((selectedId) => selectedId !== photoId)]
+        : [photoId];
       window.htmx.ajax("POST", `${base}/auto/add`, {
-        values: { photo_id: photoId },
+        values: { photo_id: orderedPhotos },
         target: canvas,
         swap: "outerHTML",
       });

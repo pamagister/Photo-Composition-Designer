@@ -626,6 +626,108 @@ def test_auto_reflow_and_remove_empty_routes(auto_client, tmp_path):
     assert "No empty slots to remove." in empty.text
 
 
+def test_auto_add_many_adds_all_selected_and_reflows(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed_auto_page(
+        tmp_path, photo_count=5, preassigned=2
+    )
+    try:
+        added, regenerated = editing.auto_add_many(project_id, page_id, photo_ids[2:5])
+
+        assert added == 3
+        assert regenerated is True
+        layout, assignments = _layout_for_page(database, page_id)
+        assert len(layout.slots) == 5
+        assert {assignment.photo_id for assignment in assignments} == set(photo_ids[:5])
+    finally:
+        database.close()
+
+
+def test_auto_add_many_fills_empty_slot_before_reflowing(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed_auto_page(
+        tmp_path, photo_count=5, preassigned=2
+    )
+    try:
+        first_layout, _ = _layout_for_page(database, page_id)
+        editing.remove(project_id, page_id, first_layout.slots[1].id)
+
+        added, regenerated = editing.auto_add_many(project_id, page_id, photo_ids[2:4])
+
+        assert added == 2
+        assert regenerated is True
+        layout, assignments = _layout_for_page(database, page_id)
+        assert len(layout.slots) == 3
+        assert {assignment.photo_id for assignment in assignments} == {
+            photo_ids[0],
+            photo_ids[2],
+            photo_ids[3],
+        }
+    finally:
+        database.close()
+
+
+def test_auto_add_route_adds_multiple_photos(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=4)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/assignments/clear")
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/auto/reflow")
+
+    response = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": [str(photo_ids[0]), str(photo_ids[1])]},
+    )
+
+    assert response.status_code == 200
+    assert "2 photos added and layout reflowed." in response.text
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            assert len(layout.slots) == 2
+    finally:
+        database.close()
+
+
+def test_assign_selected_route_adds_all_photos_on_auto_page(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=4)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/assignments/clear")
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/auto/reflow")
+
+    response = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/assign-selected",
+        data={"photo_id": [str(photo_ids[0]), str(photo_ids[1])]},
+    )
+
+    assert response.status_code == 200
+    assert "Added 2 photos and layout reflowed." in response.text
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            assert len(layout.slots) == 2
+            assignments = connection.execute(
+                "SELECT photo_id FROM assignments WHERE page_id = ?", (page_id,)
+            ).fetchall()
+            assert {row["photo_id"] for row in assignments} == {
+                photo_ids[0],
+                photo_ids[1],
+            }
+    finally:
+        database.close()
+
+
 def _first_slot_id(tmp_path: Path, page_id: int) -> int:
     database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
     try:
