@@ -62,7 +62,7 @@
   /* A drop target is either a right-hand slot card or a preview dropzone; both
    * expose data-slot-id and an occupied/empty state. */
   function dropTarget(element) {
-    return element.closest(".slot, .slot-dropzone");
+    return element.closest(".slot, .slot-dropzone, .auto-dropzone, .auto-canvas-dropzone");
   }
 
   function isOccupied(target) {
@@ -115,6 +115,17 @@
     if (!canvas) return;
     const base = `/projects/${canvas.dataset.projectId}/pages/${canvas.dataset.pageId}`;
 
+    /* The generic auto-layout dropzones have no slot id; they add the dropped
+     * photo to the page, filling a hole or growing the grid. */
+    if (target.hasAttribute("data-auto-dropzone")) {
+      window.htmx.ajax("POST", `${base}/auto/add`, {
+        values: { photo_id: photoId },
+        target: canvas,
+        swap: "outerHTML",
+      });
+      return;
+    }
+
     /* A photo dragged from another slot (or occupied dropzone) moves or swaps
      * instead of replacing itself with a copy. Dropping onto its own slot is a
      * no-op. */
@@ -156,7 +167,9 @@
     const dropzone = event.target.closest(".slot-dropzone");
     if (dropzone) dropzone.classList.remove("dragging");
     document
-      .querySelectorAll(".slot-dropzone.drag-over, .slot.drag-over")
+      .querySelectorAll(
+        ".slot-dropzone.drag-over, .slot.drag-over, .auto-dropzone.drag-over, .auto-canvas-dropzone.drag-over"
+      )
       .forEach((node) => node.classList.remove("drag-over"));
   });
 

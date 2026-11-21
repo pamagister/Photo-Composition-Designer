@@ -10,6 +10,7 @@ from PIL import Image
 from starlette.testclient import TestClient
 
 from photo_composition_designer.core.appdata import data_dir
+from photo_composition_designer.core.errors import ProjectError
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.app import create_app
 from photo_composition_designer.gui.settings import GuiSettings
@@ -275,3 +276,364 @@ def test_editor_selector_lists_auto_first(auto_client, tmp_path):
     assert response.status_code == 200
     assert "Automatic (from photos)" in response.text
     assert response.text.find('value="auto"') < response.text.find('value="single_full"')
+
+
+def _seed_auto_page(
+    tmp_path: Path,
+    *,
+    photo_count: int,
+    preassigned: int = 0,
+) -> tuple[WorkspaceDatabase, PageEditingService, int, int, list[int], list[int]]:
+    """Create a one-page project switched to the automatic layout.
+
+    ``preassigned`` photos are placed on the static seed layout first so the
+    automatic snapshot starts with that many slots. The returned slot ids are
+    the slots of the resulting automatic snapshot, in reading order.
+    """
+    database, editing, project_id, page_id, photo_ids, seed_slots = _seed(
+        tmp_path, photo_count=photo_count
+    )
+    _assign_photos(editing, project_id, page_id, photo_ids[:preassigned], seed_slots)
+    editing.change_layout(project_id, page_id, AUTO_LAYOUT_KEY)
+    return (
+        database,
+        editing,
+        project_id,
+        page_id,
+        photo_ids,
+        editing_layout_slot_ids(database, page_id),
+    )
+
+
+def editing_layout_slot_ids(database: WorkspaceDatabase, page_id: int) -> list[int]:
+    """Return the current layout slot ids of a page in slot order."""
+    layout, _ = _layout_for_page(database, page_id)
+    return [slot.id for slot in layout.slots]
+
+
+def _assign_photos(
+    editing: PageEditingService,
+    project_id: int,
+    page_id: int,
+    photo_ids: list[int],
+    slot_ids: list[int],
+) -> None:
+    for photo_id, slot_id in zip(photo_ids, slot_ids, strict=False):
+        editing.assign_to_empty_slot(project_id, page_id, slot_id, photo_id)
+
+
+def test_auto_add_fills_existing_empty_slot(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed_auto_page(
+        tmp_path, photo_count=5, preassigned=2
+    )
+    try:
+        first_layout, assignments = _layout_for_page(database, page_id)
+        empty_slot = first_layout.slots[-1].id
+        editing.remove(project_id, page_id, empty_slot)
+
+        regenerated = editing.auto_add(project_id, page_id, photo_ids[4])
+
+        assert regenerated is False
+        layout, assignments = _layout_for_page(database, page_id)
+        assert layout.id == first_layout.id
+        assert len(layout.slots) == 2
+        by_slot = {assignment.slot_id: assignment.photo_id for assignment in assignments}
+        assert by_slot[empty_slot] == photo_ids[4]
+        assert len(by_slot) == 2
+    finally:
+        database.close()
+
+
+def test_auto_add_without_empty_slot_regenerates_and_preserves_crop(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed_auto_page(
+        tmp_path, photo_count=4, preassigned=2
+    )
+    try:
+        editing.set_crop(
+            project_id,
+            page_id,
+            slot_ids[0],
+            crop_zoom=1.9,
+            crop_focus_x=0.3,
+            crop_focus_y=0.6,
+        )
+        first_layout, _ = _layout_for_page(database, page_id)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            revision_before = page.render_revision
+
+        regenerated = editing.auto_add(project_id, page_id, photo_ids[2])
+
+        assert regenerated is True
+        layout, assignments = _layout_for_page(database, page_id)
+        assert layout.id != first_layout.id
+        assert len(layout.slots) == 3
+        by_photo = {assignment.photo_id: assignment for assignment in assignments}
+        assert set(by_photo) == set(photo_ids[:3])
+        preserved = by_photo[photo_ids[0]]
+        assert preserved.crop_zoom == pytest.approx(1.9)
+        assert preserved.crop_focus_x == pytest.approx(0.3)
+        assert preserved.crop_focus_y == pytest.approx(0.6)
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            assert page.render_revision > revision_before
+    finally:
+        database.close()
+
+
+def test_auto_add_rejects_non_auto_page_and_unavailable_photo(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path, photo_count=4)
+    try:
+        with pytest.raises(ProjectError):
+            editing.auto_add(project_id, page_id, photo_ids[0])
+
+        editing.change_layout(project_id, page_id, AUTO_LAYOUT_KEY)
+        with database.connect() as connection:
+            connection.execute("UPDATE photos SET available = 0 WHERE id = ?", (photo_ids[0],))
+        with pytest.raises(ProjectError):
+            editing.auto_add(project_id, page_id, photo_ids[0])
+    finally:
+        database.close()
+
+
+def test_remove_leaves_hole_and_reflow_restores_slots(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed_auto_page(
+        tmp_path, photo_count=4, preassigned=3
+    )
+    try:
+        first_layout, _ = _layout_for_page(database, page_id)
+        removed_slot = first_layout.slots[1]
+
+        assert editing.remove(project_id, page_id, removed_slot.id) is True
+
+        layout, assignments = _layout_for_page(database, page_id)
+        assert layout.id == first_layout.id
+        assert len(layout.slots) == 3
+        assert removed_slot.id not in {assignment.slot_id for assignment in assignments}
+        assert len(assignments) == 2
+
+        assert editing.auto_reflow(project_id, page_id) is True
+
+        layout, assignments = _layout_for_page(database, page_id)
+        assert layout.id != first_layout.id
+        assert len(layout.slots) == 2
+        assert {assignment.slot_id for assignment in assignments} == {
+            slot.id for slot in layout.slots
+        }
+        assert len(assignments) == 2
+    finally:
+        database.close()
+
+
+def test_auto_remove_empty_drops_holes_and_is_noop_without_holes(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed_auto_page(
+        tmp_path, photo_count=4, preassigned=3
+    )
+    try:
+        first_layout, _ = _layout_for_page(database, page_id)
+
+        assert editing.auto_remove_empty(project_id, page_id) is False
+
+        removed_slot = first_layout.slots[0]
+        editing.remove(project_id, page_id, removed_slot.id)
+        assert editing.auto_remove_empty(project_id, page_id) is True
+
+        layout, assignments = _layout_for_page(database, page_id)
+        assert len(layout.slots) == 2
+        assert len(assignments) == 2
+        assert {assignment.slot_id for assignment in assignments} == {
+            slot.id for slot in layout.slots
+        }
+
+        assert editing.auto_remove_empty(project_id, page_id) is False
+    finally:
+        database.close()
+
+
+def test_auto_reflow_returns_false_for_static_layout(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path, photo_count=3)
+    try:
+        assert editing.auto_reflow(project_id, page_id) is False
+        assert editing.auto_remove_empty(project_id, page_id) is False
+    finally:
+        database.close()
+
+
+def test_auto_add_route_reports_reflow_and_lists_photo(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=3)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+
+    response = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": photo_ids[0]},
+    )
+
+    assert response.status_code == 200
+    assert "Photo added and layout reflowed." in response.text
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            assert len(layout.slots) == 4
+            assignments = connection.execute(
+                "SELECT photo_id FROM assignments WHERE page_id = ? ORDER BY slot_id",
+                (page_id,),
+            ).fetchall()
+            assert photo_ids[0] in {row["photo_id"] for row in assignments}
+    finally:
+        database.close()
+
+
+def test_auto_add_route_rejects_non_auto_page(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=2)
+
+    response = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": photo_ids[0]},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "automatic" in response.headers["location"]
+
+
+def test_auto_page_shows_reflow_and_add_controls(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=2)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+
+    response = auto_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert response.status_code == 200
+    assert "/auto/reflow" in response.text
+    assert "/auto/remove-empty" in response.text
+    assert "/auto/add" in response.text
+    assert "Reflow" in response.text
+    assert "Remove empty slots" in response.text
+
+
+def _create_auto_project(tmp_path: Path, *, page_count: int = 1) -> int:
+    """Create a project whose pages all use the empty automatic layout."""
+    source = tmp_path / f"auto-source-{page_count}"
+    source.mkdir(parents=True, exist_ok=True)
+    client = TestClient(create_app(GuiSettings(), sync_preview_worker=True))
+    response = client.post(
+        "/projects",
+        data={
+            "name": "Empty auto",
+            "page_count": str(page_count),
+            "start_date": "2027-01-04",
+            "layout_key": "auto",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    location = response.headers["location"]
+    return int(location.split("/projects/", 1)[1].split("?", 1)[0])
+
+
+def test_auto_page_without_slots_shows_full_canvas_dropzone(auto_client, tmp_path):
+    # A project created with the auto default gets an empty auto snapshot on
+    # every page, which is the canonical "empty auto page" state.
+    empty_project_id = _create_auto_project(tmp_path, page_count=1)
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            empty_page_id = PageRepository(connection).list(empty_project_id)[0].id
+    finally:
+        database.close()
+
+    response = auto_client.get(f"/projects/{empty_project_id}?page={empty_page_id}")
+
+    assert response.status_code == 200
+    assert "auto-canvas-dropzone" in response.text
+    assert "Drop a photo to start the layout" in response.text
+
+
+def test_static_page_has_no_auto_controls(auto_client, tmp_path):
+    project_id, page_id, _ = _seed_client(tmp_path, photo_count=2)
+
+    response = auto_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert response.status_code == 200
+    assert "/auto/reflow" not in response.text
+    assert "auto-canvas-dropzone" not in response.text
+
+
+def test_auto_add_route_reports_reflow_when_no_hole(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=3)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+
+    first = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": photo_ids[0]},
+    )
+    second = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": photo_ids[1]},
+    )
+
+    assert "Photo added and layout reflowed." in first.text
+    assert "Photo added and layout reflowed." in second.text
+
+
+def test_auto_reflow_and_remove_empty_routes(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=3)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+    first = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": photo_ids[0]},
+    )
+    second = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/add",
+        data={"photo_id": photo_ids[1]},
+    )
+    assert "Photo added and layout reflowed." in first.text
+    assert "Photo added and layout reflowed." in second.text
+
+    removed = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/remove",
+        data={"slot_id": _first_slot_id(tmp_path, page_id)},
+    )
+    assert removed.status_code == 200
+
+    empty = auto_client.post(f"/projects/{project_id}/pages/{page_id}/auto/remove-empty")
+    assert empty.status_code == 200
+    assert "Empty slots removed." in empty.text
+
+    reflow = auto_client.post(f"/projects/{project_id}/pages/{page_id}/auto/reflow")
+    assert reflow.status_code == 200
+    assert "Layout reflowed." in reflow.text
+
+    empty = auto_client.post(f"/projects/{project_id}/pages/{page_id}/auto/remove-empty")
+    assert empty.status_code == 200
+    assert "No empty slots to remove." in empty.text
+
+
+def _first_slot_id(tmp_path: Path, page_id: int) -> int:
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None and layout.slots
+            return layout.slots[0].id
+    finally:
+        database.close()

@@ -897,6 +897,65 @@ summary {
   outline-offset: 2px;
 }
 
+.auto-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.auto-actions form {
+  margin: 0;
+}
+
+.auto-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.auto-add-form select {
+  flex: 1 1 100%;
+}
+
+.auto-dropzone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 5rem;
+  padding: 0.5rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.auto-dropzone.drag-over {
+  border-color: var(--accent);
+  background: var(--surface-raised);
+}
+
+.auto-canvas-dropzone {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 2px dashed rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  background: rgba(12, 13, 15, 0.45);
+  cursor: pointer;
+}
+
+.auto-canvas-dropzone.drag-over {
+  border-color: var(--accent);
+  background: rgba(47, 111, 235, 0.22);
+}
+
+.auto-canvas-dropzone .dropzone-hint {
+  position: static;
+  font-size: 0.85rem;
+}
+
 .preview-hint {
   margin: 0.4rem 0.5rem 0;
   color: var(--muted);

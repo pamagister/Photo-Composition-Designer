@@ -521,6 +521,59 @@ def test_keyboard_pan_at_minimal_zoom_reaches_and_stops_at_crop_edge(live_server
     assert float(focus_x.input_value()) == pytest.approx(1.0)
 
 
+def test_auto_layout_add_reflow_and_remove_empty(live_server, browser_page):
+    page = browser_page
+    photo_ids = live_server["photo_ids"]
+    page_id = live_server["page_ids"][0]
+    _open_editor(page, live_server, page_id)
+
+    # Switch the page to the automatic layout (no photos are displaced, so the
+    # preview shows no confirm button; use the Apply layout button).
+    page.locator(".layout-change summary").click()
+    page.locator('.layout-change select[name="layout_key"]').select_option("auto")
+    page.get_by_role("button", name="Preview change").click()
+    preview = page.locator("#layout-change-preview")
+    expect(preview).to_contain_text("Automatic")
+    expect(preview).to_contain_text("No photos will be displaced.")
+    page.locator(".layout-change").get_by_role("button", name="Apply layout").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Layout changed.")
+
+    # Add two photos through the auto add form; each add reflows the grid.
+    auto_select = page.locator(".auto-add-form select[name=photo_id]")
+    auto_select.select_option(str(photo_ids[0]))
+    page.locator(".auto-add-form").get_by_role("button", name="Add photo").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Photo added and layout reflowed.")
+    auto_select = page.locator(".auto-add-form select[name=photo_id]")
+    auto_select.select_option(str(photo_ids[1]))
+    page.locator(".auto-add-form").get_by_role("button", name="Add photo").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Photo added and layout reflowed.")
+    expect(page.locator(".slot-grid .slot")).to_have_count(2)
+    _wait_for_page_previews(page, page_id)
+
+    # Remove one photo: the slot stays as an empty hole and the grid does not move.
+    page.locator(".slot-grid .slot").first.locator(".slot-remove button").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Photo removed.")
+    expect(page.locator(".slot-grid .slot.empty")).to_have_count(1)
+
+    # Remove empty slots drops the hole, leaving one slot per photo.
+    page.get_by_role("button", name="Remove empty slots").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Empty slots removed.")
+    expect(page.locator(".slot-grid .slot")).to_have_count(1)
+
+    # Reflow regenerates one slot per assigned photo.
+    page.get_by_role("button", name="Reflow").click()
+    expect(page.locator("#workspace-status")).to_contain_text("Layout reflowed.")
+    expect(page.locator(".slot-grid .slot")).to_have_count(1)
+
+    # Drag a photo from the strip onto the generic auto dropzone to add it.
+    page.locator(f'.unused-item[data-photo-id="{photo_ids[2]}"]').drag_to(
+        page.locator(".auto-dropzone")
+    )
+    expect(page.locator("#workspace-status")).to_contain_text("Photo added")
+    expect(page.locator(".slot-grid .slot")).to_have_count(2)
+    _wait_for_page_previews(page, page_id)
+
+
 def test_layout_change_and_page_navigation(live_server, browser_page):
     page = browser_page
     photo_ids = live_server["photo_ids"]

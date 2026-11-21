@@ -159,6 +159,62 @@ def remove_photo(
     return _page_fragment(request, project_id, page_id, "Photo removed.")
 
 
+@router.post("/projects/{project_id}/pages/{page_id}/auto/add")
+def auto_add_photo(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    detector: ObjectDetectorDependency,
+    photo_id: int = Form(...),
+) -> HTMLResponse:
+    """Add a photo to an automatic page, filling a hole or growing the grid."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    had_unused_photos = _has_unused_photos(database, project_id)
+    try:
+        regenerated = editing.auto_add(project_id, page_id, photo_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    if had_unused_photos and not _has_unused_photos(database, project_id):
+        _render_project_previews(request, database, project_id, detector)
+    message = "Photo added and layout reflowed." if regenerated else "Photo added."
+    return _page_fragment(request, project_id, page_id, message)
+
+
+@router.post("/projects/{project_id}/pages/{page_id}/auto/reflow")
+def auto_reflow_page(
+    request: Request,
+    project_id: int,
+    page_id: int,
+) -> HTMLResponse:
+    """Rebuild an automatic layout with one slot per assigned photo."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        changed = editing.auto_reflow(project_id, page_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    message = "Layout reflowed." if changed else "This page does not use the automatic layout."
+    return _page_fragment(request, project_id, page_id, message)
+
+
+@router.post("/projects/{project_id}/pages/{page_id}/auto/remove-empty")
+def auto_remove_empty_slots(
+    request: Request,
+    project_id: int,
+    page_id: int,
+) -> HTMLResponse:
+    """Drop empty slots from an automatic layout."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        changed = editing.auto_remove_empty(project_id, page_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    message = "Empty slots removed." if changed else "No empty slots to remove."
+    return _page_fragment(request, project_id, page_id, message)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/assignments/clear")
 def clear_page_assignments(
     request: Request,

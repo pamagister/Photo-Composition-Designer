@@ -201,7 +201,7 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 1: Pure layout engine
 
-**Status:** Done locally (push deferred to final phase)
+**Status:** Done (pushed, CI green 2026-11-21)
 
 **Objective:** Add a deterministic, side-effect-free layout engine and prove its geometry.
 
@@ -228,7 +228,7 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 2: Catalogue integration and layout selection
 
-**Status:** Done locally (push deferred; stopped after this phase per user request)
+**Status:** Done (pushed, CI green 2026-11-21)
 
 **Objective:** Make "Automatic" selectable at the top of every layout list and persist it.
 
@@ -256,21 +256,21 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 3: Photo management on auto pages
 
-**Status:** Pending
+**Status:** Done (pushed, CI green 2026-11-21)
 
 **Objective:** Add, remove and reflow photos on auto pages without breaking the grid.
 
-- [ ] P3-W01: Extend `PageEditingService` with `auto_add(project_id, page_id, photo_id)`,
+- [x] P3-W01: Extend `PageEditingService` with `auto_add(project_id, page_id, photo_id)`,
   `auto_reflow(project_id, page_id)` and `auto_remove_empty(project_id, page_id)`; add the
   matching routes. `auto_add` fills an empty slot when one exists and otherwise regenerates
   the snapshot with n+1 photos. `remove` stays unchanged and leaves a hole.
-- [ ] P3-W02: Add the generic drop zone to the layout panel for auto pages (including the
+- [x] P3-W02: Add the generic drop zone to the layout panel for auto pages (including the
   zero-slot case), plus "Reflow" and "Remove empty slots" actions. Add a full-canvas drop
   zone overlay when the auto page has no slots.
-- [ ] P3-W03: Add service and `TestClient` tests for: add to an empty slot, add with no
+- [x] P3-W03: Add service and `TestClient` tests for: add to an empty slot, add with no
   empty slot (re-flow), remove leaves the slot empty, reflow restores n slots, remove empty
   slots drops the holes.
-- [ ] P3-W04: Add a browser test that drops a photo on the auto drop zone and verifies the
+- [x] P3-W04: Add a browser test that drops a photo on the auto drop zone and verifies the
   refreshed canvas and slot list.
 
 **Acceptance criteria**
@@ -429,36 +429,48 @@ Repository commands (see `Makefile`):
   P2 – `layout_choices()` with auto first, `PageEditingService` auto switch
   (`_plan_auto_change`, `_change_layout_auto`, `_auto_layout_for_page`), auto handling in
   project creation, `collage_aspect_for_page` helper, `LayoutRepository.next_version`,
-  service + TestClient tests (`tests/test_auto_layout_integration.py`, 10 tests)
-- **Active:** none (stopped after Phase 2 per user request)
-- **Next:** P3-W01 `PageEditingService.auto_add` / `auto_reflow` / `auto_remove_empty`
+  service + TestClient tests (`tests/test_auto_layout_integration.py`);
+  P3 – `PageEditingService.auto_add` / `auto_reflow` / `auto_remove_empty` with snapshot
+  reuse and hole placeholders, routes `POST .../auto/add|reflow|remove-empty`,
+  layout-panel auto controls (Reflow, Remove empty slots, Add photo, dropzone),
+  full-canvas dropzone when the auto page has no occupied slots, JS drop handling,
+  CSS, service + TestClient tests and a Chromium/Firefox browser workflow test
+  (`tests/test_browser_workflow.py::test_auto_layout_add_reflow_and_remove_empty`)
+- **Active:** none (stopped after Phase 3 per user request)
+- **Next:** P4-W01 `ObjectDetector` importance helper feeding `build_auto_layout`
+  (reuse `layout.image_score_factor`, cache by image digest, fallback `1.0`)
 - **Relevant files:**
   - `src/photo_composition_designer/layouts/loader.py` (catalogue, `LayoutTemplate`)
-  - `src/photo_composition_designer/project/editing.py` (`PageEditingService`)
+  - `src/photo_composition_designer/project/editing.py` (`PageEditingService` auto methods)
   - `src/photo_composition_designer/project/repositories.py` (`LayoutRepository`, `PageRepository.set_layout`)
   - `src/photo_composition_designer/project/rendering.py` (preview cache key)
   - `src/photo_composition_designer/project/distribution.py` (page capacity, apply)
-  - `src/photo_composition_designer/gui/routes/editor.py` (assign/remove/replace/swap/crop)
+  - `src/photo_composition_designer/gui/routes/editor.py` (auto add/reflow/remove-empty)
   - `src/photo_composition_designer/gui/routes/project_lifecycle.py` (project creation)
   - `src/photo_composition_designer/gui/routes/project_preview.py` (layout preview/apply)
   - `src/photo_composition_designer/gui/routes/project_context.py` (slots, overlays, catalogue)
   - `src/photo_composition_designer/gui/templates/partials/editor_canvas.html`
-  - `src/photo_composition_designer/gui/templates/new_project.html`
+  - `src/photo_composition_designer/gui/static/editor.js`, `gui/static/style.css`
   - `src/photo_composition_designer/render/object_detector.py`, `render/smart_crop.py`
   - `src/photo_composition_designer/core/output_profile.py` (`LayoutProfile.image_score_factor`)
-  - `tests/test_layouts.py`, `tests/test_editing.py`, `tests/test_gui.py`, `tests/test_page_rendering.py`
+  - `tests/test_auto_layout_integration.py`, `tests/test_browser_workflow.py`,
+    `tests/test_layouts.py`, `tests/test_editing.py`, `tests/test_gui.py`, `tests/test_page_rendering.py`
 - **Decisions:**
   - Persisted snapshot with `key="auto"`, `version = max + 1`, slots `auto_0…auto_n-1`,
     assignments remapped by index.
   - Deterministic algorithm; no randomness.
   - Cost = area-weighted aspect distortion plus a one-sided area-fairness term.
-  - Removal leaves a hole; adding fills or re-flows; explicit reflow.
+  - Removal leaves a hole; `auto_add` fills the first empty slot, otherwise regenerates
+    for n+1 while keeping hole placeholders so the grid does not move; explicit reflow
+    and remove-empty rebuild one slot per assigned photo.
   - YOLO importance on by default with a `1.0` fallback; `image_score_factor` reused.
   - Orientation grouping allowed; input order kept inside a class.
   - Distribution target slot count default 6.
   - No database schema change.
 - **Blockers:** none
-- **Last verified:** 2026-11-21, prototype runs n = 1…30 with coverage `1.000000` and
-  overlap `0.0`; search time 8/44/188/381 ms for 6/10/20/30 photos; `git status` shows only
-  the untracked `collages/` directory
+- **Last verified:** 2026-11-21, Phase 3 pushed to `main` and CI green; `make lint` clean;
+  `make test` 476 passed; targeted suites (`test_auto_layout.py`,
+  `test_auto_layout_integration.py`, `test_layouts.py`, `test_page_rendering.py`,
+  `test_editing.py`, `test_gui.py`) 289 passed; browser auto workflow passes in
+  Chromium and Firefox
 - **Context status:** clean

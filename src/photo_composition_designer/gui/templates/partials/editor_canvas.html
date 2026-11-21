@@ -1,4 +1,5 @@
 {% if page %}
+{% set is_auto_layout = current_layout_key == 'auto' %}
 {% set show_map_override = profile.geo.map_mode != 'off' and not title_page %}
 {% set show_calendar_override = profile.calendar.use_calendar and profile.size.calendar_height > 0 and not title_page %}
 {% set show_description_override = profile.layout.use_photo_description %}
@@ -35,6 +36,15 @@
           <span class="page-preview-refreshing-spinner" aria-hidden="true"></span>
           <span class="page-preview-refreshing-label">Refreshing preview...</span>
         </div>
+        {% if is_auto_layout and not slots %}
+        <div class="auto-canvas-dropzone"
+             data-auto-dropzone="1"
+             role="group"
+             tabindex="0"
+             aria-label="Drop a photo to start the automatic layout">
+          <span class="dropzone-hint">Drop a photo to start the layout</span>
+        </div>
+        {% else %}
         {% for overlay in slot_overlays %}
         <div class="slot-dropzone {{ 'occupied' if overlay.occupied else 'empty' }}"
              data-slot-id="{{ overlay.slot_id }}"
@@ -48,7 +58,11 @@
           {% if not overlay.occupied %}<span class="dropzone-hint">Drop photo</span>{% endif %}
         </div>
         {% endfor %}
+        {% endif %}
       </div>
+      {% if not slot_overlays and not (is_auto_layout and not slots) %}
+      <p class="preview-hint" role="note">No slots to show on this page.</p>
+      {% endif %}
       {% if show_description_override and not page.hide_description and not page.description %}
       <div class="preview-notice" role="note">
         <span class="preview-notice-icon" aria-hidden="true">i</span>
@@ -143,6 +157,48 @@
         </form>
         <div id="layout-change-preview" aria-live="polite"></div>
       </details>
+
+      {% if is_auto_layout %}
+      <div class="auto-actions" aria-label="Automatic layout actions">
+        <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/auto/reflow"
+              hx-target="closest .editor-canvas"
+              hx-swap="outerHTML">
+          <button type="submit">Reflow</button>
+        </form>
+        <form hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/auto/remove-empty"
+              hx-target="closest .editor-canvas"
+              hx-swap="outerHTML">
+          <button type="submit">Remove empty slots</button>
+        </form>
+      </div>
+      {% if is_auto_layout %}
+      <div class="auto-dropzone"
+           data-auto-dropzone="1"
+           role="group"
+           tabindex="0"
+           aria-label="Drop a photo to add it to the automatic layout">
+        <span class="dropzone-hint">Drop photo to add</span>
+      </div>
+      {% endif %}
+      {% if available_photos %}
+      <form class="auto-add-form"
+            hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/auto/add"
+            hx-target="closest .editor-canvas"
+            hx-swap="outerHTML"
+            aria-label="Add a photo to the automatic layout">
+        <label class="sr-only" for="auto-add-photo-{{ page.id }}">Photo to add</label>
+        <select id="auto-add-photo-{{ page.id }}" name="photo_id">
+          {% for candidate in available_photos %}
+          <option value="{{ candidate.id }}">
+            {{ candidate.filename }}{% if usage_counts.get(candidate.id, 0) %}
+            (used {{ usage_counts[candidate.id] }}x){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <button type="submit">Add photo</button>
+      </form>
+      {% endif %}
+      {% endif %}
 
       {% if slots and (slots | length) > (assignments | length) %}
       <button type="button"

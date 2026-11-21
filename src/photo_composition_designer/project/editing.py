@@ -97,6 +97,31 @@ def _rects_from_layout(slots: list[LayoutSlot]) -> list[_SlotRect]:
     ]
 
 
+def _order_pairs_by_engine(
+    pairs: list[tuple[PhotoAssignment, PhotoAsset]],
+) -> tuple[
+    list[tuple[PhotoAssignment, PhotoAsset]],
+    tuple[AutoPhoto, ...],
+]:
+    """Order assignment pairs the way the automatic engine groups photos.
+
+    The engine orders photos by orientation (portrait, square, landscape) and
+    keeps the input order inside an orientation class. The returned pairs are
+    aligned with the returned engine photos, so ``pairs[i]`` is the assignment
+    that should occupy ``auto_<i>``.
+    """
+    engine_photos = [
+        AutoPhoto(key=str(photo.id), width=photo.width, height=photo.height) for _, photo in pairs
+    ]
+    indexed = sorted(
+        enumerate(engine_photos),
+        key=lambda pair: (round(pair[1].aspect, 2), pair[0]),
+    )
+    ordered_pairs = [pairs[index] for index, _ in indexed]
+    ordered_photos = tuple(photo for _, photo in indexed)
+    return ordered_pairs, ordered_photos
+
+
 class PageEditingService:
     """Mutate slot assignments for a project."""
 
@@ -420,34 +445,6 @@ class PageEditingService:
             pairs.append((assignment, photo))
         return pairs
 
-    def _auto_layout_for_page(
-        self, connection, project_id: int, page
-    ) -> tuple[list[tuple[PhotoAssignment, PhotoAsset]], tuple[AutoSlot, ...]]:
-        """Build the automatic slots for a page and the ordered assignment pairs.
-
-        The returned pairs are ordered to match the slots: ``pairs[i]`` is the
-        assignment that should occupy ``auto_<i>``.
-        """
-        pairs = self._auto_pairs(connection, page)
-        project = ProjectRepository(connection).get(project_id)
-        if project is None:
-            raise ProjectError(f"project {project_id} does not exist")
-        profile = profile_from_project(project)
-        aspect = collage_aspect_for_page(page, profile)
-
-        engine_photos = [
-            AutoPhoto(key=str(photo.id), width=photo.width, height=photo.height)
-            for _, photo in pairs
-        ]
-        indexed = sorted(
-            enumerate(engine_photos),
-            key=lambda pair: (round(pair[1].aspect, 2), pair[0]),
-        )
-        ordered_pairs = [pairs[index] for index, _ in indexed]
-        ordered_photos = tuple(photo for _, photo in indexed)
-        slots = build_auto_layout(ordered_photos, aspect)
-        return ordered_pairs, slots
-
     def _plan_auto_change(self, project_id: int, page_id: int) -> LayoutChangePreview:
         """Preview an automatic layout change without persisting a snapshot."""
         with self._database.transaction() as connection:
@@ -477,72 +474,303 @@ class PageEditingService:
                 displaced=displaced_photos,
             )
 
+    @staticmethod
+    def _is_auto_layout(layout) -> bool:
+        """Return whether a persisted layout is an automatic snapshot."""
+        return layout is not None and layout.key == AUTO_LAYOUT_KEY
+
+    def _auto_layout_for_page(
+        self, connection, project_id: int, page
+    ) -> tuple[list[tuple[PhotoAssignment, PhotoAsset]], tuple[AutoSlot, ...]]:
+        """Build automatic slots for a page using the photos already assigned to it.
+
+        This is the composition helper used by add/reflow: it reads the current
+        assignments (including empty holes) and orders them by their slot
+        position, so the resulting ``pairs[i]`` is the assignment that should
+        occupy ``auto_<i>``.
+        """
+        pairs = self._auto_pairs(connection, page)
+        aspect = self._collage_aspect(connection, project_id, page)
+
+        ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs)
+        slots = build_auto_layout(ordered_photos, aspect)
+        return ordered_pairs, slots
+
     def _change_layout_auto(self, project_id: int, page_id: int) -> LayoutChangePreview:
         """Apply an automatic layout change with a fresh persisted snapshot."""
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            pairs, slots = self._auto_layout_for_page(connection, project_id, page)
+            return self._persist_auto_snapshot(connection, project_id, page, pairs, slots)
+
+    def _persist_auto_snapshot(
+        self,
+        connection,
+        project_id: int,
+        page,
+        pairs: list[tuple[PhotoAssignment, PhotoAsset]],
+        slots: tuple[AutoSlot, ...],
+    ) -> LayoutChangePreview:
+        """Persist a new auto snapshot and remap assignments by slot index."""
+        page_repository = PageRepository(connection)
+        layout_repository = LayoutRepository(connection)
+        version = layout_repository.next_version(AUTO_LAYOUT_KEY)
+        slot_rows = [
+            LayoutSlot(
+                id=0,
+                layout_id=0,
+                slot_key=slot.key,
+                position=index,
+                x=slot.x,
+                y=slot.y,
+                width=slot.width,
+                height=slot.height,
+                z_index=0,
+                crop_mode="cover",
+            )
+            for index, slot in enumerate(slots)
+        ]
+        layout = layout_repository.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, slot_rows)
+
+        assignments = AssignmentRepository(connection)
+        existing = assignments.list_by_page(page.id)
+        pair_ids = {assignment.id for assignment, _ in pairs}
+        displaced = [item for item in existing if item.id not in pair_ids]
+        for assignment in existing:
+            assignments.remove(assignment.id)
+        # Point the page at the new snapshot before inserting assignments so
+        # the repository validates the new slot ids against the new layout.
+        page_repository.set_layout(page.id, layout.id, layout.version)
+        hole_slots: set[int] = set()
+        for index, (assignment, _photo) in enumerate(pairs):
+            target = layout.slots[index]
+            if assignment.photo_id == 0:
+                # A synthetic placeholder keeps the cell but leaves it empty.
+                hole_slots.add(target.id)
+                continue
+            assignments.assign(
+                project_id=project_id,
+                page_id=page.id,
+                slot_id=target.id,
+                photo_id=assignment.photo_id,
+                crop_zoom=assignment.crop_zoom,
+                crop_focus_x=assignment.crop_focus_x,
+                crop_focus_y=assignment.crop_focus_y,
+            )
+
+        photos = PhotoRepository(connection)
+        displaced_photos = tuple(
+            photo
+            for photo in (photos.get(item.photo_id) for item in displaced)
+            if photo is not None
+        )
+        preserved = tuple(
+            (photo.id, layout.slots[index].slot_key)
+            for index, (_, photo) in enumerate(pairs)
+            if photo.id != 0
+        )
+        return LayoutChangePreview(
+            page_id=page.id,
+            layout_key=AUTO_LAYOUT_KEY,
+            layout_name=AUTO_LAYOUT_NAME,
+            slot_count=len(layout.slots) - len(hole_slots),
+            preserved=preserved,
+            displaced=displaced_photos,
+        )
+
+    def auto_add(self, project_id: int, page_id: int, photo_id: int) -> bool:
+        """Add a photo to an automatic page.
+
+        An empty slot is filled in place. When every slot is occupied the layout
+        is regenerated for ``n + 1`` photos, which preserves every existing
+        assignment, crop override and the reading order.
+
+        Returns:
+            ``True`` when the layout was regenerated, ``False`` when the photo
+            filled an existing empty slot.
+
+        Raises:
+            ProjectError: If the page is not an auto layout, the photo is
+                unavailable, or the request is invalid.
+        """
         with self._database.transaction() as connection:
             page_repository = PageRepository(connection)
             page = page_repository.get(page_id)
             if page is None or page.project_id != project_id:
                 raise ProjectError(f"page {page_id} does not exist")
+            layout = (
+                LayoutRepository(connection).get_by_id(page.layout_id)
+                if page.layout_id is not None
+                else None
+            )
+            if not self._is_auto_layout(layout):
+                raise ProjectError(f"page {page_id} does not use the automatic layout")
 
-            pairs, slots = self._auto_layout_for_page(connection, project_id, page)
-            layout_repository = LayoutRepository(connection)
-            version = layout_repository.next_version(AUTO_LAYOUT_KEY)
-            slot_rows = [
-                LayoutSlot(
-                    id=0,
-                    layout_id=0,
-                    slot_key=slot.key,
-                    position=index,
-                    x=slot.x,
-                    y=slot.y,
-                    width=slot.width,
-                    height=slot.height,
-                    z_index=0,
-                    crop_mode="cover",
-                )
-                for index, slot in enumerate(slots)
-            ]
-            layout = layout_repository.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, slot_rows)
+            photo = PhotoRepository(connection).get(photo_id)
+            if photo is None or not photo.available:
+                raise ProjectError(f"photo {photo_id} is not available")
 
             assignments = AssignmentRepository(connection)
-            existing = assignments.list_by_page(page_id)
-            pair_ids = {assignment.id for assignment, _ in pairs}
-            displaced = [item for item in existing if item.id not in pair_ids]
-            for assignment in existing:
-                assignments.remove(assignment.id)
-            # Point the page at the new snapshot before inserting assignments so
-            # the repository validates the new slot ids against the new layout.
-            page_repository.set_layout(page_id, layout.id, layout.version)
-            for index, (assignment, _photo) in enumerate(pairs):
-                target = layout.slots[index]
+            occupied = {assignment.slot_id for assignment in assignments.list_by_page(page_id)}
+            empty_slot = next((slot for slot in layout.slots if slot.id not in occupied), None)
+            if empty_slot is not None:
                 assignments.assign(
                     project_id=project_id,
                     page_id=page_id,
-                    slot_id=target.id,
-                    photo_id=assignment.photo_id,
-                    crop_zoom=assignment.crop_zoom,
-                    crop_focus_x=assignment.crop_focus_x,
-                    crop_focus_y=assignment.crop_focus_y,
+                    slot_id=empty_slot.id,
+                    photo_id=photo_id,
                 )
+                page_repository.increment_revision(page_id)
+                return False
 
-            photos = PhotoRepository(connection)
-            displaced_photos = tuple(
-                photo
-                for photo in (photos.get(item.photo_id) for item in displaced)
-                if photo is not None
+            pairs = self._auto_pairs(connection, page)
+            # ``_auto_pairs`` skips unassigned slots, so holes created by a
+            # removal are not represented. Re-insert one neutral placeholder
+            # per hole at its original position to keep the grid unchanged.
+            occupied = {assignment.slot_id for assignment in assignments.list_by_page(page_id)}
+            if len(occupied) < len(layout.slots):
+                pairs = self._pairs_with_holes(page, layout, pairs, occupied)
+            pairs.append(
+                (
+                    PhotoAssignment(
+                        id=0,
+                        project_id=project_id,
+                        page_id=page_id,
+                        slot_id=0,
+                        photo_id=photo_id,
+                        crop_zoom=1.0,
+                        crop_focus_x=0.5,
+                        crop_focus_y=0.5,
+                        created_at="",
+                    ),
+                    photo,
+                )
             )
-            preserved = tuple(
-                (photo.id, layout.slots[index].slot_key) for index, (_, photo) in enumerate(pairs)
+            ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs)
+            slots = build_auto_layout(
+                ordered_photos, self._collage_aspect(connection, project_id, page)
             )
-            return LayoutChangePreview(
-                page_id=page_id,
-                layout_key=AUTO_LAYOUT_KEY,
-                layout_name=AUTO_LAYOUT_NAME,
-                slot_count=len(layout.slots),
-                preserved=preserved,
-                displaced=displaced_photos,
+            self._persist_auto_snapshot(connection, project_id, page, ordered_pairs, slots)
+            return True
+
+    def auto_reflow(self, project_id: int, page_id: int) -> bool:
+        """Regenerate an automatic layout with one slot per assigned photo.
+
+        Empty holes left by removal are dropped and the remaining photos are
+        re-tiled. Returns ``True`` when a new snapshot was written, ``False``
+        when the page is not an automatic layout.
+        """
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            layout = (
+                LayoutRepository(connection).get_by_id(page.layout_id)
+                if page.layout_id is not None
+                else None
             )
+            if not self._is_auto_layout(layout):
+                return False
+            pairs, slots = self._auto_layout_for_page(connection, project_id, page)
+            self._persist_auto_snapshot(connection, project_id, page, pairs, slots)
+            return True
+
+    def auto_remove_empty(self, project_id: int, page_id: int) -> bool:
+        """Drop empty slots from an automatic layout.
+
+        This is the inverse of :meth:`auto_reflow` with respect to slot count:
+        the remaining photos keep their assignments and the snapshot is rebuilt
+        with exactly one slot per assigned photo. When no slot is empty the
+        layout is left untouched.
+
+        Returns:
+            ``True`` when a new snapshot was written, ``False`` otherwise.
+        """
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            layout = (
+                LayoutRepository(connection).get_by_id(page.layout_id)
+                if page.layout_id is not None
+                else None
+            )
+            if not self._is_auto_layout(layout):
+                return False
+            occupied = {
+                assignment.slot_id
+                for assignment in AssignmentRepository(connection).list_by_page(page_id)
+            }
+            if len(occupied) == len(layout.slots):
+                return False
+            pairs, slots = self._auto_layout_for_page(connection, project_id, page)
+            self._persist_auto_snapshot(connection, project_id, page, pairs, slots)
+            return True
+
+    def _collage_aspect(self, connection, project_id: int, page) -> float:
+        """Return the collage content-box aspect ratio for one page."""
+        project = ProjectRepository(connection).get(project_id)
+        if project is None:
+            raise ProjectError(f"project {project_id} does not exist")
+        profile = profile_from_project(project)
+        return collage_aspect_for_page(page, profile)
+
+    @staticmethod
+    def _pairs_with_holes(
+        page,
+        layout,
+        pairs: list[tuple[PhotoAssignment, PhotoAsset]],
+        occupied: set[int],
+    ) -> list[tuple[PhotoAssignment, PhotoAsset]]:
+        """Re-insert neutral placeholders for slots left empty by a removal.
+
+        A hole is represented by a synthetic assignment that carries no photo id
+        and a square placeholder photo. :meth:`_persist_auto_snapshot` keeps its
+        cell and leaves the slot empty, so the visible grid does not move when a
+        photo is added to an auto page with holes.
+        """
+        positions = {slot.id: slot.position for slot in layout.slots}
+        placeholders = [
+            (
+                PhotoAssignment(
+                    id=0,
+                    project_id=page.project_id,
+                    page_id=page.id,
+                    slot_id=slot.id,
+                    photo_id=0,
+                    crop_zoom=1.0,
+                    crop_focus_x=0.5,
+                    crop_focus_y=0.5,
+                    created_at="",
+                ),
+                PhotoAsset(
+                    id=0,
+                    project_id=page.project_id,
+                    source_root_id=0,
+                    relative_path="",
+                    filename="",
+                    file_size=0,
+                    mtime=None,
+                    digest=None,
+                    width=1,
+                    height=1,
+                    captured_at=None,
+                    gps_lat=None,
+                    gps_lon=None,
+                    available=False,
+                    created_at="",
+                ),
+            )
+            for slot in layout.slots
+            if slot.id not in occupied
+        ]
+        merged = sorted(
+            [*pairs, *placeholders],
+            key=lambda item: positions.get(item[0].slot_id, item[0].slot_id),
+        )
+        return merged
 
     @staticmethod
     def _plan_mapping(
