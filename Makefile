@@ -93,7 +93,9 @@ COMMON_PYI_OPTS = \
 	--add-data "anniversaries.ini$(PYI_DATA_SEP)." \
 	--add-data "locations_en.ini$(PYI_DATA_SEP)." \
 	--add-data "locations_de.ini$(PYI_DATA_SEP)." \
-	--add-data "res$(PYI_DATA_SEP)res" \
+	--add-data "res/maps$(PYI_DATA_SEP)res/maps" \
+	--add-data "LICENSE$(PYI_DATA_SEP)." \
+	--add-data "THIRD_PARTY_NOTICES.md$(PYI_DATA_SEP)." \
 	--add-data "docs$(PYI_DATA_SEP)docs" \
 	--add-data "images$(PYI_DATA_SEP)images" \
 	--hidden-import photo_composition_designer.cli.app \
@@ -124,7 +126,10 @@ prepare-release:
 	cp locations_en.ini $(RELEASE_DIR)/
 	cp locations_de.ini $(RELEASE_DIR)/
 	cp README.md $(RELEASE_DIR)/
-	cp -R res $(RELEASE_DIR)/
+	cp LICENSE $(RELEASE_DIR)/
+	cp THIRD_PARTY_NOTICES.md $(RELEASE_DIR)/
+	mkdir -p $(RELEASE_DIR)/res
+	cp -R res/maps $(RELEASE_DIR)/res/
 	cp -R docs $(RELEASE_DIR)/
 	cp -R images $(RELEASE_DIR)/
 
@@ -270,6 +275,7 @@ docs:             ## Build and sync the documentation.
 	@echo "sync documentation ..."
 	@uv run ./scripts/generate_config_docs.py
 	@uv run ./scripts/update_readme.py
+	@uv run ./scripts/generate_third_party_notices.py
 	@uv run ./.github/update_funding.py
 	@echo "building documentation ..."
 	@uv run mkdocs build

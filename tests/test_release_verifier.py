@@ -11,7 +11,14 @@ def _make_release_tree(root: Path, executable: str = "photo-composition-designer
     release = root / "release"
     release.mkdir()
     (release / executable).write_text("binary", encoding="utf-8")
-    for name in ("anniversaries.ini", "locations_en.ini", "locations_de.ini", "README.md"):
+    for name in (
+        "anniversaries.ini",
+        "locations_en.ini",
+        "locations_de.ini",
+        "README.md",
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md",
+    ):
         (release / name).write_text("content", encoding="utf-8")
     for name in ("res", "docs", "images"):
         (release / name).mkdir()

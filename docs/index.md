@@ -172,4 +172,6 @@ Sources, environment setup and checks are described in
 
 ---
 
-Licensed under the terms in the [LICENSE](https://github.com/pamagister/Photo-Composition-Designer/blob/main/LICENSE).
+Licensed under the [MIT License](https://github.com/pamagister/Photo-Composition-Designer/blob/main/LICENSE).
+Third-party components are listed in
+[THIRD_PARTY_NOTICES.md](https://github.com/pamagister/Photo-Composition-Designer/blob/main/THIRD_PARTY_NOTICES.md).

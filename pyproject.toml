@@ -5,6 +5,8 @@ description = "Local-first, browser-based calendar composition designer."
 authors = [
     {name = "pamagister"}
 ]
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 readme = "docs/index.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [
@@ -57,7 +59,7 @@ docs = [
 photo-composition-designer = "photo_composition_designer.launcher:main"
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=77.0", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]

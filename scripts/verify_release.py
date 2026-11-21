@@ -13,6 +13,8 @@ REQUIRED_FILES = (
     "locations_en.ini",
     "locations_de.ini",
     "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
 )
 REQUIRED_DIRECTORIES = ("res", "docs", "images")
 
