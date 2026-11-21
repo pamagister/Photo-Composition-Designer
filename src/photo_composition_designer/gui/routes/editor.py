@@ -169,7 +169,7 @@ def auto_add_photo(
 ) -> HTMLResponse:
     """Add a photo to an automatic page, filling a hole or growing the grid."""
     database = _open_database(request)
-    editing = PageEditingService(database)
+    editing = PageEditingService(database, object_detector=detector)
     had_unused_photos = _has_unused_photos(database, project_id)
     try:
         regenerated = editing.auto_add(project_id, page_id, photo_id)
@@ -186,10 +186,11 @@ def auto_reflow_page(
     request: Request,
     project_id: int,
     page_id: int,
+    detector: ObjectDetectorDependency,
 ) -> HTMLResponse:
     """Rebuild an automatic layout with one slot per assigned photo."""
     database = _open_database(request)
-    editing = PageEditingService(database)
+    editing = PageEditingService(database, object_detector=detector)
     try:
         changed = editing.auto_reflow(project_id, page_id)
     except ProjectError as error:
@@ -203,10 +204,11 @@ def auto_remove_empty_slots(
     request: Request,
     project_id: int,
     page_id: int,
+    detector: ObjectDetectorDependency,
 ) -> HTMLResponse:
     """Drop empty slots from an automatic layout."""
     database = _open_database(request)
-    editing = PageEditingService(database)
+    editing = PageEditingService(database, object_detector=detector)
     try:
         changed = editing.auto_remove_empty(project_id, page_id)
     except ProjectError as error:

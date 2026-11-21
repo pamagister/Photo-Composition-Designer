@@ -262,10 +262,11 @@ def preview_layout_change(
     project_id: int,
     page_id: int,
     database: DatabaseDependency,
+    detector: ObjectDetectorDependency,
     layout_key: str = Query(...),
 ) -> HTMLResponse:
     """Preview a layout change without mutating the project."""
-    editing = PageEditingService(database)
+    editing = PageEditingService(database, object_detector=detector)
     try:
         plan = editing.plan_layout_change(project_id, page_id, layout_key)
     except ProjectError as exc:
@@ -286,11 +287,12 @@ def apply_layout_change(
     project_id: int,
     page_id: int,
     database: DatabaseDependency,
+    detector: ObjectDetectorDependency,
     layout_key: str = Form(...),
     confirm: str = Form(""),
 ) -> HTMLResponse:
     """Apply a layout change, asking for confirmation when photos are displaced."""
-    editing = PageEditingService(database)
+    editing = PageEditingService(database, object_detector=detector)
     try:
         plan = editing.plan_layout_change(project_id, page_id, layout_key)
         if plan.has_displaced and confirm != "1":

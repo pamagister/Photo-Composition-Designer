@@ -65,6 +65,7 @@ class ObjectDetector:
         5: "bus",
         6: "train",
         8: "boat",
+        14: "bird",
         15: "cat",
         16: "dog",
         17: "horse",

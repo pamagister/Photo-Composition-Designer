@@ -22,6 +22,7 @@ from photo_composition_designer.layouts.loader import (
     LayoutTemplate,
     load_catalogue,
 )
+from photo_composition_designer.project.importance import ImportanceScorer
 from photo_composition_designer.project.models import LayoutSlot, PhotoAsset, PhotoAssignment
 from photo_composition_designer.project.rendering import (
     collage_aspect_for_page,
@@ -34,6 +35,7 @@ from photo_composition_designer.project.repositories import (
     PhotoRepository,
     ProjectRepository,
 )
+from photo_composition_designer.render.object_detector import ObjectDetector
 
 
 @dataclass(frozen=True)
@@ -99,6 +101,7 @@ def _rects_from_layout(slots: list[LayoutSlot]) -> list[_SlotRect]:
 
 def _order_pairs_by_engine(
     pairs: list[tuple[PhotoAssignment, PhotoAsset]],
+    importance: list[float] | None = None,
 ) -> tuple[
     list[tuple[PhotoAssignment, PhotoAsset]],
     tuple[AutoPhoto, ...],
@@ -108,10 +111,17 @@ def _order_pairs_by_engine(
     The engine orders photos by orientation (portrait, square, landscape) and
     keeps the input order inside an orientation class. The returned pairs are
     aligned with the returned engine photos, so ``pairs[i]`` is the assignment
-    that should occupy ``auto_<i>``.
+    that should occupy ``auto_<i>``. ``importance`` is aligned with ``pairs``
+    and defaults to the neutral value.
     """
     engine_photos = [
-        AutoPhoto(key=str(photo.id), width=photo.width, height=photo.height) for _, photo in pairs
+        AutoPhoto(
+            key=str(photo.id),
+            width=photo.width,
+            height=photo.height,
+            importance=importance[index] if importance is not None else 1.0,
+        )
+        for index, (_, photo) in enumerate(pairs)
     ]
     indexed = sorted(
         enumerate(engine_photos),
@@ -125,8 +135,14 @@ def _order_pairs_by_engine(
 class PageEditingService:
     """Mutate slot assignments for a project."""
 
-    def __init__(self, database: WorkspaceDatabase) -> None:
+    def __init__(
+        self,
+        database: WorkspaceDatabase,
+        object_detector: ObjectDetector | None = None,
+    ) -> None:
         self._database = database
+        self._object_detector = object_detector
+        self._importance_scorers: dict[float, ImportanceScorer] = {}
 
     def _page_and_layout(self, connection, page_id: int):
         page = PageRepository(connection).get(page_id)
@@ -479,6 +495,27 @@ class PageEditingService:
         """Return whether a persisted layout is an automatic snapshot."""
         return layout is not None and layout.key == AUTO_LAYOUT_KEY
 
+    def _importance_for_photos(
+        self,
+        connection,
+        project_id: int,
+        photos: list[PhotoAsset],
+    ) -> list[float]:
+        """Return per-photo importance using the project's score factor."""
+        if self._object_detector is None or not photos:
+            return [1.0] * len(photos)
+        project = ProjectRepository(connection).get(project_id)
+        if project is None:
+            raise ProjectError(f"project {project_id} does not exist")
+        factor = profile_from_project(project).layout.image_score_factor
+        if factor <= 0.0:
+            return [1.0] * len(photos)
+        scorer = self._importance_scorers.get(factor)
+        if scorer is None:
+            scorer = ImportanceScorer(self._object_detector, factor)
+            self._importance_scorers[factor] = scorer
+        return scorer.score_photos(connection, photos)
+
     def _auto_layout_for_page(
         self, connection, project_id: int, page
     ) -> tuple[list[tuple[PhotoAssignment, PhotoAsset]], tuple[AutoSlot, ...]]:
@@ -492,7 +529,10 @@ class PageEditingService:
         pairs = self._auto_pairs(connection, page)
         aspect = self._collage_aspect(connection, project_id, page)
 
-        ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs)
+        importance = self._importance_for_photos(
+            connection, project_id, [photo for _, photo in pairs]
+        )
+        ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs, importance)
         slots = build_auto_layout(ordered_photos, aspect)
         return ordered_pairs, slots
 
@@ -648,7 +688,10 @@ class PageEditingService:
                     photo,
                 )
             )
-            ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs)
+            importance = self._importance_for_photos(
+                connection, project_id, [item for _, item in pairs]
+            )
+            ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs, importance)
             slots = build_auto_layout(
                 ordered_photos, self._collage_aspect(connection, project_id, page)
             )
@@ -708,6 +751,63 @@ class PageEditingService:
             pairs, slots = self._auto_layout_for_page(connection, project_id, page)
             self._persist_auto_snapshot(connection, project_id, page, pairs, slots)
             return True
+
+    def regenerate_auto_layouts(
+        self,
+        project_id: int,
+        *,
+        object_detector: ObjectDetector | None = None,
+    ) -> int:
+        """Rebuild every automatic snapshot in a project.
+
+        This is used after an output-profile change (page size, DPI, spacing,
+        score factor) or a source rescan, both of which can change the canvas
+        geometry or the importance of assigned photos. Empty automatic pages
+        are skipped because they have no geometry to regenerate.
+
+        Args:
+            project_id: Project whose automatic pages are rebuilt.
+            object_detector: Optional detector override. When supplied it
+                replaces the detector configured on this service and clears
+                cached scorers.
+
+        Returns:
+            The number of automatic snapshots that were regenerated.
+
+        Raises:
+            ProjectError: If the project does not exist.
+        """
+        if object_detector is not None:
+            self._object_detector = object_detector
+            self._importance_scorers.clear()
+
+        regenerated = 0
+        with self._database.transaction() as connection:
+            if ProjectRepository(connection).get(project_id) is None:
+                raise ProjectError(f"project {project_id} does not exist")
+            assignments = AssignmentRepository(connection)
+            for page in PageRepository(connection).list(project_id):
+                if page.layout_id is None:
+                    continue
+                layout = LayoutRepository(connection).get_by_id(page.layout_id)
+                if not self._is_auto_layout(layout):
+                    continue
+                pairs = self._auto_pairs(connection, page)
+                occupied = {assignment.slot_id for assignment in assignments.list_by_page(page.id)}
+                if not pairs and not occupied:
+                    continue
+                if len(occupied) < len(layout.slots):
+                    pairs = self._pairs_with_holes(page, layout, pairs, occupied)
+                importance = self._importance_for_photos(
+                    connection, project_id, [photo for _, photo in pairs]
+                )
+                ordered_pairs, ordered_photos = _order_pairs_by_engine(pairs, importance)
+                slots = build_auto_layout(
+                    ordered_photos, self._collage_aspect(connection, project_id, page)
+                )
+                self._persist_auto_snapshot(connection, project_id, page, ordered_pairs, slots)
+                regenerated += 1
+        return regenerated
 
     def _collage_aspect(self, connection, project_id: int, page) -> float:
         """Return the collage content-box aspect ratio for one page."""

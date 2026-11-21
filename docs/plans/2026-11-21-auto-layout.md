@@ -284,18 +284,18 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 4: Image-analysis weighting
 
-**Status:** Pending
+**Status:** Done (pushed, CI green 2026-11-21)
 
 **Objective:** Bias cell areas toward photos with more relevant content.
 
-- [ ] P4-W01: Add an importance helper that runs `ObjectDetector` on a photo, maps
+- [x] P4-W01: Add an importance helper that runs `ObjectDetector` on a photo, maps
   detections to a score (`person`, `cat`, `dog`, `horse`, `cow`, `bird`) and applies
   `1 + min(score, cap) * layout.image_score_factor`. Cache results by image digest in
   memory; reuse the detector's existing disk cache. Return `1.0` when the detector or the
   model is unavailable.
-- [ ] P4-W02: Pass the per-photo importance into `build_auto_layout` and regenerate auto
+- [x] P4-W02: Pass the per-photo importance into `build_auto_layout` and regenerate auto
   snapshots when the score factor or the model availability changes.
-- [ ] P4-W03: Add tests with a fake detector (no ONNX model required) proving that
+- [x] P4-W03: Add tests with a fake detector (no ONNX model required) proving that
   importance changes the allocation and that the fallback yields the plain layout.
 
 **Acceptance criteria**
