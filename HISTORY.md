@@ -4,6 +4,15 @@ Changelog
 
 (unreleased)
 ------------
+- Fix(build): quote the Windows release ZIP glob for PowerShell Refs
+  #89. [Paul Magister]
+
+  Bash expanded release/* before Compress-Archive ran, so PowerShell received many positional paths. Quote the wildcard so PowerShell expands it.
+
+
+2.0.4 (2026-11-21)
+------------------
+- Docs: Update HISTORY.md for release 2.0.4. [Paul Magister]
 - Fix(build): prevent MSYS path conversion for Inno Setup Refs #89.
   [Paul Magister]
 
