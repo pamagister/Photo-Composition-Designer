@@ -4,6 +4,15 @@ Changelog
 
 (unreleased)
 ------------
+- Fix(build): prevent MSYS path conversion for Inno Setup Refs #89.
+  [Paul Magister]
+
+  Git Bash rewrote /DMyAppVersion=... into a path, so iscc received two script filenames. Disable MSYS path conversion for the installer command.
+
+
+2.0.3 (2026-11-21)
+------------------
+- Docs: Update HISTORY.md for release 2.0.3. [Paul Magister]
 - New main gui image. [Paul Magister]
 - Test(windows): isolate USERPROFILE in the Pictures export test Refs
   #88. [Paul Magister]
