@@ -316,6 +316,7 @@ def test_export_defaults_to_os_pictures_directory(
     pictures = home / "Pictures"
     pictures.mkdir(parents=True)
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
 
     assert _default_export_folder(gui_settings, 12) == (
         pictures / "Photo-Composition-Designer" / "project_12"
