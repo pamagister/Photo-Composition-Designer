@@ -201,21 +201,21 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 1: Pure layout engine
 
-**Status:** Pending
+**Status:** Done locally (push deferred to final phase)
 
 **Objective:** Add a deterministic, side-effect-free layout engine and prove its geometry.
 
-- [ ] P1-W01: Add `src/photo_composition_designer/layouts/auto_layout.py` with
+- [x] P1-W01: Add `src/photo_composition_designer/layouts/auto_layout.py` with
   `AutoPhoto` (photo id, width, height, importance), `AutoSlot` (key, x, y, width, height)
   and `build_auto_layout(photos, canvas_aspect, *, importance_weight=1.0, balance_weight=0.2)`.
   Port the prototype algorithm, replace all randomness with deterministic ordering, and
   document the cost model.
-- [ ] P1-W02: Add `tests/test_auto_layout.py` covering: one photo fills the canvas; two
+- [x] P1-W02: Add `tests/test_auto_layout.py` covering: one photo fills the canvas; two
   photos choose the axis by canvas and photo orientation; portrait + two landscapes on a
   landscape canvas; exact tiling (coverage `1.0`, no overlap) for n = 1…30; determinism
   (same input twice yields identical slots); importance weighting changes the allocation;
   empty input returns an empty tuple.
-- [ ] P1-W03: Add a performance test that builds a 30-photo layout in under an agreed
+- [x] P1-W03: Add a performance test that builds a 30-photo layout in under an agreed
   budget (target ≤ 1 s; current prototype is ~0.4 s).
 
 **Acceptance criteria**
@@ -423,9 +423,11 @@ Repository commands (see `Makefile`):
 - **Mode:** autopilot
 - **Plan:** `docs/plans/2026-11-21-auto-layout.md`
 - **Completed:** P0 – prototype `/home/paul/.opencode/plan/auto_layout_proto.py`, review
-  collages in `collages/` (FULL HD, 1–30 photos), exact-tiling and orientation checks
+  collages in `collages/` (FULL HD, 1–30 photos), exact-tiling and orientation checks;
+  P1 – pure engine `layouts/auto_layout.py` + `tests/test_auto_layout.py` (162 tests, all
+  green; coverage 1.0, no overlap, deterministic)
 - **Active:** none
-- **Next:** P1-W01 `src/photo_composition_designer/layouts/auto_layout.py`
+- **Next:** P2-W01 `layout_choices()` helper and catalogue integration
 - **Relevant files:**
   - `src/photo_composition_designer/layouts/loader.py` (catalogue, `LayoutTemplate`)
   - `src/photo_composition_designer/project/editing.py` (`PageEditingService`)
