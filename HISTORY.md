@@ -4,6 +4,55 @@ Changelog
 
 (unreleased)
 ------------
+- New main gui image. [Paul Magister]
+- Test(windows): isolate USERPROFILE in the Pictures export test Refs
+  #88. [Paul Magister]
+
+  Windows resolves Path.home() from USERPROFILE, so the test must override both HOME and USERPROFILE to exercise the pictures-directory branch.
+- Docs: document the Windows installer and --open-browser Refs #87.
+  [Paul Magister]
+
+  Make the Windows installer the primary standalone option, describe the Start Menu starter and stop behavior, document --open-browser, and add release build instructions. Regenerate README.md from docs/index.md.
+- Ci: make Windows release builds unconditional and remove macOS Refs
+  #88. [Paul Magister]
+
+  Add fast Windows tests on main and pull requests targeting main. Replace the opt-in flags/macOS jobs with a quality-windows gate, an Inno Setup preparation step, release-content verification and installer upload.
+- Feat(cli): add --open-browser for the GUI launcher Refs #84. [Paul
+  Magister]
+
+  Add a daemon readiness check that opens the web UI once uvicorn accepts a connection. Add a shared release-content verifier, a Windows Inno Setup installer, and cross-platform PyInstaller data separators.
+- Build(deps): declare starlette as a direct dependency. [Paul Magister]
+
+  gui/app.py imports Response and Scope from starlette directly. FastAPI only provides it transitively, which deptry 0.25.1 reports as DEP003. Declaring it makes the dependency explicit and keeps uv.lock in sync.
+- Docs: rebuild the landing page and unify the project favicon. [Paul
+  Magister]
+
+  - Rework docs/index.md into an end-user landing page with the editor screenshot, collage example, badges, install/start/settings/storage guidance and pointers to the detailed guides.
+  - Replace the docs favicon.png/logo.png with the SVG favicon used by the GUI and make the readthedocs theme actually serve it.
+  - Teach update_readme.py to rewrite architecture/develop links.
+  - Refresh the editor screenshots.
+- Style(gui): compact photo strip controls into one row Refs #82. [Paul
+  Magister]
+- Fix(gui): keep extras clear action compact and revalidate static
+  assets Refs #82. [Paul Magister]
+- Refactor(cli): extract GUI/CLI launch dispatch into launcher Refs #83.
+  [Paul Magister]
+
+  Move the GUI-first argv dispatch out of cli.app into a dedicated launcher module. The PyInstaller entry point, python -m entry point and console script now share one implementation.
+- Fix(gui): use compact project trash icon for clear actions Refs #82.
+  [Paul Magister]
+- Feat(gui): add page and project assignment clear actions Refs #82.
+  [Paul Magister]
+- Docs: finalize plan_review handoff. [Paul Magister]
+- Refactor(gui): split project routes by responsibility Refs #80, #81.
+  [Paul Magister]
+- Fix(preview): scope worker errors to the requested job Refs #78, #79.
+  [Paul Magister]
+
+
+2.0.2 (2026-11-20)
+------------------
+- Docs: Update HISTORY.md for release 2.0.2. [Paul Magister]
 - Feat(gui): polish export, navigation and settings Refs #73, #74, #75,
   #76, #77. [Paul Magister]
 - Fix(layout): center descriptions and inset map with rounded corners
