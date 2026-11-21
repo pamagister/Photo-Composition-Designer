@@ -27,6 +27,8 @@ layouts, then export them as print-ready images and a PDF.
   them, and see the page update immediately.
 - 🧩 **Layouts for every project** - ready-made slot layouts, plus your own
   versioned YAML layouts. Assignments stay put when you change a layout.
+- 🧠 **Automatic collage layout** - a content-aware grid derived from the
+  photos, with optional object-detection weighting.
 - 🗺️ **Maps from your photos** - GPS data is read first, then location names in
   file names. Maps are rendered locally and cached.
 - 🎲 **Automatic distribution** - equal, seeded-random or date-aware proposals
@@ -148,6 +150,8 @@ The workspace and caches live in your platform data directory:
 ## 📚 Learn more
 
 - [Web UI guide](docs/usage/web-ui.md) - the complete editor workflow.
+- [Automatic collage layout](docs/usage/auto-layout.md) - content-aware grids and
+  automatic photo management.
 - [Configuration reference](docs/usage/config.md) - every setting.
 - [CLI reference](docs/usage/cli.md) - scan, distribute, render, export and more.
 - [Architecture notes](docs/architecture/web-ui-project-workflow.md) - how the

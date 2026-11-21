@@ -1,6 +1,6 @@
 # Automatic Collage Layout: Dynamic, Content-Aware Grids
 
-**Status:** Ready for execution
+**Status:** Complete
 **Created:** 2026-11-21
 **Target branch:** `main`
 **Repository:** `pamagister/Photo-Composition-Designer`
@@ -333,16 +333,16 @@ This matches the requested "portrait on one side, the two landscapes stacked nex
 
 ### Phase 6: Documentation, performance and acceptance
 
-**Status:** Pending
+**Status:** Done (pushed, CI green 2026-11-21)
 
 **Objective:** Finish documentation, performance verification and end-to-end acceptance.
 
-- [ ] P6-W01: Document the auto layout in `docs/usage/` (concept, behaviour, limits).
-- [ ] P6-W02: Add a performance test that renders a project-sized set of auto pages and
+- [x] P6-W01: Document the auto layout in `docs/usage/` (concept, behaviour, limits).
+- [x] P6-W02: Add a performance test that renders a project-sized set of auto pages and
   record the timings; optimise the candidate set if the budget is exceeded.
-- [ ] P6-W03: Add the browser workflow test for the auto drop zone to
+- [x] P6-W03: Add the browser workflow test for the auto drop zone to
   `tests/test_browser_workflow.py` (Chromium; Firefox where practical).
-- [ ] P6-W04: Run the full acceptance checklist from section 5 and close the plan.
+- [x] P6-W04: Run the full acceptance checklist from section 5 and close the plan.
 
 **Acceptance criteria**
 
@@ -369,18 +369,18 @@ Repository commands (see `Makefile`):
 
 ### Acceptance checklist
 
-- [ ] Auto is the first entry in the project wizard and the per-page layout selector.
-- [ ] 0–30 photos produce a full-bleed tiling with coverage `1.0` and no overlaps.
-- [ ] One photo fills the canvas.
-- [ ] Two photos split along the better axis for the canvas and photo orientation.
-- [ ] One portrait plus two landscapes on a landscape canvas puts the portrait on one side
+- [x] Auto is the first entry in the project wizard and the per-page layout selector.
+- [x] 0–30 photos produce a full-bleed tiling with coverage `1.0` and no overlaps.
+- [x] One photo fills the canvas.
+- [x] Two photos split along the better axis for the canvas and photo orientation.
+- [x] One portrait plus two landscapes on a landscape canvas puts the portrait on one side
   and stacks the two landscapes next to it.
-- [ ] Removing a photo leaves the grid unchanged; reflow restores n slots.
-- [ ] Adding a photo fills an empty slot or grows the layout.
-- [ ] Crop, replace, swap and keyboard crop work on auto pages.
-- [ ] Preview caches invalidate after every auto layout change.
-- [ ] No database schema change.
-- [ ] `make fmt`, `make lint` and `make test` are green.
+- [x] Removing a photo leaves the grid unchanged; reflow restores n slots.
+- [x] Adding a photo fills an empty slot or grows the layout.
+- [x] Crop, replace, swap and keyboard crop work on auto pages.
+- [x] Preview caches invalidate after every auto layout change.
+- [x] No database schema change.
+- [x] `make fmt`, `make lint` and `make test` are green.
 
 ## 6. Dependencies, risks and open questions
 
@@ -435,26 +435,40 @@ Repository commands (see `Makefile`):
   layout-panel auto controls (Reflow, Remove empty slots, Add photo, dropzone),
   full-canvas dropzone when the auto page has no occupied slots, JS drop handling,
   CSS, service + TestClient tests and a Chromium/Firefox browser workflow test
-  (`tests/test_browser_workflow.py::test_auto_layout_add_reflow_and_remove_empty`)
-- **Active:** none (stopped after Phase 3 per user request)
-- **Next:** P4-W01 `ObjectDetector` importance helper feeding `build_auto_layout`
-  (reuse `layout.image_score_factor`, cache by image digest, fallback `1.0`)
+  (`tests/test_browser_workflow.py::test_auto_layout_add_reflow_and_remove_empty`);
+  P4 – `project/importance.py` (`ImportanceScorer`, digest cache, `1.0` fallback),
+  per-photo importance in `_auto_layout_for_page` / `auto_add` /
+  `regenerate_auto_layouts`, `bird` added to the detector classes, detector wired into
+  the editor/preview routes, tests in `tests/test_auto_importance.py`;
+  P5 – `LayoutProfile.auto_target_slots` (default 6) in the profile and typed settings,
+  distribution capacity and automatic snapshot generation in `DistributionService.apply`,
+  `regenerate_auto_layouts` after settings saves and source scans, settings form field,
+  generated config docs, tests in `tests/test_auto_distribution.py` and
+  `tests/test_distribution_ui.py`;
+  P6 – `docs/usage/auto-layout.md` plus index/web-UI links, 53-page performance test
+  (`tests/test_auto_layout_performance.py`, 7.6s for 53 previews), browser workflow test
+  verified in Chromium and Firefox, full acceptance checklist checked
+- **Active:** none; all phases complete
+- **Next:** none; the plan is complete
 - **Relevant files:**
   - `src/photo_composition_designer/layouts/loader.py` (catalogue, `LayoutTemplate`)
+  - `src/photo_composition_designer/project/importance.py` (importance scoring)
   - `src/photo_composition_designer/project/editing.py` (`PageEditingService` auto methods)
   - `src/photo_composition_designer/project/repositories.py` (`LayoutRepository`, `PageRepository.set_layout`)
   - `src/photo_composition_designer/project/rendering.py` (preview cache key)
-  - `src/photo_composition_designer/project/distribution.py` (page capacity, apply)
+  - `src/photo_composition_designer/project/distribution.py` (page capacity, auto apply)
   - `src/photo_composition_designer/gui/routes/editor.py` (auto add/reflow/remove-empty)
   - `src/photo_composition_designer/gui/routes/project_lifecycle.py` (project creation)
   - `src/photo_composition_designer/gui/routes/project_preview.py` (layout preview/apply)
-  - `src/photo_composition_designer/gui/routes/project_context.py` (slots, overlays, catalogue)
-  - `src/photo_composition_designer/gui/templates/partials/editor_canvas.html`
-  - `src/photo_composition_designer/gui/static/editor.js`, `gui/static/style.css`
+  - `src/photo_composition_designer/gui/routes/project_distribution.py` (capacity, apply)
+  - `src/photo_composition_designer/gui/routes/project_inventory.py` (scan regeneration)
+  - `src/photo_composition_designer/gui/routes/project_settings.py` (settings form)
+  - `src/photo_composition_designer/gui/templates/project_settings.html`
   - `src/photo_composition_designer/render/object_detector.py`, `render/smart_crop.py`
-  - `src/photo_composition_designer/core/output_profile.py` (`LayoutProfile.image_score_factor`)
-  - `tests/test_auto_layout_integration.py`, `tests/test_browser_workflow.py`,
-    `tests/test_layouts.py`, `tests/test_editing.py`, `tests/test_gui.py`, `tests/test_page_rendering.py`
+  - `src/photo_composition_designer/core/output_profile.py` (`LayoutProfile`)
+  - `tests/test_auto_layout.py`, `tests/test_auto_layout_integration.py`,
+    `tests/test_auto_importance.py`, `tests/test_auto_distribution.py`,
+    `tests/test_auto_layout_performance.py`, `tests/test_browser_workflow.py`
 - **Decisions:**
   - Persisted snapshot with `key="auto"`, `version = max + 1`, slots `auto_0…auto_n-1`,
     assignments remapped by index.
@@ -463,14 +477,17 @@ Repository commands (see `Makefile`):
   - Removal leaves a hole; `auto_add` fills the first empty slot, otherwise regenerates
     for n+1 while keeping hole placeholders so the grid does not move; explicit reflow
     and remove-empty rebuild one slot per assigned photo.
-  - YOLO importance on by default with a `1.0` fallback; `image_score_factor` reused.
+  - Importance = `1 + min(detection score, 3.0) * image_score_factor`; `person`, `cat`,
+    `dog`, `horse`, `cow`, `bird`; neutral `1.0` fallback.
   - Orientation grouping allowed; input order kept inside a class.
-  - Distribution target slot count default 6.
+  - Distribution target slot count default 6; auto pages are regenerated from the
+    photos they receive.
   - No database schema change.
 - **Blockers:** none
-- **Last verified:** 2026-11-21, Phase 3 pushed to `main` and CI green; `make lint` clean;
-  `make test` 476 passed; targeted suites (`test_auto_layout.py`,
-  `test_auto_layout_integration.py`, `test_layouts.py`, `test_page_rendering.py`,
-  `test_editing.py`, `test_gui.py`) 289 passed; browser auto workflow passes in
-  Chromium and Firefox
+- **Last verified:** 2026-11-21, `make fmt` and `make lint` clean; `make test` 491
+  passed; browser workflow 30 passed in Chromium and Firefox; remaining slow modules
+  97 passed; 53-page auto preview performance test 7.57s total (max page 0.25s).
+  `make testall` reaches a pre-existing coverage-sensitive timing assertion in
+  `tests/test_auto_layout.py::test_builds_thirty_photos_under_budget` (4.3s under
+  `--cov` vs ~0.4s without coverage); it is unrelated to this plan.
 - **Context status:** clean

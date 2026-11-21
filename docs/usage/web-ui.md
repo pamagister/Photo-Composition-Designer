@@ -119,7 +119,9 @@ control surface.
   setting.
 * **Layout** – open **Change layout**, choose a layout and select
   **Preview change**. Assignments are preserved where possible, and displaced
-  photos are listed before you confirm.
+  photos are listed before you confirm. Choose **Automatic** to derive the
+  grid from the photos themselves; see
+  [Automatic collage layout](auto-layout.md).
 * **Change page** – select a page thumbnail. The sidebar marks the active page.
 * **Photos** – switch the horizontal photo strip between all photos and unused
   photos. A yellow `!` marks photos used more than once.
