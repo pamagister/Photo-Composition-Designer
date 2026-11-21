@@ -2,13 +2,33 @@
 
 ## PyPI
 
-### Install the package from PyPI
+### Install or update the package from PyPI
 
 Download from [PyPI](https://pypi.org/):
 
 ```bash
-pip install Photo-Composition-Designer
+pip install --upgrade Photo-Composition-Designer
 ```
+
+The same command updates an existing installation.
+
+### Isolated installs
+
+Keep the app in its own environment with pipx:
+
+```bash
+pipx install --force Photo-Composition-Designer
+```
+
+This installs the latest release or replaces an existing pipx installation.
+Alternatively, use uv:
+
+```bash
+uv tool install --upgrade Photo-Composition-Designer
+```
+
+If uv reports that the executable directory is not on `PATH`, run
+`uv tool update-shell` once and restart the terminal.
 
 ### Start the local web editor
 

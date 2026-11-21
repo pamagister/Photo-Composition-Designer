@@ -48,18 +48,28 @@ layouts, then export them as print-ready images and a PDF.
 
 ## 📦 Installation
 
+The PyPI commands below install the app or update an existing installation.
+
 ### PyPI (recommended)
 
-Install with pip:
+Install or update with pip:
 
 ```bash
-pip install Photo-Composition-Designer
+pip install --upgrade Photo-Composition-Designer
 ```
 
-Or keep it isolated from your other Python projects with pipx:
+### Isolated installs
+
+Keep it isolated from your other Python projects with pipx:
 
 ```bash
-pipx install Photo-Composition-Designer
+pipx install --force Photo-Composition-Designer
+```
+
+Or with uv:
+
+```bash
+uv tool install --upgrade Photo-Composition-Designer
 ```
 
 ### Standalone installer
