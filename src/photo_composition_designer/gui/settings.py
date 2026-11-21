@@ -28,24 +28,10 @@ from photo_composition_designer.core.appdata import (
 from photo_composition_designer.core.appdata import (
     data_dir as default_data_dir,
 )
-
-#: File name of the YOLO ONNX model used for object-aware cropping.
-YOLO_MODEL_FILENAME = "yolo26n.onnx"
-
-#: Official Ultralytics release asset for the downloadable YOLO model.
-YOLO_MODEL_URL = "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n.onnx"
+from photo_composition_designer.core.model_assets import default_yolo_model_path
 
 #: Preferences file holding the app-wide settings.
 PREFERENCES_FILE_NAME = "preferences.json"
-
-
-def default_yolo_model_path() -> Path:
-    """Return the OS-specific default location for the YOLO ONNX model.
-
-    The model is a downloaded asset rather than part of the source tree, so it
-    lives under the user's data directory (``data_dir()/models``).
-    """
-    return default_data_dir() / "models" / YOLO_MODEL_FILENAME
 
 
 @dataclass(frozen=True)

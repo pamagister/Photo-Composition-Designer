@@ -11,6 +11,7 @@ import onnxruntime as ort
 from PIL import Image
 
 from photo_composition_designer.core.logging_utils import get_logger, initialize_logging
+from photo_composition_designer.core.model_assets import resolve_yolo_model_path
 
 
 @dataclass(slots=True)
@@ -77,17 +78,23 @@ class ObjectDetector:
 
     def __init__(
         self,
-        model_path: str = "res/yolo/yolo26n.onnx",
+        model_path: str | Path | None = None,
         confidence_threshold: float = 0.25,
         cache_dir: Path | str | None = None,
     ) -> None:
         """Create an ObjectDetector.
 
         Args:
-            model_path: Path to the ONNX model.
+            model_path: Path to the ONNX model. If omitted, the model is
+                resolved from ``PCD_YOLO_MODEL``, the repository test cache or
+                the per-user data directory.
             confidence_threshold: Minimum confidence for detections.
             cache_dir: Directory to store per-image cache JSON files. If None,
                 a temp subfolder will be used.
+
+        Raises:
+            FileNotFoundError: If no model path is provided and none can be
+                resolved.
         """
         initialize_logging()
 
@@ -95,9 +102,18 @@ class ObjectDetector:
 
         self.confidence_threshold = confidence_threshold
 
+        if model_path is None:
+            resolved_path = resolve_yolo_model_path()
+            if resolved_path is None:
+                raise FileNotFoundError(
+                    "YOLO model not found. Set PCD_YOLO_MODEL or download the model "
+                    "from the application settings."
+                )
+            model_path = resolved_path
+
         # Initialize ONNX session
         self.session = ort.InferenceSession(
-            model_path,
+            str(model_path),
             providers=["CPUExecutionProvider"],
         )
 

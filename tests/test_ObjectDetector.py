@@ -28,8 +28,8 @@ def _first_image() -> Path:
     return images[0]
 
 
-def test_object_detector(temp_dir):
-    detector = ObjectDetector()
+def test_object_detector(yolo_model_path: Path, temp_dir):
+    detector = ObjectDetector(model_path=str(yolo_model_path))
 
     image_path = _first_image()
     img = Image.open(image_path).convert("RGB")
@@ -60,8 +60,9 @@ def test_object_detector_caching(temp_dir):
     )
 
     ort.InferenceSession = lambda *args, **kwargs: mock_session
+    model_path = str(Path(temp_dir) / "model.onnx")
 
-    detector = ObjectDetector(confidence_threshold=0.5, cache_dir=temp_dir)
+    detector = ObjectDetector(model_path=model_path, confidence_threshold=0.5, cache_dir=temp_dir)
     detector.clear_cache()
 
     dummy_image = Image.open(_first_image()).convert("RGB")
@@ -69,7 +70,7 @@ def test_object_detector_caching(temp_dir):
     detector.detect(dummy_image)
     assert mock_session.run.call_count == 1
 
-    detector2 = ObjectDetector(confidence_threshold=0.5, cache_dir=temp_dir)
+    detector2 = ObjectDetector(model_path=model_path, confidence_threshold=0.5, cache_dir=temp_dir)
     detector2.detect(dummy_image)
     assert mock_session.run.call_count == 1
 
@@ -79,7 +80,7 @@ def test_object_detector_caching(temp_dir):
     detector.clear_cache()
     assert not any(Path(temp_dir).glob("*.json"))
 
-    detector3 = ObjectDetector(confidence_threshold=0.5, cache_dir=temp_dir)
+    detector3 = ObjectDetector(model_path=model_path, confidence_threshold=0.5, cache_dir=temp_dir)
     detector3.detect(dummy_image)
     assert mock_session.run.call_count == 2
 

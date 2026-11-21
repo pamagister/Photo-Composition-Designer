@@ -14,12 +14,11 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from photo_composition_designer.core.helpers import get_base_path
-from photo_composition_designer.gui.settings import (
+from photo_composition_designer.core.model_assets import (
     YOLO_MODEL_URL,
-    GuiSettings,
     default_yolo_model_path,
-    save_app_settings,
 )
+from photo_composition_designer.gui.settings import GuiSettings, save_app_settings
 from photo_composition_designer.gui.templating import TEMPLATES
 
 router = APIRouter()

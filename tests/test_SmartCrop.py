@@ -22,9 +22,9 @@ CROP_SIZES = [
 ]
 
 
-def test_smart_crop(temp_dir):
+def test_smart_crop(yolo_model_path: Path, temp_dir):
     """Exercise smart crop over a representative sample of the fixture set."""
-    detector = ObjectDetector()
+    detector = ObjectDetector(model_path=str(yolo_model_path))
     cropper = SmartCrop()
 
     image_files = sorted(Path("images").glob("*.jpg"))[:8]

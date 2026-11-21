@@ -473,7 +473,10 @@ def test_warmup_prevents_slot_detection_inference(tmp_path, monkeypatch):
         mock_session.run = MagicMock(return_value=[np.zeros((1, 0, 6), dtype=np.float32)])
         monkeypatch.setattr(ort, "InferenceSession", lambda *args, **kwargs: mock_session)
 
-        detector = ObjectDetector(cache_dir=tmp_path / "detector-cache")
+        detector = ObjectDetector(
+            model_path=str(tmp_path / "model.onnx"),
+            cache_dir=tmp_path / "detector-cache",
+        )
         worker = SynchronousPreviewWorker(
             database,
             preview_dir=tmp_path / "previews",
