@@ -832,6 +832,14 @@ class AssignmentRepository:
         """Return all assignments for a project (alias for ``list_by_project``)."""
         return self.list_by_project(project_id)
 
-    def clear_for_project(self, project_id: int) -> None:
-        """Remove every assignment for a project in one statement."""
-        self._connection.execute("DELETE FROM assignments WHERE project_id = ?", (project_id,))
+    def clear_for_page(self, page_id: int) -> int:
+        """Remove every assignment for a page and return the number removed."""
+        cursor = self._connection.execute("DELETE FROM assignments WHERE page_id = ?", (page_id,))
+        return cursor.rowcount
+
+    def clear_for_project(self, project_id: int) -> int:
+        """Remove every assignment for a project and return the number removed."""
+        cursor = self._connection.execute(
+            "DELETE FROM assignments WHERE project_id = ?", (project_id,)
+        )
+        return cursor.rowcount

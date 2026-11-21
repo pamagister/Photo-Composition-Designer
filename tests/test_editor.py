@@ -15,6 +15,7 @@ from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.models import LayoutSlot
 from photo_composition_designer.project.repositories import (
+    AssignmentRepository,
     LayoutRepository,
     PageRepository,
 )
@@ -97,6 +98,28 @@ def _seed_project(
     return project.id, pages[0].id, photo_ids, slot_ids
 
 
+def _assignment_count(project_id: int) -> int:
+    """Return the number of assignments stored for a project."""
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            return len(AssignmentRepository(connection).list_by_project(project_id))
+    finally:
+        database.close()
+
+
+def _page_revision(page_id: int) -> int:
+    """Return the stored render revision for one page."""
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None
+            return page.render_revision
+    finally:
+        database.close()
+
+
 def test_editor_shell_renders_compact_editor_and_photo_filter(editor_client, tmp_path):
     project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path)
     response = editor_client.get(f"/projects/{project_id}?page={page_id}")
@@ -163,6 +186,84 @@ def test_remove_photo_via_route(editor_client, tmp_path):
     )
     assert response.status_code == 200
     assert "Photo removed" in response.text
+
+
+def test_clear_page_assignments_via_route(editor_client, tmp_path):
+    project_id, page_id, photo_ids, slot_ids = _seed_project(tmp_path, slots_per_page=2)
+    for slot_id, photo_id in zip(slot_ids, photo_ids, strict=False):
+        editor_client.post(
+            f"/projects/{project_id}/pages/{page_id}/assign",
+            data={"slot_id": slot_id, "photo_id": photo_id},
+        )
+    assert _assignment_count(project_id) == 2
+    revision = _page_revision(page_id)
+
+    response = editor_client.post(
+        f"/projects/{project_id}/pages/{page_id}/assignments/clear",
+    )
+
+    assert response.status_code == 200
+    assert "Removed 2 assignment(s)." in response.text
+    assert _assignment_count(project_id) == 0
+    assert _page_revision(page_id) == revision + 1
+    # The layout itself is preserved.
+    assert 'class="layout-change"' in response.text
+
+
+def test_clear_project_assignments_via_route(editor_client, tmp_path):
+    project_id, first_page_id, photo_ids, slot_ids = _seed_project(
+        tmp_path, page_count=2, slots_per_page=2
+    )
+    second_page_id = _list_page_ids(project_id)[1]
+    second_slot_ids = _page_slot_ids(project_id, second_page_id)
+    editor_client.post(
+        f"/projects/{project_id}/pages/{first_page_id}/assign",
+        data={"slot_id": slot_ids[0], "photo_id": photo_ids[0]},
+    )
+    editor_client.post(
+        f"/projects/{project_id}/pages/{second_page_id}/assign",
+        data={"slot_id": second_slot_ids[0], "photo_id": photo_ids[1]},
+    )
+    assert _assignment_count(project_id) == 2
+
+    response = editor_client.post(
+        f"/projects/{project_id}/assignments/clear",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == f"/projects/{project_id}?assignments=1"
+    assert _assignment_count(project_id) == 0
+    project_page = editor_client.get(f"/projects/{project_id}?assignments=1&page={first_page_id}")
+    assert "Project assignments cleared." in project_page.text
+
+
+def test_page_layout_actions_include_confirming_clear_button(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_project(tmp_path)
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert page.status_code == 200
+    assert 'class="layout-clear-button"' in page.text
+    assert f'hx-post="/projects/{project_id}/pages/{page_id}/assignments/clear"' in page.text
+    assert "Remove all photo assignments from this page?" in page.text
+
+
+def test_extras_menu_offers_clear_all_assignments(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_project(tmp_path)
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert page.status_code == 200
+    assert f'action="/projects/{project_id}/assignments/clear"' in page.text
+    assert "Clear all assignments" in page.text
+    assert "Remove all photo assignments for this project?" in page.text
+
+
+def test_projects_navigation_is_a_prominent_button(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_project(tmp_path)
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert page.status_code == 200
+    assert '<a class="button nav-projects" href="/projects">Projects</a>' in page.text
 
 
 def test_swap_photos_via_route(editor_client, tmp_path):

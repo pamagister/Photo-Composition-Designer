@@ -183,6 +183,37 @@ a:focus {
   color: var(--accent);
 }
 
+.nav-dropdown-menu .nav-dropdown-form {
+  display: block;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.nav-dropdown-danger {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--danger);
+  text-align: left;
+}
+
+.nav-dropdown-danger:hover,
+.nav-dropdown-danger:focus {
+  background: var(--surface-raised);
+}
+
+.nav-dropdown-danger svg {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .save-state {
   margin: 0;
   color: var(--muted);
@@ -273,6 +304,19 @@ button.primary {
   border-color: var(--accent-strong);
   color: #08111f;
   font-weight: 600;
+}
+
+.button.nav-projects {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.button.nav-projects:hover,
+.button.nav-projects:focus {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #08111f;
+  text-decoration: none;
 }
 
 button.danger {
@@ -913,6 +957,29 @@ summary {
 
 .layout-change form select {
   flex: 1 1 100%;
+}
+
+.layout-clear-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0.45rem;
+  border-color: var(--danger);
+  background: transparent;
+  color: var(--danger);
+}
+
+.layout-clear-button:hover,
+.layout-clear-button:focus {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.layout-clear-button svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .description-form {

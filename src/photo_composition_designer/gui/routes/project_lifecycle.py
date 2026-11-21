@@ -256,6 +256,8 @@ def project_detail(
         notice = "Source directory removed."
     elif request.query_params.get("distributed") == "1":
         notice = "Distribution applied."
+    elif request.query_params.get("assignments") == "1":
+        notice = "Project assignments cleared."
     context = _project_context(
         database,
         aggregate,

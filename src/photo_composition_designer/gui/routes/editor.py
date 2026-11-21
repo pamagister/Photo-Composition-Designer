@@ -159,6 +159,42 @@ def remove_photo(
     return _page_fragment(request, project_id, page_id, "Photo removed.")
 
 
+@router.post("/projects/{project_id}/pages/{page_id}/assignments/clear")
+def clear_page_assignments(
+    request: Request,
+    project_id: int,
+    page_id: int,
+) -> HTMLResponse:
+    """Remove every assignment from one page and keep its layout."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        removed = editing.clear_page_assignments(project_id, page_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    if removed:
+        message = f"Removed {removed} assignment(s)."
+    else:
+        message = "No assignments to remove."
+    return _page_fragment(request, project_id, page_id, message)
+
+
+@router.post("/projects/{project_id}/assignments/clear")
+def clear_project_assignments(
+    request: Request,
+    project_id: int,
+) -> RedirectResponse:
+    """Remove every assignment in a project and return to the project page."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        editing.clear_project_assignments(project_id)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    _render_project_previews(request, database, project_id)
+    return RedirectResponse(f"/projects/{project_id}?assignments=1", status_code=303)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/replace")
 def replace_photo(
     request: Request,

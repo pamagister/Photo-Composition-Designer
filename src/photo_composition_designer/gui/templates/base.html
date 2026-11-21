@@ -15,7 +15,7 @@
   {% set project_id = project.id if project is defined and project is not none else none %}
   <header class="app-header">
     <nav aria-label="Main navigation">
-      <a href="/projects">Projects</a>
+      <a class="button nav-projects" href="/projects">Projects</a>
       <details class="nav-dropdown">
         <summary>Settings <span class="nav-chevron" aria-hidden="true"></span></summary>
         <div class="nav-dropdown-menu">
@@ -33,6 +33,17 @@
           <a href="/projects/{{ project_id }}/preview{% if selected_page is defined and selected_page %}?page={{ selected_page.id }}{% endif %}">Preview</a>
           <a href="/projects/{{ project_id }}/distribute">Distribute</a>
           <a href="/projects/{{ project_id }}/check">Check</a>
+          <form class="nav-dropdown-form" method="post"
+                action="/projects/{{ project_id }}/assignments/clear"
+                onsubmit="return confirm('Remove all photo assignments for this project? This cannot be undone.');">
+            <button type="submit" class="nav-dropdown-danger">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none"
+                   stroke="currentColor" stroke-width="1.5">
+                <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8.2h6.8l.6-8.2M6.5 7v3.5M9.5 7v3.5"/>
+              </svg>
+              Clear all assignments
+            </button>
+          </form>
         </div>
       </details>
       {% endif %}

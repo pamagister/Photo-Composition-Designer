@@ -22,6 +22,7 @@ from photo_composition_designer.project.repositories import (
     LayoutRepository,
     PageRepository,
     PhotoRepository,
+    ProjectRepository,
 )
 
 
@@ -251,6 +252,35 @@ class PageEditingService:
             removed = assignments.remove_by_page_slot(page_id, slot_id)
             if removed:
                 PageRepository(connection).increment_revision(page_id)
+            return removed
+
+    def clear_page_assignments(self, project_id: int, page_id: int) -> int:
+        """Remove all assignments from one page and return the number removed.
+
+        The page layout is kept. The page render revision is incremented when at
+        least one assignment was removed so cached previews are invalidated.
+        """
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            removed = AssignmentRepository(connection).clear_for_page(page_id)
+            if removed:
+                PageRepository(connection).increment_revision(page_id)
+            return removed
+
+    def clear_project_assignments(self, project_id: int) -> int:
+        """Remove every assignment in a project and return the number removed.
+
+        Every page render revision is incremented when assignments were removed
+        so cached previews are invalidated across the project.
+        """
+        with self._database.transaction() as connection:
+            if ProjectRepository(connection).get(project_id) is None:
+                raise ProjectError(f"project {project_id} does not exist")
+            removed = AssignmentRepository(connection).clear_for_project(project_id)
+            if removed:
+                PageRepository(connection).increment_revisions(project_id)
             return removed
 
     def replace(self, project_id: int, page_id: int, slot_id: int, photo_id: int) -> None:

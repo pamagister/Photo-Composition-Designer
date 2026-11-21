@@ -122,6 +122,19 @@
                   hx-include="closest form"
                   hx-target="closest .editor-canvas"
                   hx-swap="outerHTML">Apply layout</button>
+          <button type="button"
+                  class="layout-clear-button"
+                  hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/assignments/clear"
+                  hx-target="closest .editor-canvas"
+                  hx-swap="outerHTML"
+                  hx-confirm="Remove all photo assignments from this page? The layout stays unchanged."
+                  title="Remove all assignments from this page"
+                  aria-label="Remove all photo assignments from this page">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none"
+                 stroke="currentColor" stroke-width="1.5">
+              <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8.2h6.8l.6-8.2M6.5 7v3.5M9.5 7v3.5"/>
+            </svg>
+          </button>
         </form>
         <div id="layout-change-preview" aria-live="polite"></div>
       </details>
