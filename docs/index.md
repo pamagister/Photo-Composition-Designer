@@ -5,7 +5,7 @@ book - locally, privately and without a cloud account.**
 
 [![Github CI Status](https://github.com/pamagister/Photo-Composition-Designer/actions/workflows/main.yml/badge.svg)](https://github.com/pamagister/Photo-Composition-Designer/actions)
 [![GitHub release](https://img.shields.io/github/v/release/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/releases)
-[![Read the Docs](https://readthedocs.org/projects/Photo-Composition-Designer/badge/?version=stable)](https://Photo-Composition-Designer.readthedocs.io/en/stable/)
+[![Read the Docs](https://app.readthedocs.org/projects/photo-composition-designer/badge/?version=stable)](https://Photo-Composition-Designer.readthedocs.io/en/stable/)
 [![License](https://img.shields.io/github/license/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/blob/main/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/pamagister/Photo-Composition-Designer)](https://github.com/pamagister/Photo-Composition-Designer/issues)
 [![PyPI](https://img.shields.io/pypi/v/Photo-Composition-Designer)](https://pypi.org/project/Photo-Composition-Designer/)
