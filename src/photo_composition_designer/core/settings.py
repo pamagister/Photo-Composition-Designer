@@ -134,7 +134,7 @@ class LayoutConfig:
         default_factory=lambda: Param("left", "descriptionAlignment")
     )
     useRoundedCorners: Param[bool] = field(default_factory=lambda: Param(True, "useRoundedCorners"))
-    imageScoreFactor: Param[float] = field(default_factory=lambda: Param(2.0, "imageScoreFactor"))
+    imageScoreFactor: Param[float] = field(default_factory=lambda: Param(0.3, "imageScoreFactor"))
     useShortDayNames: Param[bool] = field(default_factory=lambda: Param(False, "useShortDayNames"))
     useShortMonthNames: Param[bool] = field(
         default_factory=lambda: Param(True, "useShortMonthNames")

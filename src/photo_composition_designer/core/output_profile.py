@@ -346,7 +346,7 @@ class LayoutProfile:
     text_margin: float = 1.5
     description_alignment: str = "left"
     use_rounded_corners: bool = True
-    image_score_factor: float = 2.0
+    image_score_factor: float = 0.3
     use_photo_description: bool = True
     generate_pdf: bool = True
 

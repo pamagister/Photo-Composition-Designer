@@ -84,12 +84,14 @@ def _seed_project(
     tmp_path: Path,
     *,
     colours: list[tuple[int, int, int]],
+    image_score_factor: float,
 ) -> tuple[WorkspaceDatabase, int, list[int], list[int], list[int]]:
     database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
     project = ProjectService(database).create_project(
         name="Importance",
         page_count=1,
         start_date=datetime(2027, 1, 4),
+        output_profile={"layout": {"image_score_factor": image_score_factor}},
     )
     source = tmp_path / "source"
     for index, colour in enumerate(colours):
@@ -212,6 +214,7 @@ def test_high_importance_photo_gets_a_larger_cell(tmp_path: Path) -> None:
     database, project_id, page_id, photo_ids, slot_ids = _seed_project(
         tmp_path,
         colours=[(200, 10, 10), (10, 10, 200)],
+        image_score_factor=2.0,
     )
     try:
         editing = PageEditingService(
@@ -235,6 +238,7 @@ def test_regenerate_auto_layouts_reapplies_importance(tmp_path: Path) -> None:
     database, project_id, page_id, photo_ids, slot_ids = _seed_project(
         tmp_path,
         colours=[(200, 10, 10), (10, 10, 200)],
+        image_score_factor=2.0,
     )
     try:
         scored = PageEditingService(

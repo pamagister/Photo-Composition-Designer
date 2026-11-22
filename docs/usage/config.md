@@ -35,7 +35,7 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `layout.textMargin` | `1.5` |
 | `layout.descriptionAlignment` | `'left'` |
 | `layout.useRoundedCorners` | `True` |
-| `layout.imageScoreFactor` | `2.0` |
+| `layout.imageScoreFactor` | `0.3` |
 | `layout.useShortDayNames` | `False` |
 | `layout.useShortMonthNames` | `True` |
 | `layout.usePhotoDescription` | `True` |
