@@ -343,12 +343,12 @@ The proposal digest must include `mode`, `strategy`, `seed`, `best_range`, `page
 
 **Objective:** Implement the new distribution algorithms and proposal model.
 
-- [ ] P3-W01: Add `project/date_grouping.py` with the pure DP.
-- [ ] P3-W02: Add unit tests for 12→6+6, 10→5+5, 7 same-day, consecutive days, date gaps, determinism and full assignment.
-- [ ] P3-W03: Extend `DistributionProposal` and `ProposalSummary`.
-- [ ] P3-W04: Integrate `all` and `best` modes into `propose`, including computed target and all-available-photo collection.
-- [ ] P3-W05: Update `apply` to reset layouts and clear assignments when required.
-- [ ] P3-W06: Add service tests for mode `all`, mode `best`, `equal`, `random`, `date_grouped` and digest changes.
+- [x] P3-W01: Add `project/date_grouping.py` with the pure DP.
+- [x] P3-W02: Add unit tests for 12→6+6, 10→5+5, 7 same-day, consecutive days, date gaps, determinism and full assignment.
+- [x] P3-W03: Extend `DistributionProposal` and `ProposalSummary`.
+- [x] P3-W04: Integrate `all` and `best` modes into `propose`, including computed target and all-available-photo collection.
+- [x] P3-W05: Update `apply` to reset layouts and clear assignments when required.
+- [x] P3-W06: Add service tests for mode `all`, mode `best`, `equal`, `random`, `date_grouped` and digest changes.
 
 **Acceptance criteria**
 

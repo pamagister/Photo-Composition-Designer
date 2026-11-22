@@ -23,9 +23,6 @@ _THUMBNAIL_LONG_EDGE = 512
 _RESOLUTION_WEIGHT = 0.6
 _SHARPNESS_WEIGHT = 0.4
 
-#: Score assigned to unreadable or missing images.
-_MIN_SCORE = 1e-6
-
 
 class QualityScorer:
     """Compute and cache a relative quality score for a batch of images."""
@@ -92,7 +89,7 @@ class QualityScorer:
         if math.isclose(lowest, highest):
             return dict.fromkeys(values, 1.0)
         span = highest - lowest
-        return {key: (value - lowest) / span + _MIN_SCORE for key, value in values.items()}
+        return {key: (value - lowest) / span for key, value in values.items()}
 
     def _raw_scores(self, path: Path) -> tuple[float, float]:
         """Return the raw resolution and sharpness values for one image."""

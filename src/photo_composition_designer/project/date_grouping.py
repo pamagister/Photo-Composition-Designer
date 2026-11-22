@@ -150,6 +150,7 @@ def _solve(
     dp[0][0] = 0.0
 
     large = n > _LARGE_INPUT_THRESHOLD
+    allow_empty = n < p_total
     base_band = _LARGE_BAND if large else 0
 
     for p in range(1, p_total + 1):
@@ -157,22 +158,34 @@ def _solve(
         # State ``(p, i)``: the first ``i`` photos are split across ``p`` pages.
         # ``j`` photos were consumed by the earlier ``p - 1`` pages, so the
         # moving target for the current page is ``(n - j) / remaining_pages``.
-        min_i = p - 1
+        min_i = 0 if allow_empty else p - 1
         max_i = n - (p_total - p)
         for i in range(min_i, max_i + 1):
             best_cost = infinity
             best_size = 1
-            # Earlier pages can consume at most ``i - 1`` photos here.
-            j_max = i - 1
-            j_min = max(p - 2, i - _max_page_size(n, p_total, minimum, maximum, base_band))
+            # Earlier pages can consume at most ``i`` photos here; when there
+            # are fewer photos than pages a page may be empty (size 0).
+            j_max = i
+            j_min = max(p - 1, i - _max_page_size(n, p_total, minimum, maximum, base_band))
             for j in range(j_max, j_min - 1, -1):
                 if dp[p - 1][j] == infinity:
                     continue
                 size = i - j
-                target = (n - j) / remaining_pages
-                band = max(_band_width(target), base_band)
-                if size < max(1, int(target - band)) or size > int(target + band) + 1:
-                    continue
+                if allow_empty:
+                    # Only constrain the upper size when a non-empty page would
+                    # overshoot the moving target; a size of 0 (empty page) is
+                    # always allowed so trailing pages can stay empty.
+                    target = (n - j) / remaining_pages
+                    band = max(_band_width(target), base_band)
+                    if size > 0 and size > int(target + band) + 1:
+                        continue
+                else:
+                    if size < 1:
+                        continue
+                    target = (n - j) / remaining_pages
+                    band = max(_band_width(target), base_band)
+                    if size < max(1, int(target - band)) or size > int(target + band) + 1:
+                        continue
                 cost = dp[p - 1][j] + _segment_cost(
                     ordered,
                     days,

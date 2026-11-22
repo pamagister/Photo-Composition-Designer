@@ -36,6 +36,7 @@ def _setup(
     photo_count: int = 4,
     slots_per_page: int = 2,
     start_date: datetime | None = None,
+    auto_layout: bool = False,
 ) -> tuple[WorkspaceDatabase, DistributionService, PageEditingService, object]:
     database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
     service = ProjectService(database)
@@ -59,6 +60,21 @@ def _setup(
         layout_repo = LayoutRepository(connection)
         page_repo = PageRepository(connection)
         pages = page_repo.list(project.id)
+        if auto_layout:
+            from photo_composition_designer.layouts.loader import (
+                AUTO_LAYOUT_KEY,
+                AUTO_LAYOUT_NAME,
+            )
+
+            layout = layout_repo.add(AUTO_LAYOUT_KEY, 1, AUTO_LAYOUT_NAME, [])
+            for page in pages:
+                page_repo.set_layout(page.id, layout.id, layout.version)
+            return (
+                database,
+                DistributionService(database),
+                PageEditingService(database),
+                project,
+            )
         for page in pages:
             slots = [
                 LayoutSlot(
@@ -279,3 +295,93 @@ def test_date_aware_proposal_matches_weeks(tmp_path: Path) -> None:
     )
     proposal = distribution.propose(project.id, strategy="date_aware")
     assert len(proposal.pages) == 1
+
+
+def test_all_mode_assigns_every_available_photo_across_auto_pages(tmp_path: Path) -> None:
+    database, distribution, _editing, project = _setup(
+        tmp_path, page_count=2, photo_count=4, auto_layout=True
+    )
+    proposal = distribution.propose(project.id, mode="all", strategy="equal")
+
+    assert proposal.mode == "all"
+    assert proposal.reset_layouts is True
+    assert sum(len(group) for group in proposal.pages) == 4
+    assert proposal.unassigned == []
+
+
+def test_all_mode_date_grouped_balances_pages(tmp_path: Path) -> None:
+    start = datetime(2027, 1, 4)
+    database, distribution, _editing, project = _setup(
+        tmp_path,
+        page_count=2,
+        photo_count=12,
+        start_date=start,
+        auto_layout=True,
+    )
+    proposal = distribution.propose(project.id, mode="all", strategy="date_grouped")
+
+    assert proposal.strategy == "date_grouped"
+    assert [len(group) for group in proposal.pages] == [6, 6]
+
+
+def test_all_mode_random_is_reproducible(tmp_path: Path) -> None:
+    database, distribution, _editing, project = _setup(
+        tmp_path, page_count=2, photo_count=4, auto_layout=True
+    )
+    first = distribution.propose(project.id, mode="all", strategy="random", seed=42)
+    second = distribution.propose(project.id, mode="all", strategy="random", seed=42)
+
+    assert first.pages == second.pages
+    assert first.seed == 42
+
+
+def test_best_mode_selects_about_page_count_times_target(tmp_path: Path) -> None:
+    database, distribution, _editing, project = _setup(
+        tmp_path, page_count=2, photo_count=10, auto_layout=True
+    )
+    proposal = distribution.propose(
+        project.id, mode="best", strategy="date_grouped", best_range="3-5"
+    )
+
+    # 2 pages * target average 4 = 8 selected, 2 left unused.
+    assert sum(len(group) for group in proposal.pages) == 8
+    assert len(proposal.not_selected) == 2
+    assert proposal.reset_layouts is True
+
+
+def test_apply_all_mode_switches_every_page_to_auto(tmp_path: Path) -> None:
+    database, distribution, _editing, project = _setup(
+        tmp_path, page_count=2, photo_count=4, slots_per_page=2
+    )
+    proposal = distribution.propose(project.id, mode="all", strategy="equal")
+    distribution.apply(project.id, proposal)
+
+    with database.connect() as connection:
+        pages = PageRepository(connection).list(project.id)
+        for page in pages:
+            assert page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            assert layout.key == "auto"
+
+
+def test_digest_changes_between_modes(tmp_path: Path) -> None:
+    database, distribution, _editing, project = _setup(
+        tmp_path, page_count=1, photo_count=4, auto_layout=True
+    )
+    slots_proposal = distribution.propose(project.id, mode="slots", strategy="equal")
+    all_proposal = distribution.propose(project.id, mode="all", strategy="equal")
+
+    assert distribution.digest(slots_proposal) != distribution.digest(all_proposal)
+
+
+def test_date_grouped_rejected_in_slots_mode(tmp_path: Path) -> None:
+    database, distribution, _editing, project = _setup(
+        tmp_path, page_count=1, photo_count=2, auto_layout=True
+    )
+    try:
+        distribution.propose(project.id, mode="slots", strategy="date_grouped")
+    except ValueError as error:
+        assert "date_grouped" in str(error)
+    else:
+        raise AssertionError("expected ValueError for date_grouped in slots mode")
