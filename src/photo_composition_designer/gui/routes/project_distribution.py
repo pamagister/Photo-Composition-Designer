@@ -25,13 +25,18 @@ from photo_composition_designer.project.repositories import (
 
 router = APIRouter()
 
+#: Best-mode range presets offered by the UI.
+_BEST_RANGES = ("2-5", "3-5", "3-6", "3-7")
+
 
 def _distribution_context(
     database: WorkspaceDatabase,
     project_id: int,
     *,
+    mode: str,
     strategy: str,
     seed: int | None,
+    best_range: str,
     notice: str = "",
     error: str = "",
 ) -> dict[str, object]:
@@ -44,7 +49,13 @@ def _distribution_context(
     digest = ""
     page_rows: list[dict[str, object]] = []
     try:
-        proposal = distribution.propose(project_id, strategy=strategy, seed=seed)
+        proposal = distribution.propose(
+            project_id,
+            mode=mode,
+            strategy=strategy,
+            seed=seed,
+            best_range=best_range,
+        )
         connection = database.connect()
         pages = PageRepository(connection).list(project_id)
         photos_by_id = {photo.id: photo for photo in PhotoRepository(connection).list(project_id)}
@@ -63,6 +74,8 @@ def _distribution_context(
                     "assigned": len(photo_ids),
                     "capacity": capacity,
                     "empty": max(0, capacity - len(photo_ids)),
+                    "is_auto": page.layout_id is not None
+                    and distribution._page_layout_key(connection, page) == "auto",
                 }
             )
     except (ValueError, ProjectError) as exc:
@@ -70,8 +83,11 @@ def _distribution_context(
 
     return {
         "project_id": project_id,
+        "mode": mode,
         "strategy": strategy,
         "seed": seed,
+        "best_range": best_range,
+        "best_ranges": _BEST_RANGES,
         "proposal": proposal,
         "summary": summary,
         "proposal_digest": digest,
@@ -88,9 +104,20 @@ def distribution_page(
     service: ProjectServiceDependency,
     database: DatabaseDependency,
 ) -> HTMLResponse:
-    """Show the distribution workspace for one project."""
+    """Show the distribution workspace for one project.
+
+    The page defaults to the primary use case: distribute all photos across
+    automatic pages using the date-aware strategy.
+    """
     project = _load_project(service, project_id).project
-    context = _distribution_context(database, project_id, strategy="equal", seed=None)
+    context = _distribution_context(
+        database,
+        project_id,
+        mode="all",
+        strategy="date_grouped",
+        seed=None,
+        best_range="3-5",
+    )
     return TEMPLATES.TemplateResponse(
         request,
         "distribute.html",
@@ -108,8 +135,10 @@ def preview_distribution(
     request: Request,
     project_id: int,
     database: DatabaseDependency,
+    mode: str = "slots",
     strategy: str = "equal",
     seed: str = "",
+    best_range: str = "3-5",
 ) -> HTMLResponse:
     """Preview a distribution proposal without mutating project state.
 
@@ -125,11 +154,15 @@ def preview_distribution(
             effective_seed = int(raw_seed)
         except ValueError:
             error = "Random seed must be a whole number."
+    if best_range not in _BEST_RANGES:
+        best_range = "3-5"
     context = _distribution_context(
         database,
         project_id,
+        mode=mode,
         strategy=strategy,
         seed=effective_seed,
+        best_range=best_range,
         error=error,
     )
     return TEMPLATES.TemplateResponse(request, "partials/distribution_area.html", context)
@@ -142,8 +175,10 @@ def apply_distribution(
     database: DatabaseDependency,
     settings: SettingsDependency,
     detector: ObjectDetectorDependency,
+    mode: Annotated[str, Form()] = "slots",
     strategy: Annotated[str, Form()] = "equal",
     seed: Annotated[str, Form()] = "",
+    best_range: Annotated[str, Form()] = "3-5",
     proposal_digest: Annotated[str, Form()] = "",
 ) -> HTMLResponse | RedirectResponse:
     """Apply a previewed distribution proposal in one transaction.
@@ -162,14 +197,18 @@ def apply_distribution(
         effective_seed = int(seed) if seed.strip() else None
     except ValueError:
         effective_seed = None
+    if best_range not in _BEST_RANGES:
+        best_range = "3-5"
 
     def response(notice: str = "", error: str = "") -> HTMLResponse | RedirectResponse:
         if request.headers.get("HX-Request") == "true":
             context = _distribution_context(
                 database,
                 project_id,
+                mode=mode,
                 strategy=strategy,
                 seed=effective_seed,
+                best_range=best_range,
                 notice=notice,
                 error=error,
             )
@@ -178,11 +217,18 @@ def apply_distribution(
         return RedirectResponse(f"/projects/{project_id}{query}", status_code=303)
 
     try:
-        proposal = distribution.propose(project_id, strategy=strategy, seed=effective_seed)
+        proposal = distribution.propose(
+            project_id,
+            mode=mode,
+            strategy=strategy,
+            seed=effective_seed,
+            best_range=best_range,
+            object_detector=detector,
+        )
     except (ValueError, ProjectError) as exc:
         return response(error=str(exc))
 
-    if not any(proposal.pages) and not proposal.unassigned:
+    if not any(proposal.pages) and not proposal.unassigned and not proposal.not_selected:
         return response(notice="All available photos are already distributed.")
     if proposal_digest and proposal_digest != distribution.digest(proposal):
         return response(

@@ -190,7 +190,7 @@ def test_distribute_command_previews_and_applies(workspace: GuiSettings, tmp_pat
 
     preview = _invoke("distribute", str(project_id), "--dry-run")
     assert preview.exit_code == 0
-    assert "Preview distribution (equal" in preview.stdout
+    assert "Preview distribution (slots/equal" in preview.stdout
     assert "assigned 2" in preview.stdout
     database = WorkspaceDatabase(workspace.workspace_path())
     try:
@@ -201,7 +201,7 @@ def test_distribute_command_previews_and_applies(workspace: GuiSettings, tmp_pat
 
     applied = _invoke("distribute", str(project_id), "--strategy", "equal")
     assert applied.exit_code == 0
-    assert "Applied distribution (equal" in applied.stdout
+    assert "Applied distribution (slots/equal" in applied.stdout
 
     database = WorkspaceDatabase(workspace.workspace_path())
     try:

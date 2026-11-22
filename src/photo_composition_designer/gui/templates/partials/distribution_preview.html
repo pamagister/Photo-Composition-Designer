@@ -1,15 +1,24 @@
 {% if summary %}
+{% set preview_mode = mode | default('slots') %}
 <div class="distribution-preview">
   <h3>Distribution preview</h3>
   <p class="muted">
-    Strategy: <strong>{{ strategy }}</strong>
+    Mode: <strong>{{ preview_mode }}</strong>
+    &middot; Strategy: <strong>{{ strategy }}</strong>
     {% if seed %} &middot; seed: {{ seed }}{% endif %}
+    {% if summary.target is not none %} &middot; target: {{ '%.1f' | format(summary.target) }}{% endif %}
+    {% if preview_mode == 'best' %} &middot; range: {{ best_range }}{% endif %}
     &middot; confirm to persist this proposal
   </p>
   <dl class="distribution-stats">
     <dt>Pages</dt><dd>{{ summary.pages }}</dd>
     <dt>Assigned</dt><dd>{{ summary.assigned }}</dd>
+    {% if summary.not_selected %}
+    <dt>Not selected</dt><dd>{{ summary.not_selected }}</dd>
+    {% endif %}
+    {% if preview_mode == 'slots' %}
     <dt>Overflow</dt><dd>{{ summary.overflow }}</dd>
+    {% endif %}
     <dt>Unassigned</dt><dd>{{ summary.unassigned }}</dd>
   </dl>
 
@@ -33,25 +42,38 @@
         {% endif %}
       </div>
       <p class="muted">
+        {% if row.is_auto %}
+        {{ row.assigned }} photos
+        {% if summary.target is not none %}(target {{ '%.1f' | format(summary.target) }}){% endif %}
+        {% else %}
         {{ row.assigned }} of {{ row.capacity }} slots filled
         {% if row.empty %} &middot; {{ row.empty }} empty{% endif %}
+        {% endif %}
       </p>
     </article>
     {% endfor %}
   </div>
   {% endif %}
 
-  {% if summary.overflow %}
+  {% if preview_mode == 'slots' and summary.overflow %}
   <p class="muted">
     {{ summary.overflow }} photo(s) exceed the available slots and stay in the unused pool.
+  </p>
+  {% endif %}
+
+  {% if summary.not_selected %}
+  <p class="muted">
+    {{ summary.not_selected }} photo(s) were not selected and stay in the unused pool.
   </p>
   {% endif %}
 
   <form hx-post="/projects/{{ project_id }}/distribute/apply"
         hx-target="closest .distribution-area"
         hx-swap="outerHTML">
+    <input type="hidden" name="mode" value="{{ preview_mode }}">
     <input type="hidden" name="strategy" value="{{ strategy }}">
     {% if seed %}<input type="hidden" name="seed" value="{{ seed }}">{% endif %}
+    <input type="hidden" name="best_range" value="{{ best_range }}">
     <input type="hidden" name="proposal_digest" value="{{ proposal_digest }}">
     <button class="primary" type="submit">Apply distribution</button>
     <span class="htmx-indicator muted">Applying...</span>

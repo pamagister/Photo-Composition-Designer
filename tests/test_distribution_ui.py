@@ -230,11 +230,12 @@ def test_auto_distribution_uses_target_capacity_and_generates_layout(client, tmp
     assert response.status_code == 303
     project_id = int(urlsplit(response.headers["location"]).path.split("/")[-1])
 
-    preview = client.get(f"/projects/{project_id}/distribute/preview?strategy=equal")
+    preview = client.get(f"/projects/{project_id}/distribute/preview?mode=slots&strategy=equal")
 
     assert preview.status_code == 200
     # Automatic page capacity is computed from the photo/page counts (3/1 = 3).
-    assert "3 of 3 slots filled" in preview.text
+    assert "3 photos" in preview.text
+    assert "target 3.0" in preview.text
 
     digest = _digest(preview.text)
     applied = client.post(
@@ -295,3 +296,68 @@ def test_project_detail_shows_reset_layouts_notice(client, tmp_path):
 
     assert response.status_code == 200
     assert "All pages reset to the Automatic layout." in response.text
+
+
+def test_distribution_area_offers_all_three_modes(client, tmp_path):
+    source = tmp_path / "photos"
+    _write_photo(source / "p.jpg")
+    project_id = _create_project(client, source)
+
+    response = client.get(f"/projects/{project_id}/distribute")
+
+    assert response.status_code == 200
+    assert "Distribute all photos" in response.text
+    assert "Distribute the best photos" in response.text
+    assert "Respect current layouts" in response.text
+
+
+def test_all_mode_preview_shows_automatic_warning_and_target(client, tmp_path):
+    source = tmp_path / "photos"
+    for index in range(3):
+        _write_photo(source / f"p{index}.jpg", (index * 50, 0, 0))
+    project_id = _create_project(client, source, page_count=1)
+
+    response = client.get(
+        f"/projects/{project_id}/distribute/preview?mode=all&strategy=date_grouped"
+    )
+
+    assert response.status_code == 200
+    assert "All pages will be switched to Automatic." in response.text
+    assert "Mode:" in response.text
+    assert "target" in response.text
+
+
+def test_best_mode_preview_reports_not_selected(client, tmp_path):
+    source = tmp_path / "photos"
+    for index in range(10):
+        _write_photo(source / f"p{index}.jpg", (index * 20, 0, 0))
+    project_id = _create_project(client, source, page_count=2)
+
+    response = client.get(
+        f"/projects/{project_id}/distribute/preview?mode=best&strategy=date_grouped&best_range=3-5"
+    )
+
+    assert response.status_code == 200
+    assert "Not selected" in response.text
+
+
+def test_mode_change_invalidates_previous_digest(client, tmp_path):
+    source = tmp_path / "photos"
+    for index in range(4):
+        _write_photo(source / f"p{index}.jpg", (index * 50, 0, 0))
+    project_id = _create_project(client, source, page_count=1)
+
+    slots_preview = client.get(
+        f"/projects/{project_id}/distribute/preview?mode=slots&strategy=equal"
+    )
+    slots_digest = _digest(slots_preview.text)
+
+    applied = client.post(
+        f"/projects/{project_id}/distribute/apply",
+        data={"mode": "all", "strategy": "equal", "proposal_digest": slots_digest},
+        headers={"HX-Request": "true"},
+    )
+
+    assert applied.status_code == 200
+    assert "out of date" in applied.text
+    assert _assignment_count(project_id) == 0

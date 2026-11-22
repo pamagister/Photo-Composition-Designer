@@ -55,10 +55,13 @@ value `1.0`, so automatic layouts still work without object detection.
 
 ## Distribution and page settings
 
-Automatic pages have a configurable capacity in **Project settings** under
-**Automatic layout target slots** (default `6`). Distribution fills each
-automatic page up to that capacity and then regenerates the layout from the
-photos it received.
+Automatic pages do not have a fixed slot count. In the distribution page the
+capacity of an automatic page is computed from the photo and page counts
+(`photos / pages`), and the layout is regenerated from the photos each page
+receives. The **Distribute all photos** and **Distribute the best photos** modes
+always switch every page to the Automatic layout; **Respect current layouts**
+keeps static pages as they are. **Extras → Reset layouts** rebuilds every page
+as an Automatic layout while keeping the current photos and crops.
 
 Changing the output profile (page size, DPI, spacing or the image score factor)
 or rescanning a source directory regenerates the automatic snapshots for the

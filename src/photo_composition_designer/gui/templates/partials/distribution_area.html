@@ -1,16 +1,35 @@
+{% set current_mode = mode | default('slots') %}
 {% set current_strategy = strategy | default('equal') %}
 {% set current_seed = seed if seed is defined and seed else '' %}
+{% set current_range = best_range | default('3-5') %}
 <div class="distribution-area">
   <form hx-get="/projects/{{ project_id }}/distribute/preview"
         hx-target="closest .distribution-area"
         hx-swap="outerHTML"
         class="form-row">
     <div class="field">
+      <label for="distribution-mode">Distribution mode</label>
+      <select id="distribution-mode" name="mode">
+        <option value="all" {% if current_mode == 'all' %}selected{% endif %}>Distribute all photos</option>
+        <option value="best" {% if current_mode == 'best' %}selected{% endif %}>Distribute the best photos</option>
+        <option value="slots" {% if current_mode == 'slots' %}selected{% endif %}>Respect current layouts</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="distribution-strategy">Strategy</label>
       <select id="distribution-strategy" name="strategy">
+        <option value="date_grouped" {% if current_strategy == 'date_grouped' %}selected{% endif %}>Date aware</option>
         <option value="equal" {% if current_strategy == 'equal' %}selected{% endif %}>Equal</option>
         <option value="random" {% if current_strategy == 'random' %}selected{% endif %}>Random</option>
-        <option value="date_aware" {% if current_strategy == 'date_aware' %}selected{% endif %}>Date aware</option>
+        <option value="date_aware" {% if current_strategy == 'date_aware' %}selected{% endif %}>Date aware (current layouts)</option>
+      </select>
+    </div>
+    <div class="field" data-show-for-mode="best">
+      <label for="distribution-range">Best photos per page</label>
+      <select id="distribution-range" name="best_range">
+        {% for value in best_ranges | default(['2-5', '3-5', '3-6', '3-7']) %}
+        <option value="{{ value }}" {% if current_range == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
       </select>
     </div>
     <div class="field">
@@ -21,6 +40,10 @@
     <button type="submit">Preview distribution</button>
     <span class="htmx-indicator muted">Building proposal...</span>
   </form>
+
+  {% if current_mode in ('all', 'best') %}
+  <p class="warning" role="note">All pages will be switched to Automatic.</p>
+  {% endif %}
 
   {% if distribution_notice %}
   <p class="success" role="status">{{ distribution_notice }}</p>

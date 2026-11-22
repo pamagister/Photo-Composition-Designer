@@ -68,12 +68,25 @@ pages already using an older version keep their existing layout snapshots.
 ## Preview and apply a distribution
 
 Open **Extras** in the project toolbar and choose **Distribute**. On the
-distribution page, choose a strategy (`Equal`, `Random` with an optional seed, or
-`Date aware`) and select **Preview distribution**. The preview shows per-page
-samples, filled and empty slots, overflow and the total unassigned count without
-changing the project. **Apply distribution** persists the reviewed proposal in
-one transaction; repeating the same confirmation is a no-op and a stale preview
-is rejected.
+distribution page, pick one of three modes:
+
+* **Distribute all photos** – assigns every available photo across all pages.
+* **Distribute the best photos** – ranks the photos, selects the top ones for a
+  configurable per-page range (`2–5`, `3–5`, `3–6` or `3–7`) and distributes
+  them.
+* **Respect current layouts** – keeps the current page layouts and fills only
+  the unassigned photos.
+
+For the first two modes every page is switched to the Automatic layout. Choose a
+strategy (`Date aware`, `Equal`, or `Random` with an optional seed) and select
+**Preview distribution**. The preview shows the mode, strategy and computed
+target, per-page samples, assigned and (for best mode) not-selected counts,
+overflow and the total unassigned count without changing the project. **Apply
+distribution** persists the reviewed proposal in one transaction; repeating the
+same confirmation is a no-op and a stale preview is rejected.
+
+**Extras → Reset layouts** switches every page to the Automatic layout while
+keeping the existing photos and crop settings.
 
 **Extras → Check** is currently under construction.
 

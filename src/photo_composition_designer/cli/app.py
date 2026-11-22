@@ -85,10 +85,15 @@ def scan(
 @app.command()
 def distribute(
     project_id: Annotated[int, typer.Argument(help="Project ID to distribute.")],
+    mode: Annotated[str, typer.Option(help="Distribution mode: all, best or slots.")] = "slots",
     strategy: Annotated[
-        str, typer.Option(help="Distribution strategy: equal, random or date_aware.")
+        str,
+        typer.Option(help="Distribution strategy: equal, random, date_grouped or date_aware."),
     ] = "equal",
     seed: Annotated[int | None, typer.Option(help="Random distribution seed.")] = None,
+    best_range: Annotated[
+        str, typer.Option(help="Best-mode photos-per-page preset: 2-5, 3-5, 3-6 or 3-7.")
+    ] = "3-5",
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Preview the proposal without applying it.")
     ] = False,
@@ -97,8 +102,10 @@ def distribute(
     raise typer.Exit(
         code=distribute_command.run(
             project_id,
+            mode=mode,
             strategy=strategy,
             seed=seed,
+            best_range=best_range,
             dry_run=dry_run,
         )
     )

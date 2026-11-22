@@ -363,11 +363,11 @@ The proposal digest must include `mode`, `strategy`, `seed`, `best_range`, `page
 
 **Objective:** Make “best photos” meaningful with or without object detection.
 
-- [ ] P4-W01: Add `QualityScorer` with downscaled resolution and sharpness scoring.
-- [ ] P4-W02: Add `SelectionScorer` combining importance and quality.
-- [ ] P4-W03: Add tests for ranking, fallback and unreadable images.
-- [ ] P4-W04: Implement best-mode selection (range → K → top K → distribute).
-- [ ] P4-W05: Add tests for K, range behaviour and `not_selected`.
+- [x] P4-W01: Add `QualityScorer` with downscaled resolution and sharpness scoring.
+- [x] P4-W02: Add `SelectionScorer` combining importance and quality.
+- [x] P4-W03: Add tests for ranking, fallback and unreadable images.
+- [x] P4-W04: Implement best-mode selection (range → K → top K → distribute).
+- [x] P4-W05: Add tests for K, range behaviour and `not_selected`.
 
 **Acceptance criteria**
 
@@ -382,11 +382,11 @@ The proposal digest must include `mode`, `strategy`, `seed`, `best_range`, `page
 
 **Objective:** Expose the new modes cleanly.
 
-- [ ] P5-W01: Update `distribution_area.html` with mode, strategy, seed and range controls.
-- [ ] P5-W02: Update `distribution_preview.html` with target/assigned/not-selected/overflow reporting.
-- [ ] P5-W03: Update `project_distribution.py` for mode parsing, detector passing, digest and notices.
-- [ ] P5-W04: Update `docs/usage/web-ui.md` and `docs/usage/auto-layout.md`; run `make fmt`.
-- [ ] P5-W05: Add TestClient/browser tests for all modes, stale previews and reset notice.
+- [x] P5-W01: Update `distribution_area.html` with mode, strategy, seed and range controls.
+- [x] P5-W02: Update `distribution_preview.html` with target/assigned/not-selected/overflow reporting.
+- [x] P5-W03: Update `project_distribution.py` for mode parsing, detector passing, digest and notices.
+- [x] P5-W04: Update `docs/usage/web-ui.md` and `docs/usage/auto-layout.md`; run `make fmt`.
+- [x] P5-W05: Add TestClient/browser tests for all modes, stale previews and reset notice.
 
 **Acceptance criteria**
 
