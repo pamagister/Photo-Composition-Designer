@@ -140,6 +140,10 @@ class DistributionProposal:
     unassigned: list[int] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     seed: int | None = None
+    mode: str = "slots"
+    reset_layouts: bool = False
+    not_selected: list[int] = field(default_factory=list)
+    target: float | None = None
 
 
 @dataclass(slots=True)

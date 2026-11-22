@@ -48,7 +48,6 @@ _INT_FIELDS = (
     "layout.margin_bottom",
     "layout.margin_sides",
     "layout.spacing",
-    "layout.auto_target_slots",
 )
 
 _FLOAT_FIELDS = (
@@ -201,7 +200,6 @@ def _values_from_profile(profile: OutputProfile) -> dict[str, Any]:
         "layout.description_alignment": profile.layout.description_alignment,
         "layout.use_rounded_corners": profile.layout.use_rounded_corners,
         "layout.image_score_factor": profile.layout.image_score_factor,
-        "layout.auto_target_slots": profile.layout.auto_target_slots,
         "layout.use_photo_description": profile.layout.use_photo_description,
     }
 

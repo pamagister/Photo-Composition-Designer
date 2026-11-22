@@ -347,7 +347,6 @@ class LayoutProfile:
     description_alignment: str = "left"
     use_rounded_corners: bool = True
     image_score_factor: float = 2.0
-    auto_target_slots: int = 6
     use_photo_description: bool = True
     generate_pdf: bool = True
 
@@ -361,7 +360,6 @@ class LayoutProfile:
             "description_alignment": self.description_alignment,
             "use_rounded_corners": self.use_rounded_corners,
             "image_score_factor": self.image_score_factor,
-            "auto_target_slots": self.auto_target_slots,
             "use_photo_description": self.use_photo_description,
             "generate_pdf": self.generate_pdf,
         }
@@ -411,12 +409,6 @@ class LayoutProfile:
                 "image_score_factor",
                 defaults.image_score_factor,
                 minimum=0.0,
-            ),
-            auto_target_slots=_int_or(
-                data.get("auto_target_slots"),
-                "auto_target_slots",
-                defaults.auto_target_slots,
-                minimum=1,
             ),
             use_photo_description=_bool_or(
                 data.get("use_photo_description"),
@@ -488,7 +480,6 @@ class OutputProfile:
                 description_alignment=settings.layout.descriptionAlignment.value,
                 use_rounded_corners=settings.layout.useRoundedCorners.value,
                 image_score_factor=settings.layout.imageScoreFactor.value,
-                auto_target_slots=settings.layout.autoTargetSlots.value,
                 use_photo_description=settings.layout.usePhotoDescription.value,
                 generate_pdf=settings.layout.generatePdf.value,
             ),
@@ -523,7 +514,6 @@ class OutputProfile:
         settings.layout.descriptionAlignment.value = self.layout.description_alignment
         settings.layout.useRoundedCorners.value = self.layout.use_rounded_corners
         settings.layout.imageScoreFactor.value = self.layout.image_score_factor
-        settings.layout.autoTargetSlots.value = self.layout.auto_target_slots
         settings.layout.useShortDayNames.value = self.calendar.use_short_day_names
         settings.layout.useShortMonthNames.value = self.calendar.use_short_month_names
         settings.calendar.useTitlePage.value = self.calendar.use_title_page

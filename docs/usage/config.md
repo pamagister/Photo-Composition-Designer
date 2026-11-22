@@ -36,7 +36,6 @@ Generated from `photo_composition_designer.core.settings.Settings` defaults.
 | `layout.descriptionAlignment` | `'left'` |
 | `layout.useRoundedCorners` | `True` |
 | `layout.imageScoreFactor` | `2.0` |
-| `layout.autoTargetSlots` | `6` |
 | `layout.useShortDayNames` | `False` |
 | `layout.useShortMonthNames` | `True` |
 | `layout.usePhotoDescription` | `True` |

@@ -73,6 +73,17 @@ class ImportanceScorer:
         """Return whether weighting can produce non-neutral values."""
         return self._detector is not None and self._image_score_factor > 0.0
 
+    def importance_for(self, photo: PhotoAsset, path: Path | None) -> float:
+        """Return the importance of one already-resolved photo file.
+
+        This is the single-photo counterpart of :meth:`score_photos` used by
+        ranking code that resolves paths itself. When ``path`` is ``None`` or
+        weighting is disabled, the neutral value is returned.
+        """
+        if not self.enabled or path is None:
+            return NEUTRAL_IMPORTANCE
+        return self.for_photo(photo, path)
+
     def score_photos(
         self,
         connection: sqlite3.Connection,

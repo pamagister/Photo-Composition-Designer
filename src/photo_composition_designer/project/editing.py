@@ -14,6 +14,7 @@ from photo_composition_designer.core.errors import (
     DuplicateSlotAssignmentError,
     ProjectError,
 )
+from photo_composition_designer.core.output_profile import OutputProfile
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.layouts.auto_layout import AutoPhoto, AutoSlot, build_auto_layout
 from photo_composition_designer.layouts.loader import (
@@ -933,6 +934,139 @@ class PageEditingService:
                 self._persist_auto_snapshot(connection, project_id, page, ordered_pairs, slots)
                 regenerated += 1
         return regenerated
+
+    def reset_all_layouts_to_auto(
+        self,
+        project_id: int,
+        *,
+        preserve_assignments: bool = True,
+    ) -> int:
+        """Switch every page of a project to the Automatic layout.
+
+        In the default preserve mode the photos already assigned to each page
+        are kept (with their crop overrides) and the automatic snapshot is
+        rebuilt from them. Empty pages receive an empty automatic snapshot.
+        When ``preserve_assignments`` is ``False`` the assignments are cleared
+        first and every page receives an empty automatic snapshot; this is the
+        mode used by distribution before applying a new proposal.
+
+        Args:
+            project_id: Project whose pages are reset.
+            preserve_assignments: Keep the current photos and crop settings.
+
+        Returns:
+            The number of pages that were changed.
+
+        Raises:
+            ProjectError: If the project does not exist.
+        """
+        with self._database.transaction() as connection:
+            if ProjectRepository(connection).get(project_id) is None:
+                raise ProjectError(f"project {project_id} does not exist")
+            changed = self._reset_layouts_in_transaction(
+                connection,
+                project_id,
+                preserve_assignments=preserve_assignments,
+            )
+            if changed:
+                PageRepository(connection).increment_revisions(project_id)
+            return changed
+
+    @staticmethod
+    def _reset_layouts_in_transaction(
+        connection,
+        project_id: int,
+        *,
+        preserve_assignments: bool = True,
+    ) -> int:
+        """Reset every page to Automatic using an already-open transaction.
+
+        This helper lets :meth:`DistributionService.apply` reuse the reset
+        without nesting transaction blocks. The caller is responsible for
+        incrementing page revisions and enqueuing previews when needed.
+
+        Returns:
+            The number of pages that were changed.
+        """
+        pages = PageRepository(connection).list(project_id)
+        if not pages:
+            return 0
+
+        page_repo = PageRepository(connection)
+        layout_repo = LayoutRepository(connection)
+        assignment_repo = AssignmentRepository(connection)
+        photos_repo = PhotoRepository(connection)
+        project = ProjectRepository(connection).get(project_id)
+        profile = profile_from_project(project) if project is not None else OutputProfile.default()
+
+        changed = 0
+        for page in pages:
+            rows: list[tuple[int, float, float, float]] = []
+            if preserve_assignments:
+                for assignment in assignment_repo.list_by_page(page.id):
+                    photo = photos_repo.get(assignment.photo_id)
+                    if photo is None or photo.width <= 0 or photo.height <= 0:
+                        continue
+                    rows.append(
+                        (
+                            assignment.photo_id,
+                            assignment.crop_zoom,
+                            assignment.crop_focus_x,
+                            assignment.crop_focus_y,
+                        )
+                    )
+
+            for assignment in assignment_repo.list_by_page(page.id):
+                assignment_repo.remove(assignment.id)
+
+            if not rows:
+                version = layout_repo.next_version(AUTO_LAYOUT_KEY)
+                layout = layout_repo.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, [])
+                page_repo.set_layout(page.id, layout.id, layout.version)
+                changed += 1
+                continue
+
+            engine_photos = tuple(
+                AutoPhoto(
+                    key=str(photo_id),
+                    width=photos_repo.get(photo_id).width,
+                    height=photos_repo.get(photo_id).height,
+                    importance=1.0,
+                )
+                for photo_id, _zoom, _fx, _fy in rows
+            )
+            aspect = collage_aspect_for_page(page, profile)
+            slots = build_auto_layout(engine_photos, aspect)
+            version = layout_repo.next_version(AUTO_LAYOUT_KEY)
+            slot_rows = [
+                LayoutSlot(
+                    id=0,
+                    layout_id=0,
+                    slot_key=slot.key,
+                    position=index,
+                    x=slot.x,
+                    y=slot.y,
+                    width=slot.width,
+                    height=slot.height,
+                    z_index=0,
+                    crop_mode="cover",
+                )
+                for index, slot in enumerate(slots)
+            ]
+            layout = layout_repo.add(AUTO_LAYOUT_KEY, version, AUTO_LAYOUT_NAME, slot_rows)
+            page_repo.set_layout(page.id, layout.id, layout.version)
+            for slot, (photo_id, zoom, fx, fy) in zip(layout.slots, rows, strict=False):
+                assignment_repo.assign(
+                    project_id=project_id,
+                    page_id=page.id,
+                    slot_id=slot.id,
+                    photo_id=photo_id,
+                    crop_zoom=zoom,
+                    crop_focus_x=fx,
+                    crop_focus_y=fy,
+                )
+            changed += 1
+        return changed
 
     def _collage_aspect(self, connection, project_id: int, page) -> float:
         """Return the collage content-box aspect ratio for one page."""

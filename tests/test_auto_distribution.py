@@ -6,6 +6,7 @@ from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 from photo_composition_designer.core.output_profile import OutputProfile
@@ -34,17 +35,12 @@ def _setup(
     *,
     photo_count: int = 3,
     page_count: int = 1,
-    auto_target_slots: int = 6,
     width: int = 216,
     height: int = 154,
 ) -> tuple[WorkspaceDatabase, int, list[int], int]:
     database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
     profile = replace(
         OutputProfile.default(),
-        layout=replace(
-            OutputProfile.default().layout,
-            auto_target_slots=auto_target_slots,
-        ),
         size=replace(OutputProfile.default().size, width=width, height=height),
     )
     project = ProjectService(database).create_project(
@@ -83,20 +79,35 @@ def _page_layout_and_assignments(database: WorkspaceDatabase, page_id: int):
         return layout, assignments
 
 
-def test_auto_page_capacity_uses_target_slot_count(tmp_path: Path) -> None:
-    database, project_id, _page_id, photo_ids = _setup(tmp_path, photo_count=3, auto_target_slots=2)
+def test_auto_page_capacity_is_computed_from_photo_and_page_counts(tmp_path: Path) -> None:
+    database, project_id, _page_id, photo_ids = _setup(tmp_path, photo_count=3, page_count=3)
     try:
         distribution = DistributionService(database)
         proposal = distribution.propose(project_id, strategy="equal")
 
-        assert sum(len(group) for group in proposal.pages) == 2
-        assert proposal.unassigned == photo_ids[2:]
+        # Computed target is round(3 / 3) = 1 slot per automatic page.
+        assert sum(len(group) for group in proposal.pages) == 3
+        assert proposal.unassigned == []
+        assert proposal.target == pytest.approx(1.0)
+    finally:
+        database.close()
+
+
+def test_slots_mode_overflows_when_photos_exceed_capacity(tmp_path: Path) -> None:
+    database, project_id, _page_id, photo_ids = _setup(tmp_path, photo_count=4, page_count=1)
+    try:
+        distribution = DistributionService(database)
+        proposal = distribution.propose(project_id, strategy="equal")
+
+        # Computed target is round(4 / 1) = 4, so all four fit on one page.
+        assert sum(len(group) for group in proposal.pages) == 4
+        assert proposal.unassigned == []
     finally:
         database.close()
 
 
 def test_apply_auto_page_generates_a_valid_tiling(tmp_path: Path) -> None:
-    database, project_id, page_id, _photo_ids = _setup(tmp_path, photo_count=3, auto_target_slots=2)
+    database, project_id, page_id, _photo_ids = _setup(tmp_path, photo_count=3, page_count=3)
     try:
         distribution = DistributionService(database)
         proposal = distribution.propose(project_id, strategy="equal")
@@ -104,8 +115,8 @@ def test_apply_auto_page_generates_a_valid_tiling(tmp_path: Path) -> None:
 
         layout, assignments = _page_layout_and_assignments(database, page_id)
         assert layout.key == AUTO_LAYOUT_KEY
-        assert len(layout.slots) == 2
-        assert len(assignments) == 2
+        assert len(layout.slots) == 1
+        assert len(assignments) == 1
         assert {assignment.slot_id for assignment in assignments} == {
             slot.id for slot in layout.slots
         }
@@ -119,7 +130,7 @@ def test_apply_auto_page_generates_a_valid_tiling(tmp_path: Path) -> None:
 
 
 def test_apply_auto_page_keeps_one_slot_per_assigned_photo(tmp_path: Path) -> None:
-    database, project_id, page_id, _photo_ids = _setup(tmp_path, photo_count=4, auto_target_slots=6)
+    database, project_id, page_id, _photo_ids = _setup(tmp_path, photo_count=4, page_count=1)
     try:
         distribution = DistributionService(database)
         proposal = distribution.propose(project_id, strategy="equal")
@@ -161,5 +172,16 @@ def test_regenerate_auto_layouts_follows_new_canvas_aspect(tmp_path: Path) -> No
         assert all(slot.width == 1.0 for slot in layout.slots)
         assert layout.slots[0].y == 0.0
         assert layout.slots[1].y > 0.0
+    finally:
+        database.close()
+
+
+def test_legacy_auto_target_slots_key_is_ignored_on_load(tmp_path: Path) -> None:
+    database = WorkspaceDatabase(tmp_path / "workspace.sqlite3")
+    try:
+        legacy = OutputProfile.default().to_dict()
+        legacy["layout"]["auto_target_slots"] = 9
+        profile = OutputProfile.from_dict(legacy)
+        assert profile.layout.to_dict().get("auto_target_slots") is None
     finally:
         database.close()
