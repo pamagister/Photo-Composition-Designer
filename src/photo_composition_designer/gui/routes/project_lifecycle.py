@@ -276,6 +276,8 @@ def project_detail(
         notice = "Distribution applied."
     elif request.query_params.get("assignments") == "1":
         notice = "Project assignments cleared."
+    elif request.query_params.get("layouts") == "1":
+        notice = "All pages reset to the Automatic layout."
     context = _project_context(
         database,
         aggregate,

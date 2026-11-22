@@ -900,3 +900,73 @@ def test_crop_live_rejects_missing_assignment(editor_client, tmp_path):
 
     assert response.status_code == 303
     assert _stored_revision(page_id) == before
+
+
+def test_reset_all_layouts_preserves_photos_and_crops(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[0], photo_ids[0])
+        editing.set_crop(
+            project_id,
+            page_id,
+            slot_ids[0],
+            crop_zoom=1.8,
+            crop_focus_x=0.25,
+            crop_focus_y=0.75,
+        )
+        before_revision = _page_revision(database, page_id)
+
+        changed = editing.reset_all_layouts_to_auto(project_id, preserve_assignments=True)
+
+        assert changed == 1
+        assert _page_revision(database, page_id) > before_revision
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None and layout.key == "auto"
+            assignments = AssignmentRepository(connection).list_by_page(page_id)
+        assert len(assignments) == 1
+        assignment = assignments[0]
+        assert assignment.photo_id == photo_ids[0]
+        assert assignment.crop_zoom == pytest.approx(1.8)
+        assert assignment.crop_focus_x == pytest.approx(0.25)
+        assert assignment.crop_focus_y == pytest.approx(0.75)
+    finally:
+        database.close()
+
+
+def test_reset_all_layouts_gives_empty_pages_an_empty_auto_snapshot(tmp_path):
+    database, editing, project_id, page_id, _photo_ids, _slot_ids = _seed(tmp_path)
+    try:
+        changed = editing.reset_all_layouts_to_auto(project_id, preserve_assignments=True)
+
+        assert changed == 1
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None and layout.key == "auto"
+            assert layout.slots == []
+            assert AssignmentRepository(connection).list_by_page(page_id) == []
+    finally:
+        database.close()
+
+
+def test_reset_all_layouts_clear_mode_drops_assignments(tmp_path):
+    database, editing, project_id, page_id, photo_ids, slot_ids = _seed(tmp_path)
+    try:
+        editing.assign_to_empty_slot(project_id, page_id, slot_ids[0], photo_ids[0])
+
+        changed = editing.reset_all_layouts_to_auto(project_id, preserve_assignments=False)
+
+        assert changed == 1
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None and layout.key == "auto"
+            assert layout.slots == []
+            assert AssignmentRepository(connection).list_by_page(page_id) == []
+    finally:
+        database.close()

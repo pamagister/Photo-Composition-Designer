@@ -283,6 +283,22 @@ def clear_project_assignments(
     return RedirectResponse(f"/projects/{project_id}?assignments=1", status_code=303)
 
 
+@router.post("/projects/{project_id}/layouts/reset-auto")
+def reset_layouts_to_auto(
+    request: Request,
+    project_id: int,
+) -> RedirectResponse:
+    """Switch every page to the Automatic layout and refresh previews."""
+    database = _open_database(request)
+    editing = PageEditingService(database)
+    try:
+        editing.reset_all_layouts_to_auto(project_id, preserve_assignments=True)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    _render_project_previews(request, database, project_id)
+    return RedirectResponse(f"/projects/{project_id}?layouts=1", status_code=303)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/replace")
 def replace_photo(
     request: Request,

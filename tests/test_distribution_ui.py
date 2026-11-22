@@ -233,7 +233,8 @@ def test_auto_distribution_uses_target_capacity_and_generates_layout(client, tmp
     preview = client.get(f"/projects/{project_id}/distribute/preview?strategy=equal")
 
     assert preview.status_code == 200
-    assert "3 of 6 slots filled" in preview.text
+    # Automatic page capacity is computed from the photo/page counts (3/1 = 3).
+    assert "3 of 3 slots filled" in preview.text
 
     digest = _digest(preview.text)
     applied = client.post(
@@ -256,3 +257,41 @@ def test_auto_distribution_uses_target_capacity_and_generates_layout(client, tmp
             assert len(AssignmentRepository(connection).list_by_page(page.id)) == 3
     finally:
         database.close()
+
+
+def test_reset_layouts_route_switches_pages_to_auto_and_redirects(client, tmp_path):
+    source = tmp_path / "photos"
+    for index in range(2):
+        _write_photo(source / f"p{index}.jpg", (index * 50, 0, 0))
+    project_id = _create_project(client, source, page_count=2)
+
+    response = client.post(
+        f"/projects/{project_id}/layouts/reset-auto",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"].endswith(f"/projects/{project_id}?layouts=1")
+
+    database = _database()
+    try:
+        with database.connect() as connection:
+            pages = PageRepository(connection).list(project_id)
+            assert pages
+            for page in pages:
+                assert page.layout_id is not None
+                layout = LayoutRepository(connection).get_by_id(page.layout_id)
+                assert layout is not None and layout.key == AUTO_LAYOUT_KEY
+    finally:
+        database.close()
+
+
+def test_project_detail_shows_reset_layouts_notice(client, tmp_path):
+    source = tmp_path / "photos"
+    _write_photo(source / "p.jpg")
+    project_id = _create_project(client, source)
+
+    response = client.get(f"/projects/{project_id}?layouts=1")
+
+    assert response.status_code == 200
+    assert "All pages reset to the Automatic layout." in response.text

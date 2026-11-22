@@ -325,10 +325,10 @@ The proposal digest must include `mode`, `strategy`, `seed`, `best_range`, `page
 
 **Objective:** Provide the non-destructive Extras reset.
 
-- [ ] P2-W01: Implement `reset_all_layouts_to_auto` and `_reset_layouts_in_transaction`.
-- [ ] P2-W02: Add the POST route and preview enqueueing.
-- [ ] P2-W03: Add the Extras trash-can button, confirmation and `?layouts=1` notice.
-- [ ] P2-W04: Add service and route tests for assignment/crop preservation, empty pages, revisions and preview jobs.
+- [x] P2-W01: Implement `reset_all_layouts_to_auto` and `_reset_layouts_in_transaction`.
+- [x] P2-W02: Add the POST route and preview enqueueing.
+- [x] P2-W03: Add the Extras trash-can button, confirmation and `?layouts=1` notice.
+- [x] P2-W04: Add service and route tests for assignment/crop preservation, empty pages, revisions and preview jobs.
 
 **Acceptance criteria**
 
