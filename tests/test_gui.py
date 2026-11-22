@@ -240,6 +240,16 @@ def test_global_anniversaries_setting_is_saved_and_validated(client, tmp_path):
     assert str(tmp_path / "missing.ini") in invalid.text
 
 
+def test_app_settings_has_sticky_top_save_button(client):
+    response = client.get("/settings")
+
+    assert response.status_code == 200
+    assert 'class="settings-sticky-save"' in response.text
+    assert ">Save</button>" in response.text
+    # The existing bottom Save control remains available.
+    assert "Save application settings" in response.text
+
+
 def test_global_locations_setting_is_saved_and_validated(client, tmp_path):
     locations = tmp_path / "locations.ini"
     locations.write_text("[CUSTOM]\nWeimar = 50.9795, 11.3235\n", encoding="utf-8")

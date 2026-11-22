@@ -7,6 +7,9 @@
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   {% if notice %}<p class="success" role="status">{{ notice }}</p>{% endif %}
   <form method="post" action="/settings" class="settings-form">
+    <div class="settings-sticky-save">
+      <button class="primary" type="submit">Save</button>
+    </div>
     <div class="field">
       <label for="anniversaries-path">Shared anniversaries.ini path</label>
       <input id="anniversaries-path" name="anniversaries_path"

@@ -1356,6 +1356,16 @@ summary {
   margin-bottom: var(--gap);
 }
 
+.settings-sticky-save {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 0;
+  background: var(--bg);
+}
+
 .settings-group {
   margin: 0;
   padding: 1rem;
