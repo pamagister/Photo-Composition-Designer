@@ -511,8 +511,9 @@ uv run photo-composition-designer gui
 - **Decisions:** remove auto_target_slots; computed target; modes all/best/slots; date_grouped DP; quality heuristic fallback; best range is min-max per page; reset layouts preserves photos.
 - **Blockers:** none
 - **Last verified:** 2026-11-22, `make fmt`, `make lint` and `make test` green (523 passed).
-- **Validation:** synthetic 303-photo / 53-page dry run -> 53 automatic pages, 303 assigned,
-  date_grouped 5-6 per page, equal/random balanced, best 3-5 selected 212 (91 not_selected),
-  static slots mode unchanged.
+- **Validation:** real project 4 (copy of the live workspace) -> 303 photos, 53 pages, 0 assignments.
+  all/date_grouped: 53 pages, 303 assigned, target 5.72, 4-8 per page; equal/random: 303 assigned, 5-6 per page;
+  best 3-5: 212 selected, 91 not_selected; slots/equal: 209 assigned, 94 overflow on static layouts.
+  reset-layouts -> 53 pages changed; apply all/date_grouped -> 53/53 Automatic pages, 303 assignments.
 - **Context status:** complete
 ```
