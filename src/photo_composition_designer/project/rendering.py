@@ -42,7 +42,8 @@ from photo_composition_designer.render.object_detector import ObjectDetector
 from photo_composition_designer.render.page import PageComposer, PageRenderInput
 from photo_composition_designer.render.slot_renderer import SlotPhoto
 
-DEFAULT_PREVIEW_WIDTH = 640
+DEFAULT_PREVIEW_WIDTH = 800
+THUMBNAIL_PREVIEW_WIDTH = 200
 
 #: Bump when page composition changes without a project/profile revision change.
 RENDER_CACHE_VERSION = 2
@@ -441,6 +442,7 @@ def preview_cache_key_for(
 __all__ = [
     "DEFAULT_PREVIEW_WIDTH",
     "DRAFT_OVERSAMPLE",
+    "THUMBNAIL_PREVIEW_WIDTH",
     "ProjectRenderingService",
     "collage_aspect_for_page",
     "collage_box_for_page",

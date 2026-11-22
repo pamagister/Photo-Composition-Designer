@@ -244,7 +244,7 @@ def _project_context(
             anniversaries_path=settings.anniversaries_path,
         )
         for pg in pages:
-            key = preview_cache_key_for(rendering, connection, pg, max_width=320, mode="preview")
+            key = preview_cache_key_for(rendering, connection, pg, max_width=200, mode="preview")
             if (settings.preview_dir() / "pages" / f"{key}.jpg").is_file():
                 thumb_cache_keys[pg.id] = key
 
@@ -333,7 +333,7 @@ def _page_context(
             anniversaries_path=settings.anniversaries_path,
         )
         thumb_cache_key = preview_cache_key_for(
-            rendering, connection, page, max_width=320, mode="preview"
+            rendering, connection, page, max_width=200, mode="preview"
         )
         if not (settings.preview_dir() / "pages" / f"{thumb_cache_key}.jpg").is_file():
             thumb_cache_key = ""
@@ -387,8 +387,8 @@ def _canvas_response(
     context = {**context, "notice": message, "oob_page_thumb": True}
     worker = getattr(request.app.state, "preview_worker", None)
     if worker is not None:
-        worker.submit(project_id, page_id, max_width=640, priority=0)
-        worker.submit(project_id, page_id, max_width=320, priority=1)
+        worker.submit(project_id, page_id, max_width=800, priority=0)
+        worker.submit(project_id, page_id, max_width=200, priority=1)
     return TEMPLATES.TemplateResponse(
         request,
         "partials/editor_canvas.html",

@@ -387,7 +387,7 @@ def test_project_page_renders_sidebar_preview_thumbnails(editor_client, tmp_path
 
     assert response.status_code == 200
     # A missing immutable asset falls back to the route that queues its render.
-    thumbnail_url = f"/projects/{project_id}/pages/{page_id}/preview?max_width=320&v="
+    thumbnail_url = f"/projects/{project_id}/pages/{page_id}/preview?max_width=200&v="
     assert thumbnail_url in response.text
     assert "page-thumb-preview" in response.text
     assert 'hx-swap-oob="outerHTML"' not in response.text
@@ -782,7 +782,7 @@ def test_populate_route_reports_assigned_and_refreshes_strip(editor_client, tmp_
     assert "Populated 1 slot(s)." in response.text
     assert response.headers["HX-Trigger"] == "pcd:refresh-unused"
     assert _stored_revision(page_id) == before + 1
-    for width in (320, 640):
+    for width in (200, 800):
         preview = editor_client.get(
             f"/projects/{project_id}/pages/{page_id}/preview",
             params={"max_width": width},

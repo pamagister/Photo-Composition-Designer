@@ -128,7 +128,7 @@ def test_project_sized_auto_layout_previews_fit_budget(tmp_path: Path) -> None:
             page_ids = [page.id for page in PageRepository(connection).list(project_id)]
         for page_id in page_ids:
             page_started = time.perf_counter()
-            path = rendering.render_preview(project_id, page_id, max_width=320)
+            path = rendering.render_preview(project_id, page_id, max_width=200)
             timings.append(time.perf_counter() - page_started)
             assert path.is_file()
         elapsed = time.perf_counter() - started

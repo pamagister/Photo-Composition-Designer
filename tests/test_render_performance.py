@@ -3,8 +3,8 @@
 These tests guard the *contracts* the performance phases rely on, not timing:
 
 * the preview cache key changes for every render input and hits when unchanged;
-* a draft preview (reduced DPI) stays visually close to the full preview at 320
-  and 640 px across representative geometries;
+* a draft preview (reduced DPI) stays visually close to the full preview at 200
+  and 800 px across representative geometries;
 * the full-resolution export path is unaffected by preview-only changes.
 
 They are intentionally free of wall-clock assertions so they stay deterministic.
@@ -132,25 +132,25 @@ def test_preview_cache_key_changes_for_every_render_input(tmp_path):
         assert page is not None
         profile = rendering.profile_for(connection, project_id)
 
-        baseline = rendering.preview_cache_key(page, profile, max_width=640, mode="preview")
+        baseline = rendering.preview_cache_key(page, profile, max_width=800, mode="preview")
 
         # max_width changes the key.
-        assert rendering.preview_cache_key(page, profile, max_width=320, mode="preview") != baseline
+        assert rendering.preview_cache_key(page, profile, max_width=200, mode="preview") != baseline
         # mode changes the key.
-        assert rendering.preview_cache_key(page, profile, max_width=640, mode="other") != baseline
+        assert rendering.preview_cache_key(page, profile, max_width=800, mode="other") != baseline
         # profile change changes the key.
         changed_profile = replace(profile, size=replace(profile.size, dpi=150))
         assert (
-            rendering.preview_cache_key(page, changed_profile, max_width=640, mode="preview")
+            rendering.preview_cache_key(page, changed_profile, max_width=800, mode="preview")
             != baseline
         )
         # revision change changes the key.
         revised = replace(page, render_revision=page.render_revision + 1)
         assert (
-            rendering.preview_cache_key(revised, profile, max_width=640, mode="preview") != baseline
+            rendering.preview_cache_key(revised, profile, max_width=800, mode="preview") != baseline
         )
         # identical inputs hit.
-        assert rendering.preview_cache_key(page, profile, max_width=640, mode="preview") == baseline
+        assert rendering.preview_cache_key(page, profile, max_width=800, mode="preview") == baseline
     finally:
         database.close()
 
@@ -170,12 +170,12 @@ def test_preview_cache_key_covers_layout_and_anniversaries(tmp_path):
         assert page is not None
         profile = rendering.profile_for(connection, project_id)
 
-        baseline = rendering.preview_cache_key(page, profile, max_width=640, mode="preview")
+        baseline = rendering.preview_cache_key(page, profile, max_width=800, mode="preview")
 
         # A different layout id/version changes the key.
         relayout = replace(page, layout_id=page.layout_id, layout_version=page.layout_version + 1)
         assert (
-            rendering.preview_cache_key(relayout, profile, max_width=640, mode="preview")
+            rendering.preview_cache_key(relayout, profile, max_width=800, mode="preview")
             != baseline
         )
 
@@ -185,7 +185,7 @@ def test_preview_cache_key_covers_layout_and_anniversaries(tmp_path):
         import os
 
         os.utime(anniversaries_path, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
-        assert rendering.preview_cache_key(page, profile, max_width=640, mode="preview") != baseline
+        assert rendering.preview_cache_key(page, profile, max_width=800, mode="preview") != baseline
     finally:
         database.close()
 
@@ -261,7 +261,7 @@ def test_full_resolution_export_is_not_affected_by_preview(tmp_path):
         assert np.array_equal(np.asarray(first), np.asarray(second))
 
         # Writing a preview must not alter the full-resolution output.
-        write_preview(first, tmp_path / "cache" / "p.jpg", max_width=320)
+        write_preview(first, tmp_path / "cache" / "p.jpg", max_width=200)
         third = rendering.render_page_image(connection, page)
         assert third.size == profile.page_size_px()
         assert np.array_equal(np.asarray(first), np.asarray(third))
@@ -306,7 +306,7 @@ def test_draft_profile_derivation_covers_preview_width():
         assert draft.profile_hash() != profile.profile_hash()
 
     # A wider preview needs a higher DPI (up to the cap).
-    assert draft_dpi(profile, 640) >= draft_dpi(profile, 320)
+    assert draft_dpi(profile, 800) >= draft_dpi(profile, 200)
     # A very wide preview never exceeds the full DPI.
     assert draft_dpi(profile, 10_000) == profile.size.dpi
 

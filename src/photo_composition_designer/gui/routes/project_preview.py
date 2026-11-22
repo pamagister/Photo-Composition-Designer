@@ -51,7 +51,7 @@ def page_preview(
     database: DatabaseDependency,
     settings: SettingsDependency,
     detector: ObjectDetectorDependency,
-    max_width: int = Query(640, ge=120, le=1600),
+    max_width: int = Query(800, ge=120, le=1600),
 ) -> Response:
     """Return a cached reduced-resolution render of one page.
 
@@ -118,7 +118,7 @@ def preview_status(
     page_id: int,
     database: DatabaseDependency,
     settings: SettingsDependency,
-    max_width: int = Query(640, ge=120, le=1600),
+    max_width: int = Query(800, ge=120, le=1600),
 ) -> JSONResponse:
     """Return the status of the preview render for a page.
 
@@ -216,8 +216,8 @@ def preview_project(
     """Enqueue cached previews and open the selected page.
 
     Jobs are submitted to the background worker so the request returns
-    promptly. The selected page's large preview (640 px) gets high priority;
-    the other pages' thumbnails (320 px) get background priority. The
+    promptly. The selected page's large preview (800 px) gets high priority;
+    the other pages' thumbnails (200 px) get background priority. The
     worker coalesces duplicates and renders off the request thread.
     """
     del detector  # The worker uses the detector configured at startup.
@@ -230,10 +230,10 @@ def preview_project(
     target = selected or aggregate.pages[0]
     if worker is not None:
         for candidate in aggregate.pages:
-            worker.submit(project_id, candidate.id, max_width=320, priority=1)
+            worker.submit(project_id, candidate.id, max_width=200, priority=1)
         # The selected page's large preview is high priority so the visible
         # page catches up before the background thumbnails.
-        worker.submit(project_id, target.id, max_width=640, priority=0)
+        worker.submit(project_id, target.id, max_width=800, priority=0)
     return RedirectResponse(
         f"/projects/{project_id}?page={target.id}&previewed=1",
         status_code=303,

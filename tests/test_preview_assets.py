@@ -63,7 +63,7 @@ def _cache_key(
     project_id: int,
     page_id: int,
     *,
-    max_width: int = 320,
+    max_width: int = 200,
 ) -> str:
     """Compute the preview cache key for a page using the same inputs the renderer uses."""
     from photo_composition_designer.project.rendering import (
@@ -91,13 +91,13 @@ def test_preview_asset_serves_immutable(tmp_path, monkeypatch):
 
     # Render the preview to create the file on disk.
     rendered = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320}
+        f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 200}
     )
     assert rendered.status_code == 200
     assert rendered.headers["cache-control"] == "no-cache"
 
     # The immutable asset route serves the same bytes with a long-lived cache.
-    key = _cache_key(tmp_path, project_id, page_id, max_width=320)
+    key = _cache_key(tmp_path, project_id, page_id, max_width=200)
     asset = client.get(f"/projects/{project_id}/preview-assets/{key}.jpg")
     assert asset.status_code == 200
     assert asset.headers["content-type"] == "image/jpeg"
@@ -113,7 +113,7 @@ def test_preview_asset_returns_404_when_file_absent(tmp_path, monkeypatch):
     project_id, page_id = _seed(tmp_path)
 
     # No preview has been rendered yet, so the asset route must not render.
-    key = _cache_key(tmp_path, project_id, page_id, max_width=320)
+    key = _cache_key(tmp_path, project_id, page_id, max_width=200)
     response = client.get(f"/projects/{project_id}/preview-assets/{key}.jpg")
     assert response.status_code == 404
 
@@ -140,8 +140,8 @@ def test_preview_asset_old_revision_serves_original_bytes(tmp_path, monkeypatch)
     project_id, page_id = _seed(tmp_path)
 
     # Render the preview at the initial revision.
-    client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320})
-    old_key = _cache_key(tmp_path, project_id, page_id, max_width=320)
+    client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 200})
+    old_key = _cache_key(tmp_path, project_id, page_id, max_width=200)
     old_bytes = client.get(f"/projects/{project_id}/preview-assets/{old_key}.jpg").content
 
     # Change the page (assign a photo) to bump the revision.
@@ -170,8 +170,8 @@ def test_preview_asset_old_revision_serves_original_bytes(tmp_path, monkeypatch)
         assert assign.status_code == 200
 
         # Render the preview at the new revision.
-        client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320})
-        new_key = _cache_key(tmp_path, project_id, page_id, max_width=320)
+        client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 200})
+        new_key = _cache_key(tmp_path, project_id, page_id, max_width=200)
         assert new_key != old_key
 
         # The old asset URL still serves the original complete bytes.
@@ -188,10 +188,10 @@ def test_preview_status_returns_ready_when_file_exists(tmp_path, monkeypatch):
     project_id, page_id = _seed(tmp_path)
 
     # Render the preview to create the file.
-    client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320})
+    client.get(f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 200})
 
     status = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 200}
     )
     assert status.status_code == 200
     data = status.json()
@@ -210,7 +210,7 @@ def test_preview_status_is_scoped_to_the_requested_job(tmp_path, monkeypatch):
     worker._job_errors[("other", 0, 0, "preview")] = "unrelated stale failure"
 
     status = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 200}
     )
     assert status.status_code == 200
     assert status.json()["status"] in ("ready", "refreshing")
@@ -238,17 +238,17 @@ def test_preview_status_reports_only_the_failed_job(tmp_path, monkeypatch):
 
     worker.submit = submit_then_fail
     status = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 200}
     )
     assert status.status_code == 200
     assert status.json()["status"] == "error"
     assert status.json()["error"] == "boom"
 
-    # A different width for the same page is not affected by the 320 failure.
+    # A different width for the same page is not affected by the 200 failure.
     worker.submit = original_submit
-    worker._job_errors.pop((project_id, page_id, 640, "preview"), None)
+    worker._job_errors.pop((project_id, page_id, 800, "preview"), None)
     other = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 640}
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 800}
     )
     assert other.json()["status"] in ("ready", "refreshing")
 
@@ -263,7 +263,7 @@ def test_preview_status_returns_refreshing_or_ready_when_file_absent(tmp_path, m
 
     # No preview has been rendered yet.
     status = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 320}
+        f"/projects/{project_id}/pages/{page_id}/preview-status", params={"max_width": 200}
     )
     assert status.status_code == 200
     data = status.json()
@@ -281,7 +281,7 @@ def test_preview_route_returns_200_with_sync_worker(tmp_path, monkeypatch):
     project_id, page_id = _seed(tmp_path)
 
     response = client.get(
-        f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 320}
+        f"/projects/{project_id}/pages/{page_id}/preview", params={"max_width": 200}
     )
     assert response.status_code == 200
     assert response.headers["content-type"] == "image/jpeg"

@@ -484,7 +484,7 @@
    * the visible preview. The current image remains visible while rendering. */
   function refreshPreview(projectId, pageId, revision, image, showOverlay = true) {
     if (!image || !image.isConnected) return;
-    const width = Number(image.dataset.previewWidth || 640);
+    const width = Number(image.dataset.previewWidth || 800);
     const isMainPreview = image.classList.contains("page-preview-image");
     const canvas = image.closest(".editor-canvas");
     const overlay = showOverlay && isMainPreview && canvas

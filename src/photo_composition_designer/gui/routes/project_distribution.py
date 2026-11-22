@@ -198,7 +198,7 @@ def apply_distribution(
     worker = getattr(request.app.state, "preview_worker", None)
     if worker is not None:
         for page in PageRepository(database.connect()).list(project_id):
-            worker.submit(project_id, page.id, max_width=320, priority=1)
+            worker.submit(project_id, page.id, max_width=200, priority=1)
     return response(notice="Distribution applied.")
 
 

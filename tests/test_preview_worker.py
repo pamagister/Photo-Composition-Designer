@@ -65,7 +65,7 @@ def test_synchronous_worker_renders_inline(tmp_path):
     try:
         preview_dir = tmp_path / "previews"
         worker = SynchronousPreviewWorker(database, preview_dir=preview_dir)
-        worker.submit(project_id, page_id, max_width=320)
+        worker.submit(project_id, page_id, max_width=200)
         files = list((preview_dir / "pages").glob("*.jpg"))
         assert len(files) == 1
         assert worker.pending_count() == 0
@@ -85,8 +85,8 @@ def test_worker_coalesces_duplicate_jobs(tmp_path):
     try:
         preview_dir = tmp_path / "previews"
         worker = SynchronousPreviewWorker(database, preview_dir=preview_dir)
-        worker.submit(project_id, page_id, max_width=320)
-        worker.submit(project_id, page_id, max_width=320)  # duplicate
+        worker.submit(project_id, page_id, max_width=200)
+        worker.submit(project_id, page_id, max_width=200)  # duplicate
         files = list((preview_dir / "pages").glob("*.jpg"))
         # Only one file (the second submit is coalesced or a cache hit).
         assert len(files) == 1
@@ -104,11 +104,11 @@ def test_async_worker_coalesces_before_start(tmp_path):
     try:
         preview_dir = tmp_path / "previews"
         worker = PreviewWorker(database, preview_dir=preview_dir)
-        worker.submit(project_id, page_id, max_width=320, priority=1)
-        worker.submit(project_id, page_id, max_width=320, priority=1)  # duplicate
+        worker.submit(project_id, page_id, max_width=200, priority=1)
+        worker.submit(project_id, page_id, max_width=200, priority=1)  # duplicate
         assert worker.pending_count() == 1
         # Different max_width is a different job.
-        worker.submit(project_id, page_id, max_width=640, priority=0)
+        worker.submit(project_id, page_id, max_width=800, priority=0)
         assert worker.pending_count() == 2
     finally:
         database.close()
@@ -125,15 +125,15 @@ def test_async_worker_priority_order(tmp_path):
         preview_dir = tmp_path / "previews"
         worker = PreviewWorker(database, preview_dir=preview_dir)
         # Submit background job first, then high-priority job.
-        worker.submit(project_id, page_id, max_width=320, priority=1)
-        worker.submit(project_id, page_id, max_width=640, priority=0)
+        worker.submit(project_id, page_id, max_width=200, priority=1)
+        worker.submit(project_id, page_id, max_width=800, priority=0)
         # The priority queue should have the priority-0 job first.
         priority, _, job = worker._queue.get_nowait()
         assert priority == 0
-        assert job.max_width == 640
+        assert job.max_width == 800
         priority, _, job = worker._queue.get_nowait()
         assert priority == 1
-        assert job.max_width == 320
+        assert job.max_width == 200
     finally:
         database.close()
 
@@ -145,7 +145,7 @@ def test_async_worker_start_stop(tmp_path):
         preview_dir = tmp_path / "previews"
         worker = PreviewWorker(database, preview_dir=preview_dir)
         worker.start()
-        worker.submit(project_id, page_id, max_width=320, priority=1)
+        worker.submit(project_id, page_id, max_width=200, priority=1)
         # Wait for the job to complete.
         worker._queue.join()
         assert worker.pending_count() == 0
@@ -164,10 +164,10 @@ def test_async_worker_records_error(tmp_path):
         worker = PreviewWorker(database, preview_dir=preview_dir)
         worker.start()
         # Submit a job for a non-existent project to trigger an error.
-        worker.submit(9999, 9999, max_width=320, priority=1)
+        worker.submit(9999, 9999, max_width=200, priority=1)
         worker._queue.join()
         assert worker.last_error is not None
-        assert worker.error_for(9999, 9999, max_width=320) == worker.last_error
+        assert worker.error_for(9999, 9999, max_width=200) == worker.last_error
         worker.stop()
     finally:
         database.close()
@@ -178,20 +178,20 @@ def test_worker_error_is_scoped_to_preview_job(tmp_path):
     database, project_id, page_id = _seed(tmp_path)
     try:
         worker = SynchronousPreviewWorker(database, preview_dir=tmp_path / "previews")
-        worker.submit(9999, 9999, max_width=320)
-        failed_key = _preview_job_key(9999, 9999, 320, "preview")
-        assert worker.error_for(9999, 9999, max_width=320) is not None
-        assert worker.error_for(project_id, page_id, max_width=320) is None
+        worker.submit(9999, 9999, max_width=200)
+        failed_key = _preview_job_key(9999, 9999, 200, "preview")
+        assert worker.error_for(9999, 9999, max_width=200) is not None
+        assert worker.error_for(project_id, page_id, max_width=200) is None
 
-        worker.submit(project_id, page_id, max_width=320)
-        assert worker.error_for(project_id, page_id, max_width=320) is None
-        assert worker.error_for(9999, 9999, max_width=640) is None
+        worker.submit(project_id, page_id, max_width=200)
+        assert worker.error_for(project_id, page_id, max_width=200) is None
+        assert worker.error_for(9999, 9999, max_width=800) is None
 
         # Re-submitting the failed job clears its stale error, then the
         # synchronous worker re-renders and records the failure again.
         worker._job_errors[failed_key] = "stale"
-        worker.submit(9999, 9999, max_width=320)
-        assert worker.error_for(9999, 9999, max_width=320) is not None
+        worker.submit(9999, 9999, max_width=200)
+        assert worker.error_for(9999, 9999, max_width=200) is not None
     finally:
         database.close()
 
@@ -248,7 +248,7 @@ def test_async_worker_warmup_is_lowest_priority_and_coalesces(tmp_path):
         worker.submit_warmup(project_id, photo, identity=identity)
         assert worker.pending_count() == 1
 
-        worker.submit(project_id, page_id, max_width=320, priority=0)
+        worker.submit(project_id, page_id, max_width=200, priority=0)
         priority, _, job = worker._queue.get_nowait()
         assert priority == 0
         assert not isinstance(job, WarmupJob)

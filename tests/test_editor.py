@@ -170,7 +170,7 @@ def test_assign_photo_via_route(editor_client, tmp_path):
     assert "Photo assigned" in response.text
     assert f"/pages/{page_id}/preview?v=2" in response.text
 
-    preview = editor_client.get(f"/projects/{project_id}/pages/{page_id}/preview?max_width=320")
+    preview = editor_client.get(f"/projects/{project_id}/pages/{page_id}/preview?max_width=200")
     assert preview.status_code == 200
     assert preview.headers["content-type"] == "image/jpeg"
 

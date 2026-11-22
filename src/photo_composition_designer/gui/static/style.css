@@ -707,9 +707,10 @@ summary {
 }
 
 .page-thumb-preview {
+  display: block;
   width: 100%;
-  aspect-ratio: 1 / 1.15;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   border-radius: 4px;
   background: var(--surface);
 }
@@ -1633,7 +1634,7 @@ summary {
   }
 
   .page-thumb-preview {
-    aspect-ratio: 4 / 3;
+    height: auto;
   }
 
   .editor-bottom {

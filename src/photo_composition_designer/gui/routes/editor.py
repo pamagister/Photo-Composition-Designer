@@ -73,7 +73,7 @@ def _render_project_previews(
     if worker is None:
         return
     for page in PageRepository(database.connect()).list(project_id):
-        worker.submit(project_id, page.id, max_width=320, priority=1)
+        worker.submit(project_id, page.id, max_width=200, priority=1)
 
 
 @router.post("/projects/{project_id}/pages/{page_id}/assign")
@@ -387,7 +387,7 @@ def set_crop_live(
         return _error(project_id, str(error))
     worker = getattr(request.app.state, "preview_worker", None)
     if worker is not None:
-        worker.submit(project_id, page_id, max_width=640, priority=0)
+        worker.submit(project_id, page_id, max_width=800, priority=0)
     with database.connect() as connection:
         page = PageRepository(connection).get(page_id)
         revision = page.render_revision if page is not None else 0

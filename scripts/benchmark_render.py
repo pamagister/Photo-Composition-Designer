@@ -8,7 +8,7 @@ in ``scripts/harness_common.py`` (kept out of ``src/`` and ``tests/``). It cover
 
 * full page render and preview-write time across 4/14/30/45 slots,
 * two representative layout geometries (a single row and a multi-row grid),
-* cold vs. warm preview at 320 and 640 px,
+* cold vs. warm preview at 200 and 800 px,
 * GPS/map on and off,
 * the project-wide "refresh all previews" bulk action,
 * editor context and template render cost for many slots.
@@ -59,7 +59,7 @@ from photo_composition_designer.project.repositories import PageRepository  # no
 SLOT_COUNTS = (4, 14, 30, 45)
 
 #: Preview widths exercised for cold/warm measurements.
-PREVIEW_WIDTHS = (320, 640)
+PREVIEW_WIDTHS = (200, 800)
 
 #: Number of pages in the bulk "refresh all previews" workload.
 BULK_PAGES = 10
@@ -236,8 +236,8 @@ def measure_render(slots: int, geometry: Geometry, gps_count: int) -> dict[str, 
 
         return {
             "render_ms": render_ms,
-            "write320_ms": writes[320],
-            "write640_ms": writes[640],
+            "write200_ms": writes[200],
+            "write800_ms": writes[800],
         }
     finally:
         database.close()
@@ -287,12 +287,12 @@ def measure_bulk(slots: int) -> dict[str, float]:
             cached.unlink()
         start = time.perf_counter()
         for page_id in page_ids:
-            rendering.render_preview(project_id, page_id, max_width=320)
+            rendering.render_preview(project_id, page_id, max_width=200)
         cold_s = time.perf_counter() - start
 
         start = time.perf_counter()
         for page_id in page_ids:
-            rendering.render_preview(project_id, page_id, max_width=320)
+            rendering.render_preview(project_id, page_id, max_width=200)
         warm_s = time.perf_counter() - start
 
         return {"bulk_cold_s": cold_s, "bulk_warm_s": warm_s}
@@ -362,28 +362,28 @@ def _print_environment() -> None:
 
 def _print_render_table(rows: list[tuple[str, dict[str, float]]]) -> None:
     print("=== Full page render + preview write ===")
-    print(f"{'case':>12} {'render':>9} {'write320':>9} {'write640':>9}   (ms)")
+    print(f"{'case':>12} {'render':>9} {'write200':>9} {'write800':>9}   (ms)")
     for label, row in rows:
         print(
             f"{label:>12} {row['render_ms']:9.0f} "
-            f"{row['write320_ms']:9.0f} {row['write640_ms']:9.0f}"
+            f"{row['write200_ms']:9.0f} {row['write800_ms']:9.0f}"
         )
     print()
 
 
 def _print_preview_table(rows: list[tuple[str, dict[str, float]]]) -> None:
     print("=== Preview cold vs. warm ===")
-    print(f"{'case':>12} {'cold320':>9} {'warm320':>9} {'cold640':>9} {'warm640':>9}   (ms)")
+    print(f"{'case':>12} {'cold200':>9} {'warm200':>9} {'cold800':>9} {'warm800':>9}   (ms)")
     for label, row in rows:
         print(
-            f"{label:>12} {row['cold320_ms']:9.0f} {row['warm320_ms']:9.2f} "
-            f"{row['cold640_ms']:9.0f} {row['warm640_ms']:9.2f}"
+            f"{label:>12} {row['cold200_ms']:9.0f} {row['warm200_ms']:9.2f} "
+            f"{row['cold800_ms']:9.0f} {row['warm800_ms']:9.2f}"
         )
     print()
 
 
 def _print_bulk_table(rows: list[tuple[int, dict[str, float]]]) -> None:
-    print(f"=== Bulk refresh all previews ({BULK_PAGES} pages, 320 px) ===")
+    print(f"=== Bulk refresh all previews ({BULK_PAGES} pages, 200 px) ===")
     print(f"{'slots':>6} {'cold':>9} {'warm':>9}   (s)")
     for slots, row in rows:
         print(f"{slots:>6} {row['bulk_cold_s']:9.2f} {row['bulk_warm_s']:9.3f}")

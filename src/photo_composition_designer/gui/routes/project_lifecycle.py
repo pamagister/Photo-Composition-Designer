@@ -118,7 +118,7 @@ def _project_title_image_urls(
         if not pages:
             continue
         page = pages[0]
-        key = preview_cache_key_for(rendering, connection, page, max_width=320, mode="preview")
+        key = preview_cache_key_for(rendering, connection, page, max_width=200, mode="preview")
         if (settings.preview_dir() / "pages" / f"{key}.jpg").is_file():
             urls[project.id] = f"/projects/{project.id}/preview-assets/{key}.jpg"
     return urls

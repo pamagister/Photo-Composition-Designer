@@ -213,7 +213,7 @@ def test_projects_page_uses_cached_first_page_preview_as_title_image(
     project_id = _create_project(client)
     _, pages = _project_state(gui_settings, project_id)
 
-    preview = client.get(f"/projects/{project_id}/pages/{pages[0].id}/preview?max_width=320")
+    preview = client.get(f"/projects/{project_id}/pages/{pages[0].id}/preview?max_width=200")
     assert preview.status_code == 200
 
     projects = client.get("/projects")

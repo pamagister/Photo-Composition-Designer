@@ -116,7 +116,7 @@ class PreviewWorker:
         project_id: int,
         page_id: int,
         *,
-        max_width: int = 320,
+        max_width: int = 200,
         mode: str = "preview",
         priority: int = 1,
     ) -> None:
@@ -179,7 +179,7 @@ class PreviewWorker:
         project_id: int,
         page_id: int,
         *,
-        max_width: int = 320,
+        max_width: int = 200,
         mode: str = "preview",
     ) -> str | None:
         """Return the recorded failure for one preview job, if any.
@@ -295,7 +295,7 @@ class SynchronousPreviewWorker:
         project_id: int,
         page_id: int,
         *,
-        max_width: int = 320,
+        max_width: int = 200,
         mode: str = "preview",
         priority: int = 1,
     ) -> None:
@@ -354,7 +354,7 @@ class SynchronousPreviewWorker:
         project_id: int,
         page_id: int,
         *,
-        max_width: int = 320,
+        max_width: int = 200,
         mode: str = "preview",
     ) -> str | None:
         """Return the recorded failure for one preview job, if any."""

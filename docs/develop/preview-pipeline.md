@@ -11,7 +11,7 @@ and records the invariants that keep previews fast **and** truthful.
 
 - **Editing feels immediate.** Assign, replace, swap and crop return the page
   fragment without rendering a full-resolution page inside the request.
-- **Previews are cheap.** A 320/640 px preview costs substantially less than a
+- **Previews are cheap.** A 200/800 px preview costs substantially less than a
   full 300 dpi render.
 - **Exports stay full quality.** Draft rendering is a preview-only flag; the
   exporter and the CLI keep the pixel-exact full-resolution path.
@@ -60,7 +60,7 @@ SHA-256 digest over:
 | `profile` | `profile.profile_hash()` | Distinguishes profiles, including draft vs. full |
 | `anniversaries` | File path, mtime, size, digest | Invalidates on anniversary data changes |
 | `mode` | `"preview"` | Distinguishes preview modes |
-| `max_width` | Requested width | 320 and 640 are different files |
+| `max_width` | Requested width | 200 and 800 are different files |
 
 The preview is stored at `preview_dir/pages/{key}.jpg`. `preview_cache_path`
 computes the path without rendering, so callers can check `is_file()`.
@@ -159,7 +159,7 @@ uv run python scripts/benchmark_render.py --geometry row
 ```
 
 It builds a throwaway project from real JPEG fixtures in `images/`, measures full
-render, cold/warm preview at 320/640, bulk refresh and editor context cost, and
+render, cold/warm preview at 200/800, bulk refresh and editor context cost, and
 prints run metadata. Shared seeding helpers live in `scripts/harness_common.py`.
 Browser click-to-visible-preview latency is a separate manual verification.
 
