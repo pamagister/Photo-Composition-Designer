@@ -665,6 +665,136 @@ def test_auto_add_many_fills_empty_slot_before_reflowing(tmp_path):
         database.close()
 
 
+def test_auto_fill_unused_fills_empty_slot_without_reflow(tmp_path):
+    database, editing, project_id, page_id, photo_ids, _slot_ids = _seed_auto_page(
+        tmp_path, photo_count=5, preassigned=2
+    )
+    try:
+        first_layout, _ = _layout_for_page(database, page_id)
+        editing.remove(project_id, page_id, first_layout.slots[0].id)
+
+        added, regenerated = editing.auto_fill_unused(project_id, page_id, 1)
+
+        assert added == 1
+        assert regenerated is False
+        layout, assignments = _layout_for_page(database, page_id)
+        assert len(layout.slots) == 2
+        assert len(assignments) == 2
+        assert {assignment.photo_id for assignment in assignments} == set(photo_ids[:2])
+    finally:
+        database.close()
+
+
+def test_auto_fill_unused_reflows_when_more_photos_than_holes(tmp_path):
+    database, editing, project_id, page_id, photo_ids, _slot_ids = _seed_auto_page(
+        tmp_path, photo_count=5, preassigned=2
+    )
+    try:
+        first_layout, _ = _layout_for_page(database, page_id)
+        editing.remove(project_id, page_id, first_layout.slots[0].id)
+
+        added, regenerated = editing.auto_fill_unused(project_id, page_id, 3)
+
+        assert added == 3
+        assert regenerated is True
+        layout, assignments = _layout_for_page(database, page_id)
+        assert len(layout.slots) == 4
+        assert {assignment.photo_id for assignment in assignments} == set(photo_ids[:4])
+    finally:
+        database.close()
+
+
+def test_auto_fill_unused_without_unused_photos_is_noop(tmp_path):
+    database, editing, project_id, page_id, _photo_ids, _slot_ids = _seed_auto_page(
+        tmp_path, photo_count=2, preassigned=2
+    )
+    try:
+        added, regenerated = editing.auto_fill_unused(project_id, page_id, 5)
+
+        assert added == 0
+        assert regenerated is False
+        layout, assignments = _layout_for_page(database, page_id)
+        assert len(assignments) == 2
+        assert len(layout.slots) == 2
+    finally:
+        database.close()
+
+
+@pytest.mark.parametrize("limit", [0, -1, 100])
+def test_auto_fill_unused_rejects_out_of_range_limit(tmp_path, limit):
+    database, editing, project_id, page_id, _photo_ids, _slot_ids = _seed_auto_page(
+        tmp_path, photo_count=3, preassigned=1
+    )
+    try:
+        with pytest.raises(ProjectError):
+            editing.auto_fill_unused(project_id, page_id, limit)
+    finally:
+        database.close()
+
+
+def test_auto_fill_unused_rejects_non_auto_page(tmp_path):
+    database, editing, project_id, page_id, _photo_ids, _slot_ids = _seed(
+        tmp_path, photo_count=3
+    )
+    try:
+        with pytest.raises(ProjectError):
+            editing.auto_fill_unused(project_id, page_id, 2)
+    finally:
+        database.close()
+
+
+def test_auto_fill_route_adds_unused_photos(auto_client, tmp_path):
+    project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=4)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/assignments/clear")
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/auto/reflow")
+
+    response = auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/auto/fill",
+        data={"limit": 2},
+    )
+
+    assert response.status_code == 200
+    assert "Added 2 photo(s) and layout reflowed." in response.text
+    database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
+    try:
+        with database.connect() as connection:
+            page = PageRepository(connection).get(page_id)
+            assert page is not None and page.layout_id is not None
+            layout = LayoutRepository(connection).get_by_id(page.layout_id)
+            assert layout is not None
+            assert len(layout.slots) == 2
+            assignments = connection.execute(
+                "SELECT photo_id FROM assignments WHERE page_id = ?", (page_id,)
+            ).fetchall()
+            assert {row["photo_id"] for row in assignments} == set(photo_ids[:2])
+    finally:
+        database.close()
+
+
+def test_auto_fill_control_rendered_only_with_unused_photos(auto_client, tmp_path):
+    project_id, page_id, _photo_ids = _seed_client(tmp_path, photo_count=4)
+    auto_client.post(
+        f"/projects/{project_id}/pages/{page_id}/layout",
+        data={"layout_key": "auto", "confirm": "1"},
+    )
+
+    # All photos assigned to the auto layout: no unused photos, no control.
+    assigned_view = auto_client.get(f"/projects/{project_id}?page={page_id}")
+    assert "Fill slots with unused photos" not in assigned_view.text
+
+    # Clearing assignments frees every photo, so the control appears.
+    auto_client.post(f"/projects/{project_id}/pages/{page_id}/assignments/clear")
+    unused_view = auto_client.get(f"/projects/{project_id}?page={page_id}")
+    assert "Fill slots with unused photos" in unused_view.text
+    assert "/auto/fill" in unused_view.text
+    assert 'value="5"' in unused_view.text
+    assert 'max="99"' in unused_view.text
+
+
 def test_auto_add_route_adds_multiple_photos(auto_client, tmp_path):
     project_id, page_id, photo_ids = _seed_client(tmp_path, photo_count=4)
     auto_client.post(

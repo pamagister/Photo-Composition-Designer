@@ -211,6 +211,37 @@ def auto_add_photo(
     return _page_fragment(request, project_id, page_id, message)
 
 
+@router.post("/projects/{project_id}/pages/{page_id}/auto/fill")
+def auto_fill_unused_photos(
+    request: Request,
+    project_id: int,
+    page_id: int,
+    detector: ObjectDetectorDependency,
+    limit: Annotated[int, Form()] = 5,
+) -> HTMLResponse:
+    """Fill empty auto slots with up to ``limit`` unused available photos.
+
+    Photos are taken in inventory order, empty slots are filled first and the
+    layout reflows once when more photos are added than there are holes.
+    """
+    database = _open_database(request)
+    editing = PageEditingService(database, object_detector=detector)
+    had_unused_photos = _has_unused_photos(database, project_id)
+    try:
+        added, regenerated = editing.auto_fill_unused(project_id, page_id, limit)
+    except ProjectError as error:
+        return _error(project_id, str(error))
+    if had_unused_photos and not _has_unused_photos(database, project_id):
+        _render_project_previews(request, database, project_id, detector)
+    if added == 0:
+        message = "No unused photos to fill."
+    elif regenerated:
+        message = f"Added {added} photo(s) and layout reflowed."
+    else:
+        message = f"Filled {added} slot(s)."
+    return _page_fragment(request, project_id, page_id, message)
+
+
 @router.post("/projects/{project_id}/pages/{page_id}/auto/reflow")
 def auto_reflow_page(
     request: Request,

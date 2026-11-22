@@ -811,6 +811,62 @@ class PageEditingService:
         self._persist_auto_snapshot(connection, project_id, page, ordered_pairs, slots)
         return added + len(remaining), True
 
+    def auto_fill_unused(
+        self,
+        project_id: int,
+        page_id: int,
+        limit: int,
+    ) -> tuple[int, bool]:
+        """Fill up to ``limit`` unused available photos into an automatic page.
+
+        Selects up to ``limit`` available photos that are not assigned anywhere
+        in the project (inventory ``relative_path`` order, the same order as
+        :meth:`populate`) and places them with the same logic as
+        :meth:`auto_add_many`: empty slots are filled first and a single reflow
+        happens when there are more photos than holes.
+
+        Args:
+            project_id: Project that owns the page.
+            page_id: Page that uses the automatic layout.
+            limit: Maximum number of photos to add (inclusive range 1-99).
+
+        Returns:
+            ``(added, regenerated)`` where ``added`` is the number of photos
+            placed and ``regenerated`` indicates whether a new snapshot was
+            written.
+
+        Raises:
+            ProjectError: If the page is not an automatic layout or ``limit``
+                is outside the inclusive range 1-99.
+        """
+        if limit < 1 or limit > 99:
+            raise ProjectError("limit must be between 1 and 99")
+        with self._database.transaction() as connection:
+            page = PageRepository(connection).get(page_id)
+            if page is None or page.project_id != project_id:
+                raise ProjectError(f"page {page_id} does not exist")
+            layout = (
+                LayoutRepository(connection).get_by_id(page.layout_id)
+                if page.layout_id is not None
+                else None
+            )
+            if not self._is_auto_layout(layout):
+                raise ProjectError(f"page {page_id} does not use the automatic layout")
+            used_photo_ids = {
+                assignment.photo_id
+                for assignment in AssignmentRepository(connection).list_by_project(project_id)
+            }
+            candidates = [
+                photo.id
+                for photo in PhotoRepository(connection).list(project_id, available_only=True)
+                if photo.id not in used_photo_ids
+            ][:limit]
+            if not candidates:
+                return 0, False
+            return self._auto_add_many_in_transaction(
+                connection, project_id, page, layout, candidates
+            )
+
     def uses_auto_layout(self, project_id: int, page_id: int) -> bool:
         """Return whether a page currently uses an automatic snapshot."""
         with self._database.transaction() as connection:

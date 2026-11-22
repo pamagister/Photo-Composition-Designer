@@ -180,6 +180,22 @@
           <button type="submit">Remove empty slots</button>
         </form>
       </div>
+      {% set fill_ns = namespace(has_unused=false) %}
+      {% for candidate in available_photos %}
+        {% if usage_counts.get(candidate.id, 0) == 0 %}{% set fill_ns.has_unused = true %}{% endif %}
+      {% endfor %}
+      {% if fill_ns.has_unused %}
+      <form class="auto-fill-form"
+            hx-post="/projects/{{ project_id }}/pages/{{ page.id }}/auto/fill"
+            hx-target="closest .editor-canvas"
+            hx-swap="outerHTML"
+            aria-label="Fill slots with unused photos">
+        <label class="sr-only" for="auto-fill-limit-{{ page.id }}">Number of unused photos to fill</label>
+        <input id="auto-fill-limit-{{ page.id }}" type="number" name="limit"
+               min="1" max="99" value="5" required>
+        <button type="submit">Fill slots with unused photos</button>
+      </form>
+      {% endif %}
       {% if is_auto_layout %}
       <div class="auto-dropzone"
            data-auto-dropzone="1"
