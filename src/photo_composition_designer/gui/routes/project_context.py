@@ -63,6 +63,21 @@ def _collage_box_for_page(page, profile):
     return collage_box_for_page(page, profile)
 
 
+def _collage_overlay_data(page, profile) -> dict[str, float]:
+    """Return the collage content box as a page-percentage rectangle.
+
+    The empty automatic drop zone is positioned with these percentages so it
+    covers only the collage area, matching the rendered preview.
+    """
+    box = _collage_box_for_page(page, profile)
+    return {
+        "left": round(box.left / box.page_width * 100.0, 4),
+        "top": round(box.top / box.page_height * 100.0, 4),
+        "width": round(box.width / box.page_width * 100.0, 4),
+        "height": round(box.height / box.page_height * 100.0, 4),
+    }
+
+
 def _description_overlay_data(prepared: PreparedCollage) -> dict[str, float] | None:
     """Return the clickable description rectangle as page percentages.
 
@@ -254,6 +269,9 @@ def _project_context(
         )
     else:
         slot_overlays, description_overlay = [], None
+    collage_overlay = (
+        _collage_overlay_data(selected, profile) if selected is not None and not slots else None
+    )
 
     return {
         "project": aggregate.project,
@@ -280,6 +298,7 @@ def _project_context(
         "slot_assignment_map": slot_assignment_map,
         "slot_overlays": slot_overlays,
         "description_overlay": description_overlay,
+        "collage_overlay": collage_overlay,
         "catalogue": layout_choices(),
         "source_states": source_states,
         "error": error,
@@ -341,6 +360,7 @@ def _page_context(
     slot_overlays, description_overlay = _preview_overlay_data(
         page, profile, slots, slot_assignment_map
     )
+    collage_overlay = _collage_overlay_data(page, profile) if not slots else None
 
     context = {
         "page": page,
@@ -362,6 +382,7 @@ def _page_context(
         "slot_assignment_map": slot_assignment_map,
         "slot_overlays": slot_overlays,
         "description_overlay": description_overlay,
+        "collage_overlay": collage_overlay,
         "catalogue": layout_choices(),
         "thumb_cache_key": thumb_cache_key,
     }

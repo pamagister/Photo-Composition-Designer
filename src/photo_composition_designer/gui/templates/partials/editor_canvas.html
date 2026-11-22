@@ -41,7 +41,8 @@
              data-auto-dropzone="1"
              role="group"
              tabindex="0"
-             aria-label="Drop a photo to start the automatic layout">
+             aria-label="Drop a photo to start the automatic layout"
+             {% if collage_overlay %}style="left: {{ collage_overlay.left }}%; top: {{ collage_overlay.top }}%; width: {{ collage_overlay.width }}%; height: {{ collage_overlay.height }}%;"{% endif %}>
           <span class="dropzone-hint">Drop a photo to start the layout</span>
         </div>
         {% else %}

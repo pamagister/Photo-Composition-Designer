@@ -975,7 +975,6 @@ summary {
 
 .auto-canvas-dropzone {
   position: absolute;
-  inset: 0;
   display: grid;
   place-items: center;
   border: 2px dashed rgba(255, 255, 255, 0.6);

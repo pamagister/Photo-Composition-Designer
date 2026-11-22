@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -17,10 +18,15 @@ from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.layouts.loader import AUTO_LAYOUT_KEY, layout_choices
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.inventory import InventoryService
+from photo_composition_designer.project.rendering import (
+    collage_box_for_page,
+    profile_from_project,
+)
 from photo_composition_designer.project.repositories import (
     AssignmentRepository,
     LayoutRepository,
     PageRepository,
+    ProjectRepository,
 )
 from photo_composition_designer.project.services import ProjectService
 
@@ -542,22 +548,42 @@ def _create_auto_project(tmp_path: Path, *, page_count: int = 1) -> int:
     return int(location.split("/projects/", 1)[1].split("?", 1)[0])
 
 
-def test_auto_page_without_slots_shows_full_canvas_dropzone(auto_client, tmp_path):
+def test_auto_page_without_slots_uses_collage_area_dropzone(auto_client, tmp_path):
     # A project created with the auto default gets an empty auto snapshot on
-    # every page, which is the canonical "empty auto page" state.
+    # every page, which is the canonical "empty auto page" state. The drop zone
+    # must cover only the collage content box, not the entire page frame.
     empty_project_id = _create_auto_project(tmp_path, page_count=1)
     database = WorkspaceDatabase(data_dir() / "workspace.sqlite3")
     try:
         with database.connect() as connection:
-            empty_page_id = PageRepository(connection).list(empty_project_id)[0].id
+            page = PageRepository(connection).list(empty_project_id)[0]
+            project = ProjectRepository(connection).get(empty_project_id)
+            assert project is not None
+            box = collage_box_for_page(page, profile_from_project(project))
     finally:
         database.close()
 
-    response = auto_client.get(f"/projects/{empty_project_id}?page={empty_page_id}")
+    response = auto_client.get(f"/projects/{empty_project_id}?page={page.id}")
 
     assert response.status_code == 200
     assert "auto-canvas-dropzone" in response.text
     assert "Drop a photo to start the layout" in response.text
+    match = re.search(r'class="auto-canvas-dropzone"[^>]*style="([^"]+)"', response.text)
+    assert match is not None, "empty auto dropzone must carry inline collage geometry"
+    style = match.group(1)
+    expected = {
+        "left": box.left / box.page_width * 100.0,
+        "top": box.top / box.page_height * 100.0,
+        "width": box.width / box.page_width * 100.0,
+        "height": box.height / box.page_height * 100.0,
+    }
+    for name, value in expected.items():
+        found = re.search(rf"{name}:\s*([\d.]+)%", style)
+        assert found is not None, f"missing {name} in dropzone style"
+        assert float(found.group(1)) == pytest.approx(value, abs=1e-3)
+    # The collage box leaves room for margins/calendar, so it is not full-frame.
+    assert expected["width"] < 100.0
+    assert expected["height"] < 100.0
 
 
 def test_static_page_has_no_auto_controls(auto_client, tmp_path):
