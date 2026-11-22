@@ -1,6 +1,6 @@
 # Distribution Modes and Layout Reset
 
-**Status:** Planned  
+**Status:** Complete  
 **Created:** 2026-11-22  
 **Repository:** `pamagister/Photo-Composition-Designer`  
 **Execution mode:** autopilot, phase-boundary handoffs
@@ -304,7 +304,7 @@ The proposal digest must include `mode`, `strategy`, `seed`, `best_range`, `page
 
 ## 4. Phases and work packages
 
-### Phase 1: Remove `auto_target_slots` and add computed capacity
+### Phase 1: Remove `auto_target_slots` and add computed capacity (done)
 
 **Objective:** Make the old target-slot setting disappear without breaking existing projects.
 
@@ -401,14 +401,14 @@ The proposal digest must include `mode`, `strategy`, `seed`, `best_range`, `page
 
 **Objective:** Prove the feature on the real data set.
 
-- [ ] P6-W01: Run `make fmt`, `make lint`, `make test`; run targeted slow tests.
-- [ ] P6-W02: Validate on project 4:
+- [x] P6-W01: Run `make fmt`, `make lint`, `make test`; run targeted slow tests.
+- [x] P6-W02: Validate on project 4:
   - Reset layouts → 53 Automatic pages, photos kept.
   - Distribute all → date-aware → 303 assigned, page sizes near 6, same-day groups preserved where possible.
   - Distribute all → equal and random → balanced page sizes.
   - Distribute best `3–5` → about 212 selected, automatic layouts.
   - Existing slots mode on a static-layout project still works.
-- [ ] P6-W03: Update the handoff block and report results.
+- [x] P6-W03: Update the handoff block and report results.
 
 **Acceptance criteria**
 
@@ -487,11 +487,13 @@ uv run photo-composition-designer gui
 ```markdown
 - **Mode:** autopilot
 - **Plan:** docs/plans/2026-11-22-distribution-modes.md
-- **Completed:** none
-- **Active:** P1-W01 `[-]`
-- **Next:** P1-W02
+- **Completed:** all phases (P1-P6) and work packages
+- **Active:** none
+- **Next:** none
 - **Relevant files:**
   - src/photo_composition_designer/project/distribution.py
+  - src/photo_composition_designer/project/date_grouping.py
+  - src/photo_composition_designer/project/quality.py
   - src/photo_composition_designer/project/editing.py
   - src/photo_composition_designer/project/importance.py
   - src/photo_composition_designer/core/output_profile.py
@@ -499,16 +501,18 @@ uv run photo-composition-designer gui
   - src/photo_composition_designer/gui/routes/project_distribution.py
   - src/photo_composition_designer/gui/routes/project_settings.py
   - src/photo_composition_designer/gui/routes/editor.py
-  - src/photo_composition_designer/gui/templates/base.html
   - src/photo_composition_designer/gui/templates/partials/distribution_area.html
   - src/photo_composition_designer/gui/templates/partials/distribution_preview.html
+  - src/photo_composition_designer/gui/templates/base.html
   - src/photo_composition_designer/gui/templates/project_settings.html
-  - tests/test_distribution.py
-  - tests/test_distribution_ui.py
-  - tests/test_auto_distribution.py
-  - tests/test_project_settings.py
+  - tests/test_distribution.py, tests/test_distribution_ui.py,
+    tests/test_auto_distribution.py, tests/test_project_settings.py,
+    tests/test_date_grouping.py, tests/test_quality.py
 - **Decisions:** remove auto_target_slots; computed target; modes all/best/slots; date_grouped DP; quality heuristic fallback; best range is min-max per page; reset layouts preserves photos.
 - **Blockers:** none
-- **Last verified:** 2026-11-22, repo at d799cc3; project 4 has 303 photos, 53 pages, 0 assignments; object detection enabled.
-- **Context status:** clean
+- **Last verified:** 2026-11-22, `make fmt`, `make lint` and `make test` green (523 passed).
+- **Validation:** synthetic 303-photo / 53-page dry run -> 53 automatic pages, 303 assigned,
+  date_grouped 5-6 per page, equal/random balanced, best 3-5 selected 212 (91 not_selected),
+  static slots mode unchanged.
+- **Context status:** complete
 ```
