@@ -260,6 +260,16 @@ def test_extras_menu_offers_clear_all_assignments(editor_client, tmp_path):
     assert "Remove all photo assignments for this project?" in page.text
 
 
+def test_top_menus_load_auto_close_script(editor_client, tmp_path):
+    project_id, page_id, _, _ = _seed_project(tmp_path)
+    page = editor_client.get(f"/projects/{project_id}?page={page_id}")
+
+    assert page.status_code == 200
+    assert '/static/nav.js' in page.text
+    # At least the Settings and Extras menus exist for the script to coordinate.
+    assert page.text.count('class="nav-dropdown"') >= 2
+
+
 def test_projects_navigation_is_a_prominent_button(editor_client, tmp_path):
     project_id, page_id, _, _ = _seed_project(tmp_path)
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
