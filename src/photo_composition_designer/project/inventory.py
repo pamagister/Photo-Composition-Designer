@@ -55,6 +55,7 @@ class ScanSummary:
     added: int
     updated: int
     unavailable: int
+    output_changed: bool = False
     warnings: tuple[str, ...] = ()
     duration_seconds: float = 0.0
     symlink_policy: str = "Symbolic links are skipped."
@@ -68,6 +69,7 @@ class ScanSummary:
             "added": self.added,
             "updated": self.updated,
             "unavailable": self.unavailable,
+            "output_changed": self.output_changed,
             "warnings": list(self.warnings),
             "duration_seconds": self.duration_seconds,
             "symlink_policy": self.symlink_policy,
@@ -284,6 +286,7 @@ class InventoryService:
             added=added,
             updated=len(assets) - added,
             unavailable=unavailable,
+            output_changed=output_changed,
             warnings=tuple(warnings),
             duration_seconds=round(time.monotonic() - started, 3),
         )

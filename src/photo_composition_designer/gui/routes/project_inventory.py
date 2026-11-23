@@ -156,10 +156,18 @@ def scan_project(
     inventory: InventoryServiceDependency,
     detector: ObjectDetectorDependency,
 ) -> HTMLResponse | RedirectResponse:
-    """Scan the active source root and return a summary fragment."""
+    """Scan the active source root and return a summary fragment.
+
+    Automatic layouts are only regenerated when existing photos changed or were
+    removed. Adding only new photos keeps every existing auto snapshot and its
+    cached preview valid, so the scan returns promptly.
+    """
     try:
         summary = inventory.scan(project_id)
-        PageEditingService(database, object_detector=detector).regenerate_auto_layouts(project_id)
+        if summary.output_changed:
+            PageEditingService(database, object_detector=detector).regenerate_auto_layouts(
+                project_id
+            )
     except ValueError as exc:
         message = str(exc)
         if request.headers.get("HX-Request") == "true":

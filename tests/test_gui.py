@@ -201,6 +201,42 @@ def test_rescanning_marks_deleted_photos_unavailable(client, source_dir):
     assert client.get(f"/media/photos/{photo_id}").status_code == 404
 
 
+def test_scan_skips_auto_layout_regeneration_when_only_new_photos(
+    client, source_dir, monkeypatch
+):
+    from photo_composition_designer.project import editing as editing_module
+
+    project_url = _create_project(client)
+    project_id = int(project_url.rsplit("/", 1)[1])
+    calls: list[int] = []
+    original = editing_module.PageEditingService.regenerate_auto_layouts
+
+    def spy(self, project_id, **kwargs):
+        calls.append(project_id)
+        return original(self, project_id, **kwargs)
+
+    monkeypatch.setattr(
+        editing_module.PageEditingService, "regenerate_auto_layouts", spy
+    )
+
+    client.post(f"{project_url}/source", data={"path": str(source_dir)})
+    first = client.post(f"{project_url}/scan", headers={"HX-Request": "true"})
+    assert first.status_code == 200
+    assert calls == []
+
+    Image.new("RGB", (40, 30), "blue").save(source_dir / "extra.jpg", format="JPEG")
+    second = client.post(f"{project_url}/scan", headers={"HX-Request": "true"})
+    assert second.status_code == 200
+    # Adding a new photo is add-only: existing previews stay valid.
+    assert calls == []
+
+    Image.new("RGB", (40, 30), "green").save(source_dir / "photo.jpg", format="JPEG")
+    third = client.post(f"{project_url}/scan", headers={"HX-Request": "true"})
+    assert third.status_code == 200
+    # Changing existing photo bytes must regenerate automatic layouts.
+    assert calls == [project_id]
+
+
 def test_browse_directories(client, source_dir):
     response = client.get("/api/browse", params={"path": str(source_dir)})
 

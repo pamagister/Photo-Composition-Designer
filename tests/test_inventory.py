@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -55,6 +56,48 @@ def test_scan_discovers_images_recursively_and_marks_missing(tmp_path: Path) -> 
     (source / "a.jpg").unlink()
     rescan = inventory.scan(project.id, source_root_id=root.id)
     assert rescan.unavailable == 1
+
+
+def test_scan_output_changed_false_when_only_new_photos_added(tmp_path: Path) -> None:
+    database, inventory, project = _make_project(tmp_path)
+    source = tmp_path / "source"
+    _write_photo(source / "a.jpg")
+    root = inventory.add_source_root(project.id, source)
+    first = inventory.scan(project.id, source_root_id=root.id)
+    assert first.output_changed is False
+
+    _write_photo(source / "b.jpg")
+    second = inventory.scan(project.id, source_root_id=root.id)
+    assert second.added == 1
+    assert second.output_changed is False
+
+
+def test_scan_output_changed_true_when_existing_photo_changes(tmp_path: Path) -> None:
+    database, inventory, project = _make_project(tmp_path)
+    source = tmp_path / "source"
+    _write_photo(source / "a.jpg", (255, 0, 0))
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    _write_photo(source / "a.jpg", (0, 0, 255))
+    # Force a distinct mtime so the change is deterministic across filesystems.
+    os.utime(source / "a.jpg", (1_000_000, 1_000_000))
+    summary = inventory.scan(project.id, source_root_id=root.id)
+    assert summary.output_changed is True
+
+
+def test_scan_output_changed_true_when_photo_removed(tmp_path: Path) -> None:
+    database, inventory, project = _make_project(tmp_path)
+    source = tmp_path / "source"
+    _write_photo(source / "a.jpg")
+    _write_photo(source / "b.jpg")
+    root = inventory.add_source_root(project.id, source)
+    inventory.scan(project.id, source_root_id=root.id)
+
+    (source / "a.jpg").unlink()
+    summary = inventory.scan(project.id, source_root_id=root.id)
+    assert summary.unavailable == 1
+    assert summary.output_changed is True
 
 
 def test_scan_skips_symlinks_by_default(tmp_path: Path) -> None:
