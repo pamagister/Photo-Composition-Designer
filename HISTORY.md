@@ -4,6 +4,73 @@ Changelog
 
 (unreleased)
 ------------
+- Fix(settings): align Save/Cancel in sticky header, simplify app
+  settings save Refs #109. [Paul Magister]
+- Style(tests): apply ruff formatting Refs #107, #108, #109, #110, #112.
+  [Paul Magister]
+- Perf(settings): avoid regeneration on page-count change, pre-render
+  new pages Refs #111. [Paul Magister]
+- Perf(scan): skip auto-layout regeneration when only new photos added
+  Refs #112. [Paul Magister]
+- Feat(settings): add sticky top-right save button Refs #109. [Paul
+  Magister]
+- Feat(nav): auto-close other top menus when one opens Refs #110. [Paul
+  Magister]
+- Fix(editor): constrain empty auto drop zone to collage area Refs #108.
+  [Paul Magister]
+- Feat(editor): add automatic layout fill control Refs #107. [Paul
+  Magister]
+- Fix(layout): lower default image_score_factor to 0.3 Refs #106. [Paul
+  Magister]
+- Docs(distribution): validate against real project 4 copy Refs #105.
+  [Paul Magister]
+- Docs(distribution): complete plan and verification handoff Refs #105.
+  [Paul Magister]
+- Feat(distribution): mode-aware UI, routes and CLI Refs #104. [Paul
+  Magister]
+- Feat(distribution): date-aware DP, all/best modes and proposal model
+  Refs #102, #103. [Paul Magister]
+- Feat(gui): reset all layouts to automatic from Extras Refs #101. [Paul
+  Magister]
+- Feat(distribution): add modes, date grouping and quality selection
+  Refs #100. [Paul Magister]
+- Feat(gui): increase preview width and show full thumbnails Refs #99.
+  [Paul Magister]
+- Feat(gui): make the description preview area a jump target Refs #98.
+  [Paul Magister]
+- Fix(layouts): add all selected photos on automatic pages Refs #97.
+  [Paul Magister]
+- Docs(layouts): document and verify automatic collage layout Refs #96.
+  [Paul Magister]
+- Feat(layouts): distribution and settings for automatic pages Refs #95.
+  [Paul Magister]
+- Feat(layouts): content-aware importance for automatic layouts Refs
+  #94. [Paul Magister]
+- Feat(layouts): photo management on automatic pages Refs #93. [Paul
+  Magister]
+- Feat(layouts): selectable automatic layout with persisted snapshots
+  Refs #92. [Paul Magister]
+- Feat(layouts): add deterministic auto collage layout engine Refs #91.
+  [Paul Magister]
+- Add plan, ignore collages. [Paul Magister]
+- Docs: use shields.io endpoint for Read the Docs badge [no ci] [Paul
+  Magister]
+- Feat(legal): adopt MIT licensing and third-party notices Refs #90.
+  [Paul Magister]
+
+  Add MIT project metadata and a generated THIRD_PARTY_NOTICES.md. Stop shipping the AGPL YOLO model and Natural Earth website pages; keep the model as a user/test download. Include license files in the PyInstaller bundle and release tree.
+- Refactor(detector): resolve YOLO model from local cache Refs #90.
+  [Paul Magister]
+
+  The repository model path is no longer used as the default. ObjectDetector now resolves PCD_YOLO_MODEL, a repository-local test cache, or the per-user data directory. The test fixture downloads the model once on an interactive first run and skips cleanly in CI.
+- Fix rtd badge. [Paul Magister]
+- Docs: document uv tool install and update-safe install commands. [Paul
+  Magister]
+
+
+2.0.5 (2026-11-21)
+------------------
+- Docs: Update HISTORY.md for release 2.0.5. [Paul Magister]
 - Fix(build): quote the Windows release ZIP glob for PowerShell Refs
   #89. [Paul Magister]
 
