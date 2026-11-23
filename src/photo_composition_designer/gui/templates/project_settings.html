@@ -63,104 +63,108 @@
 
   <fieldset class="settings-group">
     <legend>Calendar</legend>
-    <div class="settings-grid">
-      <div class="field checkbox-field">
-        <label for="calendar-use-calendar">
-          <input type="checkbox" id="calendar-use-calendar" name="calendar.use_calendar"
-                 value="1" {% if values['calendar.use_calendar'] %}checked{% endif %}>
-          Show calendar strip
-        </label>
+    <div class="settings-grid calendar-settings-grid">
+      <div class="calendar-checkboxes">
+        <div class="field checkbox-field">
+          <label for="calendar-use-calendar">
+            <input type="checkbox" id="calendar-use-calendar" name="calendar.use_calendar"
+                   value="1" {% if values['calendar.use_calendar'] %}checked{% endif %}>
+            Show calendar strip
+          </label>
+        </div>
+        <div class="field checkbox-field">
+          <label for="calendar-horizontal">
+            <input type="checkbox" id="calendar-horizontal"
+                   name="calendar.horizontal_orientation" value="1"
+                   {% if values['calendar.horizontal_orientation'] %}checked{% endif %}>
+            Horizontal calendar
+          </label>
+        </div>
+        <div class="field checkbox-field">
+          <label for="calendar-short-day">
+            <input type="checkbox" id="calendar-short-day"
+                   name="calendar.use_short_day_names" value="1"
+                   {% if values['calendar.use_short_day_names'] %}checked{% endif %}>
+            Short day names
+          </label>
+        </div>
+        <div class="field checkbox-field">
+          <label for="calendar-short-month">
+            <input type="checkbox" id="calendar-short-month"
+                   name="calendar.use_short_month_names" value="1"
+                   {% if values['calendar.use_short_month_names'] %}checked{% endif %}>
+            Short month names
+          </label>
+        </div>
       </div>
-      <div class="field checkbox-field">
-        <label for="calendar-horizontal">
-          <input type="checkbox" id="calendar-horizontal"
-                 name="calendar.horizontal_orientation" value="1"
-                 {% if values['calendar.horizontal_orientation'] %}checked{% endif %}>
-          Horizontal calendar
-        </label>
-      </div>
-      <div class="field checkbox-field">
-        <label for="calendar-short-day">
-          <input type="checkbox" id="calendar-short-day"
-                 name="calendar.use_short_day_names" value="1"
-                 {% if values['calendar.use_short_day_names'] %}checked{% endif %}>
-          Short day names
-        </label>
-      </div>
-      <div class="field checkbox-field">
-        <label for="calendar-short-month">
-          <input type="checkbox" id="calendar-short-month"
-                 name="calendar.use_short_month_names" value="1"
-                 {% if values['calendar.use_short_month_names'] %}checked{% endif %}>
-          Short month names
-        </label>
-      </div>
-      <div class="field">
-        <label for="calendar-language">Language</label>
-        <select id="calendar-language" name="calendar.language" required>
-          {% for option in language_options %}
-          <option value="{{ option.code }}"
-                  {% if values['calendar.language'] == option.code %}selected{% endif %}>
-            {{ option.label }}
-          </option>
-          {% endfor %}
-          {% if values['calendar.language'] not in (language_options | map(attribute='code')) %}
-          <option value="{{ values['calendar.language'] }}" selected>
-            {{ values['calendar.language'] }} (current)
-          </option>
-          {% endif %}
-        </select>
-      </div>
-      <div class="field">
-        <span class="field-label" id="calendar-countries-label">Holiday countries</span>
-        <p class="muted">No selection means nationwide holidays.</p>
-        <div class="holiday-options" aria-labelledby="calendar-countries-label">
-          {% for option in language_options %}
-          <fieldset class="holiday-option-group"
-                    data-holiday-country="{{ option.country }}"
-                    {% if selected_country != option.country %}hidden{% endif %}>
-            <legend>{{ option.label }}</legend>
-            {% if option.subdivisions %}
-            <div class="holiday-option-grid">
-              {% for subdivision in option.subdivisions %}
+      <div class="calendar-details">
+        <div class="field">
+          <label class="field-label" for="calendar-language">Language</label>
+          <select id="calendar-language" name="calendar.language" required>
+            {% for option in language_options %}
+            <option value="{{ option.code }}"
+                    {% if values['calendar.language'] == option.code %}selected{% endif %}>
+              {{ option.label }}
+            </option>
+            {% endfor %}
+            {% if values['calendar.language'] not in (language_options | map(attribute='code')) %}
+            <option value="{{ values['calendar.language'] }}" selected>
+              {{ values['calendar.language'] }} (current)
+            </option>
+            {% endif %}
+          </select>
+        </div>
+        <div class="field">
+          <span class="field-label" id="calendar-countries-label">Holiday countries</span>
+          <p class="muted">No selection means nationwide holidays.</p>
+          <div class="holiday-options" aria-labelledby="calendar-countries-label">
+            {% for option in language_options %}
+            <fieldset class="holiday-option-group"
+                      data-holiday-country="{{ option.country }}"
+                      {% if selected_country != option.country %}hidden{% endif %}>
+              <legend>{{ option.label }}</legend>
+              {% if option.subdivisions %}
+              <div class="holiday-option-grid">
+                {% for subdivision in option.subdivisions %}
+                <label class="holiday-option">
+                  <input type="checkbox" name="calendar.holiday_countries"
+                         value="{{ subdivision.code }}"
+                         {% if subdivision.code in selected_holiday_countries %}checked{% endif %}>
+                  <span>{{ subdivision.label }}</span>
+                  <span class="muted">{{ subdivision.code }}</span>
+                </label>
+                {% endfor %}
+              </div>
+              {% else %}
+              <p class="muted">{{ option.note }}</p>
+              {% endif %}
+              {% if selected_country == option.country %}
+              {% set known_codes = option.subdivisions | map(attribute='code') | list %}
+              {% for code in selected_holiday_countries if code not in known_codes %}
               <label class="holiday-option">
                 <input type="checkbox" name="calendar.holiday_countries"
-                       value="{{ subdivision.code }}"
-                       {% if subdivision.code in selected_holiday_countries %}checked{% endif %}>
-                <span>{{ subdivision.label }}</span>
-                <span class="muted">{{ subdivision.code }}</span>
+                       value="{{ code }}" checked>
+                <span>{{ code }} (current)</span>
               </label>
               {% endfor %}
-            </div>
-            {% else %}
-            <p class="muted">{{ option.note }}</p>
-            {% endif %}
-            {% if selected_country == option.country %}
-            {% set known_codes = option.subdivisions | map(attribute='code') | list %}
-            {% for code in selected_holiday_countries if code not in known_codes %}
-            <label class="holiday-option">
-              <input type="checkbox" name="calendar.holiday_countries"
-                     value="{{ code }}" checked>
-              <span>{{ code }} (current)</span>
-            </label>
+              {% endif %}
+            </fieldset>
             {% endfor %}
+            {% set known_countries = language_options | map(attribute='country') | list %}
+            {% if selected_country and selected_country not in known_countries %}
+            <fieldset class="holiday-option-group"
+                      data-holiday-country="{{ selected_country }}">
+              <legend>Current holidays ({{ selected_country }})</legend>
+              {% for code in selected_holiday_countries %}
+              <label class="holiday-option">
+                <input type="checkbox" name="calendar.holiday_countries"
+                       value="{{ code }}" checked>
+                <span>{{ code }}</span>
+              </label>
+              {% endfor %}
+            </fieldset>
             {% endif %}
-          </fieldset>
-          {% endfor %}
-          {% set known_countries = language_options | map(attribute='country') | list %}
-          {% if selected_country and selected_country not in known_countries %}
-          <fieldset class="holiday-option-group"
-                    data-holiday-country="{{ selected_country }}">
-            <legend>Current holidays ({{ selected_country }})</legend>
-            {% for code in selected_holiday_countries %}
-            <label class="holiday-option">
-              <input type="checkbox" name="calendar.holiday_countries"
-                     value="{{ code }}" checked>
-              <span>{{ code }}</span>
-            </label>
-            {% endfor %}
-          </fieldset>
-          {% endif %}
+          </div>
         </div>
       </div>
     </div>
@@ -264,8 +268,8 @@
 
   <fieldset class="settings-group">
     <legend>Map</legend>
-    <div class="settings-grid">
-      <div class="field checkbox-field settings-wide">
+    <div class="settings-grid map-settings-grid">
+      <div class="field checkbox-field">
         <span class="field-label">Local map</span>
         <div class="radio-group">
           <label>
@@ -289,20 +293,22 @@
           not show a map.
         </p>
       </div>
-      <div class="field">
-        <label for="geo-extension">Minimal map extension</label>
-        <input id="geo-extension" type="number" min="0"
-               name="geo.minimal_extension"
-               value="{{ values['geo.minimal_extension'] }}" required>
-      </div>
-      <div class="field">
-        <label for="geo-size">Map size</label>
-        <input id="geo-size" type="number" min="1" name="geo.map_size"
-               value="{{ values['geo.map_size'] }}" required>
-        <p class="muted">
-          Width for a horizontal calendar; a vertical calendar uses its
-          cross-axis size.
-        </p>
+      <div class="map-detail-fields">
+        <div class="field">
+          <label for="geo-extension">Minimal map extension</label>
+          <input id="geo-extension" type="number" min="0"
+                 name="geo.minimal_extension"
+                 value="{{ values['geo.minimal_extension'] }}" required>
+        </div>
+        <div class="field">
+          <label for="geo-size">Map size</label>
+          <input id="geo-size" type="number" min="1" name="geo.map_size"
+                 value="{{ values['geo.map_size'] }}" required>
+          <p class="muted">
+            Width for a horizontal calendar; a vertical calendar uses its
+            cross-axis size.
+          </p>
+        </div>
       </div>
     </div>
   </fieldset>
