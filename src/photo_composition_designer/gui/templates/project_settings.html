@@ -5,19 +5,19 @@
 {% endblock %}
 
 {% block content %}
-<div class="project-header">
+<div class="project-header settings-header">
   <div>
     <h1>Project settings</h1>
     <p class="muted">{{ project.name }} &middot; {{ project.page_count }} pages</p>
   </div>
-  <a class="button" href="/projects/{{ project.id }}">Back to project</a>
+  <div class="settings-header-actions">
+    <button class="primary" type="submit" form="project-settings-form">Save</button>
+    <a class="button" href="/projects/{{ project.id }}">Cancel</a>
+  </div>
 </div>
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
 
-<form method="post" action="/projects/{{ project.id }}/settings" class="settings-form">
-  <div class="settings-sticky-save">
-    <button class="primary" type="submit">Save</button>
-  </div>
+<form method="post" action="/projects/{{ project.id }}/settings" class="settings-form" id="project-settings-form">
   <fieldset class="settings-group">
     <legend>Project</legend>
     <div class="settings-grid">
@@ -341,7 +341,7 @@
   </fieldset>
 
   <div class="form-row settings-actions">
-    <button class="primary" type="submit">Save settings</button>
+    <button class="primary" type="submit">Save</button>
     <a class="button" href="/projects/{{ project.id }}">Cancel</a>
   </div>
 </form>

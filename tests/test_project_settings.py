@@ -121,16 +121,21 @@ def test_settings_page_shows_current_profile(client: TestClient):
     assert "Duplicate project" not in response.text
 
 
-def test_settings_page_has_sticky_top_save_and_bottom_save(client: TestClient):
+def test_settings_page_has_top_and_bottom_save_and_cancel(client: TestClient):
     project_id = _create_project(client)
 
     response = client.get(f"/projects/{project_id}/settings")
 
     assert response.status_code == 200
-    assert 'class="settings-sticky-save"' in response.text
-    assert ">Save</button>" in response.text
-    # The existing bottom Save control remains available.
-    assert "Save settings" in response.text
+    # Top and bottom each expose a Save and a Cancel control side by side.
+    assert response.text.count(">Save</button>") == 2
+    assert response.text.count(">Cancel</a>") == 2
+    # The top Save is bound to the settings form even though it sits in the header.
+    assert 'id="project-settings-form"' in response.text
+    assert 'form="project-settings-form"' in response.text
+    # Only the agreed labels are used (no legacy "Save settings" / "Back to project").
+    assert "Save settings" not in response.text
+    assert "Back to project" not in response.text
 
 
 def test_settings_save_persists_image_score_factor(client: TestClient, gui_settings: GuiSettings):

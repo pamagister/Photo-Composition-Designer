@@ -272,14 +272,18 @@ def test_global_anniversaries_setting_is_saved_and_validated(client, tmp_path):
     assert str(tmp_path / "missing.ini") in invalid.text
 
 
-def test_app_settings_has_sticky_top_save_button(client):
+def test_app_settings_has_single_bottom_save_button(client):
     response = client.get("/settings")
 
     assert response.status_code == 200
-    assert 'class="settings-sticky-save"' in response.text
-    assert ">Save</button>" in response.text
-    # The existing bottom Save control remains available.
+    # No sticky top Save; the single Save lives at the very bottom.
+    assert "settings-sticky-save" not in response.text
+    assert ">Save</button>" not in response.text
+    assert 'id="app-settings-form"' in response.text
+    assert 'form="app-settings-form"' in response.text
     assert "Save application settings" in response.text
+    # The Save button is rendered below the "Test model" action.
+    assert response.text.index("Save application settings") > response.text.index("Test model")
 
 
 def test_global_locations_setting_is_saved_and_validated(client, tmp_path):
