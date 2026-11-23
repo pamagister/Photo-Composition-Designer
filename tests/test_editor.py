@@ -265,7 +265,7 @@ def test_top_menus_load_auto_close_script(editor_client, tmp_path):
     page = editor_client.get(f"/projects/{project_id}?page={page_id}")
 
     assert page.status_code == 200
-    assert '/static/nav.js' in page.text
+    assert "/static/nav.js" in page.text
     # At least the Settings and Extras menus exist for the script to coordinate.
     assert page.text.count('class="nav-dropdown"') >= 2
 

@@ -201,9 +201,7 @@ def test_rescanning_marks_deleted_photos_unavailable(client, source_dir):
     assert client.get(f"/media/photos/{photo_id}").status_code == 404
 
 
-def test_scan_skips_auto_layout_regeneration_when_only_new_photos(
-    client, source_dir, monkeypatch
-):
+def test_scan_skips_auto_layout_regeneration_when_only_new_photos(client, source_dir, monkeypatch):
     from photo_composition_designer.project import editing as editing_module
 
     project_url = _create_project(client)
@@ -215,9 +213,7 @@ def test_scan_skips_auto_layout_regeneration_when_only_new_photos(
         calls.append(project_id)
         return original(self, project_id, **kwargs)
 
-    monkeypatch.setattr(
-        editing_module.PageEditingService, "regenerate_auto_layouts", spy
-    )
+    monkeypatch.setattr(editing_module.PageEditingService, "regenerate_auto_layouts", spy)
 
     client.post(f"{project_url}/source", data={"path": str(source_dir)})
     first = client.post(f"{project_url}/scan", headers={"HX-Request": "true"})

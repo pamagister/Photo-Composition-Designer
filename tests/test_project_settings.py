@@ -501,9 +501,7 @@ def test_page_count_change_does_not_regenerate_auto_layouts(
         calls.append(project_id)
         return original(self, project_id, **kwargs)
 
-    monkeypatch.setattr(
-        editing_module.PageEditingService, "regenerate_auto_layouts", spy
-    )
+    monkeypatch.setattr(editing_module.PageEditingService, "regenerate_auto_layouts", spy)
 
     response = client.post(
         f"/projects/{project_id}/settings",
@@ -537,9 +535,7 @@ def test_profile_change_regenerates_auto_layouts(
         calls.append(project_id)
         return original(self, project_id, **kwargs)
 
-    monkeypatch.setattr(
-        editing_module.PageEditingService, "regenerate_auto_layouts", spy
-    )
+    monkeypatch.setattr(editing_module.PageEditingService, "regenerate_auto_layouts", spy)
 
     response = client.post(
         f"/projects/{project_id}/settings",

@@ -759,9 +759,7 @@ def test_auto_fill_unused_rejects_out_of_range_limit(tmp_path, limit):
 
 
 def test_auto_fill_unused_rejects_non_auto_page(tmp_path):
-    database, editing, project_id, page_id, _photo_ids, _slot_ids = _seed(
-        tmp_path, photo_count=3
-    )
+    database, editing, project_id, page_id, _photo_ids, _slot_ids = _seed(tmp_path, photo_count=3)
     try:
         with pytest.raises(ProjectError):
             editing.auto_fill_unused(project_id, page_id, 2)
