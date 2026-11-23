@@ -22,6 +22,7 @@ from photo_composition_designer.gui.dependencies import (
 from photo_composition_designer.gui.templating import TEMPLATES
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.rendering import profile_from_project
+from photo_composition_designer.project.repositories import PageRepository
 from photo_composition_designer.project.services import ProjectService
 
 router = APIRouter()
@@ -234,6 +235,32 @@ def _get_project(service: ProjectService, project_id: int):
         raise HTTPException(404, str(exc)) from exc
 
 
+def _enqueue_new_page_previews(
+    request: Request,
+    database: DatabaseDependency,
+    project_id: int,
+    existing_page_ids: set[int],
+) -> None:
+    """Enqueue background previews for pages created by a calendar change.
+
+    Only pages that did not exist when the form was loaded are rendered, so
+    adding pages returns immediately while existing pages keep their cached
+    previews. Both the thumbnail (200 px) and large (800 px) sizes are queued at
+    background priority.
+    """
+    new_page_ids = [
+        page.id
+        for page in PageRepository(database.connect()).list(project_id)
+        if page.id not in existing_page_ids
+    ]
+    worker = getattr(request.app.state, "preview_worker", None)
+    if worker is None:
+        return
+    for new_page_id in new_page_ids:
+        worker.submit(project_id, new_page_id, max_width=200, priority=1)
+        worker.submit(project_id, new_page_id, max_width=800, priority=1)
+
+
 def _settings_response(
     request: Request,
     service: ProjectService,
@@ -311,6 +338,8 @@ async def save_project_settings(
     try:
         profile = _profile_from_form(form)
         aggregate = service.open_project(project_id)
+        current_profile = profile_from_project(aggregate.project)
+        existing_page_ids = {page.id for page in aggregate.pages}
         current_start = aggregate.pages[0].start_date if aggregate.pages else ""
         start_value = str(form.get("project.start_date", current_start)).strip()
         count_value = str(form.get("project.page_count", len(aggregate.pages))).strip()
@@ -327,7 +356,14 @@ async def save_project_settings(
             confirm_remove=_is_checked(form.get("project.confirm_remove")),
         )
         service.update_output_profile(project_id, profile)
-        PageEditingService(database, object_detector=detector).regenerate_auto_layouts(project_id)
+        # Regenerating automatic snapshots is only necessary when the render
+        # geometry changed (page size, DPI, spacing, score factor). A page-count
+        # or name/date change leaves every existing snapshot and preview valid.
+        if profile.profile_hash() != current_profile.profile_hash():
+            PageEditingService(database, object_detector=detector).regenerate_auto_layouts(
+                project_id
+            )
+        _enqueue_new_page_previews(request, database, project_id, existing_page_ids)
     except (ValueError, ProjectError) as exc:
         return _settings_response(
             request,

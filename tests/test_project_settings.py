@@ -485,6 +485,102 @@ def test_project_calendar_can_shift_and_extend_with_last_layout(
     assert pages[1].layout_id == pages[2].layout_id
 
 
+def test_page_count_change_does_not_regenerate_auto_layouts(
+    client: TestClient, gui_settings: GuiSettings, monkeypatch: pytest.MonkeyPatch
+):
+    from photo_composition_designer.project import editing as editing_module
+
+    project_id = _create_project(client)
+    _, pages_before = _project_state(gui_settings, project_id)
+    revisions_before = {page.id: page.render_revision for page in pages_before}
+
+    calls: list[int] = []
+    original = editing_module.PageEditingService.regenerate_auto_layouts
+
+    def spy(self, project_id, **kwargs):
+        calls.append(project_id)
+        return original(self, project_id, **kwargs)
+
+    monkeypatch.setattr(
+        editing_module.PageEditingService, "regenerate_auto_layouts", spy
+    )
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(**{"project.page_count": "3"}),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert calls == []
+    _, pages_after = _project_state(gui_settings, project_id)
+    after_by_id = {page.id: page for page in pages_after}
+    # Existing pages keep their render revision (and cached preview).
+    for page in pages_before:
+        assert after_by_id[page.id].render_revision == revisions_before[page.id]
+    # Exactly one new page was added.
+    new_pages = [page for page in pages_after if page.id not in revisions_before]
+    assert len(new_pages) == 1
+
+
+def test_profile_change_regenerates_auto_layouts(
+    client: TestClient, gui_settings: GuiSettings, monkeypatch: pytest.MonkeyPatch
+):
+    from photo_composition_designer.project import editing as editing_module
+
+    project_id = _create_project(client)
+
+    calls: list[int] = []
+    original = editing_module.PageEditingService.regenerate_auto_layouts
+
+    def spy(self, project_id, **kwargs):
+        calls.append(project_id)
+        return original(self, project_id, **kwargs)
+
+    monkeypatch.setattr(
+        editing_module.PageEditingService, "regenerate_auto_layouts", spy
+    )
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(**{"size.dpi": "150"}),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert calls == [project_id]
+
+
+def test_page_count_increase_renders_new_page_preview(
+    client: TestClient, gui_settings: GuiSettings
+):
+    project_id = _create_project(client)
+    _, pages_before = _project_state(gui_settings, project_id)
+    before_ids = {page.id for page in pages_before}
+
+    response = client.post(
+        f"/projects/{project_id}/settings",
+        data=_settings_form(**{"project.page_count": "3"}),
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+    _, pages_after = _project_state(gui_settings, project_id)
+    new_pages = [page for page in pages_after if page.id not in before_ids]
+    assert len(new_pages) == 1
+    new_page = new_pages[0]
+
+    # Both thumbnail and large preview were enqueued (and rendered inline by
+    # the synchronous worker), so the new page serves cached JPEGs.
+    for max_width in (200, 800):
+        preview = client.get(
+            f"/projects/{project_id}/pages/{new_page.id}/preview",
+            params={"max_width": max_width},
+        )
+        assert preview.status_code == 200
+        assert preview.headers["content-type"] == "image/jpeg"
+
+
 def test_calendar_shrink_requires_confirmation_for_page_content(
     client: TestClient, gui_settings: GuiSettings
 ):
