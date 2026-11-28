@@ -19,8 +19,8 @@ pages; the web UI and application services compose around it.
 
 | Layer | Modules | Responsibility |
 |---|---|---|
-| Domain | `project/models.py`, `core/errors.py`, `core/output_profile.py` | Projects, source roots, photos, pages, layouts, slots, assignments, distribution proposals and the typed output profile. |
-| Application services | `project/services.py`, `project/inventory.py`, `project/distribution.py`, `project/editing.py`, `project/rendering.py`, `io/export.py`, `io/project_archive.py` | Project lifecycle, scanning and relinking, distribution proposals, page editing, page composition inputs, export and reference-only archives. |
+| Domain | `project/models.py`, `project/layout_models.py`, `core/errors.py`, `core/output_profile.py` | Projects, source roots, photos, pages, layouts, slots, assignments, layout-change previews, distribution proposals and the typed output profile. |
+| Application services | `project/services.py`, `project/inventory.py`, `project/distribution.py`, `project/editing.py`, `project/auto_layout_service.py`, `project/layout_editing.py`, `project/rendering.py`, `io/export.py`, `io/project_archive.py` | Project lifecycle, scanning and relinking, distribution proposals, slot assignments, automatic layout generation, explicit layout changes, page composition inputs, export and reference-only archives. |
 | Persistence | `db/schema.py`, `project/repositories.py` | SQLite schema, forward migrations and repositories. No SQL in routes or renderers. |
 | Rendering | `render/page.py`, `render/slot_renderer.py`, `render/calendar.py`, `render/map.py`, `render/description.py`, `render/geoplot.py` | Full-page composition and the individual render features. |
 | Infrastructure | `io/media.py`, `io/scan.py`, `io/previews.py`, `io/export.py`, `io/project_archive.py`, `core/settings.py` | Filesystem access, EXIF, Pillow adapters, caches, PDF output, reference-only project archives and project defaults. |
@@ -29,6 +29,9 @@ pages; the web UI and application services compose around it.
 
 Route handlers validate input and call services. They contain no distribution
 algorithms, GPS calculations, multi-table SQL or renderer geometry.
+`PageEditingService` remains the compatibility facade for existing callers;
+automatic layout generation and explicit layout mapping live in separate
+services.
 
 ## 3. Storage
 
