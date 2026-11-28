@@ -1,7 +1,7 @@
 name: CI
 
-# Linux is the always-on quality gate. Fast Windows tests run on main and on
-# pull requests targeting main, not on every feature-branch push.
+# Linux is the always-on full-suite quality gate. Fast Windows tests run on
+# main and on pull requests targeting main, not on every feature-branch push.
 #
 # Every push to any branch runs the Linux job, so feature and plan branches get
 # feedback before a pull request exists.
@@ -24,9 +24,9 @@ concurrency:
 
 jobs:
   tests:
-    name: Linux / lint + tests
+    name: Linux / lint + full tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -36,8 +36,10 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
-      - name: Run linter and tests
-        run: make test
+      - name: Install browser engines
+        run: uv run playwright install --with-deps chromium firefox
+      - name: Run linter and full test suite
+        run: make testall
 
   tests-windows:
     name: Windows / fast tests

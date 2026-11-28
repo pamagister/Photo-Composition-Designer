@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import time
+from collections.abc import Iterator
 
 import pytest
 
+from photo_composition_designer.layouts import auto_layout
 from photo_composition_designer.layouts.auto_layout import (
     AutoPhoto,
     AutoSlot,
@@ -165,7 +166,8 @@ def test_invalid_photo_dimensions_raise() -> None:
         build_auto_layout([AutoPhoto(key="bad", width=0, height=100)], 1.78)
 
 
-def test_builds_thirty_photos_under_budget() -> None:
+def test_builds_thirty_photos_under_budget(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Bound search work rather than elapsed time to avoid runner-load noise."""
     photos = [
         AutoPhoto(
             key=str(index),
@@ -175,8 +177,22 @@ def test_builds_thirty_photos_under_budget() -> None:
         )
         for index in range(30)
     ]
-    start = time.perf_counter()
+    candidates_considered = 0
+    original_candidates = auto_layout._Engine._candidates
+
+    def count_candidates(
+        engine: auto_layout._Engine,
+        items: tuple[AutoPhoto, ...],
+        aspect: float,
+    ) -> Iterator[tuple[str, int, float, tuple[float, float]]]:
+        nonlocal candidates_considered
+        for candidate in original_candidates(engine, items, aspect):
+            candidates_considered += 1
+            yield candidate
+
+    monkeypatch.setattr(auto_layout._Engine, "_candidates", count_candidates)
     slots = build_auto_layout(photos, 1.78)
-    elapsed = time.perf_counter() - start
     assert len(slots) == 30
-    assert elapsed < 1.0, f"30-photo layout took {elapsed:.3f}s (budget 1.0s)"
+    assert candidates_considered <= 50_000, (
+        f"30-photo layout considered {candidates_considered:,} split candidates (budget 50,000)"
+    )

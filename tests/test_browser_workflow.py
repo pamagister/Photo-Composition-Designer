@@ -1,8 +1,8 @@
 """End-to-end browser tests for the editor workflow with Playwright.
 
 The suite runs against a real uvicorn server and an isolated workspace. It is
-skipped when Playwright or the browser binaries are unavailable. Install them
-once with:
+skipped locally when Playwright or browser binaries are unavailable, but those
+missing dependencies fail CI. Install the engines with:
 
     uv run playwright install chromium firefox
     uv run pytest tests/test_browser_workflow.py -m browser
@@ -13,6 +13,8 @@ Chromium and Firefox.
 
 from __future__ import annotations
 
+import importlib
+import os
 import re
 import socket
 import threading
@@ -25,19 +27,25 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-playwright_api = pytest.importorskip("playwright.sync_api")
-
-from playwright.sync_api import expect, sync_playwright  # noqa: E402
-
-from photo_composition_designer.core.appdata import data_dir  # noqa: E402
-from photo_composition_designer.db.schema import WorkspaceDatabase  # noqa: E402
-from photo_composition_designer.project.inventory import InventoryService  # noqa: E402
-from photo_composition_designer.project.models import LayoutSlot  # noqa: E402
-from photo_composition_designer.project.repositories import (  # noqa: E402
+from photo_composition_designer.core.appdata import data_dir
+from photo_composition_designer.db.schema import WorkspaceDatabase
+from photo_composition_designer.project.inventory import InventoryService
+from photo_composition_designer.project.models import LayoutSlot
+from photo_composition_designer.project.repositories import (
     LayoutRepository,
     PageRepository,
 )
-from photo_composition_designer.project.services import ProjectService  # noqa: E402
+from photo_composition_designer.project.services import ProjectService
+
+try:
+    playwright_api = importlib.import_module("playwright.sync_api")
+except ImportError as exc:
+    if os.environ.get("CI"):
+        pytest.fail(f"Playwright is required in CI: {exc}", pytrace=False)
+    pytest.skip("Playwright is unavailable", allow_module_level=True)
+
+expect = playwright_api.expect
+sync_playwright = playwright_api.sync_playwright
 
 pytestmark = pytest.mark.browser
 
@@ -171,11 +179,13 @@ def live_server(
 
 @pytest.fixture(params=BROWSERS)
 def browser_page(request):
-    """Yield a page in each supported browser, skipping missing binaries."""
+    """Yield a browser page; CI treats unavailable browser engines as failures."""
     with sync_playwright() as playwright:
         try:
             browser = getattr(playwright, request.param).launch()
         except Exception as exc:  # pragma: no cover - depends on local install
+            if os.environ.get("CI"):
+                pytest.fail(f"{request.param} is required in CI: {exc}", pytrace=False)
             pytest.skip(f"{request.param} is unavailable: {exc}")
         context = browser.new_context(viewport={"width": 1400, "height": 1000})
         page = context.new_page()
