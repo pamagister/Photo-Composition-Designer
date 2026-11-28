@@ -12,8 +12,10 @@ inline for tests that need deterministic timing.
 
 from __future__ import annotations
 
+import logging
 import queue
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,8 +23,23 @@ from pathlib import Path
 from PIL import Image
 
 from photo_composition_designer.db.schema import WorkspaceDatabase
-from photo_composition_designer.project.rendering import ProjectRenderingService
+from photo_composition_designer.gui.preview_cache import (
+    CURRENT_PREVIEW_WIDTHS,
+    PREVIEW_CACHE_CLEANUP_INTERVAL_SECONDS,
+    cleanup_stale_preview_assets,
+)
+from photo_composition_designer.project.rendering import (
+    ProjectRenderingService,
+    draft_profile,
+    profile_from_project,
+)
+from photo_composition_designer.project.repositories import (
+    PageRepository,
+    ProjectRepository,
+)
 from photo_composition_designer.render.object_detector import ObjectDetector
+
+logger = logging.getLogger(__name__)
 
 PreviewJobKey = tuple[int, int, int, str]
 
@@ -201,8 +218,16 @@ class PreviewWorker:
         return self._object_detector
 
     def _run(self) -> None:
+        next_cache_cleanup = 0.0
         while True:
-            item = self._queue.get()
+            now = time.monotonic()
+            if now >= next_cache_cleanup:
+                self._cleanup_stale_previews()
+                next_cache_cleanup = time.monotonic() + PREVIEW_CACHE_CLEANUP_INTERVAL_SECONDS
+            try:
+                item = self._queue.get(timeout=max(0.0, next_cache_cleanup - time.monotonic()))
+            except queue.Empty:
+                continue
             _, _, job = item
             if job is None:  # Sentinel
                 self._queue.task_done()
@@ -226,6 +251,30 @@ class PreviewWorker:
                     with self._lock:
                         self._pending.discard(job.key)
                 self._queue.task_done()
+
+    def _cleanup_stale_previews(self) -> None:
+        """Remove expired preview files while preserving current cache keys."""
+        try:
+            connection = self._database.connect()
+            rendering = ProjectRenderingService(
+                self._database,
+                preview_dir=self._preview_dir,
+                anniversaries_path=self._anniversaries_path,
+            )
+            current_keys: set[str] = set()
+            for project in ProjectRepository(connection).list():
+                profile = profile_from_project(project)
+                for page in PageRepository(connection).list(project.id):
+                    for width in CURRENT_PREVIEW_WIDTHS:
+                        draft = draft_profile(profile, width)
+                        current_keys.add(
+                            rendering.preview_cache_key(
+                                page, draft, max_width=width, mode="preview"
+                            )
+                        )
+            cleanup_stale_preview_assets(self._preview_dir, current_keys=current_keys)
+        except Exception:
+            logger.exception("Could not clean expired page preview assets")
 
     def _warm(self, job: WarmupJob) -> None:
         """Populate the detector cache for one photo."""

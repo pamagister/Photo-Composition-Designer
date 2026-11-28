@@ -1,21 +1,21 @@
-"""Tests for the immutable preview asset route (plan Phase 2).
+"""Tests for the immutable preview asset route and retention policy.
 
 The asset route serves cached previews by their content-derived cache key
-without consulting mutable page state. Because the URL identifies the exact
-cached bytes, the response can be cached forever: a new revision produces a
-new key and therefore a new URL.
+without consulting mutable page state. New revisions produce new keys and
+therefore new URLs, with old assets retained for the advertised cache lifetime.
 
 These tests guard the contract:
 
 * the asset route serves with ``Cache-Control: public, max-age=...,
   immutable``;
 * the route never renders on a miss (returns 404 when the file is absent);
-* an in-flight old revision's URL still serves the original complete bytes
-  after a new revision is rendered.
+* stale files expire after 30 days without removing current or in-flight assets.
 """
 
 from __future__ import annotations
 
+import os
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -25,6 +25,11 @@ from starlette.testclient import TestClient
 from photo_composition_designer.core.appdata import data_dir
 from photo_composition_designer.db.schema import WorkspaceDatabase
 from photo_composition_designer.gui.app import create_app
+from photo_composition_designer.gui.preview_cache import (
+    PREVIEW_ASSET_LEASES,
+    PREVIEW_ASSET_MAX_AGE_SECONDS,
+    cleanup_stale_preview_assets,
+)
 from photo_composition_designer.gui.settings import GuiSettings
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.repositories import PageRepository
@@ -96,14 +101,23 @@ def test_preview_asset_serves_immutable(tmp_path, monkeypatch):
     assert rendered.status_code == 200
     assert rendered.headers["cache-control"] == "no-cache"
 
-    # The immutable asset route serves the same bytes with a long-lived cache.
+    # The immutable asset route serves the same bytes with a 30-day cache.
     key = _cache_key(tmp_path, project_id, page_id, max_width=200)
     asset = client.get(f"/projects/{project_id}/preview-assets/{key}.jpg")
     assert asset.status_code == 200
     assert asset.headers["content-type"] == "image/jpeg"
     assert "immutable" in asset.headers["cache-control"]
-    assert "max-age=31536000" in asset.headers["cache-control"]
+    assert f"max-age={PREVIEW_ASSET_MAX_AGE_SECONDS}" in asset.headers["cache-control"]
     assert asset.content == rendered.content
+
+    asset_path = tmp_path / "cache" / "previews" / "pages" / f"{key}.jpg"
+    expired_at = time.time() - PREVIEW_ASSET_MAX_AGE_SECONDS - 1
+    os.utime(asset_path, (expired_at, expired_at))
+    removed = cleanup_stale_preview_assets(
+        tmp_path / "cache" / "previews",
+        current_keys=set(),
+    )
+    assert removed == 1
 
 
 def test_preview_asset_returns_404_when_file_absent(tmp_path, monkeypatch):
@@ -178,6 +192,45 @@ def test_preview_asset_old_revision_serves_original_bytes(tmp_path, monkeypatch)
         old_response = client.get(f"/projects/{project_id}/preview-assets/{old_key}.jpg")
         assert old_response.status_code == 200
         assert old_response.content == old_bytes
+
+
+def test_cleanup_expires_only_superseded_unleased_previews(tmp_path):
+    preview_dir = tmp_path / "previews"
+    pages_dir = preview_dir / "pages"
+    pages_dir.mkdir(parents=True)
+    current = pages_dir / f"{'a' * 24}.jpg"
+    expired = pages_dir / f"{'b' * 24}.jpg"
+    recent = pages_dir / f"{'c' * 24}.jpg"
+    leased = pages_dir / f"{'d' * 24}.jpg"
+    for path in (current, expired, recent, leased):
+        path.write_bytes(b"preview")
+
+    now = PREVIEW_ASSET_MAX_AGE_SECONDS * 3
+    old_mtime = now - PREVIEW_ASSET_MAX_AGE_SECONDS - 1
+    os.utime(current, (old_mtime, old_mtime))
+    os.utime(expired, (old_mtime, old_mtime))
+    os.utime(recent, (now - PREVIEW_ASSET_MAX_AGE_SECONDS + 1,) * 2)
+    os.utime(leased, (old_mtime, old_mtime))
+    assert PREVIEW_ASSET_LEASES.acquire(leased)
+    try:
+        removed = cleanup_stale_preview_assets(
+            preview_dir,
+            current_keys={current.stem},
+            now=now,
+        )
+        assert removed == 1
+        assert current.is_file()
+        assert recent.is_file()
+        assert leased.is_file()
+        assert not expired.exists()
+    finally:
+        PREVIEW_ASSET_LEASES.release(leased)
+
+    removed = cleanup_stale_preview_assets(preview_dir, current_keys=set(), now=now)
+    assert removed == 2
+    assert not current.exists()
+    assert not leased.exists()
+    assert recent.is_file()
 
 
 def test_preview_status_returns_ready_when_file_exists(tmp_path, monkeypatch):

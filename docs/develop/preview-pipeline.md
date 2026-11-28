@@ -116,13 +116,15 @@ the image with a cache-busting timestamp when ready.
 `GET /projects/{project_id}/preview-assets/{cache_key}.jpg` resolves an opaque
 cache key to `preview_dir/pages/{key}.jpg` without consulting mutable page
 state. It never renders and never touches the database. The route serves
-`Cache-Control: public, max-age=31536000, immutable`.
+`Cache-Control: public, max-age=2592000, immutable` (30 days).
 
 Sidebar page thumbnails (10-30 per project) use these immutable URLs, so the
-browser caches them without revalidation. The large selected-page preview stays
-on the database-resolved `/preview` route, which keeps `no-cache` and renders on
-a miss. Old revisions are retained on disk, so an in-flight request for an old
-key always receives the original complete bytes.
+browser caches them without revalidation during that window. The large
+selected-page preview stays on the database-resolved `/preview` route, which
+keeps `no-cache` and renders on a miss. The preview worker removes superseded
+files older than 30 days at startup and daily thereafter, while preserving
+current 200/800 px keys. Asset responses hold a file lease until transfer
+completes, so cleanup cannot remove a file during an in-flight request.
 
 ## 7. Composite sub-image caches
 

@@ -5,7 +5,13 @@ from __future__ import annotations
 import re
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 
 from photo_composition_designer.core.errors import ProjectError, ProjectNotFoundError
 from photo_composition_designer.gui.dependencies import (
@@ -13,6 +19,11 @@ from photo_composition_designer.gui.dependencies import (
     ObjectDetectorDependency,
     ProjectServiceDependency,
     SettingsDependency,
+)
+from photo_composition_designer.gui.preview_cache import (
+    PREVIEW_ASSET_LEASES,
+    PREVIEW_ASSET_MAX_AGE_SECONDS,
+    PreviewAssetFileResponse,
 )
 from photo_composition_designer.gui.routes.project_context import (
     _canvas_response,
@@ -185,22 +196,28 @@ def preview_asset(
     profile, anniversaries, mode, width). The route never consults mutable
     page state and never renders on a miss; it only serves a file that
     already exists on disk. Because the URL identifies the exact cached
-    bytes, the response can be cached forever: a new revision produces a new
-    key and therefore a new URL.
+    bytes, the response is immutable for its 30-day cache lifetime: a new
+    revision produces a new key and therefore a new URL.
 
-    Old revisions' files are retained on disk so an in-flight request for an
-    old URL still serves the original complete bytes.
+    Superseded files are retained for 30 days. A response lease prevents the
+    cleanup worker from removing a file while it is being transferred.
     """
     if not _PREVIEW_KEY_RE.match(cache_key):
         raise HTTPException(400, "invalid preview cache key")
     path = settings.preview_dir() / "pages" / f"{cache_key}.jpg"
-    if not path.is_file():
+    if not PREVIEW_ASSET_LEASES.acquire(path):
         raise HTTPException(404, "preview not found")
-    return FileResponse(
-        path,
-        media_type="image/jpeg",
-        headers={"Cache-Control": "public, max-age=31536000, immutable"},
-    )
+    try:
+        return PreviewAssetFileResponse(
+            path,
+            media_type="image/jpeg",
+            headers={
+                "Cache-Control": (f"public, max-age={PREVIEW_ASSET_MAX_AGE_SECONDS}, immutable")
+            },
+        )
+    except Exception:
+        PREVIEW_ASSET_LEASES.release(path)
+        raise
 
 
 @router.get("/projects/{project_id}/preview", response_model=None)

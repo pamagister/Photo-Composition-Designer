@@ -251,7 +251,7 @@ def _project_context(
 
     # Immutable preview asset URLs for the sidebar thumbnails. The key is
     # derived from the same render inputs the preview renderer uses, so a
-    # new revision produces a new URL and the browser can cache forever.
+    # new revision produces a new URL with a 30-day immutable cache lifetime.
     thumb_cache_keys: dict[int, str] = {}
     if settings is not None and pages:
         rendering = ProjectRenderingService(

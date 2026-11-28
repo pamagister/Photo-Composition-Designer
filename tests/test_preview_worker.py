@@ -8,6 +8,8 @@ priority contracts through the public API.
 
 from __future__ import annotations
 
+import os
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +23,7 @@ from photo_composition_designer.gui.preview_worker import (
     _preview_job_key,
 )
 from photo_composition_designer.project.inventory import InventoryService
+from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import PageRepository
 from photo_composition_designer.project.services import ProjectService
 
@@ -152,6 +155,30 @@ def test_async_worker_start_stop(tmp_path):
         files = list((preview_dir / "pages").glob("*.jpg"))
         assert len(files) == 1
         worker.stop()
+    finally:
+        database.close()
+
+
+def test_cache_cleanup_preserves_current_preview_key(tmp_path):
+    """A current cache key remains available even after its file ages out."""
+    database, project_id, page_id = _seed(tmp_path)
+    try:
+        preview_dir = tmp_path / "previews"
+        rendering = ProjectRenderingService(database, preview_dir=preview_dir)
+        current_path = rendering.preview_cache_path(project_id, page_id, max_width=200)
+        current_path.parent.mkdir(parents=True)
+        current_path.write_bytes(b"current preview")
+        stale_path = current_path.with_name(f"{'f' * 24}.jpg")
+        stale_path.write_bytes(b"stale preview")
+        expired_at = time.time() - 30 * 24 * 60 * 60 - 1
+        os.utime(current_path, (expired_at, expired_at))
+        os.utime(stale_path, (expired_at, expired_at))
+
+        worker = PreviewWorker(database, preview_dir=preview_dir)
+        worker._cleanup_stale_previews()
+
+        assert current_path.is_file()
+        assert not stale_path.exists()
     finally:
         database.close()
 
