@@ -7,6 +7,7 @@ their measurements into one documented command. The shared seeding helpers live
 in ``scripts/harness_common.py`` (kept out of ``src/`` and ``tests/``). It covers:
 
 * full page render and preview-write time across 4/14/30/45 slots,
+* render-input and export-warning preparation time and SQLite query count,
 * two representative layout geometries (a single row and a multi-row grid),
 * cold vs. warm preview at 200 and 800 px,
 * GPS/map on and off,
@@ -30,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import platform
+import statistics
 import sys
 import time
 from dataclasses import dataclass
@@ -222,6 +224,21 @@ def measure_render(slots: int, geometry: Geometry, gps_count: int) -> dict[str, 
 
         rendering.render_page_image(connection, page)  # warm imports / font caches
 
+        input_timings: list[float] = []
+        input_query_counts: list[int] = []
+        for _ in range(3):
+            statements: list[str] = []
+            connection.set_trace_callback(statements.append)
+            try:
+                start = time.perf_counter()
+                rendering.build_input_with_warnings(connection, page)
+                input_timings.append(_ms(start))
+            finally:
+                connection.set_trace_callback(None)
+            input_query_counts.append(
+                sum(statement.lstrip().upper().startswith("SELECT") for statement in statements)
+            )
+
         start = time.perf_counter()
         for _ in range(3):
             rendering.render_page_image(connection, page)
@@ -235,6 +252,8 @@ def measure_render(slots: int, geometry: Geometry, gps_count: int) -> dict[str, 
             writes[width] = _ms(start)
 
         return {
+            "input_ms": statistics.median(input_timings),
+            "input_selects": statistics.median(input_query_counts),
             "render_ms": render_ms,
             "write200_ms": writes[200],
             "write800_ms": writes[800],
@@ -371,6 +390,14 @@ def _print_render_table(rows: list[tuple[str, dict[str, float]]]) -> None:
     print()
 
 
+def _print_input_table(rows: list[tuple[str, dict[str, float]]]) -> None:
+    print("=== Render input + export warning preparation ===")
+    print(f"{'case':>12} {'selects':>9} {'prepare':>9}   (queries, ms)")
+    for label, row in rows:
+        print(f"{label:>12} {row['input_selects']:9.0f} {row['input_ms']:9.2f}")
+    print()
+
+
 def _print_preview_table(rows: list[tuple[str, dict[str, float]]]) -> None:
     print("=== Preview cold vs. warm ===")
     print(f"{'case':>12} {'cold200':>9} {'warm200':>9} {'cold800':>9} {'warm800':>9}   (ms)")
@@ -411,6 +438,7 @@ def run(gps: bool = False, geometries: tuple[Geometry, ...] = GEOMETRIES) -> Non
             render_rows.append((label, measure_render(slots, geometry, gps_count=gps_count)))
             preview_rows.append((label, measure_preview(slots, geometry)))
     _print_render_table(render_rows)
+    _print_input_table(render_rows)
     _print_preview_table(preview_rows)
 
     bulk_rows = [(slots, measure_bulk(slots)) for slots in (14, 30)]

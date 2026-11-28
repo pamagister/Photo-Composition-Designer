@@ -15,9 +15,12 @@ from photo_composition_designer.project.distribution import DistributionService
 from photo_composition_designer.project.editing import PageEditingService
 from photo_composition_designer.project.inventory import InventoryService
 from photo_composition_designer.project.models import LayoutSlot
+from photo_composition_designer.project.rendering import ProjectRenderingService
 from photo_composition_designer.project.repositories import (
+    AssignmentRepository,
     LayoutRepository,
     PageRepository,
+    PhotoRepository,
 )
 from photo_composition_designer.project.services import ProjectService
 
@@ -85,6 +88,28 @@ def test_render_project_orders_pages(tmp_path, monkeypatch):
     assert len(result.rendered) == 2
     assert result.rendered[0].name == "page_000.png"
     assert result.rendered[1].name == "page_001.png"
+
+
+def test_render_input_and_warnings_use_constant_query_count(tmp_path, monkeypatch):
+    database, project_id = _setup_project(tmp_path, monkeypatch)
+    connection = database.connect()
+    page = PageRepository(connection).list(project_id)[0]
+    assignment = AssignmentRepository(connection).list_by_page(page.id)[0]
+    PhotoRepository(connection).set_availability(assignment.photo_id, False)
+    rendering = ProjectRenderingService(database)
+    statements: list[str] = []
+    connection.set_trace_callback(statements.append)
+    try:
+        render_input, warnings = rendering.build_input_with_warnings(connection, page)
+    finally:
+        connection.set_trace_callback(None)
+
+    select_count = sum(statement.lstrip().upper().startswith("SELECT") for statement in statements)
+    assert select_count == 6
+    assert len(render_input.assigned_photos) == 1
+    assert len(warnings) == 1
+    assert warnings[0].endswith(" is unavailable")
+    assert warnings == rendering.assignment_warnings(connection, page)
 
 
 def test_render_project_writes_pdf(tmp_path, monkeypatch):

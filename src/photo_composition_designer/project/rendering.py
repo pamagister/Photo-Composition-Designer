@@ -208,6 +208,13 @@ class ProjectRenderingService:
 
     def build_input(self, connection, page: CalendarPage) -> PageRenderInput:
         """Resolve one page into a render input."""
+        render_input, _warnings = self.build_input_with_warnings(connection, page)
+        return render_input
+
+    def build_input_with_warnings(
+        self, connection, page: CalendarPage
+    ) -> tuple[PageRenderInput, tuple[str, ...]]:
+        """Resolve a page and return warnings for assigned photos that cannot render."""
         profile = self.profile_for(connection, page.project_id)
 
         layout: LayoutTemplate | None = None
@@ -218,14 +225,39 @@ class ProjectRenderingService:
                 layout = layout_template(definition)
                 slot_keys = {slot.id: slot.slot_key for slot in definition.slots}
 
+        slot_photos, coordinates, warnings = self._resolve_assignments(connection, page, slot_keys)
+        return (
+            PageRenderInput(
+                page_date=date.fromisoformat(page.start_date),
+                description=page.description,
+                layout=layout,
+                assigned_photos=slot_photos,
+                output_profile=profile,
+                gps_coordinates=coordinates,
+                title=profile.calendar.title,
+                title_page=profile.calendar.use_title_page and page.page_index == 0,
+                hide_local_map=page.hide_local_map,
+                hide_calendar_strip=page.hide_calendar_strip,
+                hide_description=page.hide_description,
+                center_description=page.center_description,
+                anniversaries=Anniversaries(self._anniversaries_path),
+            ),
+            warnings,
+        )
+
+    @staticmethod
+    def _resolve_assignments(
+        connection,
+        page: CalendarPage,
+        slot_keys: dict[int, str],
+    ) -> tuple[dict[str, SlotPhoto], tuple[tuple[float, float], ...], tuple[str, ...]]:
         photo_repository = PhotoRepository(connection)
         root_repository = SourceRootRepository(connection)
-        assignment_repository = AssignmentRepository(connection)
 
-        # Batch the photo and source-root lookups so build_input issues a
+        # Batch the photo and source-root lookups so input resolution issues a
         # constant number of queries regardless of slot count (D7). Resolving
-        # source paths is CPU-only and stays in the loop.
-        assignments = assignment_repository.list_by_page(page.id)
+        # source paths and warnings is CPU-only and stays in the loop.
+        assignments = AssignmentRepository(connection).list_by_page(page.id)
         photos_by_id = photo_repository.get_many(
             [assignment.photo_id for assignment in assignments]
         )
@@ -234,58 +266,9 @@ class ProjectRenderingService:
 
         slot_photos: dict[str, SlotPhoto] = {}
         coordinates: list[tuple[float, float]] = []
-        for assignment in assignments:
-            slot_key = slot_keys.get(assignment.slot_id)
-            if slot_key is None:
-                continue
-            photo = photos_by_id.get(assignment.photo_id)
-            if photo is None or not photo.available:
-                continue
-            root = roots_by_id.get(photo.source_root_id)
-            if root is None:
-                continue
-            try:
-                path = resolve_source_path(root.path, photo.relative_path)
-            except ValueError:
-                continue
-            if not path.is_file():
-                continue
-            slot_photos[slot_key] = SlotPhoto(
-                photo_path=path,
-                crop_zoom=assignment.crop_zoom,
-                crop_focus_x=assignment.crop_focus_x,
-                crop_focus_y=assignment.crop_focus_y,
-            )
-            if photo.gps_lat is not None and photo.gps_lon is not None:
-                coordinates.append((photo.gps_lat, photo.gps_lon))
-
-        return PageRenderInput(
-            page_date=date.fromisoformat(page.start_date),
-            description=page.description,
-            layout=layout,
-            assigned_photos=slot_photos,
-            output_profile=profile,
-            gps_coordinates=tuple(coordinates),
-            title=profile.calendar.title,
-            title_page=profile.calendar.use_title_page and page.page_index == 0,
-            hide_local_map=page.hide_local_map,
-            hide_calendar_strip=page.hide_calendar_strip,
-            hide_description=page.hide_description,
-            center_description=page.center_description,
-            anniversaries=Anniversaries(self._anniversaries_path),
-        )
-
-    def render_page_image(self, connection, page: CalendarPage) -> Image.Image:
-        """Render one page as a full-resolution image."""
-        return self._composer.render(self.build_input(connection, page))
-
-    def assignment_warnings(self, connection, page: CalendarPage) -> tuple[str, ...]:
-        """Return actionable warnings for assigned photos that cannot render."""
-        photo_repository = PhotoRepository(connection)
-        root_repository = SourceRootRepository(connection)
         warnings: list[str] = []
-        for assignment in AssignmentRepository(connection).list_by_page(page.id):
-            photo = photo_repository.get(assignment.photo_id)
+        for assignment in assignments:
+            photo = photos_by_id.get(assignment.photo_id)
             if photo is None:
                 warnings.append(
                     f"page {page.page_index + 1}: photo {assignment.photo_id} "
@@ -295,7 +278,7 @@ class ProjectRenderingService:
             if not photo.available:
                 warnings.append(f"page {page.page_index + 1}: {photo.filename} is unavailable")
                 continue
-            root = root_repository.get(photo.source_root_id)
+            root = roots_by_id.get(photo.source_root_id)
             if root is None:
                 warnings.append(f"page {page.page_index + 1}: {photo.filename} has no source root")
                 continue
@@ -308,7 +291,39 @@ class ProjectRenderingService:
                 warnings.append(
                     f"page {page.page_index + 1}: {photo.filename} is missing at {path}"
                 )
-        return tuple(warnings)
+                continue
+            slot_key = slot_keys.get(assignment.slot_id)
+            if slot_key is not None:
+                slot_photos[slot_key] = SlotPhoto(
+                    photo_path=path,
+                    crop_zoom=assignment.crop_zoom,
+                    crop_focus_x=assignment.crop_focus_x,
+                    crop_focus_y=assignment.crop_focus_y,
+                )
+                if photo.gps_lat is not None and photo.gps_lon is not None:
+                    coordinates.append((photo.gps_lat, photo.gps_lon))
+
+        return slot_photos, tuple(coordinates), tuple(warnings)
+
+    def render_page_image(self, connection, page: CalendarPage) -> Image.Image:
+        """Render one page as a full-resolution image."""
+        return self.render_input(self.build_input(connection, page))
+
+    def render_input(self, render_input: PageRenderInput) -> Image.Image:
+        """Render a previously resolved page input."""
+        return self._composer.render(render_input)
+
+    def render_page_image_with_warnings(
+        self, connection, page: CalendarPage
+    ) -> tuple[Image.Image, tuple[str, ...]]:
+        """Render one page and return warnings resolved from the same input data."""
+        render_input, warnings = self.build_input_with_warnings(connection, page)
+        return self.render_input(render_input), warnings
+
+    def assignment_warnings(self, connection, page: CalendarPage) -> tuple[str, ...]:
+        """Return actionable warnings for assigned photos that cannot render."""
+        _slot_photos, _coordinates, warnings = self._resolve_assignments(connection, page, {})
+        return warnings
 
     def preview_cache_key(
         self,

@@ -216,9 +216,17 @@ class ProjectExporter:
             processed_pages = 0
             for page in pages:
                 try:
-                    warnings.extend(service.assignment_warnings(connection, page))
                     try:
-                        image = service.render_page_image(connection, page)
+                        render_input, page_warnings = service.build_input_with_warnings(
+                            connection, page
+                        )
+                    except (OSError, ValueError) as error:
+                        warnings.extend(service.assignment_warnings(connection, page))
+                        warnings.append(f"page {page.page_index} could not be rendered: {error}")
+                        continue
+                    warnings.extend(page_warnings)
+                    try:
+                        image = service.render_input(render_input)
                     except (OSError, ValueError) as error:
                         warnings.append(f"page {page.page_index} could not be rendered: {error}")
                         continue

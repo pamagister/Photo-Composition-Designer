@@ -159,7 +159,8 @@ uv run python scripts/benchmark_render.py --geometry row
 ```
 
 It builds a throwaway project from real JPEG fixtures in `images/`, measures full
-render, cold/warm preview at 200/800, bulk refresh and editor context cost, and
+render, render-input plus export-warning preparation time and SQLite query
+count, cold/warm preview at 200/800, bulk refresh and editor context cost, and
 prints run metadata. Shared seeding helpers live in `scripts/harness_common.py`.
 Browser click-to-visible-preview latency is a separate manual verification.
 
